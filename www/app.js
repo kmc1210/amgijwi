@@ -2757,10 +2757,6 @@ $("#wipeAll").addEventListener("click", ()=>{
   });
 });
 
-/* ---------- 시계 ---------- */
-function tick(){ const n=new Date(); $("#clock").textContent = n.getHours()+":"+String(n.getMinutes()).padStart(2,"0"); }
-tick(); setInterval(tick, 30000);
-
 /* ---------- 저장 안정성 ----------
    홈 화면에서 실행 중인지, 브라우저가 저장 데이터를 보호해 주는지.
    둘 다 "레시피가 사라지지 않는가"에 직접 영향을 준다. */
