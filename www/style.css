@@ -7,6 +7,7 @@
     --danger:#B5453C; --danger-soft:#F8E5E3;
     --shadow:0 1px 2px rgba(36,31,26,.05), 0 8px 24px rgba(36,31,26,.07);
     --tab-h:64px;
+    --pad-x:20px;
     /* 테마별로 바뀌는 값 */
     --frame:#E7DED4;
     --on-ink:#FFFFFF;
@@ -92,29 +93,44 @@
   button{font-family:inherit;border:none;background:none;color:inherit;cursor:pointer;}
   input,select,textarea{font-family:inherit;color:var(--ink);}
 
-  .phone{position:relative;width:390px;height:844px;background:var(--bg);border-radius:44px;
-    box-shadow:0 0 0 11px #16120F,0 0 0 13px #38302A,0 30px 70px rgba(0,0,0,.35);
-    overflow:hidden;display:flex;flex-direction:column;}
-  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:33px;border-radius:20px;background:#16120F;z-index:60;}
-  .statusbar{height:54px;flex:0 0 54px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 6px;font-size:14px;font-weight:600;z-index:50;}
-  .statusbar .icons{display:flex;gap:5px;align-items:center;}
-  .bar{width:3px;background:var(--ink);border-radius:1px;}
-  .homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:140px;height:5px;border-radius:3px;background:rgba(36,31,26,.28);z-index:60;pointer-events:none;}
-  @media (max-width:520px){
-    html,body{height:100%;overflow:hidden;overscroll-behavior:none;}
-    body{background:var(--bg);display:block;}
+  /* 기본은 전체 화면이다. 폰, 폴드 커버, 태블릿 전부 여기에 해당한다.
+     기기 목업은 데모용 장식이므로 넓은 데스크톱에서만 덧입힌다. */
+  html,body{height:100%;overflow:hidden;overscroll-behavior:none;}
+  body{background:var(--bg);display:block;}
+  .phone{
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    width:100%;
     /* 폴백 → 최신 순서. dvh 가 마지막이라야 실제 보이는 높이에 맞는다 */
+    height:100vh;
+    height:100svh;
+    height:100dvh;
+    background:var(--bg);
+    overflow:hidden;display:flex;flex-direction:column;
+  }
+  /* 상태바가 화면 위로 겹치는 경우(홈 화면 앱) 대비 */
+  .screen{padding-top:env(safe-area-inset-top,0px);}
+
+  /* 폴드 커버처럼 좁은 화면. 390px 기준으로 잡은 여백이 그대로 들어가면
+     글줄이 어색하게 끊기고 칩이 잘려 보인다. */
+  @media (max-width:380px){
+    :root{--pad-x:14px;}
+    .appbar h1{font-size:23px;}
+    .appbar p{font-size:13px;}
+  }
+
+  /* 마우스를 쓰는 넓은 화면에서만 기기 목업을 보여준다.
+     태블릿은 pointer:coarse 라 여기 걸리지 않고 전체 화면으로 간다.
+     높이는 화면보다 커질 수 없게 min() 으로 묶어 어떤 경우에도 잘리지 않는다. */
+  @media (min-width:1200px) and (pointer:fine){
+    body{background:var(--frame);display:flex;align-items:center;justify-content:center;}
     .phone{
-      position:fixed;top:0;left:0;right:0;bottom:0;
-      width:100%;
-      height:100vh;
-      height:100svh;
-      height:100dvh;
-      border-radius:0;box-shadow:none;
+      position:relative;top:auto;left:auto;right:auto;bottom:auto;
+      width:390px;
+      height:min(844px, calc(100dvh - 48px));
+      border-radius:40px;
+      box-shadow:0 0 0 10px #16120F,0 0 0 12px #38302A,0 24px 60px rgba(0,0,0,.32);
     }
-    .island,.homebar,.statusbar{display:none;}
-    /* 상태바가 화면 위로 겹치는 경우(홈 화면 앱) 대비 */
-    .screen{padding-top:env(safe-area-inset-top,0px);}
+    .screen{padding-top:0;}
   }
 
   .app{flex:1;display:flex;flex-direction:column;min-height:0;position:relative;overflow:hidden;}
@@ -122,11 +138,11 @@
     opacity:0;pointer-events:none;transform:translateY(6px);transition:opacity .22s ease,transform .22s ease;}
   .screen.active{opacity:1;pointer-events:auto;transform:none;}
   .scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
-    padding:10px 20px calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 24px);
+    padding:10px var(--pad-x) calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 24px);
     -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 10px);
     mask-image:linear-gradient(to bottom,transparent 0,#000 10px);}
   .scroll.notabs{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 28px);}
-  .appbar{padding:8px 20px 12px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
+  .appbar{padding:8px var(--pad-x) 12px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
   .appbar h1{margin:0;font-size:27px;font-weight:800;letter-spacing:-.5px;}
   .appbar p{margin:5px 0 0;font-size:14px;color:var(--muted);}
   .appbar .add{width:38px;height:38px;border-radius:12px;background:var(--ink);color:var(--on-ink);font-size:22px;
@@ -140,7 +156,7 @@
   .appbar .gtext{flex:1;min-width:0;}
   .mwrap{position:relative;flex:0 0 52px;}
   .mascot{width:56px;height:80px;padding:0;display:block;margin-bottom:2px;}
-  .bubblerow{padding:0 20px 4px;display:flex;justify-content:flex-end;}
+  .bubblerow{padding:0 var(--pad-x) 4px;display:flex;justify-content:flex-end;}
   .bubble{transition:opacity .25s ease;position:relative;max-width:100%;background:var(--accent-soft);color:var(--accent-ink);
     padding:12px 15px;border-radius:15px;font-size:13.2px;font-weight:700;line-height:1.5;
     text-align:right;transform-origin:top right;
@@ -191,7 +207,7 @@
   .sect-h h3{margin:0;font-size:16px;font-weight:700;letter-spacing:-.3px;}
   .sect-h span{font-size:13px;color:var(--muted);}
 
-  .chips{display:flex;gap:8px;overflow-x:auto;padding:0 20px 4px;margin:0 -20px;scrollbar-width:none;}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:0 var(--pad-x) 4px;margin:0 calc(var(--pad-x) * -1);scrollbar-width:none;}
   .chips::-webkit-scrollbar{display:none;}
   .chip{flex:0 0 auto;padding:9px 16px;border-radius:999px;background:var(--surface);border:1px solid var(--line);
     font-size:14px;font-weight:600;color:var(--ink-2);transition:all .15s ease;}
@@ -236,13 +252,13 @@
   .checkc{flex:0 0 24px;height:24px;border-radius:50%;border:2px solid var(--check-line);background:var(--surface);
     display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:transparent;}
   .row.on .checkc{background:var(--accent);border-color:var(--accent);color:var(--on-accent);}
-  .selbar{padding:8px 20px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .selbar{padding:8px var(--pad-x) 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .selbar .cnt{font-size:19px;font-weight:800;letter-spacing:-.4px;}
   .linkbtn{font-size:14.5px;font-weight:700;color:var(--accent);padding:10px 8px;white-space:nowrap;
     min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
   .linkbtn.mute{color:var(--muted);}
   .selactions{position:absolute;left:0;right:0;bottom:0;z-index:66;display:none;gap:10px;
-    padding:12px 20px calc(env(safe-area-inset-bottom,0px) + 12px);
+    padding:12px var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 12px);
     background:var(--bar);backdrop-filter:blur(14px);border-top:1px solid var(--line);}
   .selactions.on{display:flex;}
   .selactions button{flex:1;padding:15px;border-radius:15px;font-size:15.5px;font-weight:700;}
@@ -261,13 +277,13 @@
   .banner.warn{background:var(--again-soft);color:var(--warn-ink);}
   .banner b{font-weight:800;}
 
-  .study-top{padding:8px 20px 14px;display:flex;align-items:center;gap:14px;}
+  .study-top{padding:8px var(--pad-x) 14px;display:flex;align-items:center;gap:14px;}
   .icon-btn{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);}
   .track{flex:1;height:6px;border-radius:3px;background:var(--line);overflow:hidden;}
   .track i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .3s ease;}
   .count{font-size:13px;font-weight:700;color:var(--ink-2);font-variant-numeric:tabular-nums;}
 
-  .card-wrap{flex:1;min-height:0;padding:0 20px 14px;perspective:1400px;
+  .card-wrap{flex:1;min-height:0;padding:0 var(--pad-x) 14px;perspective:1400px;
     display:flex;flex-direction:column;justify-content:center;}
   .card{height:auto;max-height:100%;border-radius:26px;box-shadow:var(--shadow);overflow:hidden;transition:transform .18s ease;display:flex;flex-direction:column;}
   .card.full{height:100%;}
@@ -297,7 +313,7 @@
   .tipbox{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:13px 14px;
     font-size:13.5px;line-height:1.6;color:var(--ink-2);white-space:pre-wrap;}
 
-  .actions{padding:0 20px calc(env(safe-area-inset-bottom,0px) + 18px);display:flex;gap:10px;}
+  .actions{padding:0 var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 18px);display:flex;gap:10px;}
   .act{flex:1;padding:16px;border-radius:16px;font-size:15.5px;font-weight:700;transition:transform .12s ease;}
   .act:active{transform:scale(.97);}
   .act.flip{background:var(--ink);color:var(--on-ink);}
