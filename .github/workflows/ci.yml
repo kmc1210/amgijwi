@@ -1,0 +1,47 @@
+# PR 마다 회귀 테스트를 돌린다. 통과해야 main 에 머지한다.
+#
+# 배포된 사이트의 헤더 검사(npm run test:headers)는 네트워크가 필요하고
+# 배포가 끝난 뒤에 의미가 있어서 여기서 돌리지 않는다. 배포 워크플로에서 돌린다.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 테스트는 코드를 읽기만 한다. 공개 저장소라 토큰 권한을 최소로 둔다
+permissions:
+  contents: read
+
+# 같은 브랜치에 새로 푸시하면 앞선 실행은 취소한다
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  npm-test:
+    name: npm test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      # 태그는 옮겨질 수 있어서 커밋 SHA 로 고정한다. 옆 주석이 해당 버전
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: 의존성 설치 (package-lock.json 그대로)
+        run: npm ci
+
+      - name: Chromium 설치
+        run: npx playwright install --with-deps chromium
+
+      - name: 회귀 테스트
+        run: npm test
