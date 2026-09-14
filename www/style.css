@@ -8,6 +8,9 @@
     --shadow:0 1px 2px rgba(36,31,26,.05), 0 8px 24px rgba(36,31,26,.07);
     --tab-h:64px;
     --pad-x:20px;
+    /* 실제로 쓰는 좌우 여백. 노치가 옆에 오는 가로 모드에서는 아래 @supports 가 넓힌다 */
+    --pad-l:var(--pad-x);
+    --pad-r:var(--pad-x);
     /* 테마별로 바뀌는 값 */
     --frame:#E7DED4;
     --on-ink:#FFFFFF;
@@ -118,6 +121,19 @@
     .appbar p{font-size:13px;}
   }
 
+  /* 아이폰을 가로로 돌리면 노치가 왼쪽이나 오른쪽에 온다. viewport-fit=cover 라서
+     여백을 안 주면 제목과 버튼이 그 밑으로 들어간다. 세로에서는 inset 이 0 이라 --pad-x 그대로다.
+     var() 나 env() 가 섞인 값은 파싱 때 걸러지지 않고 계산 때 무효가 되어 여백이 0 이 된다.
+     env() 는 알고 max() 는 모르는 브라우저(Chrome 69~78, Firefox 65~74)가 딱 그 경우라서,
+     max() 를 env() 없이 따로 확인한 뒤에만 쓴다. 조건에 env() 를 섞으면 @supports 도 그냥 참이 된다.
+     시트·대화상자·잠금 화면의 같은 처리는 각 규칙보다 뒤에 와야 해서 파일 아래쪽에 있다. */
+  @supports (padding:max(0px)) and (padding:env(safe-area-inset-left, 0px)){
+    :root{
+      --pad-l:max(var(--pad-x), env(safe-area-inset-left, 0px));
+      --pad-r:max(var(--pad-x), env(safe-area-inset-right, 0px));
+    }
+  }
+
   /* 마우스를 쓰는 넓은 화면에서만 기기 목업을 보여준다.
      태블릿은 pointer:coarse 라 여기 걸리지 않고 전체 화면으로 간다.
      높이는 max-height 로 화면에 묶어 어떤 경우에도 잘리지 않는다.
@@ -143,11 +159,11 @@
     opacity:0;pointer-events:none;transform:translateY(6px);transition:opacity .22s ease,transform .22s ease;}
   .screen.active{opacity:1;pointer-events:auto;transform:none;}
   .scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
-    padding:10px var(--pad-x) calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 24px);
+    padding:10px var(--pad-r) calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 24px) var(--pad-l);
     -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 10px);
     mask-image:linear-gradient(to bottom,transparent 0,#000 10px);}
   .scroll.notabs{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 28px);}
-  .appbar{padding:8px var(--pad-x) 12px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
+  .appbar{padding:8px var(--pad-r) 12px var(--pad-l);display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
   .appbar h1{margin:0;font-size:27px;font-weight:800;letter-spacing:-.5px;}
   .appbar p{margin:5px 0 0;font-size:14px;color:var(--muted);}
   .appbar .add{width:38px;height:38px;border-radius:12px;background:var(--ink);color:var(--on-ink);font-size:22px;
@@ -161,7 +177,7 @@
   .appbar .gtext{flex:1;min-width:0;}
   .mwrap{position:relative;flex:0 0 52px;}
   .mascot{width:56px;height:80px;padding:0;display:block;margin-bottom:2px;}
-  .bubblerow{padding:0 var(--pad-x) 4px;display:flex;justify-content:flex-end;}
+  .bubblerow{padding:0 var(--pad-r) 4px var(--pad-l);display:flex;justify-content:flex-end;}
   .bubble{transition:opacity .25s ease;position:relative;max-width:100%;background:var(--accent-soft);color:var(--accent-ink);
     padding:12px 15px;border-radius:15px;font-size:13.2px;font-weight:700;line-height:1.5;
     text-align:right;transform-origin:top right;
@@ -212,7 +228,7 @@
   .sect-h h3{margin:0;font-size:16px;font-weight:700;letter-spacing:-.3px;}
   .sect-h span{font-size:13px;color:var(--muted);}
 
-  .chips{display:flex;gap:8px;overflow-x:auto;padding:0 var(--pad-x) 4px;margin:0 calc(var(--pad-x) * -1);scrollbar-width:none;}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:0 var(--pad-r) 4px var(--pad-l);margin:0 calc(var(--pad-r) * -1) 0 calc(var(--pad-l) * -1);scrollbar-width:none;}
   .chips::-webkit-scrollbar{display:none;}
   .chip{flex:0 0 auto;padding:9px 16px;border-radius:999px;background:var(--surface);border:1px solid var(--line);
     font-size:14px;font-weight:600;color:var(--ink-2);transition:all .15s ease;}
@@ -257,13 +273,13 @@
   .checkc{flex:0 0 24px;height:24px;border-radius:50%;border:2px solid var(--check-line);background:var(--surface);
     display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:transparent;}
   .row.on .checkc{background:var(--accent);border-color:var(--accent);color:var(--on-accent);}
-  .selbar{padding:8px var(--pad-x) 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .selbar{padding:8px var(--pad-r) 12px var(--pad-l);display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .selbar .cnt{font-size:19px;font-weight:800;letter-spacing:-.4px;}
   .linkbtn{font-size:14.5px;font-weight:700;color:var(--accent);padding:10px 8px;white-space:nowrap;
     min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
   .linkbtn.mute{color:var(--muted);}
   .selactions{position:absolute;left:0;right:0;bottom:0;z-index:66;display:none;gap:10px;
-    padding:12px var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 12px);
+    padding:12px var(--pad-r) calc(env(safe-area-inset-bottom,0px) + 12px) var(--pad-l);
     background:var(--bar);backdrop-filter:blur(14px);border-top:1px solid var(--line);}
   .selactions.on{display:flex;}
   .selactions button{flex:1;padding:15px;border-radius:15px;font-size:15.5px;font-weight:700;}
@@ -282,13 +298,13 @@
   .banner.warn{background:var(--again-soft);color:var(--warn-ink);}
   .banner b{font-weight:800;}
 
-  .study-top{padding:8px var(--pad-x) 14px;display:flex;align-items:center;gap:14px;}
+  .study-top{padding:8px var(--pad-r) 14px var(--pad-l);display:flex;align-items:center;gap:14px;}
   .icon-btn{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);}
   .track{flex:1;height:6px;border-radius:3px;background:var(--line);overflow:hidden;}
   .track i{display:block;height:100%;background:var(--accent);border-radius:3px;transition:width .3s ease;}
   .count{font-size:13px;font-weight:700;color:var(--ink-2);font-variant-numeric:tabular-nums;}
 
-  .card-wrap{flex:1;min-height:0;padding:0 var(--pad-x) 14px;perspective:1400px;
+  .card-wrap{flex:1;min-height:0;padding:0 var(--pad-r) 14px var(--pad-l);perspective:1400px;
     display:flex;flex-direction:column;justify-content:center;}
   .card{height:auto;max-height:100%;border-radius:26px;box-shadow:var(--shadow);overflow:hidden;transition:transform .18s ease;display:flex;flex-direction:column;}
   .card.full{height:100%;}
@@ -318,7 +334,7 @@
   .tipbox{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:13px 14px;
     font-size:13.5px;line-height:1.6;color:var(--ink-2);white-space:pre-wrap;}
 
-  .actions{padding:0 var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 18px);display:flex;gap:10px;}
+  .actions{padding:0 var(--pad-r) calc(env(safe-area-inset-bottom,0px) + 18px) var(--pad-l);display:flex;gap:10px;}
   .act{flex:1;padding:16px;border-radius:16px;font-size:15.5px;font-weight:700;transition:transform .12s ease;}
   .act:active{transform:scale(.97);}
   .act.flip{background:var(--ink);color:var(--on-ink);}
@@ -500,10 +516,14 @@
   .mono{width:100%;min-height:100px;border-radius:12px;border:1px solid var(--line);padding:11px;
     font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.45;background:var(--surface-2);margin-bottom:9px;outline:none;}
 
+  /* 키패드가 화면보다 크면(가로 모드) 스크롤로 닿게 한다. align-items:center 로 가운데
+     두면 넘친 위쪽은 스크롤로도 못 올라가므로, 가운데 정렬은 lockbox 의 margin:auto 가 맡는다. */
   .lock{position:absolute;inset:0;z-index:120;background:var(--bg);display:none;
-    align-items:center;justify-content:center;padding:24px;}
+    align-items:center;justify-content:center;padding:24px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
   .lock.on{display:flex;}
-  .lockbox{width:100%;max-width:300px;text-align:center;}
+  .lockbox{width:100%;max-width:300px;text-align:center;margin:auto;}
+  /* 마크업의 style="display:block" 때문에 text-align 이 안 먹어 왼쪽에 붙어 있었다 */
+  #lockCancel{margin-left:auto;margin-right:auto;}
   .lockmascot{width:52px;height:74px;margin:0 auto 14px;}
   .lockmascot svg{display:block;width:100%;height:100%;}
   .lockbox h2{margin:0 0 6px;font-size:20px;font-weight:800;letter-spacing:-.4px;}
@@ -520,10 +540,52 @@
   .keys button.blank{background:none;border:none;pointer-events:none;}
   .keys button.act{font-size:17px;}
   @media (prefers-reduced-motion:reduce){ .dots.bad{animation:none;} }
+
+  /* 폰을 가로로 돌린 것처럼 세로가 낮은 화면(740×360, 844×390 등).
+     카드 앞면은 위아래 60px 여백에 안내 문구가 바닥에 absolute 로 붙어 있어서
+     카드가 230px 아래로 내려가면 태그와 안내 문구가 겹쳤다. 여백을 줄이고 문구를 흐름에 넣는다.
+     잠금 화면은 키패드를 줄이고 마스코트를 빼서 한 화면에 들어오게 한다. */
+  @media (max-height:500px){
+    .study-top{padding-top:4px;padding-bottom:8px;}
+    .card-wrap{padding-bottom:10px;}
+    .actions{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px);}
+    .act{padding:12px;}
+    .front{padding:18px 26px;gap:8px;}
+    .front h2{font-size:28px;}
+    .front .hint{position:static;margin-top:4px;}
+    .back{padding:16px 22px 18px;}
+    .back .sub{margin-bottom:12px;}
+    .lockmascot{display:none;}
+    .lockbox p{margin-bottom:14px;}
+    .dots{margin-bottom:16px;}
+    .keys{gap:8px;}
+    .keys button{padding:10px 0;font-size:19px;}
+  }
+  /* 가로 폰은 옆으로 남는 자리가 많으니 안내는 왼쪽, 키패드는 오른쪽에 둔다.
+     1200px 이상은 데스크톱 목업(세로 폭 390px)일 수 있어서 제외한다. */
+  @media (max-height:500px) and (min-width:560px) and (max-width:1199px){
+    .lockbox{max-width:600px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr repeat(5,auto) 1fr;
+      column-gap:36px;align-items:center;}
+    .lockmascot{display:block;grid-column:1;grid-row:2;}
+    .lockbox h2{grid-column:1;grid-row:3;}
+    .lockbox p{grid-column:1;grid-row:4;}
+    .dots{grid-column:1;grid-row:5;margin-bottom:0;}
+    #lockCancel{grid-column:1;grid-row:6;}
+    .keys{grid-column:2;grid-row:1 / 8;}
+  }
   .tabs{position:absolute;left:0;right:0;bottom:0;height:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));
     padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bar);backdrop-filter:blur(14px);
+    padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);
     border-top:1px solid var(--line);display:flex;z-index:65;}
   .tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10.5px;font-weight:600;color:var(--muted);}
   .tab svg{width:23px;height:23px;}
   .tab.on{color:var(--accent);}
   .tabs.hide{display:none;}
+
+  /* 화면 가장자리에 붙는 겹침 요소들의 노치 여백. 위쪽 :root 의 @supports 와 같은 이유로 조건을 건다 */
+  @supports (padding:max(0px)) and (padding:env(safe-area-inset-left, 0px)){
+    .sheet .body{padding-left:max(22px, env(safe-area-inset-left, 0px));padding-right:max(22px, env(safe-area-inset-right, 0px));}
+    .dlg{padding-left:max(34px, env(safe-area-inset-left, 0px));padding-right:max(34px, env(safe-area-inset-right, 0px));}
+    .lock{padding-top:max(24px, env(safe-area-inset-top, 0px));padding-bottom:max(24px, env(safe-area-inset-bottom, 0px));
+      padding-left:max(24px, env(safe-area-inset-left, 0px));padding-right:max(24px, env(safe-area-inset-right, 0px));}
+  }
