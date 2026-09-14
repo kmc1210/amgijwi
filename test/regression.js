@@ -181,6 +181,19 @@ const LEGACY = {
   ok("brewnote.v1 키로 저장된다", trip.key);
   ok("저장했다 읽어도 데이터가 그대로다", trip.same);
 
+  // ── 7-1. 저장소 이름과 무관한 내부 식별자 ───────────────────────
+  // 저장소 이름은 amgijwi 로 바뀌었지만 아래 값은 brewnote 그대로여야 한다.
+  // 저장 키가 바뀌면 기존 레시피가 안 보이고, PIN salt 가 바뀌면 PIN 을 건
+  // 사람이 잠금을 못 푼다. 이름을 맞추려고 고치는 사고를 막는다.
+  const ids = await page.evaluate(() => ({
+    key: KEY,
+    pin: pinHash("1234"),
+    backupApp: JSON.parse(backupJSON()).app
+  }));
+  eq("저장 키는 brewnote.v1 그대로다", ids.key, "brewnote.v1");
+  eq("PIN 해시가 기존 값과 같다 (salt 유지)", ids.pin, "de496d40");
+  eq("백업 파일의 app 표시는 brewnote 그대로다", ids.backupApp, "brewnote");
+
   // ── 8. 사용자 입력 이스케이프 (XSS) ─────────────────────────────
   const xss = await page.evaluate(() => {
     const s = esc('<img src=x onerror=alert(1)>"&');

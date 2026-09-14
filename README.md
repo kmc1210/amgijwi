@@ -1,6 +1,10 @@
 카페 음료 레시피 외우기용 앱. Claude로 만들었습니다.
 
-https://kmc1210.github.io/brewnote/
+https://amgijwi.com (테스트 페이지)
+
+저장소 이름을 brewnote 에서 amgijwi 로 바꿨습니다. 옛 GitHub Pages 주소
+https://kmc1210.github.io/brewnote/ 는 더 이상 열리지 않고,
+https://kmc1210.github.io/amgijwi/ 로 옮겨졌습니다. Pages 는 이전이 끝나면 내립니다.
 
 쓰는 법
 
@@ -31,6 +35,10 @@ www/                 배포되는 앱. 이 폴더 통째로 S3 에 올라갑니�
   apple-touch-icon.png
 test/regression.js   실제 브라우저로 돌리는 회귀 테스트
 index.html           옛 단일 파일. GitHub Pages 로 서빙 중이라 이전이 끝날 때까지 그대로 둡니다.
+
+코드 안의 brewnote 는 저장소 이름이 아니라 앱 내부 식별자라 바꾸지 않습니다.
+저장 키 brewnote.v1, PIN 해시 salt, 백업 파일의 app 표시가 그렇습니다.
+바꾸면 기존 레시피가 안 보이거나 PIN 잠금을 못 풉니다. 회귀 테스트가 이 값을 고정합니다.
 
 테스트
 
