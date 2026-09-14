@@ -53,5 +53,5 @@ PR 을 올리면 GitHub Actions(.github/workflows/ci.yml)가 같은 테스트를
 
   npm run test:headers
 
-배포된 사이트(https://amgijwi.com)의 보안 헤더와, 헤더 CSP 가 meta CSP 와
+배포된 사이트( https://amgijwi.com )의 보안 헤더와, 헤더 CSP 가 meta CSP 와
 같은지 확인합니다. 네트워크가 필요하고 배포가 끝난 뒤에 돌립니다.
