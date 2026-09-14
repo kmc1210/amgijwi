@@ -719,14 +719,15 @@ function renderHome(){
   const visits = (data.visit && data.visit.count) || 1;
   $("#storeBanner").innerHTML = !Store.available
     ? `<div class="banner warn"><span>⚠️</span><div><b>지금은 저장이 안 되는 상태예요.</b><br>앱을 닫으면 기록이 사라집니다. 설정 탭의 안내를 확인해 주세요.</div></div>`
-    : (!isStandalone()
-      /* 사파리 탭으로 쓰면 저장 데이터가 지워질 위험이 훨씬 크다.
-         차이를 모르는 사람이 대부분이라 홈 화면에 넣을 때까지 계속 알린다 */
+    : (!isStandalone() && deviceOS() !== "desktop"
+      /* 브라우저 탭으로 쓰면 저장 데이터가 지워질 위험이 훨씬 크다.
+         차이를 모르는 사람이 대부분이라 홈 화면에 넣을 때까지 계속 알린다.
+         PC 에는 홈 화면이 없으니 띄우지 않는다 */
       ? `<div class="banner warn"><span>📲</span><div><b>홈 화면에 추가해서 써주세요.</b><br>
-           사파리 탭으로만 쓰면 한동안 안 열었을 때 레시피가 지워질 수 있어요.
-           아래쪽 <b>공유</b> 버튼을 누르고 <b>홈 화면에 추가</b>를 고르면 됩니다.</div></div>`
+           ${INSTALL[deviceOS()].why}
+           ${INSTALL[deviceOS()].how}</div></div>`
       : (visits <= 5
-        ? `<div class="banner ok"><span>🔒</span><div><b>이 아이폰 안에만 저장됩니다.</b><br>서버로 전송되는 정보가 없어요.</div></div>`
+        ? `<div class="banner ok"><span>🔒</span><div><b>이 기기 안에만 저장됩니다.</b><br>서버로 전송되는 정보가 없어요.</div></div>`
         : ""));
 
   renderToday();
@@ -1135,7 +1136,7 @@ function renderBackupBanner(){
       ? `마지막 백업 뒤로 레시피가 ${due.grew}개 늘었어요.`
       : `마지막 백업이 ${due.days}일 전이에요.`);
   box.innerHTML = `<div class="banner warn"><span>💾</span><div>
-      <b>백업 파일을 만들어 두세요.</b><br>${esc(msg)} 사파리 데이터를 지우거나 기기를 바꾸면 사라집니다.
+      <b>백업 파일을 만들어 두세요.</b><br>${esc(msg)} 브라우저 데이터를 지우거나 기기를 바꾸면 사라집니다.
       <div class="bkbtns">
         <button class="go" id="bkNow">지금 백업</button>
         <button class="later" id="bkLater">나중에</button>
@@ -1636,7 +1637,7 @@ function openMemoSheet(idx){
   const m = isNew ? {text:"", pin:false} : data.memos[idx];
   $("#sheetBody").innerHTML = `
     <h2 style="margin:0 0 4px;font-size:21px;font-weight:800;letter-spacing:-.4px">${isNew?"새 메모":"메모"}</h2>
-    <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px">${isNew?"이 아이폰 안에만 저장됩니다":esc(fmtMemoAt(m.at))}</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px">${isNew?"이 기기 안에만 저장됩니다":esc(fmtMemoAt(m.at))}</div>
     <div class="fld"><textarea id="mm-text" rows="7" placeholder="인수인계, 공지, 아이디어…" style="min-height:150px">${esc(m.text)}</textarea></div>
     <div class="fld"><div class="pickers">
       <button type="button" class="pick${m.pin?" on":""}" id="mm-pin"><span class="box">✓</span>📌 맨 위에 고정</button>
@@ -2598,15 +2599,17 @@ function renderStorageCard(){
   if(!Store.available){
     box.innerHTML = `<div class="setcard statuscard warn">
       <h4>저장이 막혀 있어요</h4>
-      <p>파일을 직접 열었거나 사파리 비공개 브라우징 상태면 저장소가 잠깁니다. 지금 입력한 내용은 앱을 닫으면 사라져요. 아래에서 백업 파일을 만들어 두고, 저장이 되는 방식으로 열어 주세요.</p></div>`;
+      <p>파일을 직접 열었거나 비공개(시크릿) 브라우징 상태면 저장소가 잠깁니다. 지금 입력한 내용은 앱을 닫으면 사라져요. 아래에서 백업 파일을 만들어 두고, 저장이 되는 방식으로 열어 주세요.</p></div>`;
     return;
   }
 
-  const home = isStandalone();
+  const os = deviceOS();
   const rows = [];
-  rows.push(home
-    ? ["ok", "홈 화면 앱으로 실행 중", "저장 데이터가 지워질 위험이 가장 낮은 상태예요."]
-    : ["warn", "사파리 탭에서 실행 중", "공유 버튼 → 홈 화면에 추가 로 넣어두면 데이터가 훨씬 안전해집니다."]);
+  /* PC 는 홈 화면 앱이라는 선택지가 없으니 이 줄을 빼고 브라우저 보호와 백업만 보여준다 */
+  if(isStandalone())
+    rows.push(["ok", "홈 화면 앱으로 실행 중", "저장 데이터가 지워질 위험이 가장 낮은 상태예요."]);
+  else if(os !== "desktop")
+    rows.push(["warn", "브라우저 탭에서 실행 중", INSTALL[os].short]);
 
   if(persistState === "granted")
     rows.push(["ok", "브라우저가 저장 데이터를 보호 중", "저장 공간이 부족해도 이 앱 데이터를 먼저 지우지 않습니다."]);
@@ -2616,10 +2619,10 @@ function renderStorageCard(){
   const b = data.backup;
   const days = b && b.at ? dayGap(b.at, ymd(new Date())) : null;
   rows.push(days === null
-    ? ["warn", "아직 백업한 적이 없어요", "기기를 바꾸거나 사파리 데이터를 지우면 되돌릴 방법이 없습니다."]
+    ? ["warn", "아직 백업한 적이 없어요", "기기를 바꾸거나 브라우저 데이터를 지우면 되돌릴 방법이 없습니다."]
     : (days >= 14
       ? ["warn", `마지막 백업 ${days}일 전`, "그 뒤로 바뀐 내용은 지금 백업이 없으면 사라집니다."]
-      : ["ok", days === 0 ? "오늘 백업했어요" : `마지막 백업 ${days}일 전`, "백업 파일은 파일 앱의 iCloud Drive에 두면 기기를 바꿔도 남습니다."]));
+      : ["ok", days === 0 ? "오늘 백업했어요" : `마지막 백업 ${days}일 전`, INSTALL[os].keep]));
 
   const worst = rows.some(r => r[0] === "warn") ? "warn" : "ok";
   box.innerHTML = `<div class="setcard statuscard ${worst}">
@@ -2764,6 +2767,50 @@ function isStandalone(){
   return window.matchMedia("(display-mode: standalone)").matches
       || window.navigator.standalone === true;
 }
+
+/* ---------- 기기별 안내 ----------
+   홈 화면에 넣는 방법, 사진 글자를 복사하는 방법, 백업 파일을 둘 곳은 기기마다 다르다.
+   하나로 뭉뚱그리면 "브라우저 메뉴에서" 같은 말이 되어 정작 버튼을 못 찾는다.
+   판별 결과는 안내 문구에만 쓰고 기능을 막거나 바꾸는 데는 쓰지 않는다. */
+function deviceOS(){
+  const ua = navigator.userAgent || "";
+  /* iPadOS 는 기본값이 데스크톱 사이트라 맥으로 자신을 소개한다. 맥에는 터치스크린이 없으니 터치가 되면 아이패드다 */
+  if(/iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 0)) return "ios";
+  if(/Android/.test(ua)) return /SamsungBrowser/.test(ua) ? "samsung" : "android";
+  return "desktop";
+}
+/* why: 탭으로 쓰면 왜 위험한가. 사파리는 한동안 안 열면 지우고,
+   크롬 계열은 저장 공간이 모자랄 때 보호받지 못한 사이트부터 지운다. 이유가 달라 따로 적는다. */
+const INSTALL = {
+  ios: {
+    why:   "브라우저 탭으로만 쓰면 한동안 안 열었을 때 레시피가 지워질 수 있어요.",
+    how:   "<b>공유</b> 버튼을 누르고 <b>홈 화면에 추가</b>를 고르면 됩니다.",
+    short: "공유 버튼 → 홈 화면에 추가 로 넣어두면 데이터가 훨씬 안전해집니다.",
+    keep:  "백업 파일은 파일 앱의 iCloud Drive에 두면 기기를 바꿔도 남습니다."
+  },
+  android: {
+    why:   "브라우저 탭으로만 쓰면 저장 공간이 모자랄 때 레시피가 먼저 지워질 수 있어요.",
+    how:   "오른쪽 위 <b>⋮</b> 메뉴에서 <b>홈 화면에 추가</b>(또는 <b>앱 설치</b>)를 고르면 됩니다.",
+    short: "⋮ 메뉴 → 홈 화면에 추가 로 넣어두면 데이터가 더 안전해집니다.",
+    keep:  "백업 파일은 Google Drive 같은 클라우드에 올려두면 기기를 바꿔도 남습니다."
+  },
+  samsung: {
+    why:   "브라우저 탭으로만 쓰면 저장 공간이 모자랄 때 레시피가 먼저 지워질 수 있어요.",
+    how:   "<b>☰</b> 메뉴에서 <b>페이지 추가 → 홈 화면</b>을 고르면 됩니다.",
+    short: "☰ 메뉴 → 페이지 추가 → 홈 화면 으로 넣어두면 데이터가 더 안전해집니다.",
+    keep:  "백업 파일은 Google Drive 같은 클라우드에 올려두면 기기를 바꿔도 남습니다."
+  },
+  desktop: {
+    keep:  "백업 파일은 클라우드 드라이브나 다른 기기에도 복사해 두면 기기를 바꿔도 남습니다."
+  }
+};
+/* 마크업의 data-os="ios" · "android samsung" · "desktop" 는 해당 기기에서만 보인다 */
+function applyDeviceText(){
+  const os = deviceOS();
+  document.querySelectorAll("[data-os]").forEach(el=>{
+    el.style.display = el.getAttribute("data-os").split(" ").indexOf(os) >= 0 ? "" : "none";
+  });
+}
 let persistState = "unknown";           // unknown · granted · denied · unsupported
 function checkPersist(){
   if(!navigator.storage || !navigator.storage.persist){
@@ -2781,6 +2828,7 @@ function checkPersist(){
 }
 
 applyTheme();
+applyDeviceText();
 initVisit();
 renderHome();
 checkPersist();
