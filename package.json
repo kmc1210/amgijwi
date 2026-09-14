@@ -4,7 +4,8 @@
   "private": true,
   "description": "카페 음료 레시피 외우기 앱 (암기쥐)",
   "scripts": {
-    "test": "node test/regression.js"
+    "test": "node test/regression.js",
+    "test:headers": "node test/headers.js"
   },
   "devDependencies": {
     "playwright": "^1.63.0"

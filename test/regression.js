@@ -7,6 +7,7 @@
 //
 // 실패하면 종료 코드 1. GitHub Actions 에서 배포 전에 이걸 돌린다.
 
+const fs = require("fs");
 const path = require("path");
 const { chromium } = require("playwright");
 
@@ -187,12 +188,22 @@ const LEGACY = {
   ok("사용자 입력의 태그가 이스케이프된다", xss.hasTag === false, xss.out);
 
   // ── 9. 외부로 나가는 통신이 없다 ────────────────────────────────
+  // CSP 는 meta 와 CloudFront 응답 헤더 두 곳에 있다. meta 를 남겨두는 이유는
+  // GitHub Pages 가 같은 www/ 를 헤더 없이 서빙하고 있어서다. 두 값이 어긋나지
+  // 않는지는 배포 후 test/headers.js 가 비교한다.
   const csp = await page.evaluate(() =>
     (document.querySelector('meta[http-equiv="Content-Security-Policy"]') || {}).content || "");
   ok("CSP 가 걸려 있다", csp.length > 0);
   ok("connect-src 가 막혀 있다", csp.indexOf("connect-src 'none'") >= 0, csp);
   ok("분리본이므로 script-src 는 'self'", csp.indexOf("script-src 'self'") >= 0, csp);
   ok("frame-ancestors 는 meta 에 넣지 않는다", csp.indexOf("frame-ancestors") < 0, csp);
+
+  // 정책이 막아주는 것과 별개로, 나갈 코드 자체가 없는지 소스에서도 본다.
+  // CSP 가 없는 곳에서 열려도 이 약속이 코드 수준에서 지켜지게 하는 두 번째 줄이다.
+  const appSrc = fs.readFileSync(path.resolve(__dirname, "..", "www", "app.js"), "utf8");
+  ["fetch(", "XMLHttpRequest", "sendBeacon", "WebSocket", "EventSource", "import("].forEach(k => {
+    ok("app.js 에 " + k + " 가 없다", appSrc.indexOf(k) < 0);
+  });
 
   const remote = await page.evaluate(() => {
     const bad = [];

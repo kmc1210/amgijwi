@@ -14,7 +14,10 @@
 <!-- 레시피가 밖으로 나가지 않는다는 걸 약속이 아니라 브라우저가 강제하게 한다.
      connect-src 'none' — 어떤 통신도 못 나간다. 실수로 코드를 붙여도 차단된다.
      style-src 에 unsafe-inline 이 남은 건 마크업의 style="..." 속성 때문.
-     frame-ancestors 는 meta 로는 무시되므로 넣지 않았다 (헤더로만 동작). -->
+     frame-ancestors 는 meta 로는 무시되므로 넣지 않았다 (헤더로만 동작).
+     같은 정책이 CloudFront 응답 헤더(amgijwi-security-headers)에도 frame-ancestors 를 더해 걸려 있다.
+     그래도 meta 를 지우지 않는 건 GitHub Pages 가 이 www/ 를 헤더 없이 서빙하고 있어서다.
+     두 벌이면 교집합이 적용되니 고칠 때는 반드시 둘 다 고친다. 어긋나면 test/headers.js 가 실패한다. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>암기쥐 · 카페 음료 레시피 외우기</title>
 <link rel="stylesheet" href="style.css?v=4">
