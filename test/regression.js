@@ -5,7 +5,8 @@
 //
 //   node test/regression.js
 //
-// 실패하면 종료 코드 1. GitHub Actions 에서 배포 전에 이걸 돌린다.
+// 실패하면 종료 코드 1. PR 마다 GitHub Actions(.github/workflows/ci.yml)가 돌리고,
+// 통과해야 main 에 머지한다.
 
 const fs = require("fs");
 const path = require("path");
