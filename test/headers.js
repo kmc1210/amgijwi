@@ -33,7 +33,7 @@ function get(target) {
     const mod = u.protocol === "http:" ? http : https;
     const req = mod.request(u, {
       method: "GET",
-      headers: { "Accept-Encoding": "identity", "User-Agent": "brewnote-header-check" }
+      headers: { "Accept-Encoding": "identity", "User-Agent": "amgijwi-header-check" }
     }, function (res) {
       const chunks = [];
       res.on("data", function (c) { chunks.push(c); });
