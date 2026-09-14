@@ -200,15 +200,24 @@
 
     <!-- IMPORT FROM PHOTO -->
     <section class="screen" id="s-import">
-      <div class="appbar"><div><h1>사진에서 가져오기</h1><p>아이폰이 사진 속 글자를 직접 읽습니다</p></div>
+      <div class="appbar"><div><h1>사진에서 가져오기</h1><p>사진 속 글자를 복사해 붙여넣으면 레시피로 바꿔요</p></div>
         <button class="icon-btn" id="impClose" style="margin-bottom:4px">✕</button></div>
       <div class="scroll notabs">
+        <!-- 글자를 복사하는 방법은 기기마다 다르다. data-os 에 맞는 줄만 app.js 가 남긴다 -->
         <ol class="guide">
-          <li>사진 앱에서 레시피 사진을 엽니다.</li>
-          <li>사진 속 글자를 <b>길게 눌러</b> 선택하고 <b>모두 선택 → 복사</b>를 누릅니다. (오른쪽 아래 텍스트 인식 아이콘을 먼저 눌러도 됩니다)</li>
-          <li>아래 칸을 길게 눌러 <b>붙여넣기</b> 한 뒤 분석하기를 누릅니다.</li>
+          <li data-os="ios">사진 앱에서 레시피 사진을 엽니다.</li>
+          <li data-os="ios">사진 속 글자를 <b>길게 눌러</b> 선택하고 <b>모두 선택 → 복사</b>를 누릅니다. (오른쪽 아래 텍스트 인식 아이콘을 먼저 눌러도 됩니다)</li>
+          <li data-os="android samsung">갤러리나 Google 포토에서 레시피 사진을 엽니다.</li>
+          <li data-os="android samsung">갤러리는 <b>T</b>(텍스트 추출) 아이콘, Google 포토는 <b>렌즈 → 텍스트</b>를 누른 뒤 글자를 선택해 <b>복사</b>합니다.</li>
+          <li data-os="ios android samsung">아래 칸을 길게 눌러 <b>붙여넣기</b> 한 뒤 분석하기를 누릅니다.</li>
+          <li data-os="desktop">레시피 사진에서 글자를 복사합니다. 맥은 <b>미리보기</b>에서 글자를 드래그해 선택하고, 윈도우는 <b>캡처 도구</b>의 <b>텍스트 작업</b>을 쓰면 됩니다.</li>
+          <li data-os="desktop">아래 칸에 <b>붙여넣기</b> 한 뒤 분석하기를 누릅니다.</li>
         </ol>
-        <div class="banner ok" style="margin:0 0 16px"><span>🔒</span><div>글자 인식은 아이폰이 처리합니다. 사진도 글자도 <b>어디로도 전송되지 않아요.</b></div></div>
+        <!-- "기기가 처리합니다" 라고 약속하지 않는다. 이 앱이 보장하는 건 앱이 보내지 않는다는 것까지다.
+             Google 렌즈처럼 사진을 서버로 보내 읽는 도구가 있어서, 아이폰 외에는 확인하는 방법을 알려준다 -->
+        <div class="banner ok" style="margin:0 0 16px"><span>🔒</span><div>이 앱은 사진도 글자도 <b>어디로도 보내지 않아요.</b>
+          <span data-os="ios">사진 앱의 글자 인식도 기기 안에서 처리돼요.</span>
+          <span data-os="android samsung desktop">다만 글자 인식 도구에 따라 사진을 외부 서버로 보내 읽는 경우가 있어요. 비행기 모드에서도 되는 기능이면 기기 안에서 처리하는 거예요.</span></div></div>
         <textarea class="mono" id="ocrBox" style="min-height:190px;font-family:inherit;font-size:14px;line-height:1.6"
           placeholder="여기에 붙여넣기&#10;&#10;예시)&#10;아이스 바닐라라떼 16oz&#10;바닐라시럽 25ml&#10;에스프레소 2샷&#10;우유 200ml&#10;1. 시럽과 에스프레소를 먼저 섞는다"></textarea>
         <button class="cta ghost" id="pasteBtn" style="margin-top:0">클립보드에서 붙여넣기</button>
@@ -266,7 +275,7 @@
 
         <div class="setcard">
           <h4>백업 내보내기</h4>
-          <p>레시피와 학습 기록을 JSON 파일 하나로 저장합니다. 기기를 바꾸거나 사파리 데이터가 지워져도 이 파일로 복구할 수 있어요.</p>
+          <p>레시피와 학습 기록을 JSON 파일 하나로 저장합니다. 기기를 바꾸거나 브라우저 데이터가 지워져도 이 파일로 복구할 수 있어요.</p>
           <button class="cta" id="expFile">파일로 저장</button>
           <button class="cta ghost" id="expText">텍스트로 복사</button>
           <textarea class="mono" id="expBox" style="display:none" readonly></textarea>
@@ -291,7 +300,7 @@
 
         <div class="setcard">
           <h4>이 앱의 보안</h4>
-          <p style="margin-bottom:0">외부로 나가는 통신이 전혀 없습니다. 서버도, 계정도, 분석 도구도 사용하지 않아요. 입력한 레시피는 이 아이폰의 사파리 저장소에만 남고, 앱을 삭제하거나 사파리 데이터를 지우면 함께 사라집니다. 그래서 백업 파일을 한 번 만들어 두시는 걸 권해요.</p>
+          <p style="margin-bottom:0">외부로 나가는 통신이 전혀 없습니다. 서버도, 계정도, 분석 도구도 사용하지 않아요. 입력한 레시피는 이 기기의 브라우저 저장소에만 남고, <span data-os="ios">홈 화면 앱을 삭제하거나 </span>브라우저 데이터를 지우면 함께 사라집니다. 그래서 백업 파일을 한 번 만들어 두시는 걸 권해요.</p>
         </div>
       </div>
     </section>
@@ -331,6 +340,6 @@
   </div>
 </div>
 
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
