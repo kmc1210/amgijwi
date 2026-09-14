@@ -1,0 +1,117 @@
+# www/ 를 S3 에 올리고 CloudFront 캐시를 비운 뒤, 배포된 사이트를 확인한다.
+#
+# 실행 조건
+#   - Actions 탭에서 수동 실행 (workflow_dispatch)
+#   - main 에 www/ 변경이 머지됐을 때. 단 저장소 변수 AUTO_DEPLOY 가 true 일 때만.
+#     첫 배포는 수동으로 돌려 결과를 눈으로 확인한 뒤 AUTO_DEPLOY 를 켠다.
+#
+# AWS 인증은 OIDC 다. 저장소에 AWS 키가 없다. IAM 역할의 신뢰 정책이
+# repo:kmc1210/amgijwi:ref:refs/heads/main 만 허용하므로 main 이 아닌 브랜치나
+# PR 에서는 이 워크플로가 AWS 에 들어갈 수 없다.
+# 그 조건과 맞지 않게 되므로 이 job 에 environment: 를 붙이지 않는다.
+#
+# 저장소 변수 (Settings → Secrets and variables → Actions → Variables)
+#   AWS_ROLE_ARN        배포용 IAM 역할
+#   AWS_REGION          S3 버킷 리전
+#   SITE_BUCKET         S3 버킷 이름
+#   CF_DISTRIBUTION_ID  CloudFront 배포 ID
+#   SITE_URL            배포된 주소 (https://amgijwi.com)
+#   AUTO_DEPLOY         true 면 main 머지 때 자동 배포
+
+name: Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "www/**"
+      - ".github/workflows/deploy.yml"
+
+permissions:
+  contents: read
+  id-token: write   # OIDC 토큰 발급. AWS 역할을 받는 데만 쓴다
+
+# 배포는 겹치면 안 된다. 앞선 배포를 중간에 끊지도 않는다
+concurrency:
+  group: deploy-site
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy
+    if: github.event_name == 'workflow_dispatch' || vars.AUTO_DEPLOY == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+      SITE_REGION: ${{ vars.AWS_REGION }}
+      SITE_BUCKET: ${{ vars.SITE_BUCKET }}
+      CF_DISTRIBUTION_ID: ${{ vars.CF_DISTRIBUTION_ID }}
+      SITE_URL: ${{ vars.SITE_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      # 브랜치 보호로 PR 에서 이미 통과했지만, 올리는 바로 그 코드로 한 번 더 본다
+      - name: 회귀 테스트
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm test
+
+      - name: 설정값 확인
+        run: |
+          missing=""
+          for v in ROLE_ARN SITE_REGION SITE_BUCKET CF_DISTRIBUTION_ID SITE_URL; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::저장소 변수가 비어 있다:$missing"
+            exit 1
+          fi
+          # --delete 로 올리기 때문에 www/ 가 비어 있으면 버킷이 통째로 비워진다
+          test -s www/index.html && test -s www/app.js && test -s www/style.css
+
+      - uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      # index.html 은 매번 다시 확인하게(no-cache) 하고, 나머지는 하루 캐시한다.
+      # app.js·style.css 는 ?v= 로 바뀌지만 버전 올리는 걸 잊었을 때 옛 JS 가
+      # 오래 남으면 새 HTML 과 어긋나 앱이 깨질 수 있어서 길게 잡지 않는다.
+      # 새 HTML 이 아직 없는 파일을 가리키지 않게 나머지를 먼저, index.html 을 마지막에 올린다.
+      - name: S3 에 올리기
+        run: |
+          aws s3 sync www/ "s3://$SITE_BUCKET/" --delete --exclude "index.html" \
+            --cache-control "public, max-age=86400"
+          aws s3 cp www/index.html "s3://$SITE_BUCKET/index.html" \
+            --cache-control "no-cache" --content-type "text/html; charset=utf-8"
+
+      - name: CloudFront 캐시 비우기
+        run: |
+          id=$(aws cloudfront create-invalidation --distribution-id "$CF_DISTRIBUTION_ID" \
+                 --paths "/*" --query Invalidation.Id --output text)
+          echo "무효화 $id"
+          aws cloudfront wait invalidation-completed --distribution-id "$CF_DISTRIBUTION_ID" --id "$id"
+
+      # 캐시 때문에 옛 파일이 나가고 있지 않은지 바이트 단위로 비교한다
+      - name: 배포된 파일이 저장소와 같은지
+        run: |
+          fail=0
+          for f in index.html app.js style.css apple-touch-icon.png; do
+            want=$(sha256sum "www/$f" | cut -d' ' -f1)
+            got=$(curl -fsS "$SITE_URL/$f" | sha256sum | cut -d' ' -f1)
+            if [ "$want" = "$got" ]; then echo "같음  $f"; else echo "::error::다름  $f"; fail=1; fi
+          done
+          exit $fail
+
+      - name: 보안 헤더 검사
+        run: npm run test:headers -- "$SITE_URL"

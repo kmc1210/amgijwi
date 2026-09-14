@@ -55,3 +55,12 @@ PR 을 올리면 GitHub Actions(.github/workflows/ci.yml)가 같은 테스트를
 
 배포된 사이트( https://amgijwi.com )의 보안 헤더와, 헤더 CSP 가 meta CSP 와
 같은지 확인합니다. 네트워크가 필요하고 배포가 끝난 뒤에 돌립니다.
+
+배포
+
+  GitHub Actions → Deploy → Run workflow
+
+www/ 를 S3 에 올리고 CloudFront 캐시를 비운 뒤, 배포된 파일이 저장소와
+같은지와 보안 헤더를 확인합니다(.github/workflows/deploy.yml).
+AWS 키는 저장소에 없고 OIDC 로 IAM 역할을 받습니다. 역할은 main 브랜치만 허용합니다.
+저장소 변수 AUTO_DEPLOY 를 true 로 두면 www/ 변경이 main 에 머지될 때 자동으로 배포합니다.
