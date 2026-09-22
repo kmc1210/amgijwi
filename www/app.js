@@ -741,6 +741,38 @@ function renderHome(){
   bindRows("#reviewList");
 }
 
+/* ---------- ICE / HOT 재료 두 벌 ----------
+   ICE 와 HOT 을 같이 파는 메뉴는 재료 구성 자체가 다른 경우가 있다(얼음 대 스팀밀크).
+   그래서 temp 가 ICE/HOT 인 메뉴만 재료를 두 벌 가진다. d.ing 이 ICE, d.ingHot 이 HOT 이다.
+   ingHot 이 없으면 예전처럼 한 벌짜리 메뉴다. 옛 레시피와 옛 백업이 그대로 열린다. */
+function isBothTemp(d){
+  const t = (d.temp || "").toUpperCase();
+  return t.indexOf("ICE") >= 0 && t.indexOf("HOT") >= 0;
+}
+function hotIng(d){
+  return (isBothTemp(d) && Array.isArray(d.ingHot)) ? d.ingHot.filter(p=>p[0] || p[1]) : [];
+}
+/* [[라벨, 재료목록], ...]. 한 벌이면 라벨이 빈 문자열이라 화면이 예전과 같다 */
+function ingSets(d){
+  const ice = d.ing || [];
+  const hot = hotIng(d);
+  return hot.length ? [["ICE", ice], ["HOT", hot]] : [["", ice]];
+}
+/* 빈칸 채우기에서 "몇 번째 벌의 몇 번째 재료" 를 가리키는 키 */
+function ingKeys(d){
+  const keys = [];
+  ingSets(d).forEach((s, si)=>s[1].forEach((_, ri)=>keys.push(si + "-" + ri)));
+  return keys;
+}
+function ingAt(d, key){
+  const p = String(key).split("-");
+  const set = ingSets(d)[+p[0]];
+  return (set && set[1][+p[1]]) || ["", ""];
+}
+function ingNames(d){
+  return ingSets(d).map(s=>s[1].map(i=>i[0]).join(" ")).join(" ");
+}
+
 /* 목록에서 HOT / ICE 를 한눈에 구분하게 하는 배지 */
 function tempBadge(d){
   const t = (d.temp || "").toUpperCase();
@@ -808,7 +840,7 @@ function renderArchBtn(){
 function renderArch(){
   const q = ($("#archQ").value||"").trim().toLowerCase();
   const all = archDrinks();
-  const hit = all.filter(d=>textHit(d.name+" "+(d.en||"")+" "+d.ing.map(i=>i[0]).join(" "), q));
+  const hit = all.filter(d=>textHit(d.name+" "+(d.en||"")+" "+ingNames(d), q));
   $("#archSub").textContent = all.length
     ? all.length + "개 · 학습과 레시피 목록에서 빠져 있어요"
     : "비어 있어요";
@@ -939,11 +971,12 @@ function blankHTML(d){
     <h2>${esc(d.name)}</h2>
     <div class="sub">${sub}</div>
     <div class="blk"><div class="lb">${d._shelf?"품질 유지기한":"재료 / 용량"}</div>
-      ${d.ing.length ? d.ing.map((it,i)=>`<div class="ing q"><b>${esc(it[0])}</b>${
-          state.revealed.has(i)
+      ${d.ing.length ? ingSets(d).map((s,si)=>`${s[0]?`<div class="ingset">${esc(s[0])}</div>`:""}
+        ${s[1].map((it,ri)=>`<div class="ing q"><b>${esc(it[0])}</b>${
+          state.revealed.has(si+"-"+ri)
             ? `<span class="amt-on">${esc(it[1]) || "—"}</span>`
-            : `<button class="blank" data-b="${i}">? ? ?</button>`
-        }</div>`).join("")
+            : `<button class="blank" data-b="${si}-${ri}">? ? ?</button>`
+        }</div>`).join("")}`).join("")
       : `<div style="font-size:13.5px;color:var(--muted)">등록된 재료가 없어요.</div>`}
     </div>
     ${(d.steps.length || d.tip) ? `<div class="blk" id="discWrap" style="margin-bottom:0">
@@ -955,11 +988,11 @@ function bindBlanks(d){
   document.querySelectorAll("#card .blank").forEach(btn=>{
     btn.addEventListener("click", (e)=>{
       e.stopPropagation();
-      const i = +btn.dataset.b;
+      const i = btn.dataset.b;
       state.revealed.add(i);
       const span = document.createElement("span");
       span.className = "amt-on";
-      span.textContent = d.ing[i][1] || "—";
+      span.textContent = ingAt(d, i)[1] || "—";
       btn.replaceWith(span);
       renderBlankActions(d);
     });
@@ -972,7 +1005,7 @@ function bindBlanks(d){
   });
 }
 function renderBlankActions(d){
-  const allOpen = d.ing.every((_,i)=>state.revealed.has(i));
+  const allOpen = ingKeys(d).every(k=>state.revealed.has(k));
   $("#actions").innerHTML = allOpen
     ? `<button class="act again" data-a="again">다시 볼래요</button><button class="act ok" data-a="ok">외웠어요</button>`
     : `<button class="act flip" data-a="revealAll">정답 모두 보기</button>`;
@@ -988,7 +1021,10 @@ function frontHTML(d){
 }
 function detailHTML(d){
   return `${d.ing.length?`<div class="blk"><div class="lb">${d._shelf?"품질 유지기한":"재료 / 용량"}</div>
-      ${d.ing.map(i=>`<div class="ing"><b>${esc(i[0])}</b><span>${esc(i[1])}</span></div>`).join("")}</div>`:""}
+      ${ingSets(d).length > 1
+        ? `<div class="ingcols">${ingSets(d).map(s=>`<div><div class="ingset">${esc(s[0])}</div>
+            ${s[1].map(i=>`<div class="ing"><b>${esc(i[0])}</b><span>${esc(i[1])}</span></div>`).join("")}</div>`).join("")}</div>`
+        : d.ing.map(i=>`<div class="ing"><b>${esc(i[0])}</b><span>${esc(i[1])}</span></div>`).join("")}</div>`:""}
     ${d.steps.length?`<div class="blk"><div class="lb">제조 순서</div>
       <ol class="steps">${d.steps.map(s=>`<li>${esc(s)}</li>`).join("")}</ol></div>`:""}
     ${d.tip?`<div class="blk"><div class="lb">기억 포인트</div>
@@ -1009,7 +1045,7 @@ function action(a){
   const d = state.deck[state.idx];
   if(a==="flip"){ flipCard(); return; }
   if(a==="revealAll"){
-    d.ing.forEach((_,i)=>state.revealed.add(i));
+    ingKeys(d).forEach(k=>state.revealed.add(k));
     state.discOpen = true;
     renderCard();
     return;
@@ -1082,7 +1118,7 @@ function textHit(hay, q){
 }
 function visibleDrinks(){
   const q = ($("#q").value||"").trim().toLowerCase();
-  return liveDrinks().filter(d=>textHit(d.name+" "+(d.en||"")+" "+d.ing.map(i=>i[0]).join(" "), q));
+  return liveDrinks().filter(d=>textHit(d.name+" "+(d.en||"")+" "+ingNames(d), q));
 }
 /* 기한(일) 별로 묶어서 개봉일→폐기일 조합을 만든다. 개봉일 포함 N일 → 폐기일 = 개봉일 + (N-1) */
 function tagGroups(){
@@ -2142,6 +2178,25 @@ function readCupField(){
   return out;
 }
 
+/* 재료 입력칸 한 벌을 읽고 쓰는 helper. ICE 칸과 HOT 칸이 같은 모양이라 함께 쓴다 */
+function readIngRows(sel){
+  return Array.from(document.querySelectorAll(sel + " .dyn-row"))
+    .map(r=>[r.querySelector(".nm").value.trim(), r.querySelector(".amt").value.trim()])
+    .filter(p=>p[0] || p[1]);
+}
+function fillIngBox(sel, rows){
+  const b = $(sel); b.innerHTML = "";
+  (rows.length ? rows : [["",""],["",""]]).forEach(p=>b.appendChild(ingRow(p[0], p[1])));
+  refreshOrd(b);
+}
+/* 온도 선택에 따라 HOT 재료 칸을 보여주거나 숨긴다. 숨겨도 입력값은 남겨둔다 —
+   ICE 로 잘못 바꿨다가 되돌릴 때 적어둔 HOT 재료가 사라지면 곤란하다 */
+function syncTempFields(){
+  const both = isBothTemp({temp: $("#e-temp").value});
+  $("#e-ing-head").style.display = both ? "block" : "none";
+  $("#e-hot-wrap").style.display = both ? "block" : "none";
+}
+
 function openEditor(id, draft){
   state.editingId = id;
   const d = draft || (id ? data.drinks.find(x=>x.id===id) : null);
@@ -2153,13 +2208,13 @@ function openEditor(id, draft){
   $("#e-temp").value = d?(d.temp||"ICE"):"ICE";
   setCupField(d ? (d.cups || (d.cup ? [d.cup] : [])) : []);
   $("#e-tip").value = d?(d.tip||""):"";
-  const ib = $("#e-ing"); ib.innerHTML = "";
-  const ings = d && d.ing.length ? d.ing : [["",""],["",""]];
-  ings.forEach(p=>ib.appendChild(ingRow(p[0],p[1])));
+  fillIngBox("#e-ing", d && d.ing.length ? d.ing : [["",""],["",""]]);
+  fillIngBox("#e-ing-hot", (d && Array.isArray(d.ingHot) && d.ingHot.length) ? d.ingHot : []);
+  syncTempFields();
   const sb = $("#e-steps"); sb.innerHTML = "";
   const sts = d && d.steps.length ? d.steps : ["",""];
   sts.forEach(s=>sb.appendChild(stepRow(s)));
-  renumber(); refreshOrd(ib); refreshOrd(sb);
+  renumber(); refreshOrd(sb);
   state.editSubRefs = (d && Array.isArray(d.subRefs)) ? d.subRefs.filter(subById) : [];
   renderSubs();
   $("#delBtn").style.display = id ? "block" : "none";
@@ -2174,6 +2229,8 @@ function readEditorForm(){
     temp:$("#e-temp").value, cups:readCupField(), tip:$("#e-tip").value,
     ing:Array.from(document.querySelectorAll("#e-ing .dyn-row"))
         .map(r=>[r.querySelector(".nm").value, r.querySelector(".amt").value]),
+    ingHot:Array.from(document.querySelectorAll("#e-ing-hot .dyn-row"))
+        .map(r=>[r.querySelector(".nm").value, r.querySelector(".amt").value]),
     steps:Array.from(document.querySelectorAll("#e-steps .st")).map(i=>i.value)
   };
 }
@@ -2181,8 +2238,9 @@ function writeEditorForm(f){
   $("#e-name").value=f.name; $("#e-en").value=f.en;
   $("#e-cat").value=f.cat; $("#e-temp").value=f.temp;
   setCupField(f.cups); $("#e-tip").value=f.tip;
-  const ib=$("#e-ing"); ib.innerHTML="";
-  (f.ing.length?f.ing:[["",""]]).forEach(p=>ib.appendChild(ingRow(p[0],p[1])));
+  fillIngBox("#e-ing", f.ing);
+  fillIngBox("#e-ing-hot", f.ingHot || []);
+  syncTempFields();
   const sb=$("#e-steps"); sb.innerHTML="";
   (f.steps.length?f.steps:[""]).forEach(s=>sb.appendChild(stepRow(s)));
   renumber(); refreshOrd($("#e-ing")); refreshOrd(sb);
@@ -2365,22 +2423,30 @@ $("#subDel").addEventListener("click", ()=>{
     "삭제", ()=>{ deleteSub(s.id); toast("삭제했어요"); leaveSubEditor(); });
 });
 $("#addIng").addEventListener("click", ()=>{ const b=$("#e-ing"); b.appendChild(ingRow()); refreshOrd(b); });
+$("#addIngHot").addEventListener("click", ()=>{ const b=$("#e-ing-hot"); b.appendChild(ingRow()); refreshOrd(b); });
+$("#e-temp").addEventListener("change", ()=>syncTempFields());
+$("#copyIceIng").addEventListener("click", ()=>{
+  const rows = readIngRows("#e-ing");
+  if(!rows.length){ toast("ICE 재료를 먼저 입력해 주세요"); return; }
+  fillIngBox("#e-ing-hot", rows);
+  toast("ICE 재료를 가져왔어요. 용량만 고치면 됩니다");
+});
 $("#addStep").addEventListener("click", ()=>{ const b=$("#e-steps"); b.appendChild(stepRow()); renumber(); refreshOrd(b); });
 $("#editClose").addEventListener("click", ()=>go("list"));
 
 $("#saveBtn").addEventListener("click", ()=>{
   const name = $("#e-name").value.trim();
   if(!name){ toast("메뉴 이름을 입력해 주세요"); $("#e-name").focus(); return; }
-  const ing = Array.from(document.querySelectorAll("#e-ing .dyn-row"))
-    .map(r=>[r.querySelector(".nm").value.trim(), r.querySelector(".amt").value.trim()])
-    .filter(p=>p[0] || p[1]);
-  if(!ing.length){ toast("재료를 하나 이상 입력해 주세요"); return; }
+  const both = isBothTemp({temp: $("#e-temp").value});
+  const ing = readIngRows("#e-ing");
+  const ingHot = both ? readIngRows("#e-ing-hot") : [];
+  if(!ing.length){ toast(both ? "ICE 재료를 하나 이상 입력해 주세요" : "재료를 하나 이상 입력해 주세요"); return; }
   const steps = Array.from(document.querySelectorAll("#e-steps .st")).map(i=>i.value.trim()).filter(Boolean);
   const rec = {
     id: state.editingId || uid(),
     cat: $("#e-cat").value, name: name, en: $("#e-en").value.trim(),
     temp: $("#e-temp").value, cups: readCupField(),
-    ing: ing, steps: steps, tip: $("#e-tip").value.trim(),
+    ing: ing, ingHot: ingHot, steps: steps, tip: $("#e-tip").value.trim(),
     /* 저장할 때 레코드를 새로 만들기 때문에 보관 상태를 명시적으로 물려받아야 한다.
        안 그러면 보관해 둔 레시피를 고치는 순간 학습에 다시 튀어나온다 */
     arch: state.editingId ? !!(data.drinks.find(x=>x.id===state.editingId)||{}).arch : false,
@@ -2709,6 +2775,8 @@ function applyBackup(text){
         id:x.id||uid(), cat:x.cat, name:String(x.name||""), en:String(x.en||""),
         temp:String(x.temp||""), cups:Array.isArray(x.cups)?x.cups.map(String):(x.cup?[String(x.cup)]:[]),
         ing:Array.isArray(x.ing)?x.ing.map(p=>[String(p[0]||""),String(p[1]||"")]):[],
+      /* ICE/HOT 재료 두 벌. 옛 백업에는 없는 값이라 없으면 빈 배열로 둔다 */
+      ingHot:Array.isArray(x.ingHot)?x.ingHot.map(p=>[String(p[0]||""),String(p[1]||"")]):[],
         steps:Array.isArray(x.steps)?x.steps.map(String):[], tip:String(x.tip||""),
         arch:!!x.arch,
         subRefs:Array.isArray(x.subRefs)?x.subRefs.map(String):[],

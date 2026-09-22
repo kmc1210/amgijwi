@@ -20,7 +20,7 @@
      두 벌이면 교집합이 적용되니 고칠 때는 반드시 둘 다 고친다. 어긋나면 test/headers.js 가 실패한다. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>암기쥐 · 카페 음료 레시피 외우기</title>
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 <div class="phone">
@@ -168,8 +168,18 @@
           <p style="margin:-2px 0 10px;font-size:12.5px;color:var(--muted);line-height:1.5">여러 개 고를 수 있어요. 안 쓰면 비워두면 됩니다.</p>
           <div class="pickers" id="e-cups"></div>
           <input type="text" id="e-cup" placeholder="직접 입력할 사이즈 (예: 16oz, 자스민잔)" autocomplete="off" style="margin-top:9px;display:none"></div>
-        <div class="fld"><label>재료 / 용량 *</label><div id="e-ing"></div>
-          <button class="addrow" id="addIng">+ 재료 추가</button></div>
+        <!-- 온도가 ICE/HOT 이면 재료를 두 벌 받는다. 구성이 아예 다른 메뉴가 있어서다 -->
+        <div class="fld"><label>재료 / 용량 *</label>
+          <div class="ingset" id="e-ing-head" style="display:none">ICE 재료</div>
+          <div id="e-ing"></div>
+          <button class="addrow" id="addIng">+ 재료 추가</button>
+          <div id="e-hot-wrap" style="display:none">
+            <div class="ingset" style="margin-top:16px">HOT 재료</div>
+            <p style="margin:-2px 0 10px;font-size:12.5px;color:var(--muted);line-height:1.5">비워두면 ICE 재료 하나로 학습합니다.</p>
+            <div id="e-ing-hot"></div>
+            <button class="addrow" id="addIngHot">+ 재료 추가</button>
+            <button type="button" class="linkbtn" id="copyIceIng" style="padding-left:0">ICE 재료 그대로 가져오기</button>
+          </div></div>
         <div class="fld"><label>제조 순서</label><div id="e-steps"></div>
           <button class="addrow" id="addStep">+ 순서 추가</button></div>
         <div class="fld"><label>기억 포인트</label><textarea id="e-tip" placeholder="헷갈리는 지점, 실수하기 쉬운 부분을 적어두세요"></textarea></div>
@@ -343,6 +353,6 @@
   </div>
 </div>
 
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
