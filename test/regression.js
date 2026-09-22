@@ -294,8 +294,8 @@ const LEGACY = {
 
   // ── 9. 외부로 나가는 통신이 없다 ────────────────────────────────
   // CSP 는 meta 와 CloudFront 응답 헤더 두 곳에 있다. meta 를 남겨두는 이유는
-  // GitHub Pages 가 같은 www/ 를 헤더 없이 서빙하고 있어서다. 두 값이 어긋나지
-  // 않는지는 배포 후 test/headers.js 가 비교한다.
+  // 같은 www/ 가 앞으로 iOS 앱에 실리는데 앱에는 응답 헤더가 없어서다.
+  // 두 값이 어긋나지 않는지는 배포 후 test/headers.js 가 비교한다.
   const csp = await page.evaluate(() =>
     (document.querySelector('meta[http-equiv="Content-Security-Policy"]') || {}).content || "");
   ok("CSP 가 걸려 있다", csp.length > 0);
