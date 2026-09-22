@@ -218,6 +218,46 @@ const LEGACY = {
   eq("백업 파일에 ICE 재료가 담긴다", bothTrip.ing, [["에스프레소", "2샷"]]);
   eq("백업 파일에 HOT 재료가 담긴다", bothTrip.ingHot, [["뜨거운 물", "250 ml"]]);
 
+  // ── 6-2. 학습할 레시피 고르기 ───────────────────────────────────
+  // 카테고리를 골라도 그 안의 전부가 덱에 들어가던 것을, 필요한 것만 고르게 한다.
+  const pickFlow = await page.evaluate(async () => {
+    const backup = JSON.stringify(data);
+    data.drinks = [
+      { id: "p1", name: "가", cat: "coffee", temp: "ICE", ing: [["물", "1"]], steps: [] },
+      { id: "p2", name: "나", cat: "coffee", temp: "HOT", ing: [["물", "2"]], steps: [] },
+      { id: "p3", name: "다", cat: "coffee", temp: "ICE", ing: [["물", "3"]], steps: [] }
+    ];
+    data.mastered = ["p1"];
+    const pool = data.drinks.slice();
+    openPickSheet(pool, "커피");
+    const rowsAtFirst = document.querySelectorAll("#sheetBody .row").length;
+    const onAtFirst = document.querySelectorAll("#sheetBody .row.on").length;
+    // 안 외운 것만 → 완료 표시된 p1 은 빠진다
+    document.querySelector("#pickNew").click();
+    const afterNew = [...document.querySelectorAll("#sheetBody .row.on")].map(r=>r.dataset.id);
+    // 모두 해제하면 시작 버튼이 막힌다
+    document.querySelector("#pickNone").click();
+    const blocked = document.querySelector("#pickGo").disabled;
+    // 하나만 골라 학습 시작
+    document.querySelector('#sheetBody .row[data-id="p3"]').click();
+    const label = document.querySelector("#pickGo").textContent;
+    document.querySelector("#pickGo").click();
+    const modeScope = document.querySelector("#sheetBody div span").textContent;
+    document.querySelector('#sheetBody .row[data-mode="flip"]').click();
+    await new Promise(r => setTimeout(r, 400));
+    const deck = state.deck.map(d=>d.id);
+    data = JSON.parse(backup);
+    closeSheet();
+    return { rowsAtFirst, onAtFirst, afterNew, blocked, label, modeScope, deck };
+  });
+  eq("고르기 시트에 범위의 레시피가 모두 나온다", pickFlow.rowsAtFirst, 3);
+  eq("처음에는 전부 선택돼 있다", pickFlow.onAtFirst, 3);
+  eq("안 외운 것만 고르면 완료한 것은 빠진다", pickFlow.afterNew, ["p2", "p3"]);
+  ok("하나도 안 고르면 시작할 수 없다", pickFlow.blocked === true);
+  eq("고른 개수가 버튼에 나온다", pickFlow.label, "1개 학습하기");
+  ok("방식 시트가 좁힌 범위를 보여준다", pickFlow.modeScope.indexOf("커피 중 1개") >= 0, pickFlow.modeScope);
+  eq("고른 레시피만 덱에 들어간다", pickFlow.deck, ["p3"]);
+
   // ── 7. 저장소 왕복 ──────────────────────────────────────────────
   const trip = await page.evaluate(() => {
     const backup = localStorage.getItem("brewnote.v1");

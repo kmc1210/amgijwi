@@ -903,10 +903,15 @@ function openModeSheet(customPool, scopeLabel){
     </button>`;
   $("#sheetBody").innerHTML = `
     <h2 style="margin:0 0 4px;font-size:21px;font-weight:800;letter-spacing:-.4px">학습 방식</h2>
-    <div style="font-size:12.5px;color:var(--muted);margin-bottom:20px">${esc(scope)} · ${pool.length}개 메뉴</div>
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:20px">
+      <span style="font-size:12.5px;color:var(--muted)">${esc(scope)} · ${pool.length}개 메뉴</span>
+      ${pool.length > 1 ? `<button class="linkbtn" id="pickBtn" style="padding:0;min-height:0">고르기</button>` : ""}
+    </div>
     ${opt("flip","🔄","카드 뒤집기","이름 보고 재료를 통째로 떠올리기")}
     ${opt("blank","✏️","빈칸 채우기","용량만 가리고 하나씩 확인하기")}`;
   $("#mask").classList.add("on"); $("#sheet").classList.add("on");
+  const pick = $("#pickBtn");
+  if(pick) pick.addEventListener("click", ()=>openPickSheet(pool, scope));
   $("#sheetBody").querySelectorAll(".row").forEach(b=>{
     b.addEventListener("click", ()=>{
       data.mode = b.dataset.mode; persist();
@@ -914,6 +919,56 @@ function openModeSheet(customPool, scopeLabel){
       setTimeout(()=>startSession(custom), 180);
     });
   });
+}
+
+/* 범위 안에서 학습할 레시피만 고르는 시트.
+   카테고리를 골라도 그 안의 전부가 덱에 들어가서, 오늘 외울 몇 개만 돌릴 수가 없었다.
+   고른 결과는 방식 시트로 넘기고, 방식 시트가 그대로 그 범위로 학습을 시작한다. */
+function openPickSheet(pool, scope){
+  const chosen = new Set(pool.map(d=>d.id));
+  const draw = ()=>{
+    const n = chosen.size;
+    $("#sheetBody").innerHTML = `
+      <h2 style="margin:0 0 4px;font-size:21px;font-weight:800;letter-spacing:-.4px">학습할 레시피 고르기</h2>
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px">${esc(scope)} · ${n}개 선택 / ${pool.length}개</div>
+      <div style="display:flex;gap:14px;margin-bottom:12px">
+        <button class="linkbtn" id="pickAll" style="padding:0;min-height:0">모두 선택</button>
+        <button class="linkbtn" id="pickNew" style="padding:0;min-height:0">안 외운 것만</button>
+        <button class="linkbtn mute" id="pickNone" style="padding:0;min-height:0">모두 해제</button>
+      </div>
+      ${pool.map(d=>`<button class="row${chosen.has(d.id)?" on":""}" data-id="${esc(d.id)}" style="margin-bottom:8px">
+        <span class="checkc">✓</span>
+        <span class="meta"><b>${esc(d.name)}</b><span>${
+          [esc(d.temp||""), ingSets(d)[0][1].slice(0,3).map(i=>esc(i[0])).join(" · ")].filter(Boolean).join(" · ")
+        }</span></span>
+        ${has(data.mastered,d.id)?`<span class="pill done">완료</span>`:""}
+      </button>`).join("")}
+      <button class="cta" id="pickGo"${n?"":" disabled"} style="margin-top:6px">${
+        n ? n + "개 학습하기" : "레시피를 골라주세요"}</button>`;
+    $("#sheetBody").querySelectorAll(".row").forEach(b=>{
+      b.addEventListener("click", ()=>{
+        const id = b.dataset.id;
+        if(chosen.has(id)) chosen.delete(id); else chosen.add(id);
+        draw();
+      });
+    });
+    $("#pickAll").addEventListener("click", ()=>{ pool.forEach(d=>chosen.add(d.id)); draw(); });
+    $("#pickNone").addEventListener("click", ()=>{ chosen.clear(); draw(); });
+    $("#pickNew").addEventListener("click", ()=>{
+      chosen.clear();
+      pool.forEach(d=>{ if(!has(data.mastered, d.id)) chosen.add(d.id); });
+      if(!chosen.size) toast("이 범위는 전부 외운 상태예요");
+      draw();
+    });
+    $("#pickGo").addEventListener("click", ()=>{
+      const picked = pool.filter(d=>chosen.has(d.id));
+      if(!picked.length) return;
+      /* 전부 고른 것과 범위 전체는 같은 말이라 라벨을 굳이 바꾸지 않는다 */
+      openModeSheet(picked, picked.length === pool.length ? scope : scope + " 중 " + picked.length + "개");
+    });
+  };
+  draw();
+  $("#sheetBody").scrollTop = 0;
 }
 $("#startBtn").addEventListener("click", ()=>openModeSheet());
 $("#revStudy").addEventListener("click", ()=>{        // 다시 볼래요 목록만 돌린다
