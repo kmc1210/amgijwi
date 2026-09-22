@@ -167,6 +167,57 @@ const LEGACY = {
   eq("부재료를 지우면 참조도 같이 정리된다", ref.refsLeft, [["s2"], []]);
   ok("끊어진 참조가 남지 않는다", ref.dangling === false);
 
+  // ── 6-1. ICE / HOT 재료 두 벌 ───────────────────────────────────
+  // ICE 와 HOT 은 재료 구성이 다를 수 있어 temp 가 ICE/HOT 일 때만 두 벌을 가진다.
+  // 옛 레시피에는 ingHot 이 없다. 없으면 예전처럼 한 벌로 보여야 한다.
+  const two = await page.evaluate(() => {
+    const backup = JSON.stringify(data);
+    const both = { id: "b1", name: "아메리카노", cat: "coffee", temp: "ICE/HOT",
+      ing: [["에스프레소", "2샷"], ["정수", "150 ml"], ["얼음", "130 g"]],
+      ingHot: [["에스프레소", "2샷"], ["뜨거운 물", "250 ml"]], steps: [] };
+    const old = { id: "o1", name: "옛 레시피", cat: "coffee", temp: "ICE",
+      ing: [["정수", "200 ml"]], steps: [] };
+    // temp 가 한쪽뿐인데 ingHot 이 남아 있으면 무시해야 한다
+    const stale = { id: "s1", name: "온도 바꾼 레시피", cat: "coffee", temp: "HOT",
+      ing: [["우유", "200 ml"]], ingHot: [["얼음", "130 g"]], steps: [] };
+    const r = {
+      bothSets: ingSets(both).map(s => [s[0], s[1].length]),
+      oldSets: ingSets(old).map(s => [s[0], s[1].length]),
+      staleSets: ingSets(stale).map(s => [s[0], s[1].length]),
+      keys: ingKeys(both),
+      hotAmount: ingAt(both, "1-1")[1],
+      names: ingNames(both),
+      blanks: (blankHTML(both).match(/data-b="/g) || []).length,
+      labels: (backHTML(both).match(/class="ingset"/g) || []).length,
+      oldLabels: (backHTML(old).match(/class="ingset"/g) || []).length
+    };
+    data = JSON.parse(backup);
+    return r;
+  });
+  eq("ICE/HOT 이면 재료가 두 벌이다", two.bothSets, [["ICE", 3], ["HOT", 2]]);
+  eq("옛 레시피는 한 벌 그대로다", two.oldSets, [["", 1]]);
+  eq("온도가 한쪽뿐이면 남은 ingHot 은 무시한다", two.staleSets, [["", 1]]);
+  eq("빈칸 키가 벌-순서로 매겨진다", two.keys, ["0-0", "0-1", "0-2", "1-0", "1-1"]);
+  eq("키로 HOT 쪽 용량을 찾는다", two.hotAmount, "250 ml");
+  ok("검색이 HOT 재료 이름도 본다", two.names.indexOf("뜨거운 물") >= 0, two.names);
+  eq("빈칸 채우기 칸이 두 벌 모두 나온다", two.blanks, 5);
+  eq("카드 뒷면에 ICE·HOT 라벨이 붙는다", two.labels, 2);
+  eq("한 벌짜리 카드에는 라벨이 없다", two.oldLabels, 0);
+
+  const bothTrip = await page.evaluate(() => {
+    const backup = JSON.stringify(data);
+    data.drinks = [{ id: "b1", name: "아메리카노", cat: "coffee", temp: "ICE/HOT",
+      ing: [["에스프레소", "2샷"]], ingHot: [["뜨거운 물", "250 ml"]], steps: [], subRefs: [] }];
+    const json = backupJSON();
+    data.drinks = [];
+    const parsed = JSON.parse(json);
+    const restored = parsed.data.drinks[0];
+    data = JSON.parse(backup);
+    return { ing: restored.ing, ingHot: restored.ingHot };
+  });
+  eq("백업 파일에 ICE 재료가 담긴다", bothTrip.ing, [["에스프레소", "2샷"]]);
+  eq("백업 파일에 HOT 재료가 담긴다", bothTrip.ingHot, [["뜨거운 물", "250 ml"]]);
+
   // ── 7. 저장소 왕복 ──────────────────────────────────────────────
   const trip = await page.evaluate(() => {
     const backup = localStorage.getItem("brewnote.v1");
