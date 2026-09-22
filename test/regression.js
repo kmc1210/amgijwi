@@ -258,6 +258,41 @@ const LEGACY = {
   ok("방식 시트가 좁힌 범위를 보여준다", pickFlow.modeScope.indexOf("커피 중 1개") >= 0, pickFlow.modeScope);
   eq("고른 레시피만 덱에 들어간다", pickFlow.deck, ["p3"]);
 
+  // ── 6-3. 태블릿 최대 폭 ─────────────────────────────────────────
+  // 넓은 화면에서 내용이 화면 끝까지 늘어나지 않고 가운데로 모여야 한다.
+  // 폰과 데스크톱 목업(390px)은 영향을 받지 않아야 한다.
+  const before = page.viewportSize();
+  const measureAt = async (w, h) => {
+    await page.setViewportSize({ width: w, height: h });
+    await page.evaluate(() => go("home"));   // 학습 화면에서는 탭바가 숨는다
+    await page.waitForTimeout(150);
+    return page.evaluate(() => {
+      const box = s => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect();
+        return { w: Math.round(r.width), left: Math.round(r.left), right: Math.round(innerWidth - r.right) }; };
+      return { view: innerWidth, appbar: box("#s-home .appbar"), hero: box("#s-home .hero"),
+               cardWrap: box("#cardWrap"), tab: box("#tabs .tab"), tabs: box("#tabs") };
+    });
+  };
+  const wTablet = await measureAt(1180, 820);   // 아이패드 가로
+  const wPhone = await measureAt(390, 844);     // 아이폰
+  const wMockup = await measureAt(1440, 790);   // 데스크톱 목업(폭 390)
+  await page.setViewportSize(before);
+  await page.waitForTimeout(150);
+
+  eq("태블릿에서 앱바가 최대 폭에서 멈춘다", wTablet.appbar.w, 560);
+  eq("태블릿에서 학습 카드 영역도 같은 폭이다", wTablet.cardWrap.w, 560);
+  ok("태블릿에서 내용이 가운데 온다",
+     wTablet.appbar.left === wTablet.appbar.right && wTablet.appbar.left > 100,
+     JSON.stringify(wTablet.appbar));
+  // width:100% 가 빠지면 세로 flex 안에서 폭이 내용 크기로 쪼그라든다 (실제로 겪은 실수)
+  ok("앱바가 내용 크기로 쪼그라들지 않는다", wTablet.appbar.w > wTablet.hero.w - 1,
+     JSON.stringify([wTablet.appbar.w, wTablet.hero.w]));
+  ok("탭바 배경은 화면 전체를 쓰고 항목만 모인다",
+     wTablet.tabs.w === 1180 && wTablet.tab.w === 140 && wTablet.tab.left > 100,
+     JSON.stringify([wTablet.tabs.w, wTablet.tab.w, wTablet.tab.left]));
+  eq("폰에서는 폭 제한이 걸리지 않는다", wPhone.appbar.w, 390);
+  eq("데스크톱 목업(390px)도 그대로다", wMockup.appbar.w, 390);
+
   // ── 7. 저장소 왕복 ──────────────────────────────────────────────
   const trip = await page.evaluate(() => {
     const backup = localStorage.getItem("brewnote.v1");
