@@ -8,6 +8,8 @@
     --shadow:0 1px 2px rgba(36,31,26,.05), 0 8px 24px rgba(36,31,26,.07);
     --tab-h:64px;
     --pad-x:20px;
+    /* 태블릿 이상에서 내용이 늘어나는 최대 폭 */
+    --content-max:560px;
     /* 실제로 쓰는 좌우 여백. 노치가 옆에 오는 가로 모드에서는 아래 @supports 가 넓힌다 */
     --pad-l:var(--pad-x);
     --pad-r:var(--pad-x);
@@ -592,4 +594,26 @@
     .dlg{padding-left:max(34px, env(safe-area-inset-left, 0px));padding-right:max(34px, env(safe-area-inset-right, 0px));}
     .lock{padding-top:max(24px, env(safe-area-inset-top, 0px));padding-bottom:max(24px, env(safe-area-inset-bottom, 0px));
       padding-left:max(24px, env(safe-area-inset-left, 0px));padding-right:max(24px, env(safe-area-inset-right, 0px));}
+  }
+
+  /* 태블릿·가로 폰·넓은 브라우저 창. 폰 기준 레이아웃이 화면 끝까지 늘어나면
+     한 줄이 너무 길고 학습 카드도 허전하게 퍼진다. 레이아웃을 새로 짜지 않고
+     내용만 가운데로 모아 최대 폭을 묶는다. 바탕과 탭바 배경은 화면 전체를 그대로 쓴다.
+
+     width:100% 가 꼭 있어야 한다. 세로 flex 안의 항목에 좌우 auto 마진을 주면
+     늘어남(stretch)이 꺼져서 폭이 내용 크기로 쪼그라든다.
+     규칙을 파일 끝에 두는 것도 같은 이유다. 앞쪽에 두면 뒤의 .tab{flex:1} 같은
+     기본 규칙에 덮인다. */
+  @media (min-width:700px){
+    .appbar, .bubblerow, .study-top, .card-wrap, .actions,
+    .selbar, .result, .scroll > *, .sheet .body, .dlg .box{
+      width:100%;
+      max-width:var(--content-max);
+      margin-left:auto;
+      margin-right:auto;
+    }
+    .tabs{justify-content:center;}
+    .tab{flex:0 1 calc(var(--content-max) / 4);}
+    .selactions{justify-content:center;}
+    .selactions button{max-width:calc(var(--content-max) / 2);}
   }
