@@ -2,9 +2,8 @@
 
 https://amgijwi.com (테스트 페이지)
 
-저장소 이름을 brewnote 에서 amgijwi 로 바꿨습니다. 옛 GitHub Pages 주소
-https://kmc1210.github.io/brewnote/ 는 더 이상 열리지 않고,
-https://kmc1210.github.io/amgijwi/ 로 옮겨졌습니다. Pages 는 이전이 끝나면 내립니다.
+GitHub Pages 로 서빙하던 시절의 주소(kmc1210.github.io/brewnote/, /amgijwi/)는
+2026-09-22 자로 내렸습니다. 테스터 데이터 이전도 끝나서 앱은 위 주소 한 곳에서만 열립니다.
 
 쓰는 법
 
@@ -34,7 +33,8 @@ www/                 배포되는 앱. 이 폴더 통째로 S3 에 올라갑니�
   app.js             앱 전체 로직 (도트 그래픽 포함)
   apple-touch-icon.png
 test/regression.js   실제 브라우저로 돌리는 회귀 테스트
-index.html           옛 단일 파일. GitHub Pages 로 서빙 중이라 이전이 끝날 때까지 그대로 둡니다.
+index.html           옛 단일 파일. 지금은 어디에도 서빙되지 않습니다. 옛 주소(kmc1210.github.io)의
+                     브라우저 저장소에 남은 데이터를 꺼내야 할 때 Pages 를 잠깐 켜서 쓸 통로라 남겨둡니다.
 
 코드 안의 brewnote 는 저장소 이름이 아니라 앱 내부 식별자라 바꾸지 않습니다.
 저장 키 brewnote.v1, PIN 해시 salt, 백업 파일의 app 표시가 그렇습니다.
