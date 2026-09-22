@@ -1,8 +1,8 @@
 // 배포된 사이트의 보안 헤더 검사
 //
 // CSP 는 두 곳에 있다. CloudFront 응답 헤더(amgijwi-security-headers)와
-// www/index.html 의 meta. meta 를 남겨두는 건 GitHub Pages 가 같은 www/ 를
-// 헤더 없이 서빙하고 있고, 거기서는 meta 가 유일한 보호라서다.
+// www/index.html 의 meta. meta 를 남겨두는 건 같은 www/ 가 앞으로 iOS 앱에
+// 실리기 때문이다. 앱에는 응답 헤더가 없어 거기서는 meta 가 유일한 CSP 다.
 //
 // 두 벌이 걸리면 브라우저는 교집합만 허용한다. 값이 같을 때는 무해하지만
 // 한쪽만 고치면 조용히 막히기 시작한다. 그래서 이 스크립트가 배포된 HTML 의
@@ -117,7 +117,7 @@ function metaCsp(html) {
 
   // meta 와 헤더가 같은 정책인지. frame-ancestors 는 meta 에서 무시되므로 헤더에만 있다
   const metaRaw = metaCsp(r.body);
-  ok("배포된 HTML 에 meta CSP 가 있다 (GitHub Pages 사본 보호)", metaRaw !== null);
+  ok("배포된 HTML 에 meta CSP 가 있다 (헤더가 없는 앱에서의 유일한 CSP)", metaRaw !== null);
   if (metaRaw !== null) {
     const meta = parseCsp(metaRaw);
     const fromHeader = Object.assign({}, csp);
