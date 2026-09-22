@@ -6,9 +6,16 @@
 #     첫 배포는 수동으로 돌려 결과를 눈으로 확인한 뒤 AUTO_DEPLOY 를 켠다.
 #
 # AWS 인증은 OIDC 다. 저장소에 AWS 키가 없다. IAM 역할의 신뢰 정책이
-# repo:kmc1210/amgijwi:ref:refs/heads/main 만 허용하므로 main 이 아닌 브랜치나
-# PR 에서는 이 워크플로가 AWS 에 들어갈 수 없다.
-# 그 조건과 맞지 않게 되므로 이 job 에 environment: 를 붙이지 않는다.
+#   repo:kmc1210@57215151/amgijwi@1313381059:ref:refs/heads/main
+# 만 허용하므로 main 이 아닌 브랜치나 PR 에서는 이 워크플로가 AWS 에 들어갈 수 없다.
+#
+# sub 에 계정 id 와 저장소 id 가 붙는 건 이 저장소가 GitHub 의 immutable subject 를
+# 쓰기 때문이다. 저장소 이름만 적은 옛 형식(repo:kmc1210/amgijwi:ref:...)으로 두면
+# AssumeRoleWithWebIdentity 가 "Not authorized" 로 거절된다. 실제로 첫 배포가 그렇게 실패했다.
+# 실제 값은 아래로 확인한다. 저장소를 옮기거나 다시 만들면 id 가 바뀌므로 다시 확인할 것.
+#   gh api repos/kmc1210/amgijwi/actions/oidc/customization/sub
+#
+# job 에 environment: 를 붙이면 sub 모양이 environment 쪽으로 바뀌어 신뢰 정책과 어긋난다.
 #
 # 저장소 변수 (Settings → Secrets and variables → Actions → Variables)
 #   AWS_ROLE_ARN        배포용 IAM 역할
