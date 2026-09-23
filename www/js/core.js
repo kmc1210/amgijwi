@@ -39,6 +39,12 @@ function catEmo(id){ const c=catOf(id); return c ? c.emo : "🥤"; }
 function firstCatId(){ return data.cats.length ? data.cats[0].id : "etc"; }
 const KEY = "brewnote.v1";
 
+/* ---------- 실행 환경 ----------
+   같은 www 를 웹과 iOS 앱이 함께 쓴다. 기능은 같지만 설명하는 말이 다르다.
+   웹에서는 "브라우저 데이터를 지우면" 이 맞고, 앱에서는 "앱을 지우면" 이 맞다.
+   앱이 문서가 뜨기 전에 표시를 심는다 (ios/Sources/WebAppViewController.swift). */
+function isNativeApp(){ return window.__amgijwiNative === true; }
+
 /* ---------- 저장소 (localStorage, 실패 시 메모리) ---------- */
 const Store = (()=>{
   let ok = false, mem = null;

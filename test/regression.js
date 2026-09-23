@@ -468,17 +468,50 @@ const LEGACY = {
   ok("앱 표시가 있으면 설치 안내를 걷는다", native.after === true);
   ok("표시를 지우면 원래대로 돌아온다", native.restored === false);
 
+  // 앱 안에서 "브라우저" 를 말하면 안 된다. 같은 www 를 웹과 앱이 함께 쓰므로
+  // 사실은 그대로 두고 말만 바꾼다. 앱에서 보이는 글에 그 낱말이 남았는지 훑는다.
+  const copy = await page.evaluate(async () => {
+    const seen = {};
+    const sweep = () => {
+      applyEnvText();
+      renderHome();
+      renderBackupBanner();
+      renderStorageCard();
+      const parts = ["#storeBanner", "#backupBanner", "#setStatus", "#pinDesc"];
+      let text = parts.map(s => (document.querySelector(s) || {}).textContent || "").join(" ");
+      // 숨긴 글은 화면에 없는 것이다. 보이는 것만 모은다
+      document.querySelectorAll("[data-env]").forEach(el => {
+        if (el.style.display === "none") text = text.split(el.textContent).join(" ");
+      });
+      return text;
+    };
+    const backup = JSON.stringify(data);
+    data.backup = null;                       // 백업 권유 배너가 뜨는 상태로 만든다
+    window.__amgijwiNative = true;
+    seen.app = sweep();
+    delete window.__amgijwiNative;
+    seen.web = sweep();
+    data = JSON.parse(backup);
+    sweep();
+    go("home");
+    return seen;
+  });
+  ok("앱에서는 브라우저 이야기를 하지 않는다", copy.app.indexOf("브라우") < 0,
+     (copy.app.match(/[^.!?]*브라우[^.!?]*/) || [""])[0].trim());
+  ok("웹에서는 그대로 브라우저라고 말한다", copy.web.indexOf("브라우") >= 0);
+  ok("앱에서는 앱을 지우면 사라진다고 말한다", copy.app.indexOf("앱을 지우") >= 0);
+
   // 표시 이름은 Swift 와 JS 두 곳에 적힌다. 한쪽만 고치면 앱에서 조용히 안내가 다시 뜬다.
   const iosDir = path.resolve(__dirname, "..", "ios");
   const swift = fs.readFileSync(path.join(iosDir, "Sources", "WebAppViewController.swift"), "utf8");
-  const bootJs = fs.readFileSync(path.resolve(__dirname, "..", "www", "js", "boot.js"), "utf8");
+  const allJs = jsFiles.map(f => fs.readFileSync(path.resolve(__dirname, "..", "www", "js", f), "utf8")).join("\n");
   const marker = "window.__";
   const mStart = swift.indexOf(marker);
   const planted = mStart < 0 ? null
     : swift.slice(mStart + 7, swift.indexOf(" =", mStart)).trim();   // "window." 다음부터 " =" 앞까지
   ok("앱이 심는 표시 이름을 찾을 수 있다", planted !== null && planted.indexOf("__") === 0, String(planted));
   ok("앱이 심는 이름과 웹이 보는 이름이 같다",
-     planted !== null && bootJs.indexOf("window." + planted + " === true") >= 0,
+     planted !== null && allJs.indexOf("window." + planted + " === true") >= 0,
      String(planted));
 
   // file:// 대신 스킴을 직접 다루는 게 localStorage 가 남는 조건이다.

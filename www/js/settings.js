@@ -202,34 +202,43 @@ function renderSettings(){
 }
 
 /* 데이터가 얼마나 안전한 상태인지 한자리에서 보여준다.
-   저장 가능 여부 · 홈 화면 실행 여부 · 브라우저 보호 여부 · 마지막 백업. */
+   저장 가능 여부 · 어디서 실행 중인지 · 저장 보호 여부 · 마지막 백업.
+   앱에서는 브라우저 이야기가 맞지 않으므로 같은 사실을 다른 말로 적는다. */
 function renderStorageCard(){
   const box = $("#setStatus"); if(!box) return;
+  const app = isNativeApp();
 
   if(!Store.available){
     box.innerHTML = `<div class="setcard statuscard warn">
       <h4>저장이 막혀 있어요</h4>
-      <p>파일을 직접 열었거나 비공개(시크릿) 브라우징 상태면 저장소가 잠깁니다. 지금 입력한 내용은 앱을 닫으면 사라져요. 아래에서 백업 파일을 만들어 두고, 저장이 되는 방식으로 열어 주세요.</p></div>`;
+      <p>${app
+        ? "앱이 저장 공간을 쓰지 못하고 있습니다. 지금 입력한 내용은 앱을 닫으면 사라져요. 아래에서 백업 파일을 만들어 두고, 앱을 다시 시작해 주세요."
+        : "파일을 직접 열었거나 비공개(시크릿) 브라우징 상태면 저장소가 잠깁니다. 지금 입력한 내용은 앱을 닫으면 사라져요. 아래에서 백업 파일을 만들어 두고, 저장이 되는 방식으로 열어 주세요."}</p></div>`;
     return;
   }
 
   const os = deviceOS();
   const rows = [];
-  /* PC 는 홈 화면 앱이라는 선택지가 없으니 이 줄을 빼고 브라우저 보호와 백업만 보여준다 */
-  if(isStandalone())
+  /* PC 는 홈 화면 앱이라는 선택지가 없으니 이 줄을 빼고 저장 보호와 백업만 보여준다 */
+  if(app)
+    rows.push(["ok", "앱으로 실행 중", "레시피가 앱 안에 남습니다. 앱을 지우지 않는 한 사라지지 않아요."]);
+  else if(isStandalone())
     rows.push(["ok", "홈 화면 앱으로 실행 중", "저장 데이터가 지워질 위험이 가장 낮은 상태예요."]);
   else if(os !== "desktop")
     rows.push(["warn", "브라우저 탭에서 실행 중", INSTALL[os].short]);
 
-  if(persistState === "granted")
-    rows.push(["ok", "브라우저가 저장 데이터를 보호 중", "저장 공간이 부족해도 이 앱 데이터를 먼저 지우지 않습니다."]);
-  else if(persistState === "denied")
-    rows.push(["warn", "브라우저 보호는 못 받는 중", "그래서 백업 파일이 더 중요합니다."]);
+  /* 저장 공간이 모자랄 때 누가 먼저 지워지는가. 앱에는 해당하지 않는 개념이라 건너뛴다 */
+  if(!app){
+    if(persistState === "granted")
+      rows.push(["ok", "브라우저가 저장 데이터를 보호 중", "저장 공간이 부족해도 이 앱 데이터를 먼저 지우지 않습니다."]);
+    else if(persistState === "denied")
+      rows.push(["warn", "브라우저 보호는 못 받는 중", "그래서 백업 파일이 더 중요합니다."]);
+  }
 
   const b = data.backup;
   const days = b && b.at ? dayGap(b.at, ymd(new Date())) : null;
   rows.push(days === null
-    ? ["warn", "아직 백업한 적이 없어요", "기기를 바꾸거나 브라우저 데이터를 지우면 되돌릴 방법이 없습니다."]
+    ? ["warn", "아직 백업한 적이 없어요", `기기를 바꾸거나 ${app ? "앱을 지우면" : "브라우저 데이터를 지우면"} 되돌릴 방법이 없습니다.`]
     : (days >= 14
       ? ["warn", `마지막 백업 ${days}일 전`, "그 뒤로 바뀐 내용은 지금 백업이 없으면 사라집니다."]
       : ["ok", days === 0 ? "오늘 백업했어요" : `마지막 백업 ${days}일 전`, INSTALL[os].keep]));
