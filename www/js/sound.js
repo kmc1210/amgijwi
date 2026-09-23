@@ -2,7 +2,7 @@
    파일을 쓰면 CSP 에 media-src 를 열어야 하고 저작권도 따라온다. 합성은 그 둘이 없다.
 
    data.sound 는 "off" | "sfx" | "all". 기본은 off — 카페 근무 중에 갑자기
-   소리가 나면 곤란하다. 배경음(all)은 학습 화면에서만 흐른다.
+   소리가 나면 곤란하다. 배경음(all)은 켜 두면 앱 어디서나 흐른다.
 
    소리는 사용자가 화면을 한 번 건드린 뒤에야 재생할 수 있다(브라우저 규칙).
    그래서 AudioContext 를 미리 만들지 않고 첫 소리 때 만든다. */
@@ -144,6 +144,13 @@ const SFX = {
   },
   /* 낮고 짧게. 틀렸다고 혼내는 소리가 되면 안 된다 */
   again: ()=>stone({from:shz(-9), to:shz(-12), len:0.55, peak:0.1, cut:900}),
+  /* 빈칸이 열릴 때. 한 카드에서 서너 번 연달아 나므로 아주 짧고 가볍게.
+     카드 뒤집기(종이 소리)와 헷갈리지 않게 맑은 한 점으로 낸다 */
+  reveal: ()=>{
+    const k = srand(0.97, 1.05);                  // 연달아 눌러도 같은 소리가 아니게
+    stone({from:shz(12) * k, len:0.16, peak:0.07});
+    stone({from:shz(19) * k, len:0.22, peak:0.035, at:0.015});
+  },
   /* 네 음이 차례로. 세션이 끝난 자리 */
   done: ()=>[2, 4, 9, 14].forEach((s, i)=>
     stone({from:shz(s), len:1.1 + i * 0.2, peak:0.075, at:i * 0.16}))
@@ -156,7 +163,8 @@ function sfx(name){
   try{ SFX[name](); }catch(e){ /* 소리 하나 때문에 앱이 멈추면 안 된다 */ }
 }
 
-/* ---------- 배경음 (학습 화면에서만) ----------
+/* ---------- 배경음 ----------
+   켜 두면 앱 어디서나 흐른다. 레시피를 적거나 목록을 볼 때도 이어진다.
    카페에서 흐르는 느린 재즈. 84 BPM, Dm9 → G9 → Cmaj9 → Am9.
    마디마다 세기와 타이밍이 달라져 같은 구간이 반복되지 않는다. */
 const BPM = 84, BEAT = 60 / BPM, BAR = BEAT * 4;
@@ -270,5 +278,13 @@ function bgmStop(){
 }
 function bgmPlaying(){ return bgm.on; }
 
-/* 주머니 속에서 계속 울리면 곤란하다 */
-document.addEventListener("visibilitychange", ()=>{ if(document.hidden) bgmStop(); });
+/* 브라우저는 사용자가 화면을 한 번 건드린 뒤에야 소리를 내준다.
+   그래서 앱을 열자마자 틀 수 없고, 첫 터치를 기다렸다 시작한다.
+   이미 흐르고 있거나 꺼져 있으면 아무 일도 하지 않으므로 계속 달아둬도 된다. */
+function armBgm(){ if(bgmAllowed() && !bgm.on) bgmStart(); }
+["pointerdown", "keydown"].forEach(ev=>document.addEventListener(ev, armBgm));
+
+/* 화면이 가려지면 멈추고(주머니 속에서 울리면 곤란하다) 돌아오면 다시 잇는다 */
+document.addEventListener("visibilitychange", ()=>{
+  if(document.hidden) bgmStop(); else armBgm();
+});

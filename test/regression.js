@@ -295,7 +295,7 @@ const LEGACY = {
 
   // ── 6-4. 소리 ───────────────────────────────────────────────────
   // 기본은 꺼짐. 꺼져 있으면 오디오를 아예 만들지 않는다(배터리·권한).
-  // 배경음은 학습 화면에서만 흐르고 나가면 멈춘다.
+  // 배경음은 켜 두면 앱 어디서나 흐른다. 브라우저 규칙상 첫 터치 뒤에 시작된다.
   const sound = await page.evaluate(async () => {
     const backup = JSON.stringify(data);
     const r = { def: data.sound, readyWhenOff: null, readyAfterSfx: null };
@@ -310,16 +310,23 @@ const LEGACY = {
     sfx("chu");
     r.readyAfterSfx = audioReady();
 
-    // 효과음만 모드에서는 학습을 시작해도 배경음이 안 나온다
+    // 효과음만 모드에서는 화면을 눌러도 배경음이 안 나온다
+    const tap = ()=>document.dispatchEvent(new Event("pointerdown"));
     data.drinks = [{ id:"q1", name:"소리", cat:"coffee", temp:"ICE", ing:[["물","1"]], steps:[] }];
-    startSession(null);
+    tap();
     r.bgmWhenSfxOnly = bgmPlaying();
 
+    // 켜면 학습 화면이 아니어도 첫 터치에 흐르기 시작한다
     data.sound = "all";
-    startSession(null);
-    r.bgmWhenAll = bgmPlaying();
     go("home");
-    r.bgmAfterLeaving = bgmPlaying();       // 학습 화면을 벗어나면 멈춘다
+    r.bgmBeforeTap = bgmPlaying();          // 터치 전에는 아직 조용하다
+    tap();
+    r.bgmOnHome = bgmPlaying();
+
+    startSession(null);
+    r.bgmInStudy = bgmPlaying();
+    go("list");
+    r.bgmOnList = bgmPlaying();             // 학습을 벗어나도 이어진다
 
     bgmStop();
     data = JSON.parse(backup);
@@ -330,8 +337,11 @@ const LEGACY = {
   ok("효과음만 모드에서 효과음이 오디오를 연다", sound.readyAfterSfx === true);
   eq("모드별 허용", [sound.offOn, sound.offBgm, sound.sfxOn, sound.sfxBgm], [false, false, true, false]);
   ok("효과음만 모드에서는 배경음이 안 나온다", sound.bgmWhenSfxOnly === false);
-  ok("효과음+배경음 모드에서 학습을 시작하면 배경음이 흐른다", sound.bgmWhenAll === true);
-  ok("학습 화면을 벗어나면 배경음이 멈춘다", sound.bgmAfterLeaving === false);
+  ok("소리를 켜도 첫 터치 전에는 조용하다", sound.bgmBeforeTap === false);
+  ok("홈에서도 배경음이 흐른다", sound.bgmOnHome === true);
+  ok("학습 화면에서도 이어진다", sound.bgmInStudy === true);
+  ok("학습을 벗어나도 배경음이 끊기지 않는다", sound.bgmOnList === true);
+  ok("빈칸 효과음이 있다", await page.evaluate(() => typeof SFX.reveal === "function"));
 
   const soundTrip = await page.evaluate(() => {
     const backup = JSON.stringify(data);

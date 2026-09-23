@@ -168,7 +168,6 @@ function startSession(customPool){
   state.revealed.clear(); state.discOpen = false;
   state.stat = {ok:0, again:0, total:pool.length};
   go("study"); renderCard();
-  bgmStart();                      // 배경음은 학습하는 동안만 흐른다
 }
 function bindActions(){
   document.querySelectorAll("#actions .act").forEach(b=>b.addEventListener("click",()=>action(b.dataset.a)));
@@ -227,6 +226,7 @@ function bindBlanks(d){
       e.stopPropagation();
       const i = btn.dataset.b;
       state.revealed.add(i);
+      sfx("reveal");
       const span = document.createElement("span");
       span.className = "amt-on";
       span.textContent = ingAt(d, i)[1] || "—";
@@ -283,6 +283,7 @@ function action(a){
   const d = state.deck[state.idx];
   if(a==="flip"){ flipCard(); return; }
   if(a==="revealAll"){
+    sfx("reveal");
     ingKeys(d).forEach(k=>state.revealed.add(k));
     state.discOpen = true;
     renderCard();
@@ -311,7 +312,7 @@ function finish(){
     : (rate >= 0.7 ? "잘하고 있어요. 조금만 더 하면 돼요!" : "오늘 본 것만으로도 남아요. 내일 또 봐요!");
   go("result");
   startEat();
-  bgmStop(); sfx("done");          // 끝났으니 배경음을 내리고 마무리 소리만
+  sfx("done");
 }
 /* 학습을 마치면 쥐돌이가 치즈를 먹는다 */
 const EAT_SEQ = ["eat1","eat2","eat3","eat4","eat5","eat4","eat3","eat2"];
