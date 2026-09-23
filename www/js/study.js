@@ -310,6 +310,9 @@ function finish(){
      까마귀는 "~까악" 으로 말한다. 다 맞혔으면 나오지 않는다 */
   const crow = $("#resCrow");
   crow.hidden = s.again === 0;
+  /* 그림도 여기서 바로 그린다. 까악은 조금 뒤에 오지만 까마귀 자체는
+     쥐돌이와 같은 순간에 보여야 한다 */
+  if(s.again > 0) crow.innerHTML = crowSVG("idle");
   $("#resMsg").textContent = s.again===0
     ? "전부 한 번에 맞혔어요. 완벽합니다!"
     : `${s.again}개 까먹었다 까악~ 복습 목록에 담아뒀다 까악~`;

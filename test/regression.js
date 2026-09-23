@@ -361,6 +361,9 @@ const LEGACY = {
 
     state.stat = { ok: 4, again: 3, total: 7 };
     finish();
+    /* 까악(900ms) 을 기다리지 않고, 쥐돌이와 같은 순간에 그려져야 한다 */
+    r.drawnAtOnce = box.innerHTML.indexOf("<svg") === 0;
+    box.innerHTML = "";                       // 지난 판의 그림이 남아 속이지 않도록 비운다
     await new Promise(x => setTimeout(x, 1200));
     r.shown = !box.hidden;
     r.msg = document.querySelector("#resMsg").textContent;
@@ -383,6 +386,7 @@ const LEGACY = {
     return r;
   });
   ok("못 외운 게 있으면 까마귀가 나온다", crow.shown === true);
+  ok("까마귀가 쥐돌이와 같은 순간에 그려진다", crow.drawnAtOnce === true);
   ok("까마귀가 실제로 그려진다", crow.drawn === true);
   ok("까마귀가 개수를 말한다", crow.msg.indexOf("3개 까먹었다") === 0, crow.msg);
   ok("까악 말투다", crow.msg.indexOf("까악") > 0, crow.msg);
