@@ -453,6 +453,45 @@ const LEGACY = {
     ok("앱 코드에 " + k + " 가 없다", appSrc.indexOf(k) < 0);
   });
 
+
+  // ── 6-6. iOS 앱 껍데기 ──────────────────────────────────────────
+  // 앱 안에서는 "홈 화면에 추가" 안내가 뜨면 안 된다. 이미 앱이기 때문이다.
+  // 앱은 웹뷰가 뜰 때 window.__amgijwiNative 를 심어 그 사실을 알린다.
+  const native = await page.evaluate(() => {
+    const before = isStandalone();
+    window.__amgijwiNative = true;
+    const after = isStandalone();
+    delete window.__amgijwiNative;
+    return { before: before, after: after, restored: isStandalone() };
+  });
+  ok("웹에서는 그대로 브라우저로 본다", native.before === false);
+  ok("앱 표시가 있으면 설치 안내를 걷는다", native.after === true);
+  ok("표시를 지우면 원래대로 돌아온다", native.restored === false);
+
+  // 표시 이름은 Swift 와 JS 두 곳에 적힌다. 한쪽만 고치면 앱에서 조용히 안내가 다시 뜬다.
+  const iosDir = path.resolve(__dirname, "..", "ios");
+  const swift = fs.readFileSync(path.join(iosDir, "Sources", "WebAppViewController.swift"), "utf8");
+  const bootJs = fs.readFileSync(path.resolve(__dirname, "..", "www", "js", "boot.js"), "utf8");
+  const marker = "window.__";
+  const mStart = swift.indexOf(marker);
+  const planted = mStart < 0 ? null
+    : swift.slice(mStart + 7, swift.indexOf(" =", mStart)).trim();   // "window." 다음부터 " =" 앞까지
+  ok("앱이 심는 표시 이름을 찾을 수 있다", planted !== null && planted.indexOf("__") === 0, String(planted));
+  ok("앱이 심는 이름과 웹이 보는 이름이 같다",
+     planted !== null && bootJs.indexOf("window." + planted + " === true") >= 0,
+     String(planted));
+
+  // file:// 대신 스킴을 직접 다루는 게 localStorage 가 남는 조건이다.
+  const handler = fs.readFileSync(path.join(iosDir, "Sources", "BundleSchemeHandler.swift"), "utf8");
+  ok("앱이 file:// 로 페이지를 띄우지 않는다", swift.indexOf("loadFileURL") < 0);
+  ok("저장소를 디스크에 남기는 설정을 쓴다", swift.indexOf("websiteDataStore = .default()") >= 0);
+  ok("번들 바깥 경로를 막는다", handler.indexOf("hasPrefix(root.path") >= 0);
+
+  // 웹 파일은 project.yml 이 폴더째 넣어준다. 빠지면 앱이 빈 화면이 된다.
+  const projectYml = fs.readFileSync(path.join(iosDir, "project.yml"), "utf8");
+  ok("www 폴더를 통째로 앱에 넣는다",
+     projectYml.indexOf("path: ../www") >= 0 && projectYml.indexOf("type: folder") >= 0);
+
   // index.html 이 실제로 부르는 파일과 www/js 의 파일이 어긋나면 안 된다.
   // 나눠 두면 하나를 빠뜨리거나 지운 파일을 계속 부르는 사고가 나기 쉽다
   const html = fs.readFileSync(path.resolve(__dirname, "..", "www", "index.html"), "utf8");

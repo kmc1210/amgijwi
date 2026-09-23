@@ -6,7 +6,9 @@
    둘 다 "레시피가 사라지지 않는가"에 직접 영향을 준다. */
 function isStandalone(){
   return window.matchMedia("(display-mode: standalone)").matches
-      || window.navigator.standalone === true;
+      || window.navigator.standalone === true
+      /* iOS 앱의 웹뷰에서는 둘 다 잡히지 않는다. 앱이 켜지며 이 표시를 남긴다 */
+      || window.__amgijwiNative === true;
 }
 
 /* ---------- 기기별 안내 ----------

@@ -1,3 +1,8 @@
 node_modules/
 .DS_Store
 *.log
+
+# XcodeGen 이 만들어내는 것들
+ios/*.xcodeproj
+ios/Info.plist
+ios/build/
