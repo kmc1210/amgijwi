@@ -349,6 +349,10 @@
 
   .result{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;gap:8px;}
   .result .big{font-size:56px;}
+  /* 쥐돌이 옆에 까마귀. 까마귀는 조금 작고 바닥선을 맞춰 나란히 선다 */
+  .castrow{display:flex;align-items:flex-end;justify-content:center;gap:10px;}
+  .crowbox{width:62px;height:80px;}
+  .crowbox svg{width:100%;height:100%;display:block;}
   .result .eatbox{width:84px;height:120px;margin:0 auto 2px;}
   .result .eatbox svg{width:100%;height:100%;display:block;}
   .result h2{margin:6px 0 0;font-size:24px;font-weight:800;}
