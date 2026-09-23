@@ -293,6 +293,55 @@ const LEGACY = {
   eq("폰에서는 폭 제한이 걸리지 않는다", wPhone.appbar.w, 390);
   eq("데스크톱 목업(390px)도 그대로다", wMockup.appbar.w, 390);
 
+  // ── 6-4. 소리 ───────────────────────────────────────────────────
+  // 기본은 꺼짐. 꺼져 있으면 오디오를 아예 만들지 않는다(배터리·권한).
+  // 배경음은 학습 화면에서만 흐르고 나가면 멈춘다.
+  const sound = await page.evaluate(async () => {
+    const backup = JSON.stringify(data);
+    const r = { def: data.sound, readyWhenOff: null, readyAfterSfx: null };
+
+    data.sound = "off";
+    sfx("chu");
+    r.readyWhenOff = audioReady();          // 꺼져 있으면 AudioContext 도 안 만든다
+    r.offOn = soundOn(); r.offBgm = bgmAllowed();
+
+    data.sound = "sfx";
+    r.sfxOn = soundOn(); r.sfxBgm = bgmAllowed();
+    sfx("chu");
+    r.readyAfterSfx = audioReady();
+
+    // 효과음만 모드에서는 학습을 시작해도 배경음이 안 나온다
+    data.drinks = [{ id:"q1", name:"소리", cat:"coffee", temp:"ICE", ing:[["물","1"]], steps:[] }];
+    startSession(null);
+    r.bgmWhenSfxOnly = bgmPlaying();
+
+    data.sound = "all";
+    startSession(null);
+    r.bgmWhenAll = bgmPlaying();
+    go("home");
+    r.bgmAfterLeaving = bgmPlaying();       // 학습 화면을 벗어나면 멈춘다
+
+    bgmStop();
+    data = JSON.parse(backup);
+    return r;
+  });
+  eq("소리는 기본으로 꺼져 있다", sound.def, "off");
+  ok("꺼져 있으면 오디오를 만들지 않는다", sound.readyWhenOff === false);
+  ok("효과음만 모드에서 효과음이 오디오를 연다", sound.readyAfterSfx === true);
+  eq("모드별 허용", [sound.offOn, sound.offBgm, sound.sfxOn, sound.sfxBgm], [false, false, true, false]);
+  ok("효과음만 모드에서는 배경음이 안 나온다", sound.bgmWhenSfxOnly === false);
+  ok("효과음+배경음 모드에서 학습을 시작하면 배경음이 흐른다", sound.bgmWhenAll === true);
+  ok("학습 화면을 벗어나면 배경음이 멈춘다", sound.bgmAfterLeaving === false);
+
+  const soundTrip = await page.evaluate(() => {
+    const backup = JSON.stringify(data);
+    data.sound = "all";
+    const saved = JSON.parse(backupJSON()).data.sound;
+    data = JSON.parse(backup);
+    return saved;
+  });
+  eq("백업 파일에 소리 설정이 담긴다", soundTrip, "all");
+
   // ── 7. 저장소 왕복 ──────────────────────────────────────────────
   const trip = await page.evaluate(() => {
     const backup = localStorage.getItem("brewnote.v1");
