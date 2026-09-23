@@ -174,8 +174,23 @@ document.querySelectorAll("#themeBtns .theme-b").forEach(b=>{
   b.addEventListener("click", ()=>{ data.theme = b.dataset.theme; persist(); applyTheme(); });
 });
 
+function applySound(){
+  document.querySelectorAll("#soundBtns .theme-b").forEach(b=>{
+    b.classList.toggle("on", b.dataset.sound === data.sound);
+  });
+}
+document.querySelectorAll("#soundBtns .theme-b").forEach(b=>{
+  b.addEventListener("click", ()=>{
+    data.sound = b.dataset.sound; persist(); applySound();
+    if(!bgmAllowed()) bgmStop();
+    /* 고른 소리를 바로 들려준다. 끄기를 골랐을 때는 당연히 조용하다 */
+    sfx("chu");
+  });
+});
+
 function renderSettings(){
   applyTheme();
+  applySound();
   renderPinCard();
   renderCats();
   document.querySelectorAll("#enSeg button").forEach(b=>b.classList.toggle("on", b.dataset.en === data.enCase));
@@ -279,6 +294,7 @@ function applyBackup(text){
   confirmBox("백업 복원", `레시피 ${d.drinks.length}개를 불러오고 현재 데이터를 덮어쓸까요?`, "복원", ()=>{
     const keepMode = (d.mode === "blank" || d.mode === "flip") ? d.mode : data.mode;
     const keepTheme = ["cream","dark","green"].indexOf(d.theme) >= 0 ? d.theme : data.theme;
+    const keepSound = ["off","sfx","all"].indexOf(d.sound) >= 0 ? d.sound : data.sound;
     const keepCats = (Array.isArray(d.cats) && d.cats.length)
       ? d.cats.map(c=>({id:String(c.id||uid()), label:String(c.label||"분류"), emo:String(c.emo||"🥤")}))
       : data.cats;
@@ -296,7 +312,7 @@ function applyBackup(text){
     const keepMemos = Array.isArray(d.memos) ? d.memos.map(m=>({
       id:String(m.id||uid()), text:String(m.text||""), at:String(m.at||""), pin:!!m.pin
     })).filter(m=>m.text) : [];
-    data = {v:1, mode:keepMode, theme:keepTheme, enCase:keepEn, pin:data.pin, visit:(d.visit || data.visit), cats:keepCats, shelf:keepShelf, memos:keepMemos,
+    data = {v:1, mode:keepMode, theme:keepTheme, sound:keepSound, enCase:keepEn, pin:data.pin, visit:(d.visit || data.visit), cats:keepCats, shelf:keepShelf, memos:keepMemos,
       /* 새 백업은 공용 부재료 목록을 갖고 있고, 예전 백업은 레시피 안에 부재료가 박혀 있다.
          둘 다 받아서 아래 liftSubs로 하나의 모양으로 맞춘다 */
       subs:Array.isArray(d.subs)?d.subs.map(cleanSub):[],
@@ -313,7 +329,7 @@ function applyBackup(text){
       })), mastered:Array.isArray(d.mastered)?d.mastered:[], needReview:Array.isArray(d.needReview)?d.needReview:[]};
     liftSubs(data);
     data.drinks.forEach(x=>{ x.subRefs = (x.subRefs||[]).filter(id=>data.subs.some(s=>s.id===id)); });
-    persist(); applyTheme(); $("#impBox").value=""; toast("복원했어요"); go("home");
+    persist(); applyTheme(); applySound(); $("#impBox").value=""; toast("복원했어요"); go("home");
   });
 }
 const SHELF_SAMPLES = [

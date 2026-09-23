@@ -143,6 +143,8 @@ data.needReview = data.needReview || [];
 if(data.mode !== "blank") data.mode = "flip";
 if(["cream","dark","green"].indexOf(data.theme) < 0) data.theme = "cream";
 if(["as-is","upper","lower"].indexOf(data.enCase) < 0) data.enCase = "as-is";
+/* 소리는 꺼진 채로 시작한다. 카페 근무 중에 갑자기 울리면 곤란하다 */
+if(["off","sfx","all"].indexOf(data.sound) < 0) data.sound = "off";
 if(!Array.isArray(data.cats) || !data.cats.length){
   data.cats = DEFAULT_CATS.map(c=>({id:c.id, label:c.label, emo:c.emo}));
 }

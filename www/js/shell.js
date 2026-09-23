@@ -16,6 +16,9 @@ $("#dlgYes").addEventListener("click", ()=>{ $("#dlg").classList.remove("on"); i
 
 /* ---------- 화면 전환 ---------- */
 function go(name){
+  /* 배경음은 학습 화면 전용이다. 중간에 나가면(✕, 탭 이동) 바로 멈춘다.
+     결과 화면은 학습의 끝자락이라 finish() 가 따로 내린다 */
+  if(name !== "study") bgmStop();
   if(name !== "result") stopEat();
   if(name !== "home"){ stopSip(); stopPanic(); }
   if(name !== "list" && state.selMode) exitSel();
