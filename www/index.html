@@ -355,6 +355,16 @@
   </div>
 </div>
 
-<script src="app.js?v=6"></script>
+<!-- 한 파일이던 app.js 를 구역별로 나눴다. 전역을 그대로 쓰는 고전 script 라 순서가 중요하다.
+     core 가 데이터와 헬퍼를 만들고, boot 가 마지막에 첫 화면을 그린다. -->
+<script src="js/core.js?v=7"></script>
+<script src="js/mascot.js?v=7"></script>
+<script src="js/shell.js?v=7"></script>
+<script src="js/home.js?v=7"></script>
+<script src="js/study.js?v=7"></script>
+<script src="js/list.js?v=7"></script>
+<script src="js/editor.js?v=7"></script>
+<script src="js/settings.js?v=7"></script>
+<script src="js/boot.js?v=7"></script>
 </body>
 </html>

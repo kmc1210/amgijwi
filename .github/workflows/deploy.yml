@@ -84,7 +84,10 @@ jobs:
             exit 1
           fi
           # --delete 로 올리기 때문에 www/ 가 비어 있으면 버킷이 통째로 비워진다
-          test -s www/index.html && test -s www/app.js && test -s www/style.css
+          test -s www/index.html && test -s www/style.css
+          # 스크립트는 여러 파일로 나뉘어 있다. 하나라도 비어 있으면 앱이 깨진다
+          test -s www/js/core.js && test -s www/js/boot.js
+          for f in www/js/*.js; do test -s "$f" || { echo "::error::빈 파일 $f"; exit 1; }; done
 
       - uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
         with:
@@ -92,7 +95,7 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
 
       # index.html 은 매번 다시 확인하게(no-cache) 하고, 나머지는 하루 캐시한다.
-      # app.js·style.css 는 ?v= 로 바뀌지만 버전 올리는 걸 잊었을 때 옛 JS 가
+      # js/*.js·style.css 는 ?v= 로 바뀌지만 버전 올리는 걸 잊었을 때 옛 JS 가
       # 오래 남으면 새 HTML 과 어긋나 앱이 깨질 수 있어서 길게 잡지 않는다.
       # 새 HTML 이 아직 없는 파일을 가리키지 않게 나머지를 먼저, index.html 을 마지막에 올린다.
       - name: S3 에 올리기
@@ -109,11 +112,13 @@ jobs:
           echo "무효화 $id"
           aws cloudfront wait invalidation-completed --distribution-id "$CF_DISTRIBUTION_ID" --id "$id"
 
-      # 캐시 때문에 옛 파일이 나가고 있지 않은지 바이트 단위로 비교한다
+      # 캐시 때문에 옛 파일이 나가고 있지 않은지 바이트 단위로 비교한다.
+      # 파일 목록을 적어두지 않고 www/ 를 훑는다. 새 파일을 추가하고 여기 적는 걸
+      # 잊으면 검사 없이 배포되기 때문이다
       - name: 배포된 파일이 저장소와 같은지
         run: |
           fail=0
-          for f in index.html app.js style.css apple-touch-icon.png; do
+          for f in $(cd www && find . -type f | sed 's|^\./||' | sort); do
             want=$(sha256sum "www/$f" | cut -d' ' -f1)
             got=$(curl -fsS "$SITE_URL/$f" | sha256sum | cut -d' ' -f1)
             if [ "$want" = "$got" ]; then echo "같음  $f"; else echo "::error::다름  $f"; fail=1; fi

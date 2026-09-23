@@ -58,7 +58,7 @@ const LEGACY = {
 
   // ── 1. 로드 자체 ────────────────────────────────────────────────
   ok("자바스크립트 오류 없이 뜬다", errors.length === 0, errors.join(" | "));
-  ok("app.js 가 실제로 실행됐다", await page.evaluate(() =>
+  ok("스크립트가 실제로 실행됐다", await page.evaluate(() =>
     typeof data === "object" && Array.isArray(data.drinks)));
   ok("style.css 가 실제로 붙었다", await page.evaluate(() =>
     getComputedStyle(document.body).backgroundColor !== "rgba(0, 0, 0, 0)"));
@@ -340,10 +340,22 @@ const LEGACY = {
 
   // 정책이 막아주는 것과 별개로, 나갈 코드 자체가 없는지 소스에서도 본다.
   // CSP 가 없는 곳에서 열려도 이 약속이 코드 수준에서 지켜지게 하는 두 번째 줄이다.
-  const appSrc = fs.readFileSync(path.resolve(__dirname, "..", "www", "app.js"), "utf8");
+  // 파일이 늘어도 빠짐없이 보도록 www/js 를 통째로 읽는다
+  const jsDir = path.resolve(__dirname, "..", "www", "js");
+  const jsFiles = fs.readdirSync(jsDir).filter(f => f.endsWith(".js")).sort();
+  const appSrc = jsFiles.map(f => fs.readFileSync(path.join(jsDir, f), "utf8")).join("\n");
+  ok("www/js 에 스크립트가 있다", jsFiles.length > 0, jsFiles.join(", "));
   ["fetch(", "XMLHttpRequest", "sendBeacon", "WebSocket", "EventSource", "import("].forEach(k => {
-    ok("app.js 에 " + k + " 가 없다", appSrc.indexOf(k) < 0);
+    ok("앱 코드에 " + k + " 가 없다", appSrc.indexOf(k) < 0);
   });
+
+  // index.html 이 실제로 부르는 파일과 www/js 의 파일이 어긋나면 안 된다.
+  // 나눠 두면 하나를 빠뜨리거나 지운 파일을 계속 부르는 사고가 나기 쉽다
+  const html = fs.readFileSync(path.resolve(__dirname, "..", "www", "index.html"), "utf8");
+  const listed = (html.match(/<script src="js\/([a-z]+)\.js\?v=\d+"><\/script>/g) || [])
+    .map(t => /js\/([a-z]+)\.js/.exec(t)[1] + ".js");
+  eq("index.html 이 부르는 파일과 www/js 가 일치한다", listed.slice().sort(), jsFiles);
+  eq("core 를 먼저, boot 를 마지막에 부른다", [listed[0], listed[listed.length - 1]], ["core.js", "boot.js"]);
 
   const remote = await page.evaluate(() => {
     const bad = [];

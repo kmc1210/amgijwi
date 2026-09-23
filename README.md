@@ -30,8 +30,21 @@ PIN 잠금은 훔쳐보기 방지용이지 암호화가 아닙니다.
 www/                 배포되는 앱. 이 폴더 통째로 S3 에 올라갑니다.
   index.html         마크업
   style.css          스타일
-  app.js             앱 전체 로직 (도트 그래픽 포함)
+  js/                앱 로직. 한 파일이던 app.js 를 구역별로 나눴습니다.
+    core.js          저장소 · 샘플 데이터 · 상태 · 부재료 공용 목록
+    mascot.js        쥐돌이 도트 그래픽과 움직임
+    shell.js         토스트 · 확인 모달 · 화면 전환
+    home.js          홈, ICE/HOT 재료 두 벌 헬퍼
+    study.js         보관함 · 학습 · 빈칸 채우기
+    list.js          목록 · 검색 · 부재료 · 개봉관리 · 메모 · 상세 시트
+    editor.js        사진 글자 분석 · 레시피/부재료 편집기
+    settings.js      설정 · 백업 · PIN · 테마
+    boot.js          저장 안정성 · 기기별 안내 · 시작
   apple-touch-icon.png
+
+번들러 없이 고전 script 태그로 불러옵니다. 전역을 그대로 쓰기 때문에 index.html 의
+로드 순서가 곧 의존 순서입니다. core 가 먼저, boot 가 마지막입니다.
+회귀 테스트가 index.html 의 목록과 www/js 의 파일이 일치하는지 확인합니다.
 test/regression.js   실제 브라우저로 돌리는 회귀 테스트
 index.html           옛 단일 파일. 지금은 어디에도 서빙되지 않습니다. 옛 주소(kmc1210.github.io)의
                      브라우저 저장소에 남은 데이터를 꺼내야 할 때 Pages 를 잠깐 켜서 쓸 통로라 남겨둡니다.
