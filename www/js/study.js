@@ -306,13 +306,20 @@ $("#quitBtn").addEventListener("click", ()=>go("home"));
 function finish(){
   const s = state.stat;
   $("#resOk").textContent = s.ok; $("#resAgain").textContent = s.again; $("#resTotal").textContent = s.total;
-  $("#resMsg").textContent = s.again===0 ? "전부 한 번에 맞혔어요. 완벽합니다!" : `${s.again}개는 복습 목록에 담아뒀어요.`;
+  /* 못 외운 게 있으면 까마귀가 나와서 한마디 한다. 쥐돌이가 "~츄" 로 말하듯
+     까마귀는 "~까악" 으로 말한다. 다 맞혔으면 나오지 않는다 */
+  const crow = $("#resCrow");
+  crow.hidden = s.again === 0;
+  $("#resMsg").textContent = s.again===0
+    ? "전부 한 번에 맞혔어요. 완벽합니다!"
+    : `${s.again}개 까먹었다 까악~ 복습 목록에 담아뒀다 까악~`;
   const rate = s.total ? s.ok / s.total : 1;
   $("#resCheer").textContent = rate === 1 ? "이 기세로 내일도 한 번 더!"
     : (rate >= 0.7 ? "잘하고 있어요. 조금만 더 하면 돼요!" : "오늘 본 것만으로도 남아요. 내일 또 봐요!");
   go("result");
   startEat();
   sfx("done");
+  if(s.again > 0) setTimeout(startCaw, 900);   // 마무리 소리가 지나간 뒤에 끼어든다
 }
 /* 학습을 마치면 쥐돌이가 치즈를 먹는다 */
 const EAT_SEQ = ["eat1","eat2","eat3","eat4","eat5","eat4","eat3","eat2"];

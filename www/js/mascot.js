@@ -1,6 +1,65 @@
 /* 암기쥐 — 쥐돌이 도트 그래픽과 움직임 (그리기 · 깜빡임 · 마시기 · 허둥대기) */
 
 /* =========================================================
+   까마귀 — 학습 결과에서 못 외운 게 있을 때만 나온다.
+   쥐돌이와 같은 도트 문법(28칸 폭, o 외곽선, ohhho/ohkho 눈)을 쓴다.
+   외곽선만 반대다. 쥐돌이는 몸이 밝아 어둡게 두르고, 까마귀는 몸이 어두워
+   밝게 둘러야 다크 테마에서 배경에 묻히지 않는다.
+   ========================================================= */
+const CROW_PAL = {
+  o:"#6E6157",
+  b:"#221D1A",
+  s:"#3E352F",
+  e:"#E0A45C",
+  E:"#C4823E",
+  m:"#7C3A2E",
+  h:"#FFFFFF",
+  k:"#261F1C"
+};
+const CROW = {
+  idle:["................oo..........","...............obbo.........","..............obbo..........",".............obbo...........",".........o..obbbo...o.......","........obo.obo.obosbo......",".......osssobbbobbssso......","......obssbbbbbbbbbssso.....",".....ossbbbbbbbbbbbbbsso....","....obsssbbsbbbsbbbsssbo....","....ossbbbbbbbbbbbbbbbsso...","...obssbooobbbbbooobbssbo...","...osssohhhobbbohhhobssso...","...obssohkhosbbohkhobssbo...","...ossbohkhobbbohkhobbsso...","...obssohhhobbbohhhosssbo...","...ossbbooobbbbbooobbbsso...","..obssbbsbeeeeesbbbbbssbo...","..osssbbbeeeeeeebbbbbssso...","..obssbbbbEEEEEbbbbbbssbo...",".ossbbbbbbbEEEbbbbbbbbbsso..",".obsssbbbsbbEbbbbbsbbsssbo..","ossbbsbbbbbbbbbbbbbbbbsbsso.","obssbbbbbbbbbbbbbbbbbbbssbo.","ossssbbbbbbbbbbbbbbbbbbssso.","obssbsbbbbbbbbbbbbbbbsbssbo.","ossbbsbbbbbbbbbbbbbbbbbbsso.",".obsssbbbbbbbbbbbbbbbbsssbo.",".ossbbsbbbbbbbbbbbbbbbbbsso.",".obssbbbsbbbbbbbbbsbbsbssbo.","..ossssbbbbbbbbbbbbbbbssso..","..obssbbbbbbbbbbbbbbsbssbo..","...ossbsbbbbbbbbbbbbbbsso...","...obsssbbbbsbbbbbsssssbo...","....ossbsbbbbbbbbbbbbsso....","....obssbbbbbbbbbbsbssbo....",".....ossssbbbbbbbbbssso.....","......oobbbsbbbbbsbbboo.....",".......ooeeeoooooeeeoo......","........ooo.......ooo......."],
+  caw:["................oo..........","...............obbo.........","..............obbo..........",".............obbo...........",".........o..obbbo...o.......","........obo.obo.obosbo......",".......osssobbbobbssso......","......obssbbbbbbbbbssso.....",".....ossbbbbbbbbbbbbbsso....","....obsssbbsbbbsbbbsssbo....","....ossbbbbbbbbbbbbbbbsso...","...obssbooobbbbbooobbssbo...","...osssohhhobbbohhhobssso...","...obssohkhosbbohkhobssbo...","...ossbohkhobbbohkhobbsso...","...obssohhhobbbohhhosssbo...","...ossbbooobbbbbooobbbsso...","..obssbbsbeeeeesbbbbbssbo...","..osssbbbeeeeeeebbbbbssso...","..obssbbbbmmmmmbbbbbbssbo...",".ossbbbbbbmmmmmbbbbbbbbsso..",".obsssbbbEEEEEEEbbsbbsssbo..","ossbbsbbbbEEEEEbbbbbbbsbsso.","obssbbbbbbbbbbbbbbbbbbbssbo.","ossssbbbbbbbbbbbbbbbbbbssso.","obssbsbbbbbbbbbbbbbbbsbssbo.","ossbbsbbbbbbbbbbbbbbbbbbsso.",".obsssbbbbbbbbbbbbbbbbsssbo.",".ossbbsbbbbbbbbbbbbbbbbbsso.",".obssbbbsbbbbbbbbbsbbsbssbo.","..ossssbbbbbbbbbbbbbbbssso..","..obssbbbbbbbbbbbbbbsbssbo..","...ossbsbbbbbbbbbbbbbbsso...","...obsssbbbbsbbbbbsssssbo...","....ossbsbbbbbbbbbbbbsso....","....obssbbbbbbbbbbsbssbo....",".....ossssbbbbbbbbbssso.....","......oobbbsbbbbbsbbboo.....",".......ooeeeoooooeeeoo......","........ooo.......ooo......."]
+};
+function crowSVG(pose){
+  const rows = CROW[pose] || CROW.idle;
+  const hh = rows.length, ww = rows[0].length;
+  let out = "";
+  for(let y=0; y<hh; y++){
+    let x = 0;
+    while(x < ww){
+      const ch = rows[y][x];
+      if(ch === "."){ x++; continue; }
+      let n = 1;
+      while(x+n < ww && rows[y][x+n] === ch) n++;
+      out += '<rect x="'+x+'" y="'+y+'" width="'+n+'" height="1" fill="'+CROW_PAL[ch]+'"/>';
+      x += n;
+    }
+  }
+  return '<svg viewBox="0 0 '+ww+' '+hh+'" shape-rendering="crispEdges" aria-hidden="true">'+out+'</svg>';
+}
+/* 까악 두 번. 두 번째가 짧아 재촉하는 느낌이 난다 */
+let cawT = null;
+function stopCaw(){ if(cawT){ clearTimeout(cawT); cawT = null; } }
+function startCaw(){
+  const el = $("#resCrow"); if(!el) return;
+  stopCaw();
+  el.innerHTML = crowSVG("caw");
+  sfx("caw");
+  if(reduceMotion()) return;
+  const seq = [["idle",520],["caw",300],["idle",260],["caw",240],["idle",0]];
+  let i = 0;
+  const step = ()=>{
+    const s = seq[i];
+    el.innerHTML = crowSVG(s[0]);
+    if(s[0] === "caw") sfx("caw");
+    i++;
+    if(i < seq.length) cawT = setTimeout(step, s[1]);
+  };
+  cawT = setTimeout(step, 520);
+}
+
+
+/* =========================================================
    비상 달리기 — 오늘 폐기가 있으면 홈에서 두 바퀴 돌고 제자리로.
    8방향(옆4포즈·사선·정면·뒤) 스프라이트를 타원 궤도로 돌린다.
    그림자는 바닥에 붙어 있고 몸만 뜬다. 방향 전환은 공중 프레임에서만.

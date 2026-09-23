@@ -153,7 +153,31 @@ const SFX = {
   },
   /* 네 음이 차례로. 세션이 끝난 자리 */
   done: ()=>[2, 4, 9, 14].forEach((s, i)=>
-    stone({from:shz(s), len:1.1 + i * 0.2, peak:0.075, at:i * 0.16}))
+    stone({from:shz(s), len:1.1 + i * 0.2, peak:0.075, at:i * 0.16})),
+  /* 까악. 톱니파에 빠른 떨림을 얹고 음을 떨어뜨려 새 울음을 흉내 낸다.
+     까- 하고 짧게, 악- 하고 길게 두 마디로 낸다 */
+  caw: ()=>{
+    [[0, 0.1, 700, 520], [0.16, 0.3, 640, 380]].forEach(p=>{
+      const t = actx.currentTime + p[0];
+      const o = actx.createOscillator();
+      o.type = "sawtooth";
+      o.frequency.setValueAtTime(p[2], t);
+      o.frequency.exponentialRampToValueAtTime(p[3], t + p[1]);
+      const lfo = actx.createOscillator(); lfo.frequency.value = 34;
+      const lg = actx.createGain(); lg.gain.value = 42;
+      lfo.connect(lg); lg.connect(o.frequency);
+      const f = actx.createBiquadFilter();
+      f.type = "bandpass"; f.frequency.value = 1400; f.Q.value = 1.4;
+      const g = sbus();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.085, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + p[1]);
+      o.connect(f); f.connect(g);
+      o.start(t); o.stop(t + p[1] + 0.03);
+      lfo.start(t); lfo.stop(t + p[1] + 0.03);
+      snoise(t, p[1] * 0.6, 2000, 0.8, 0.03);
+    });
+  }
 };
 
 function sfx(name){

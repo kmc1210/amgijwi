@@ -352,6 +352,47 @@ const LEGACY = {
   });
   eq("백업 파일에 소리 설정이 담긴다", soundTrip, "all");
 
+  // ── 6-5. 까마귀 ─────────────────────────────────────────────────
+  // 못 외운 게 있을 때만 결과 화면에 나온다. 다 맞혔으면 쥐돌이만 있다.
+  const crow = await page.evaluate(async () => {
+    const backup = JSON.stringify(data);
+    const box = document.querySelector("#resCrow");
+    const r = {};
+
+    state.stat = { ok: 4, again: 3, total: 7 };
+    finish();
+    await new Promise(x => setTimeout(x, 1200));
+    r.shown = !box.hidden;
+    r.msg = document.querySelector("#resMsg").textContent;
+    r.drawn = box.innerHTML.indexOf("<svg") === 0;
+
+    state.stat = { ok: 7, again: 0, total: 7 };
+    finish();
+    await new Promise(x => setTimeout(x, 200));
+    r.hiddenWhenPerfect = box.hidden;
+    r.perfectMsg = document.querySelector("#resMsg").textContent;
+
+    stopCaw();
+    r.poses = Object.keys(CROW);
+    r.sameWidth = CROW.idle.every(x => x.length === CROW.idle[0].length)
+               && CROW.caw.every(x => x.length === CROW.idle[0].length);
+    r.eyeLikeMouse = CROW.idle.some(x => x.indexOf("ohkho") >= 0);   // 눈은 쥐돌이와 같은 문법
+    r.pupilSameColor = CROW_PAL.k === MOUSE_PAL.k;
+    data = JSON.parse(backup);
+    go("home");
+    return r;
+  });
+  ok("못 외운 게 있으면 까마귀가 나온다", crow.shown === true);
+  ok("까마귀가 실제로 그려진다", crow.drawn === true);
+  ok("까마귀가 개수를 말한다", crow.msg.indexOf("3개 까먹었다") === 0, crow.msg);
+  ok("까악 말투다", crow.msg.indexOf("까악") > 0, crow.msg);
+  ok("다 맞히면 까마귀가 안 나온다", crow.hiddenWhenPerfect === true);
+  ok("다 맞히면 칭찬만 한다", crow.perfectMsg.indexOf("까악") < 0, crow.perfectMsg);
+  eq("자세는 평상시와 까악 두 가지", crow.poses, ["idle", "caw"]);
+  ok("모든 줄의 폭이 같다", crow.sameWidth === true);
+  ok("눈은 쥐돌이와 같은 도트 문법이다", crow.eyeLikeMouse === true);
+  ok("눈동자 색이 쥐돌이와 같다", crow.pupilSameColor === true);
+
   // ── 7. 저장소 왕복 ──────────────────────────────────────────────
   const trip = await page.evaluate(() => {
     const backup = localStorage.getItem("brewnote.v1");

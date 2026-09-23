@@ -16,7 +16,7 @@ $("#dlgYes").addEventListener("click", ()=>{ $("#dlg").classList.remove("on"); i
 
 /* ---------- 화면 전환 ---------- */
 function go(name){
-  if(name !== "result") stopEat();
+  if(name !== "result"){ stopEat(); stopCaw(); }
   if(name !== "home"){ stopSip(); stopPanic(); }
   if(name !== "list" && state.selMode) exitSel();
   document.querySelectorAll(".screen").forEach(el=>el.classList.remove("active"));
