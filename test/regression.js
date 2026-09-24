@@ -520,8 +520,22 @@ const LEGACY = {
   ok("저장소를 디스크에 남기는 설정을 쓴다", swift.indexOf("websiteDataStore = .default()") >= 0);
   ok("번들 바깥 경로를 막는다", handler.indexOf("hasPrefix(root.path") >= 0);
 
-  // 웹 파일은 project.yml 이 폴더째 넣어준다. 빠지면 앱이 빈 화면이 된다.
   const projectYml = fs.readFileSync(path.join(iosDir, "project.yml"), "utf8");
+
+  // 앱 아이콘. 1024 여야 하고, 알파 채널이 있으면 앱스토어가 거부한다.
+  const iconPath = path.join(iosDir, "Assets.xcassets", "AppIcon.appiconset", "icon-1024.png");
+  const icon = fs.readFileSync(iconPath);
+  const png = icon.slice(0, 8).toString("hex") === "89504e470d0a1a0a";
+  ok("앱 아이콘이 PNG 다", png);
+  eq("앱 아이콘이 1024x1024 다", [icon.readUInt32BE(16), icon.readUInt32BE(20)], [1024, 1024]);
+  // IHDR 의 색 타입: 2=RGB, 6=RGBA. 4·6 이면 알파가 있다
+  ok("앱 아이콘에 알파 채널이 없다", (icon[25] & 4) === 0, "색 타입 " + icon[25]);
+
+  const iconSet = JSON.parse(fs.readFileSync(path.join(iosDir, "Assets.xcassets", "AppIcon.appiconset", "Contents.json"), "utf8"));
+  ok("아이콘 목록이 그 파일을 가리킨다", iconSet.images.some(i => i.filename === "icon-1024.png"));
+  ok("프로젝트가 AppIcon 을 쓴다", projectYml.indexOf("ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon") >= 0);
+
+  // 웹 파일은 project.yml 이 폴더째 넣어준다. 빠지면 앱이 빈 화면이 된다.
   ok("www 폴더를 통째로 앱에 넣는다",
      projectYml.indexOf("path: ../www") >= 0 && projectYml.indexOf("type: folder") >= 0);
 
