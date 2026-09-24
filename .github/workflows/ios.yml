@@ -1,0 +1,108 @@
+# iOS 껍데기가 빌드되고 실제로 화면이 뜨는지 본다.
+#
+# 맥이 없어도 여기서 확인할 수 있다는 게 요점이다.
+# 시뮬레이터에 올려 실행한 뒤 화면을 찍어 올려두므로, 받아서 눈으로 보면 된다.
+# 공개 저장소라 기본 러너 사용료는 붙지 않는다.
+
+name: iOS
+
+on:
+  pull_request:
+    paths:
+      - "ios/**"
+      - "www/**"
+      - ".github/workflows/ios.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ios/**"
+      - "www/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: 쓰는 Xcode 를 밝혀 둔다
+        run: xcodebuild -version
+
+      # .xcodeproj 를 저장소에 두지 않는다. project.yml 에서 만들어 쓴다.
+      - name: XcodeGen 설치
+        run: brew install xcodegen
+
+      - name: 프로젝트 생성
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: 빌드
+        working-directory: ios
+        run: |
+          set -eo pipefail
+          xcodebuild build \
+            -project Amgijwi.xcodeproj \
+            -scheme Amgijwi \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
+
+      # 빌드가 됐다고 화면이 뜬다는 보장은 없다. 웹뷰가 실제로 그려지는지까지 본다.
+      - name: 시뮬레이터에서 실행
+        working-directory: ios
+        run: |
+          set -eo pipefail
+          APP=$(find build/Build/Products -maxdepth 3 -name "Amgijwi.app" | head -1)
+          test -n "$APP" || { echo "빌드 결과를 못 찾았다"; exit 1; }
+          echo "앱 경로: $APP"
+
+          # 번들에 웹 파일이 들어갔는지 먼저 본다. 빠지면 빈 화면이 된다.
+          test -f "$APP/www/index.html" || { echo "www/index.html 이 번들에 없다"; exit 1; }
+          test -f "$APP/www/js/core.js"  || { echo "www/js 가 번들에 없다"; exit 1; }
+          echo "번들에 들어간 웹 파일:"
+          find "$APP/www" -type f | sed "s|$APP/||" | sort
+
+          # 기기 이름을 박아두면 러너 이미지가 바뀔 때 통째로 실패한다. 있는 것 중에 고른다.
+          DEVICE=$(xcrun simctl list devices available | grep "iPhone" | head -1 | grep -o "[0-9A-F-]\{36\}")
+          test -n "$DEVICE" || { echo "쓸 수 있는 아이폰 시뮬레이터가 없다"; exit 1; }
+          echo "시뮬레이터: $DEVICE"
+
+          xcrun simctl boot "$DEVICE" || true
+          xcrun simctl bootstatus "$DEVICE" -b
+
+          xcrun simctl install "$DEVICE" "$APP"
+          xcrun simctl launch "$DEVICE" com.amgijwi.app
+
+          # 웹뷰가 그려질 시간을 준다
+          sleep 12
+
+          xcrun simctl io "$DEVICE" screenshot "$GITHUB_WORKSPACE/ios-home.png"
+
+          # 켜자마자 죽었으면 여기서 걸린다.
+          if xcrun simctl spawn "$DEVICE" launchctl list | grep -q com.amgijwi.app; then
+            echo "앱이 실행 중이다"
+          else
+            echo "앱이 실행 중이 아니다"
+            exit 1
+          fi
+
+          xcrun simctl shutdown "$DEVICE" || true
+
+
+      - name: 찍은 화면 올리기
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ios-screenshot
+          path: ios-home.png
+          if-no-files-found: warn

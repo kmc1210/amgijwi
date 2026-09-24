@@ -1,0 +1,66 @@
+# 암기쥐 iOS 껍데기 — xcodegen generate 로 Amgijwi.xcodeproj 를 만든다.
+#
+# .xcodeproj 를 저장소에 넣지 않는 이유는 두 가지다.
+# 맥 없이도 이 파일만 고치면 프로젝트를 바꿀 수 있고,
+# 병합할 때 사람이 읽을 수 없는 충돌이 나지 않는다.
+
+name: Amgijwi
+
+options:
+  bundleIdPrefix: com.amgijwi
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+
+targets:
+  Amgijwi:
+    type: application
+    platform: iOS
+
+    sources:
+      - path: Sources
+      # www 를 폴더 통째로 넣는다. 안의 구조가 그대로 보존돼야
+      # 스킴 처리기가 js/core.js 같은 경로를 그대로 찾을 수 있다.
+      - path: ../www
+        name: www
+        type: folder
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.amgijwi.app
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"     # 아이폰과 아이패드. 태블릿 최대 폭 작업을 이미 해뒀다
+        SWIFT_VERSION: "5.0"
+        ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: 암기쥐
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+
+        # 빈 값이면 기본 런치 화면이 생긴다. 이게 있어야 전체 화면으로 뜬다.
+        UILaunchScreen: {}
+
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+          UISceneConfigurations:
+            UIWindowSceneSessionRoleApplication:
+              - UISceneConfigurationName: Default
+                UISceneDelegateClassName: $(PRODUCT_MODULE_NAME).SceneDelegate
+
+        # 가로 모드도 받는다. 노치 안전 영역 대응은 CSS 쪽에 이미 들어가 있다.
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+
+        # 암호화를 따로 쓰지 않는다. 심사 때마다 수출 규정을 묻지 않게 미리 밝혀둔다.
+        ITSAppUsesNonExemptEncryption: false

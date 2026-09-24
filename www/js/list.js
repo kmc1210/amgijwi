@@ -75,7 +75,7 @@ function renderBackupBanner(){
       ? `마지막 백업 뒤로 레시피가 ${due.grew}개 늘었어요.`
       : `마지막 백업이 ${due.days}일 전이에요.`);
   box.innerHTML = `<div class="banner warn"><span>💾</span><div>
-      <b>백업 파일을 만들어 두세요.</b><br>${esc(msg)} 브라우저 데이터를 지우거나 기기를 바꾸면 사라집니다.
+      <b>백업 파일을 만들어 두세요.</b><br>${esc(msg)} ${isNativeApp() ? "앱을 지우거나" : "브라우저 데이터를 지우거나"} 기기를 바꾸면 사라집니다.
       <div class="bkbtns">
         <button class="go" id="bkNow">지금 백업</button>
         <button class="later" id="bkLater">나중에</button>

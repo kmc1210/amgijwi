@@ -6,7 +6,9 @@
    둘 다 "레시피가 사라지지 않는가"에 직접 영향을 준다. */
 function isStandalone(){
   return window.matchMedia("(display-mode: standalone)").matches
-      || window.navigator.standalone === true;
+      || window.navigator.standalone === true
+      /* iOS 앱의 웹뷰에서는 둘 다 잡히지 않는다 */
+      || isNativeApp();
 }
 
 /* ---------- 기기별 안내 ----------
@@ -52,6 +54,15 @@ function applyDeviceText(){
     el.style.display = el.getAttribute("data-os").split(" ").indexOf(os) >= 0 ? "" : "none";
   });
 }
+/* 마크업의 data-env="web" · "app" 는 해당 환경에서만 보인다.
+   같은 사실을 두 가지 말로 적어두고 맞는 쪽만 남긴다 */
+function applyEnvText(){
+  const env = isNativeApp() ? "app" : "web";
+  document.querySelectorAll("[data-env]").forEach(el=>{
+    el.style.display = el.getAttribute("data-env") === env ? "" : "none";
+  });
+}
+
 let persistState = "unknown";           // unknown · granted · denied · unsupported
 function checkPersist(){
   if(!navigator.storage || !navigator.storage.persist){
@@ -70,6 +81,7 @@ function checkPersist(){
 
 applyTheme();
 applyDeviceText();
+applyEnvText();
 initVisit();
 renderHome();
 checkPersist();
