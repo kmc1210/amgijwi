@@ -19,6 +19,7 @@ targets:
 
     sources:
       - path: Sources
+      - path: Assets.xcassets
       # www 를 폴더 통째로 넣는다. 안의 구조가 그대로 보존돼야
       # 스킴 처리기가 js/core.js 같은 경로를 그대로 찾을 수 있다.
       - path: ../www
@@ -28,6 +29,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.amgijwi.app
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1,2"     # 아이폰과 아이패드. 태블릿 최대 폭 작업을 이미 해뒀다
