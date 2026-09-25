@@ -454,6 +454,75 @@ const LEGACY = {
   });
 
 
+  // ── 6-7. 사용법 안내 ────────────────────────────────────────────
+  // 튜토리얼을 첫 실행에 세우지 않는다. 설정에 상시로 두고, 막히는 자리에서 한 줄만 띄운다.
+  const guide = await page.evaluate(async () => {
+    const backup = JSON.stringify(data);
+    const r = {};
+    data.hints = [];
+
+    openGuideSheet();
+    const body = document.querySelector("#sheetBody").textContent;
+    r.sheetOpen = document.querySelector("#sheet").classList.contains("on");
+    r.covers = ["카드 뒤집기", "빈칸 채우기", "고르기", "복습", "사진에서 글자", "ICE", "백업"]
+      .filter(k => body.indexOf(k) < 0);
+    closeSheet();
+
+    const hint = document.querySelector("#studyHint");
+
+    // 뒤집기는 카드 앞면이 이미 "카드를 탭하세요" 라고 말한다. 덧붙이지 않는다
+    data.mode = "flip";
+    startSession();
+    r.flipQuiet = hint.hidden;
+    r.frontTellsHow = document.querySelector("#card .front .hint").textContent;
+
+    // 빈칸은 알려주는 곳이 없다. 여기만 한 번 띄운다
+    data.mode = "blank";
+    startSession();
+    r.blankShown = !hint.hidden;
+    r.blankText = hint.textContent.trim();
+    r.notYetSaved = data.hints.length;    // 아직 해보지 않았으니 기록되면 안 된다
+
+    document.querySelector("#card .blank").click();   // 알려준 대로 해본다
+    r.goneAfter = hint.hidden;
+    r.saved = data.hints.slice();
+
+    startSession();                       // 다음 학습에서는 나오지 않아야 한다
+    r.secondShown = !hint.hidden;
+
+    data = JSON.parse(backup);
+    go("home");
+    return r;
+  });
+  ok("설정에서 사용법을 열 수 있다", guide.sheetOpen === true);
+  eq("사용법이 핵심을 모두 담는다", guide.covers, []);
+  ok("카드 앞면이 이미 뒤집는 법을 말한다", guide.frontTellsHow.indexOf("탭") >= 0, guide.frontTellsHow);
+  ok("그래서 뒤집기에는 힌트를 겹쳐 띄우지 않는다", guide.flipQuiet === true);
+  ok("빈칸 방식은 처음 한 번 알려준다", guide.blankShown === true);
+  ok("빈칸 힌트가 빈칸을 말한다", guide.blankText.indexOf("빈칸") >= 0, guide.blankText);
+  ok("해보기 전에는 본 것으로 치지 않는다", guide.notYetSaved === 0);
+  ok("해보면 힌트가 사라진다", guide.goneAfter === true);
+  eq("본 힌트가 기록에 남는다", guide.saved, ["blank"]);
+  ok("두 번째부터는 힌트가 안 뜬다", guide.secondShown === false);
+
+  // 취향과 안내 기록은 레시피를 지워도 남아야 한다
+  const kept = await page.evaluate(() => {
+    const backup = JSON.stringify(data);
+    data.hints = ["blank"]; data.sound = "all"; data.theme = "dark";
+    // wipeAll 버튼이 하는 일과 같은 재구성
+    document.querySelector("#wipeAll").click();
+    document.querySelector("#dlgYes").click();
+    const r = { hints: data.hints, sound: data.sound, theme: data.theme,
+                drinks: data.drinks.length };
+    data = JSON.parse(backup);
+    persist(); go("home");
+    return r;
+  });
+  eq("전체 삭제해도 본 안내는 기억한다", kept.hints, ["blank"]);
+  ok("전체 삭제해도 소리 설정이 남는다", kept.sound === "all", String(kept.sound));
+  ok("전체 삭제해도 테마가 남는다", kept.theme === "dark");
+  ok("전체 삭제는 레시피를 지운다", kept.drinks === 0);
+
   // ── 6-6. iOS 앱 껍데기 ──────────────────────────────────────────
   // 앱 안에서는 "홈 화면에 추가" 안내가 뜨면 안 된다. 이미 앱이기 때문이다.
   // 앱은 웹뷰가 뜰 때 window.__amgijwiNative 를 심어 그 사실을 알린다.

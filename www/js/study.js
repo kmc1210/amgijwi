@@ -167,7 +167,12 @@ function startSession(customPool){
   state.deck = pool; state.idx = 0; state.flipped = false;
   state.revealed.clear(); state.discOpen = false;
   state.stat = {ok:0, again:0, total:pool.length};
-  go("study"); renderCard();
+  go("study");
+  /* 빈칸 방식만 한 번 알려준다. 뒤집기는 카드 앞면이 이미
+     "재료와 용량을 떠올린 뒤 카드를 탭하세요" 라고 말하고 있어 덧붙이면 겹친다 */
+  if(data.mode === "blank") showHint("blank", "빈칸을 누르면 용량이 보여요");
+  else clearHintQuietly();
+  renderCard();
 }
 function bindActions(){
   document.querySelectorAll("#actions .act").forEach(b=>b.addEventListener("click",()=>action(b.dataset.a)));
@@ -225,6 +230,7 @@ function bindBlanks(d){
     btn.addEventListener("click", (e)=>{
       e.stopPropagation();
       const i = btn.dataset.b;
+      clearHint();
       state.revealed.add(i);
       sfx("reveal");
       const span = document.createElement("span");
@@ -275,6 +281,7 @@ function backHTML(d){
     ${detailHTML(d)}</div></div>`;
 }
 function flipCard(){
+  clearHint();
   sfx("flip");
   const card = $("#card"); card.classList.add("flipping");
   setTimeout(()=>{ state.flipped = !state.flipped; renderCard(); card.classList.remove("flipping"); }, 180);
@@ -283,6 +290,7 @@ function action(a){
   const d = state.deck[state.idx];
   if(a==="flip"){ flipCard(); return; }
   if(a==="revealAll"){
+    clearHint();
     sfx("reveal");
     ingKeys(d).forEach(k=>state.revealed.add(k));
     state.discOpen = true;
