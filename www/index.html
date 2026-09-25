@@ -22,7 +22,7 @@
      두 벌이면 교집합이 적용되니 고칠 때는 반드시 둘 다 고친다. 어긋나면 test/headers.js 가 실패한다. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>암기쥐 · 카페 음료 레시피 외우기</title>
-<link rel="stylesheet" href="style.css?v=14">
+<link rel="stylesheet" href="style.css?v=15">
 </head>
 <body>
 <div class="phone">
@@ -82,6 +82,8 @@
         <span class="count" id="progTxt">0/0</span>
       </div>
       <div class="card-wrap" id="cardWrap"><div class="card" id="card"></div></div>
+      <!-- 처음 한 번만. 알려준 대로 해보면 사라진다 -->
+      <div class="tiphint" id="studyHint" hidden></div>
       <div class="actions" id="actions"></div>
     </section>
 
@@ -249,6 +251,13 @@
     <section class="screen" id="s-set">
       <div class="appbar"><div><h1>설정</h1><p>저장과 백업</p></div></div>
       <div class="scroll">
+        <!-- 튜토리얼을 첫 실행에 세우지 않는 대신, 언제든 찾아올 수 있게 맨 위에 둔다 -->
+        <div class="setcard">
+          <h4>사용법</h4>
+          <p>카드 학습, 레시피 넣기, 백업까지 한 번에 훑어봐요.</p>
+          <button class="cta ghost" id="openGuide">사용법 보기</button>
+        </div>
+
         <div class="setcard">
           <h4>테마</h4>
           <p>화면 색을 바꿉니다. 선택한 테마는 이 기기에 저장돼요.</p>
@@ -373,15 +382,15 @@
 
 <!-- 한 파일이던 app.js 를 구역별로 나눴다. 전역을 그대로 쓰는 고전 script 라 순서가 중요하다.
      core 가 데이터와 헬퍼를 만들고, boot 가 마지막에 첫 화면을 그린다. -->
-<script src="js/core.js?v=14"></script>
-<script src="js/sound.js?v=14"></script>
-<script src="js/mascot.js?v=14"></script>
-<script src="js/shell.js?v=14"></script>
-<script src="js/home.js?v=14"></script>
-<script src="js/study.js?v=14"></script>
-<script src="js/list.js?v=14"></script>
-<script src="js/editor.js?v=14"></script>
-<script src="js/settings.js?v=14"></script>
-<script src="js/boot.js?v=14"></script>
+<script src="js/core.js?v=15"></script>
+<script src="js/sound.js?v=15"></script>
+<script src="js/mascot.js?v=15"></script>
+<script src="js/shell.js?v=15"></script>
+<script src="js/home.js?v=15"></script>
+<script src="js/study.js?v=15"></script>
+<script src="js/list.js?v=15"></script>
+<script src="js/editor.js?v=15"></script>
+<script src="js/settings.js?v=15"></script>
+<script src="js/boot.js?v=15"></script>
 </body>
 </html>

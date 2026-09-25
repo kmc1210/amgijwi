@@ -622,3 +622,21 @@
     .selactions{justify-content:center;}
     .selactions button{max-width:calc(var(--content-max) / 2);}
   }
+
+/* ---------- 한 번만 보여주는 안내 ----------
+   카드와 버튼 사이에 끼어 앉는다. 본 뒤에는 hidden 이라 아예 사라진다.
+   이름을 tiphint 로 둔 이유: 카드 앞면이 이미 .hint 를 쓰고 있어
+   .hint 로 두면 그쪽 문구에 배경과 여백이 덧씌워진다 */
+.tiphint{
+  margin:0 var(--pad-r) 10px var(--pad-l);
+  padding:9px 13px;
+  border-radius:12px;
+  background:var(--accent-soft);
+  color:var(--accent-ink);
+  font-size:13px;
+  line-height:1.45;
+  text-align:center;
+  animation:hintIn .26s ease-out both;
+}
+@keyframes hintIn{ from{ opacity:0; transform:translateY(4px) } to{ opacity:1; transform:none } }
+@media (prefers-reduced-motion: reduce){ .tiphint{ animation:none } }

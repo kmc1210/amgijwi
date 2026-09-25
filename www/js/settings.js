@@ -321,7 +321,10 @@ function applyBackup(text){
     const keepMemos = Array.isArray(d.memos) ? d.memos.map(m=>({
       id:String(m.id||uid()), text:String(m.text||""), at:String(m.at||""), pin:!!m.pin
     })).filter(m=>m.text) : [];
-    data = {v:1, mode:keepMode, theme:keepTheme, sound:keepSound, enCase:keepEn, pin:data.pin, visit:(d.visit || data.visit), cats:keepCats, shelf:keepShelf, memos:keepMemos,
+    data = {v:1, mode:keepMode, theme:keepTheme, sound:keepSound, enCase:keepEn, pin:data.pin, visit:(d.visit || data.visit),
+      /* 안내를 이미 본 사람이다. 기기를 바꿨다고 다시 띄우면 성가시다 */
+      hints:(Array.isArray(d.hints) ? d.hints : data.hints) || [],
+      cats:keepCats, shelf:keepShelf, memos:keepMemos,
       /* 새 백업은 공용 부재료 목록을 갖고 있고, 예전 백업은 레시피 안에 부재료가 박혀 있다.
          둘 다 받아서 아래 liftSubs로 하나의 모양으로 맞춘다 */
       subs:Array.isArray(d.subs)?d.subs.map(cleanSub):[],
@@ -377,8 +380,72 @@ $("#resetProg").addEventListener("click", ()=>{
 });
 $("#wipeAll").addEventListener("click", ()=>{
   confirmBox("전체 데이터 삭제", "레시피와 학습 기록을 모두 지웁니다. 백업 파일이 없으면 복구할 수 없어요.", "전부 삭제", ()=>{
-    data = {v:1, mode:data.mode, theme:data.theme, enCase:data.enCase, pin:data.pin, visit:data.visit, cats:data.cats, shelf:[], memos:[], subs:[], drinks:[], mastered:[], needReview:[]};
+    /* 지우는 건 레시피와 학습 기록이다. 테마·소리 같은 취향과 안내를 본 기록은 그대로 둔다.
+       sound 가 빠져 있어 전체 삭제 때마다 소리가 조용히 꺼지던 것도 여기서 바로잡는다 */
+    data = {v:1, mode:data.mode, theme:data.theme, sound:data.sound, enCase:data.enCase, pin:data.pin,
+      visit:data.visit, hints:data.hints || [], cats:data.cats,
+      shelf:[], memos:[], subs:[], drinks:[], mastered:[], needReview:[]};
     Store.clear(); persist(); renderSettings(); toast("모두 삭제했어요"); go("home");
   });
 });
 
+
+/* ---------- 사용법 ----------
+   첫 실행에 튜토리얼을 세우지 않는다. 그 순간엔 앱이 뭔지도 몰라 볼지 말지 고를 수 없고,
+   대부분 "나중에" 를 누른 뒤 다시 찾지 않는다. 대신 언제든 찾아올 수 있게 설정에 둔다.
+   막히는 자리의 한 줄 안내는 showHint 가 따로 맡는다. */
+function openGuideSheet(){
+  const part = (emo, title, lines) => `
+    <div style="display:flex;gap:12px;margin-bottom:20px">
+      <span style="font-size:20px;line-height:1.2">${emo}</span>
+      <div>
+        <b style="display:block;font-size:14.5px;margin-bottom:5px">${title}</b>
+        <div style="font-size:13px;line-height:1.65;color:var(--ink-2)">${lines.join("<br>")}</div>
+      </div>
+    </div>`;
+
+  $("#sheetBody").innerHTML = `
+    <h2 style="margin:0 0 4px;font-size:21px;font-weight:800;letter-spacing:-.4px">사용법</h2>
+    <p style="margin:0 0 20px;font-size:12.5px;color:var(--muted)">처음이라면 이만큼만 알면 됩니다</p>
+
+    ${part("🔄", "카드로 외우기", [
+      "홈에서 <b>학습 시작하기</b>를 누르면 방식을 고를 수 있어요.",
+      "<b>카드 뒤집기</b>는 이름을 보고 재료를 통째로 떠올려요.",
+      "<b>빈칸 채우기</b>는 용량만 가려서 하나씩 확인해요.",
+      "다 보고 나면 <b>외웠어요</b> 또는 <b>다시 볼래요</b>를 누르세요."
+    ])}
+
+    ${part("🎯", "오늘 볼 것만 고르기", [
+      "방식 고르는 화면에서 <b>고르기</b>를 누르면 됩니다.",
+      "카테고리를 골라도 전부 다 돌 필요는 없어요."
+    ])}
+
+    ${part("↩️", "틀린 것 다시 보기", [
+      "<b>다시 볼래요</b>를 누른 레시피는 복습 목록에 담겨요.",
+      "설정 탭의 <b>복습이 필요해요</b>에서 그것만 모아 볼 수 있어요."
+    ])}
+
+    ${part("➕", "우리 매장 레시피 넣기", [
+      "<b>레시피</b> 탭 오른쪽 아래 <b>+</b> 버튼이에요.",
+      "종이에 적힌 레시피는 <b>사진에서 글자 가져오기</b>로 옮길 수 있어요.",
+      "기기 안에서만 읽어요. 사진이 어디로도 올라가지 않아요."
+    ])}
+
+    ${part("🧊", "ICE 와 HOT 이 다를 때", [
+      "레시피를 만들 때 온도를 <b>ICE/HOT</b> 으로 두면 재료를 두 벌 적을 수 있어요.",
+      "학습 카드에는 두 벌이 나란히 나옵니다."
+    ])}
+
+    ${part("💾", "백업 — 이것만은 꼭", [
+      "레시피는 <b>이 기기 안에만</b> 있어요. 서버에 사본이 없습니다.",
+      "설정 탭의 <b>백업 내보내기</b>로 파일을 하나 만들어 두세요.",
+      "기기를 바꾸거나 앱을 다시 깔면 그 파일로 되살립니다."
+    ])}
+
+    <button class="cta ghost" id="guideClose" style="width:100%;margin-top:4px">닫기</button>`;
+
+  $("#mask").classList.add("on");
+  $("#sheet").classList.add("on");
+  $("#guideClose").addEventListener("click", closeSheet);
+}
+$("#openGuide").addEventListener("click", openGuideSheet);

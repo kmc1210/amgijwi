@@ -151,6 +151,8 @@ if(["cream","dark","green"].indexOf(data.theme) < 0) data.theme = "cream";
 if(["as-is","upper","lower"].indexOf(data.enCase) < 0) data.enCase = "as-is";
 /* 소리는 꺼진 채로 시작한다. 카페 근무 중에 갑자기 울리면 곤란하다 */
 if(["off","sfx","all"].indexOf(data.sound) < 0) data.sound = "off";
+/* 처음 한 번만 보여주는 안내를 본 기록. 한 번 본 것은 다시 나오지 않는다 */
+if(!Array.isArray(data.hints)) data.hints = [];
 if(!Array.isArray(data.cats) || !data.cats.length){
   data.cats = DEFAULT_CATS.map(c=>({id:c.id, label:c.label, emo:c.emo}));
 }
@@ -231,6 +233,35 @@ const state = {filter:"all", deck:[], idx:0, flipped:false, stat:{ok:0,again:0,t
 const $ = s => document.querySelector(s);
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const persist = ()=>{ Store.save(data); };
+
+/* ---------- 한 번만 보여주는 안내 ----------
+   튜토리얼을 앞에 세우는 대신, 막히는 그 자리에서 한 줄만 알려준다.
+   본 기록은 data.hints 에 남아 백업을 따라다닌다. 기기를 바꿔도 다시 나오지 않는다. */
+function hintSeen(id){ return (data.hints || []).indexOf(id) >= 0; }
+function markHint(id){
+  if(!Array.isArray(data.hints)) data.hints = [];
+  if(data.hints.indexOf(id) < 0){ data.hints.push(id); persist(); }
+}
+function showHint(id, text){
+  const el = $("#studyHint");
+  if(!el) return;
+  if(hintSeen(id)){ el.hidden = true; return; }
+  el.dataset.hint = id;
+  el.innerHTML = '<span aria-hidden="true">💡</span> ' + text;
+  el.hidden = false;
+}
+/* 알려줄 게 없는 화면에서는 남은 안내만 걷는다. 본 것으로 치지는 않는다 */
+function clearHintQuietly(){
+  const el = $("#studyHint");
+  if(el){ el.hidden = true; el.dataset.hint = ""; }
+}
+/* 알려준 대로 해봤으면 역할이 끝났다. 지우고 본 것으로 기록한다 */
+function clearHint(){
+  const el = $("#studyHint");
+  if(!el || el.hidden) return;
+  el.hidden = true;
+  if(el.dataset.hint) markHint(el.dataset.hint);
+}
 if(_lift.moved) persist();          // 부재료를 공용 목록으로 옮긴 결과를 바로 굳힌다
 /* 보관한 레시피는 학습·목록·진도율 어디에도 끼지 않는다. 지운 게 아니라 잠시 빼둔 것 */
 const liveDrinks = () => data.drinks.filter(d=>!d.arch);
