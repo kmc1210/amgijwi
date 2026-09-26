@@ -270,7 +270,8 @@ const LEGACY = {
       const box = s => { const e = document.querySelector(s); if (!e) return null; const r = e.getBoundingClientRect();
         return { w: Math.round(r.width), left: Math.round(r.left), right: Math.round(innerWidth - r.right) }; };
       return { view: innerWidth, appbar: box("#s-home .appbar"), hero: box("#s-home .hero"),
-               cardWrap: box("#cardWrap"), tab: box("#tabs .tab"), tabs: box("#tabs") };
+               cardWrap: box("#cardWrap"), tab: box("#tabs .tab"), tabs: box("#tabs"),
+               tabCount: document.querySelectorAll("#tabs .tab").length };
     });
   };
   const wTablet = await measureAt(1180, 820);   // 아이패드 가로
@@ -287,9 +288,11 @@ const LEGACY = {
   // width:100% 가 빠지면 세로 flex 안에서 폭이 내용 크기로 쪼그라든다 (실제로 겪은 실수)
   ok("앱바가 내용 크기로 쪼그라들지 않는다", wTablet.appbar.w > wTablet.hero.w - 1,
      JSON.stringify([wTablet.appbar.w, wTablet.hero.w]));
+  // 탭 한 칸은 최대 폭을 탭 수로 나눈 값이다. 개수를 박아두면 탭이 늘 때마다 깨진다
+  const tabW = Math.round(560 / wTablet.tabCount);
   ok("탭바 배경은 화면 전체를 쓰고 항목만 모인다",
-     wTablet.tabs.w === 1180 && wTablet.tab.w === 140 && wTablet.tab.left > 100,
-     JSON.stringify([wTablet.tabs.w, wTablet.tab.w, wTablet.tab.left]));
+     wTablet.tabs.w === 1180 && wTablet.tab.w === tabW && wTablet.tab.left > 100,
+     JSON.stringify([wTablet.tabs.w, wTablet.tab.w, tabW, wTablet.tab.left]));
   eq("폰에서는 폭 제한이 걸리지 않는다", wPhone.appbar.w, 390);
   eq("데스크톱 목업(390px)도 그대로다", wMockup.appbar.w, 390);
 
@@ -522,6 +525,102 @@ const LEGACY = {
   ok("전체 삭제해도 소리 설정이 남는다", kept.sound === "all", String(kept.sound));
   ok("전체 삭제해도 테마가 남는다", kept.theme === "dark");
   ok("전체 삭제는 레시피를 지운다", kept.drinks === 0);
+
+  // ── 6-8. 일정 달력 ──────────────────────────────────────────────
+  // 날짜 하나짜리 일정을 걸어두고, 미리 알림 기간에 들면 홈에 뜬다.
+  const cal = await page.evaluate(async () => {
+    const backup = JSON.stringify(data);
+    const r = {};
+    const day = n => ymd(new Date(Date.now() + n * 86400000));
+
+    data.events = [];
+    go("cal");
+    r.tabShows = !document.querySelector("#tabs").classList.contains("hide");
+    r.gridDrawn = document.querySelectorAll("#calGrid .calcell[data-day]").length;
+
+    // 넣기
+    data.events.push({ id:"e1", title:"신메뉴 출시", date:day(3), note:"라떼 3종", remind:7, done:false });
+    data.events.push({ id:"e2", title:"먼 일",      date:day(20), note:"", remind:3, done:false });
+    data.events.push({ id:"e3", title:"끝난 일",    date:day(1), note:"", remind:7, done:true });
+    data.events.push({ id:"e4", title:"놓친 일",    date:day(-2), note:"", remind:0, done:false });
+
+    const up = evUpcoming().map(e => e.id);
+    r.upcoming = up;                         // e1(기간 안), e4(지남) 만
+    r.ddayText = [evDDayText(0), evDDayText(1), evDDayText(3), evDDayText(-2)];
+
+    renderHome();
+    r.homeShown = document.querySelector("#upcomingSect").style.display !== "none";
+    r.homeRows = document.querySelectorAll("#upcomingList .row").length;
+
+    // 달력에 점이 찍히는지
+    calCursor = null; state.calDay = null; renderCal();
+    const cell = document.querySelector('#calGrid .calcell[data-day="' + day(3) + '"]');
+    r.dotOnDay = !!(cell && cell.querySelector(".dot"));
+    const doneCell = document.querySelector('#calGrid .calcell[data-day="' + day(1) + '"]');
+    r.doneDotDim = !!(doneCell && doneCell.querySelector(".dot.off"));
+
+    // 그 날을 누르면 아래에 목록이 뜬다
+    cell.click();
+    r.dayListed = document.querySelectorAll("#calDayList .evrow").length;
+    r.dayTitleHas = document.querySelector("#calDayTitle").textContent;
+
+    // 시트로 고치기
+    openEventSheet("e1");
+    document.querySelector("#evTitle").value = "출시일 변경";
+    document.querySelector("#evSave").click();
+    r.edited = data.events.filter(e => e.id === "e1")[0].title;
+
+    // 날짜가 깨진 일정은 불러올 때 걸러진다
+    data.events.push({ id:"bad", title:"엉터리", date:"2026-13-99", remind:0, done:false });
+    const before = data.events.length;
+    data.events = data.events.filter(e => /^\d{4}-(0[1-9]|1[0-2])-\d{2}$/.test(e.date));
+    r.droppedBad = before - data.events.length;
+
+    data = JSON.parse(backup);
+    persist(); go("home");
+    return r;
+  });
+  ok("일정 탭에서 탭바가 보인다", cal.tabShows === true);
+  ok("달력에 날짜 칸이 그려진다", cal.gridDrawn >= 28, String(cal.gridDrawn));
+  eq("남은 날을 말로 풀어준다", cal.ddayText, ["오늘", "내일", "D-3", "2일 지남"]);
+  eq("미리 알림 기간에 든 것과 놓친 것만 홈에 올린다", cal.upcoming, ["e4", "e1"]);
+  ok("홈에 다가오는 일정이 뜬다", cal.homeShown === true);
+  eq("홈에 올라온 줄 수가 맞는다", cal.homeRows, 2);
+  ok("일정 있는 날에 점이 찍힌다", cal.dotOnDay === true);
+  ok("끝난 일만 남은 날은 점이 흐리다", cal.doneDotDim === true);
+  eq("날짜를 누르면 그 날 일정이 나온다", cal.dayListed, 1);
+  ok("고른 날짜를 제목에 보여준다", /\d+월 \d+일 .요일/.test(cal.dayTitleHas), cal.dayTitleHas);
+  eq("시트에서 고치면 반영된다", cal.edited, "출시일 변경");
+  eq("날짜가 깨진 일정은 걸러진다", cal.droppedBad, 1);
+
+  // 칸 하나가 제 몫보다 넓어지면 토요일이 화면 밖으로 밀린다.
+  // 빈 앞자리에 .empty 를 썼다가 그 여백이 딸려와 실제로 겪은 일이다
+  const calFit = await page.evaluate(() => {
+    go("cal");
+    const grid = document.querySelector("#calGrid").getBoundingClientRect();
+    const cells = [...document.querySelectorAll("#calGrid .calcell")];
+    const over = cells.filter(c => c.getBoundingClientRect().right > grid.right + 1).length;
+    const first = cells[0].getBoundingClientRect();
+    return { over: over, cellW: Math.round(first.width),
+             fits: Math.round(first.width * 7 + 3 * 6) <= Math.round(grid.width) + 1 };
+  });
+  eq("달력이 화면 밖으로 넘치지 않는다", calFit.over, 0);
+  ok("일곱 칸이 폭 안에 들어간다", calFit.fits === true, String(calFit.cellW));
+
+  // 일정도 백업을 따라가고, 전체 삭제에는 같이 지워진다
+  const evKeep = await page.evaluate(() => {
+    const backup = JSON.stringify(data);
+    data.events = [{ id:"x", title:"출시", date:"2026-12-01", note:"", remind:3, done:false }];
+    const json = JSON.parse(backupJSON());
+    const r = { inBackup: (json.data.events || []).length };
+    document.querySelector("#wipeAll").click();
+    document.querySelector("#dlgYes").click();
+    r.afterWipe = data.events.length;
+    data = JSON.parse(backup); persist(); go("home");
+    return r;
+  });
+  eq("일정이 백업에 담긴다", evKeep.inBackup, 1);
+  eq("전체 삭제하면 일정도 지워진다", evKeep.afterWipe, 0);
 
   // ── 6-6. iOS 앱 껍데기 ──────────────────────────────────────────
   // 앱 안에서는 "홈 화면에 추가" 안내가 뜨면 안 된다. 이미 앱이기 때문이다.

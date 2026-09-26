@@ -22,7 +22,7 @@
      두 벌이면 교집합이 적용되니 고칠 때는 반드시 둘 다 고친다. 어긋나면 test/headers.js 가 실패한다. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>암기쥐 · 카페 음료 레시피 외우기</title>
-<link rel="stylesheet" href="style.css?v=15">
+<link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
 <div class="phone">
@@ -51,6 +51,12 @@
         </div>
         <div id="storeBanner"></div>
         <div id="backupBanner"></div>
+
+        <!-- 다가오는 일정. 걸어둔 미리 알림 기간에 들어와야 보인다 -->
+        <div class="sect" id="upcomingSect" style="display:none">
+          <div class="sect-h"><h3>다가오는 일정</h3><span>일정 탭에서 관리해요</span></div>
+          <div id="upcomingList"></div>
+        </div>
 
         <div class="sect" id="todaySect" style="display:none">
           <div class="sect-h"><h3>오늘 폐기</h3><span id="todayDate"></span></div>
@@ -248,6 +254,28 @@
     </section>
 
     <!-- SETTINGS -->
+    <!-- CALENDAR -->
+    <section class="screen" id="s-cal">
+      <div class="appbar">
+        <div><h1>일정</h1><p>그날까지 준비할 일</p></div>
+        <button class="icon-btn" id="calAdd" aria-label="일정 넣기">＋</button>
+      </div>
+      <div class="scroll">
+        <div class="calhead">
+          <button class="icon-btn" id="calPrev" aria-label="지난달">‹</button>
+          <b id="calTitle"></b>
+          <button class="icon-btn" id="calNext" aria-label="다음달">›</button>
+          <button class="calnow" id="calToday">오늘</button>
+        </div>
+        <div class="caldow"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+        <div class="calgrid" id="calGrid"></div>
+        <div class="calday">
+          <h4 id="calDayTitle"></h4>
+          <div id="calDayList"></div>
+        </div>
+      </div>
+    </section>
+
     <section class="screen" id="s-set">
       <div class="appbar"><div><h1>설정</h1><p>저장과 백업</p></div></div>
       <div class="scroll">
@@ -373,6 +401,8 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="14" height="14" rx="3"/><path d="M8 9.5h4M8 13h6"/><path d="M20.5 8v9.5a2 2 0 0 1-2 2H9"/></svg>학습</button>
       <button class="tab" data-go="list">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>레시피</button>
+      <button class="tab" data-go="cal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 9.5h17M8 3.5v3M16 3.5v3"/></svg>일정</button>
       <button class="tab" data-go="set">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6M18.4 18.4l-1.6-1.6M7.2 7.2 5.6 5.6"/></svg>설정</button>
     </nav>
@@ -382,15 +412,16 @@
 
 <!-- 한 파일이던 app.js 를 구역별로 나눴다. 전역을 그대로 쓰는 고전 script 라 순서가 중요하다.
      core 가 데이터와 헬퍼를 만들고, boot 가 마지막에 첫 화면을 그린다. -->
-<script src="js/core.js?v=15"></script>
-<script src="js/sound.js?v=15"></script>
-<script src="js/mascot.js?v=15"></script>
-<script src="js/shell.js?v=15"></script>
-<script src="js/home.js?v=15"></script>
-<script src="js/study.js?v=15"></script>
-<script src="js/list.js?v=15"></script>
-<script src="js/editor.js?v=15"></script>
-<script src="js/settings.js?v=15"></script>
-<script src="js/boot.js?v=15"></script>
+<script src="js/core.js?v=16"></script>
+<script src="js/sound.js?v=16"></script>
+<script src="js/mascot.js?v=16"></script>
+<script src="js/shell.js?v=16"></script>
+<script src="js/home.js?v=16"></script>
+<script src="js/cal.js?v=16"></script>
+<script src="js/study.js?v=16"></script>
+<script src="js/list.js?v=16"></script>
+<script src="js/editor.js?v=16"></script>
+<script src="js/settings.js?v=16"></script>
+<script src="js/boot.js?v=16"></script>
 </body>
 </html>

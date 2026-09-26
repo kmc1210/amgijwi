@@ -409,7 +409,7 @@
 
   .fld{margin-bottom:16px;}
   .fld label{display:block;font-size:12px;font-weight:800;letter-spacing:.6px;color:var(--accent);margin-bottom:7px;}
-  .fld input[type=text],.fld textarea,.fld select{
+  .fld input[type=text],.fld input[type=date],.fld textarea,.fld select{
     width:100%;padding:13px 14px;border-radius:13px;border:1px solid var(--line);background:var(--surface);
     font-size:15px;outline:none;-webkit-appearance:none;appearance:none;}
   .fld textarea{min-height:84px;resize:vertical;line-height:1.55;}
@@ -618,7 +618,7 @@
       margin-right:auto;
     }
     .tabs{justify-content:center;}
-    .tab{flex:0 1 calc(var(--content-max) / 4);}
+    .tab{flex:0 1 calc(var(--content-max) / 5);}   /* 홈·학습·레시피·일정·설정 다섯 개 */
     .selactions{justify-content:center;}
     .selactions button{max-width:calc(var(--content-max) / 2);}
   }
@@ -640,3 +640,35 @@
 }
 @keyframes hintIn{ from{ opacity:0; transform:translateY(4px) } to{ opacity:1; transform:none } }
 @media (prefers-reduced-motion: reduce){ .tiphint{ animation:none } }
+
+/* ---------- 일정 달력 ----------
+   한 칸을 정사각에 가깝게 두고, 일정이 있는 날에만 점을 찍는다.
+   끝난 일만 남은 날은 점을 흐리게 해서 아직 할 일이 있는 날과 구분한다 */
+.calhead{display:flex;align-items:center;gap:6px;margin-bottom:14px;}
+.calhead b{font-size:17px;font-weight:800;letter-spacing:-.3px;min-width:104px;text-align:center;}
+.calnow{margin-left:auto;padding:7px 13px;border-radius:999px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink-2);font-size:12.5px;font-weight:700;}
+.caldow{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px;}
+.caldow span{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0;}
+.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.calcell{position:relative;aspect-ratio:1/1;border:0;background:transparent;border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  font-size:13.5px;color:var(--ink);}
+.calcell.calpad{visibility:hidden;}
+.calcell .n{line-height:1;}
+.calcell.today .n{font-weight:800;color:var(--accent-ink);}
+.calcell.sel{background:var(--accent-soft);}
+.calcell .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);}
+.calcell .dot.off{background:var(--muted);opacity:.5;}
+
+.calday{margin-top:22px;}
+.calday h4{margin:0 0 10px;font-size:14px;font-weight:800;}
+.calempty{margin:0;font-size:13px;color:var(--muted);}
+.evrow{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);
+  border-radius:14px;padding:13px 15px;margin-bottom:8px;position:relative;}
+.evrow .nm{display:block;font-size:14.5px;font-weight:700;color:var(--ink);padding-right:56px;}
+.evrow .nt{display:block;font-size:12.5px;color:var(--ink-2);margin-top:3px;padding-right:56px;}
+.evrow .dd{position:absolute;right:14px;top:13px;font-size:11.5px;font-weight:700;color:var(--accent-ink);}
+.evrow.done .nm,.evrow.done .nt{color:var(--muted);text-decoration:line-through;}
+.evrow.done .dd{color:var(--muted);}
+
