@@ -672,3 +672,11 @@
 .evrow.done .nm,.evrow.done .nt{color:var(--muted);text-decoration:line-through;}
 .evrow.done .dd{color:var(--muted);}
 
+
+/* ---------- 레시피 차례 고르기 ---------- */
+.sortrow{display:flex;gap:7px;margin-bottom:11px;}
+.sortb{padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--surface);
+  color:var(--muted);font-size:12.5px;font-weight:700;}
+.sortb.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink);}
+/* 방금 넣은 레시피 표. 완료 표와 같은 자리를 쓰므로 색으로만 가른다 */
+.pill.new{background:var(--accent-soft);color:var(--accent-ink);}

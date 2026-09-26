@@ -775,6 +775,102 @@ const LEGACY = {
   eq("끝나면 제자리로 돌아온다", slide.restX, 0);
   eq("끝나면 다시 또렷하다", slide.restOpacity, "1");
 
+  // ── 6-11. 일정 기간 ─────────────────────────────────────────────
+  // 며칠부터 며칠까지. 끝나는 날이 없으면 하루짜리다 (옛 일정이 그대로 산다)
+  const span = await page.evaluate(() => {
+    const backup = JSON.stringify(data);
+    const r = {};
+    const day = n => ymd(new Date(Date.now() + n * 86400000));
+
+    data.events = [
+      { id:"s1", title:"행사", date:day(2), end:day(5), note:"", remind:7, done:false },
+      { id:"s2", title:"하루짜리", date:day(2), end:"", note:"", remind:7, done:false },
+      { id:"s3", title:"진행 중", date:day(-1), end:day(1), note:"", remind:3, done:false },
+      { id:"s4", title:"끝난 것", date:day(-9), end:day(-8), note:"", remind:3, done:false }
+    ];
+
+    r.onStart = evOn(day(2)).map(e=>e.id).sort();
+    r.onMiddle = evOn(day(3)).map(e=>e.id);      // 가운데 날에도 걸린다
+    r.onEnd = evOn(day(5)).map(e=>e.id);
+    r.onAfter = evOn(day(6)).map(e=>e.id);       // 끝난 다음 날에는 없다
+
+    r.soonText = evStatus(data.events[0]).text;
+    r.nowKind = evStatus(data.events[2]).kind;
+    r.nowText = evStatus(data.events[2]).text;
+    r.oneDayToday = evStatus({date:ymd(new Date()), end:""}).text;
+    r.rangeText = evRangeText(data.events[0]);
+    r.oneText = evRangeText(data.events[1]);
+
+    r.upcoming = evUpcoming().map(e=>e.id).sort();   // 끝난 지 오래된 s4 는 빠진다
+
+    // 시작보다 앞선 끝날짜는 불러올 때 버린다
+    r.badDropped = (function(){
+      const e = { id:"x", title:"뒤집힘", date:day(5), end:day(1), remind:0, done:false };
+      e.end = (typeof e.end === "string" && /^\d{4}-\d{2}-\d{2}$/.test(e.end) && e.end > e.date) ? e.end : "";
+      return e.end === "";
+    })();
+
+    data = JSON.parse(backup); persist(); go("home");
+    return r;
+  });
+  eq("시작일에 둘 다 걸린다", span.onStart, ["s1", "s2"]);
+  eq("기간 가운데 날에도 걸린다", span.onMiddle, ["s1"]);
+  eq("끝나는 날까지 걸린다", span.onEnd, ["s1"]);
+  eq("끝난 다음 날에는 안 걸린다", span.onAfter, []);
+  eq("시작 전에는 남은 날을 센다", span.soonText, "D-2");
+  eq("기간 안이면 진행 중이다", [span.nowKind, span.nowText], ["now", "진행 중"]);
+  eq("하루짜리 당일은 오늘이라고 한다", span.oneDayToday, "오늘");
+  ok("기간은 물결로 잇는다", span.rangeText.indexOf("~") > 0, span.rangeText);
+  ok("하루짜리는 날짜 하나만 쓴다", span.oneText.indexOf("~") < 0, span.oneText);
+  eq("진행 중인 것은 홈에 남고 끝난 지 오랜 것은 빠진다", span.upcoming, ["s1", "s2", "s3"]);
+  ok("끝날짜가 시작보다 앞서면 버린다", span.badDropped === true);
+
+  // ── 6-12. 레시피 차례와 새것 표 ─────────────────────────────────
+  // 최신 등록이 위로. 등록한 날이 없는 옛 레시피는 배열 차례를 거꾸로 쓴다
+  const order = await page.evaluate(() => {
+    const backup = JSON.stringify(data);
+    const r = {};
+    const day = n => ymd(new Date(Date.now() + n * 86400000));
+    const mk = (id, at) => ({ id:id, cat:"coffee", name:id, en:"", temp:"", cups:[],
+                              ing:[["물","1"]], ingHot:[], steps:[], tip:"", arch:false, at:at, subRefs:[] });
+    /* 넣은 차례대로: 날짜 없는 옛것 셋, 그다음 날짜 있는 것 둘 */
+    data.drinks = [mk("old1",""), mk("old2",""), mk("old3",""), mk("new1", day(-3)), mk("new2", day(-1))];
+
+    r.newest = byNewest(data.drinks).map(d=>d.id);
+    r.isNew = { new2: isNewDrink(data.drinks[4]), old1: isNewDrink(data.drinks[0]) };
+    r.oldIsNotNew = !isNewDrink({ at: day(-30) });
+    r.edgeIn = isNewDrink({ at: day(-7) });      // 이레째는 아직 새것
+    r.edgeOut = isNewDrink({ at: day(-8) });     // 여드레째부터는 아니다
+
+    data.listSort = "new"; go("list"); state.listTab = "recipe"; renderList();
+    const rows = () => [...document.querySelectorAll("#listBody .row")].map(b=>b.dataset.id);
+    r.flat = rows();
+    r.noGroups = document.querySelectorAll("#listBody .grp").length;
+    r.badge = document.querySelectorAll("#listBody .pill.new").length;
+    r.sortShown = document.querySelector("#sortRow").style.display !== "none";
+
+    data.listSort = "cat"; renderList();
+    r.grouped = rows();
+    r.hasGroups = document.querySelectorAll("#listBody .grp").length > 0;
+
+    state.listTab = "sub"; renderList();
+    r.hiddenOnSub = document.querySelector("#sortRow").style.display === "none";
+
+    data = JSON.parse(backup); persist(); state.listTab = "recipe"; go("home");
+    return r;
+  });
+  eq("최신 등록이 맨 위로 온다", order.newest, ["new2", "new1", "old3", "old2", "old1"]);
+  ok("이레 안에 넣은 것에 표가 붙는다", order.isNew.new2 === true);
+  ok("등록한 날이 없으면 표가 없다", order.isNew.old1 === false);
+  ok("오래된 것은 새것이 아니다", order.oldIsNotNew === true);
+  eq("이레째까지는 새것이다", [order.edgeIn, order.edgeOut], [true, false]);
+  eq("최신순에서는 목록이 한 줄로 늘어선다", order.flat, ["new2", "new1", "old3", "old2", "old1"]);
+  eq("최신순에서는 분류 제목이 없다", order.noGroups, 0);
+  eq("새것 표가 둘 붙는다", order.badge, 2);
+  ok("레시피 칸에서는 차례 고르기가 보인다", order.sortShown === true);
+  ok("분류순으로 돌리면 분류 제목이 돌아온다", order.hasGroups === true);
+  ok("부재료 칸에서는 차례 고르기가 숨는다", order.hiddenOnSub === true);
+
   // ── 6-6. iOS 앱 껍데기 ──────────────────────────────────────────
   // 앱 안에서는 "홈 화면에 추가" 안내가 뜨면 안 된다. 이미 앱이기 때문이다.
   // 앱은 웹뷰가 뜰 때 window.__amgijwiNative 를 심어 그 사실을 알린다.

@@ -129,11 +129,34 @@ function renderListSub(){
   /* 보관 개수는 앱바 오른쪽 📦 버튼이 이미 말해준다. 여기서 또 쓰면 줄이 넘어간다 */
   el.textContent = "레시피 " + live.length + "개 · 외운 것 " + done + "개";
 }
+/* 이레 안에 넣은 레시피에 표를 단다. 등록한 날이 없는 것(이 기능 전에 넣은 것)은 달지 않는다.
+   오늘 기능이 생겼다고 반년 전 레시피가 새것이 될 수는 없다 */
+const NEW_DAYS = 7;
+function isNewDrink(d){
+  if(!d.at) return false;
+  const n = dayGap(d.at, ymd(new Date()));
+  return n >= 0 && n <= NEW_DAYS;
+}
+/* 최신 등록순. 등록한 날이 있는 것이 위로, 그다음은 배열 차례를 거꾸로.
+   배열은 넣은 차례라서 뒤에 있을수록 나중에 넣은 것이다 */
+function byNewest(list){
+  return list.map((d, i)=>({d:d, i:i}))
+    .sort((a, b)=>{
+      const x = a.d.at || "", y = b.d.at || "";
+      if(x !== y) return x < y ? 1 : -1;
+      return b.i - a.i;
+    })
+    .map(p=>p.d);
+}
 function rowHTML(d, pill, selectable){
   const on = selectable && state.sel.has(d.id);
+  const badge = selectable ? ""
+    : (pill ? `<span class="pill">${esc(pill)}</span>`
+      : (isNewDrink(d) ? `<span class="pill new">새로 넣음</span>`
+        : (has(data.mastered,d.id) ? `<span class="pill done">완료</span>` : "")));
   return `<button class="row${on?" on":""}" data-id="${esc(d.id)}">
     ${selectable ? `<span class="checkc">✓</span>` : tempBadge(d)}
     <span class="meta"><b>${esc(d.name)}</b><span>${d.ing.slice(0,3).map(i=>esc(i[0])).join(" · ")}</span></span>
-    ${selectable ? "" : (pill?`<span class="pill">${esc(pill)}</span>`:(has(data.mastered,d.id)?`<span class="pill done">완료</span>`:""))}
+    ${badge}
   </button>`;
 }

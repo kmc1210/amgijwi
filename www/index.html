@@ -22,7 +22,7 @@
      두 벌이면 교집합이 적용되니 고칠 때는 반드시 둘 다 고친다. 어긋나면 test/headers.js 가 실패한다. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>암기쥐 · 카페 음료 레시피 외우기</title>
-<link rel="stylesheet" href="style.css?v=18">
+<link rel="stylesheet" href="style.css?v=19">
 </head>
 <body>
 <div class="phone">
@@ -134,6 +134,11 @@
           <button data-tab="sub">부재료</button>
           <button data-tab="shelf">개봉관리</button>
           <button data-tab="memo">메모</button>
+        </div>
+        <!-- 레시피 칸에서만 보인다. 부재료·개봉관리·메모는 저마다 차례가 따로 있다 -->
+        <div class="sortrow" id="sortRow">
+          <button class="sortb" data-sort="new">최신순</button>
+          <button class="sortb" data-sort="cat">분류순</button>
         </div>
         <div class="searchrow">
           <div class="search"><span style="color:var(--muted);font-size:15px">🔍</span>
@@ -426,16 +431,16 @@
 
 <!-- 한 파일이던 app.js 를 구역별로 나눴다. 전역을 그대로 쓰는 고전 script 라 순서가 중요하다.
      core 가 데이터와 헬퍼를 만들고, boot 가 마지막에 첫 화면을 그린다. -->
-<script src="js/core.js?v=18"></script>
-<script src="js/sound.js?v=18"></script>
-<script src="js/mascot.js?v=18"></script>
-<script src="js/shell.js?v=18"></script>
-<script src="js/home.js?v=18"></script>
-<script src="js/cal.js?v=18"></script>
-<script src="js/study.js?v=18"></script>
-<script src="js/list.js?v=18"></script>
-<script src="js/editor.js?v=18"></script>
-<script src="js/settings.js?v=18"></script>
-<script src="js/boot.js?v=18"></script>
+<script src="js/core.js?v=19"></script>
+<script src="js/sound.js?v=19"></script>
+<script src="js/mascot.js?v=19"></script>
+<script src="js/shell.js?v=19"></script>
+<script src="js/home.js?v=19"></script>
+<script src="js/cal.js?v=19"></script>
+<script src="js/study.js?v=19"></script>
+<script src="js/list.js?v=19"></script>
+<script src="js/editor.js?v=19"></script>
+<script src="js/settings.js?v=19"></script>
+<script src="js/boot.js?v=19"></script>
 </body>
 </html>
