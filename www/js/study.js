@@ -58,8 +58,18 @@ function sayBubble(msg){
   el.classList.add("pop");
 }
 const SLEEPY = ["쿨… 자는 중이츄", "내일 보자츄…", "Zzz… 츄…", "조금만 더 잘게츄", "지금은 꿈에서 레시피 외우는 중이츄"];
+/* 옷을 갈아입었으면 그 얘기도 한다. 절반만 섞어 매번 날씨 얘기만 하지 않게 한다 */
+const WX_SAY = {
+  rain: ["비가 온다 츄", "비 온다 츄 우산 챙겼츄?", "장화 신었츄"],
+  snow: ["눈이 온다 츄 춥다 츄", "눈 온다 츄 미끄럽다 츄", "목도리 둘렀츄"]
+};
+function cheerPool(){
+  if(currentMood() === "night") return SLEEPY;
+  const wx = wxNow();
+  return (wx && Math.random() < 0.5) ? WX_SAY[wx] : CHEERS;
+}
 $("#mascot").addEventListener("click", ()=>{
-  const pool = currentMood() === "night" ? SLEEPY : CHEERS;
+  const pool = cheerPool();
   sayBubble(pool[Math.floor(Math.random() * pool.length)]);
   sfx(currentMood() === "night" ? "chuSleep" : "chu");   // 자는 중엔 느리고 낮게
   if(currentMood() === "morning"){ playSip(); return; }
