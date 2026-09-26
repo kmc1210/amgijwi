@@ -46,6 +46,7 @@ function renderHome(){
         : ""));
 
   renderToday();
+  renderUpcoming();
   renderBackupBanner();
 
   const rev = liveDrinks().filter(d=>has(data.needReview,d.id));

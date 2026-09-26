@@ -21,12 +21,13 @@ function go(name){
   if(name !== "list" && state.selMode) exitSel();
   document.querySelectorAll(".screen").forEach(el=>el.classList.remove("active"));
   $("#s-"+name).classList.add("active");
-  const showTabs = ["home","list","set"].indexOf(name)>=0;
+  const showTabs = ["home","list","cal","set"].indexOf(name)>=0;
   $("#tabs").classList.toggle("hide", !showTabs);
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on", t.dataset.go===name));
   if(name==="home") renderHome();
   if(name==="list") renderList();
   if(name==="arch") renderArch();
+  if(name==="cal") renderCal();
   if(name==="set") renderSettings();
 }
 document.querySelectorAll(".tab").forEach(t=>{

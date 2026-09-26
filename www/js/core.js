@@ -153,6 +153,17 @@ if(["as-is","upper","lower"].indexOf(data.enCase) < 0) data.enCase = "as-is";
 if(["off","sfx","all"].indexOf(data.sound) < 0) data.sound = "off";
 /* 처음 한 번만 보여주는 안내를 본 기록. 한 번 본 것은 다시 나오지 않는다 */
 if(!Array.isArray(data.hints)) data.hints = [];
+/* 일정 — 날짜 하나짜리. 되풀이는 아직 없다.
+   remind 는 며칠 전부터 홈에 띄울지다. 0 이면 당일에만 뜬다 */
+if(!Array.isArray(data.events)) data.events = [];
+data.events = data.events.filter(e => e && typeof e.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(e.date));
+data.events.forEach(e=>{
+  if(!e.id) e.id = uid();
+  e.title = String(e.title || "").slice(0, 60) || "일정";
+  e.note = String(e.note || "").slice(0, 300);
+  e.remind = Math.min(30, Math.max(0, Number(e.remind) || 0));
+  e.done = !!e.done;
+});
 if(!Array.isArray(data.cats) || !data.cats.length){
   data.cats = DEFAULT_CATS.map(c=>({id:c.id, label:c.label, emo:c.emo}));
 }
@@ -228,7 +239,7 @@ const usesOf  = id => data.drinks.filter(d=>(d.subRefs||[]).indexOf(id)>=0);
 const state = {filter:"all", deck:[], idx:0, flipped:false, stat:{ok:0,again:0,total:0},
                editingId:null, selMode:false, sel:new Set(), revealed:new Set(), discOpen:false,
                editSubRefs:[], subEditId:null, subFrom:"edit", parentForm:null, cupSel:[], cupCustom:false,
-               listTab:"recipe", subPlace:"", shelfOpen:new Set()};
+               listTab:"recipe", subPlace:"", shelfOpen:new Set(), calDay:null};
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));

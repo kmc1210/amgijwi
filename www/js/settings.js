@@ -324,6 +324,8 @@ function applyBackup(text){
     data = {v:1, mode:keepMode, theme:keepTheme, sound:keepSound, enCase:keepEn, pin:data.pin, visit:(d.visit || data.visit),
       /* 안내를 이미 본 사람이다. 기기를 바꿨다고 다시 띄우면 성가시다 */
       hints:(Array.isArray(d.hints) ? d.hints : data.hints) || [],
+      /* 일정은 백업을 따라온다. 모양은 core.js 가 불러올 때 다시 다듬는다 */
+      events:Array.isArray(d.events) ? d.events : [],
       cats:keepCats, shelf:keepShelf, memos:keepMemos,
       /* 새 백업은 공용 부재료 목록을 갖고 있고, 예전 백업은 레시피 안에 부재료가 박혀 있다.
          둘 다 받아서 아래 liftSubs로 하나의 모양으로 맞춘다 */
@@ -379,12 +381,12 @@ $("#resetProg").addEventListener("click", ()=>{
   });
 });
 $("#wipeAll").addEventListener("click", ()=>{
-  confirmBox("전체 데이터 삭제", "레시피와 학습 기록을 모두 지웁니다. 백업 파일이 없으면 복구할 수 없어요.", "전부 삭제", ()=>{
+  confirmBox("전체 데이터 삭제", "레시피와 학습 기록, 일정까지 모두 지웁니다. 백업 파일이 없으면 복구할 수 없어요.", "전부 삭제", ()=>{
     /* 지우는 건 레시피와 학습 기록이다. 테마·소리 같은 취향과 안내를 본 기록은 그대로 둔다.
        sound 가 빠져 있어 전체 삭제 때마다 소리가 조용히 꺼지던 것도 여기서 바로잡는다 */
     data = {v:1, mode:data.mode, theme:data.theme, sound:data.sound, enCase:data.enCase, pin:data.pin,
       visit:data.visit, hints:data.hints || [], cats:data.cats,
-      shelf:[], memos:[], subs:[], drinks:[], mastered:[], needReview:[]};
+      shelf:[], memos:[], subs:[], drinks:[], mastered:[], needReview:[], events:[]};
     Store.clear(); persist(); renderSettings(); toast("모두 삭제했어요"); go("home");
   });
 });
