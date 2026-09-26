@@ -164,6 +164,9 @@ data.events.forEach(e=>{
   e.remind = Math.min(30, Math.max(0, Number(e.remind) || 0));
   e.done = !!e.done;
 });
+/* 날씨 옷 — off(기본) · auto · clear · rain · snow.
+   소리처럼 꺼진 채로 시작한다. 묻지도 않고 옷을 갈아입히면 놀란다 */
+if(["off","auto","clear","rain","snow"].indexOf(data.wx) < 0) data.wx = "off";
 if(!Array.isArray(data.cats) || !data.cats.length){
   data.cats = DEFAULT_CATS.map(c=>({id:c.id, label:c.label, emo:c.emo}));
 }
@@ -306,7 +309,39 @@ const BELLY = {y0:29,
 const MOUSE_PAL = {o:"#C4AE98", w:"#FCF7F1", c:"#EBDDCD", p:"#F5BEAC", d:"#DF9B88", n:"#78543A", k:"#261F1C", h:"#FFFFFF",
                    Y:"#F7CE66", y:"#E2AF42", j:"#C69132",
                    G:"#EEE7DC", g:"#C6B7A3",
-                   l:"#E2DBD0", L:"#CBC2B5", b:"#C5D4E9", B:"#DFE8F4", S:"#AABDD7"};
+                   l:"#E2DBD0", L:"#CBC2B5", b:"#C5D4E9", B:"#DFE8F4", S:"#AABDD7",
+                   /* 날씨 옷 — 우비 · 장화 · 털모자 · 목도리 */
+                   E:"#7A5608", F:"#5E4535", M:"#C4574A", N:"#FFFFFF", R:"#F5C33F", T:"#A6703A", V:"#7FA8C4", m:"#9C4036", q:"#A87C1C", r:"#D9A32E", t:"#7C4E22", u:"#4F3113", v:"#5B84A2"};
+/* 오늘 어떤 옷을 입힐까. 못 정하면 null 이고 평소 모습 그대로다.
+   auto 는 앱이 알려준 날씨를 먼저 보고, 없으면 달로 어림한다.
+   iOS 앱이 WeatherKit 으로 받아 window.__amgijwiWeather 에 넣어줄 자리다.
+   웹에는 그 값이 없으니 계절 어림으로만 돈다. 웹이 직접 날씨를 받아오면
+   connect-src 'none' 과 "서버로 전송되는 정보가 없어요" 를 깨야 한다 */
+function wxFromApp(){
+  const v = window.__amgijwiWeather;
+  return (v === "rain" || v === "snow" || v === "clear") ? v : null;
+}
+function wxBySeason(){
+  const m = new Date().getMonth() + 1;
+  if(m === 12 || m <= 2) return "snow";        // 겨울
+  if(m === 6 || m === 7) return "rain";        // 장마
+  return "clear";
+}
+function wxNow(){
+  const set = data.wx || "off";
+  if(set === "off") return null;
+  const w = (set === "auto") ? (wxFromApp() || wxBySeason()) : set;
+  return WEATHER[w] ? w : null;                // clear 는 갈아입을 옷이 없다
+}
+
+/* ---------- 날씨 옷 ----------
+   비에는 후드 쓴 우비에 장화, 눈에는 털모자에 목도리.
+   day 자세에서 만들었고 옷은 몸 윤곽과 따로 그렸다. 몸에 색만 입히면 털이 비쳐 옷으로 안 보인다. */
+const WEATHER = {
+  rain:["..........qrRRRRrq..........","........qrRRRRRRRRrq........",".......qrRRRRRRRRRRrq.......","......qrRRRRRRRRRRRRrq......",".....qrRRRRRRRRRRRRRRrq.....","....qrRRRRRRRRRRRRRRRRrq....","....qrRRRRRRRRRRRRRRRRrq....","...qrRRRRRRRRRRRRRRRRRRrq...","...qrRRRRRRRRRRRRRRRRRRrq...","..qrRRrcwooowwwwooowcrRRrq..","..qrRrwwohhhowwohhhowwrRrq..","..qrRrcwohkhowwohkhowcrRrq..","..qrRrwwohkhowwohkhowwrRrq..","..qrRrwwohhhowwohhhowwrRrq..","...qrrwwwooowwwwooowwwrrq...","....qrRrwwwwwnnwwwwwrRrq....","....qrRRrwwwwnnwwwwrRRrq....","....qrRRRRRRRRRRRRRRRRrq....","....qrRRRRRRRrrRRRRRRRrq....","...qrRRRRRRRRrrRRRRRRRRrq...","...qrRRRRRRRRrrRRRRRRRRrq...","..qrRRRRRRRRREERRRRRRRRRrq..","..qrRRRRRRRRREERRRRRRRRRrq..","..qrRRRRRRRRRrrRRRRRRRRRrq..",".qrRRRRRRRRRRrrRRRRRRRRRRrq.",".qrRRRRRRRRRRrrRRRRRRRRRRrq.",".qppRRRRRRRRREERRRRRRRRRppq.",".qppRRRRRRRRREERRRRRRRRRppq.","qrppRRRRRRRRRrrRRRRRRRRRpprq","qrddRRRRRRRRRrrRRRRRRRRRddrq","qrRRRRRRRRRRRrrRRRRRRRRRRRrq","qrRRRRRRRRRRREERRRRRRRRRRRrq","qrRRRRRRRRRRREERRRRRRRRRRRrq","qrRRRRRRRRRRRrrRRRRRRRRRRRrq","qrRRRRRRRRRRRrrRRRRRRRRRRRrq","qrRRRRRRRRRRRrrRRRRRRRRRRRrq","qrrrrrrrrrrrrrrrrrrrrrrrrrrq","....uTTTTTTu....uTTTTTTu....","....uTttttTu....uTttttTu....","...uuuuuuuuuu..uuuuuuuuuu..."],
+  snow:["............NN..............","...........NNNN.............",".........MMMMMMMMMM.........","........MMmmmmmmmmMM........",".......MMmmmmmmmmmmMM.......","......MMmmmmmmmmmmmmMM......",".....FFFFFFFFFFFFFFFFFF.....",".....FFFFFFFFFFFFFFFFFF.....","......ocwwwwwwwwwwwwco......","....oowcwooowwwwooowcwoo....","...ocwwwohhhowwohhhowwwco...","....owcwohkhowwohkhowcwo....","...ocwwwohkhowwohkhowwwco...","..owcwwwohhhowwohhhowwwcwo..","...ocwwwwooowwwwooowwwwco...","...owcwwwwwwwnnwwwwwwwcwo...","..occwwwwwwwwnnwwwwwwwwcco..","..owcwwwwwwwwwwwwwwwwwwcwo..","..oVVVVVVVVVVVVVVVVVVVVVVo..","..oVVVVVVVVVVVVVVVVVVVVVVo..","...ovvvvvvvvvvvvvvvvvvvvo...","...oVVVVVVVVVVVVVVVVVVVVo...","..oVVVVVVVVVVVVVVVVVVVVVVo..","..oVVVVVVVVVVVVVVVVVVVVVVo..",".ooVVVvwwwwwwwwwwwwwwwwwcoo.","owcVVVvwwwwwwwwwwwwwwwwwwcwo",".ocVVVvwwwwwwwwwwwwwwwwwwco.",".owppcwwwwwwwwwwwwwwwwcppwo.","ocwppcwwwwwwwwwwwwwwwwcppwco",".owppcwwwwwwwwwwwwwwwwcppwo.",".ocddcwwwwwwwwwwwwwwwwcddco.",".owcwwwwwwwwwwwwwwwwwwwwcwo.","..ocwwwwwwwwwwwwwwwwwwwwco..","...occwwwwwwwwwwwwwwwwcco...","..occcwwwwwwwwwwwwwwwwccco..","...ooccwwwwwwwwwwwwwwccoo...","....ooccwwwwwwwwwwwwccoo....","..oopppppcwwwwwwwwcpppppoo..",".oddpppppccccccccccpppppddo.","..ooooooooooccccoooooooooo.."]
+};
+
 /* 도트 맵을 가로로 이어붙여 SVG rect 로 (같은 색은 한 덩어리로 묶어 가볍게) */
 function mouseSVG(mood, puff){
   let rows = MOUSE[mood] || MOUSE.day;

@@ -621,6 +621,109 @@ const LEGACY = {
   });
   eq("일정이 백업에 담긴다", evKeep.inBackup, 1);
   eq("전체 삭제하면 일정도 지워진다", evKeep.afterWipe, 0);
+  // ── 6-9. 날씨 옷 ────────────────────────────────────────────────
+  // 비에는 우비와 장화, 눈에는 털모자와 목도리. 소리처럼 꺼진 채로 시작한다.
+  const wx = await page.evaluate(async () => {
+    const backup = JSON.stringify(data);
+    const r = {};
+    const box = document.querySelector("#mascot");
+    delete window.__amgijwiWeather;
+    /* 밤에는 옷을 입히지 않으므로 돌리는 시각에 결과가 휘둘린다. 낮으로 고정한다 */
+    const realMood = currentMood;
+    currentMood = () => "day";
+
+    data.wx = "off"; r.offIsNull = wxNow() === null;
+    drawMascot();
+    r.offPlain = box.innerHTML.indexOf("#F5C33F") < 0;     // 우비 노랑이 없다
+
+    data.wx = "rain"; r.rain = wxNow();
+    drawMascot();
+    r.rainDrawn = box.innerHTML.indexOf("#F5C33F") >= 0;   // 우비
+    r.bootsDrawn = box.innerHTML.indexOf("#A6703A") >= 0;  // 장화
+
+    data.wx = "snow";
+    drawMascot();
+    r.hatDrawn = box.innerHTML.indexOf("#C4574A") >= 0;    // 털모자
+    r.scarfDrawn = box.innerHTML.indexOf("#7FA8C4") >= 0;  // 목도리
+
+    // 맑음은 갈아입을 옷이 없다
+    data.wx = "clear"; r.clearIsNull = wxNow() === null;
+
+    // 자동은 앱이 알려준 값을 먼저 본다
+    data.wx = "auto";
+    window.__amgijwiWeather = "snow"; r.autoFromApp = wxNow();
+    window.__amgijwiWeather = "rain"; r.autoFollowsApp = wxNow();
+    delete window.__amgijwiWeather;
+    r.autoFallsBackToSeason = wxNow() === wxBySeason() || wxBySeason() === "clear";
+    r.seasonKnown = ["rain","snow","clear"].indexOf(wxBySeason()) >= 0;
+    // 앱이 엉뚱한 값을 주면 무시한다
+    window.__amgijwiWeather = "meteor"; r.junkIgnored = wxFromApp() === null;
+    delete window.__amgijwiWeather;
+
+    // 밤에는 입히지 않는다. 자는데 우비를 입고 있으면 이상하다
+    data.wx = "rain";
+    currentMood = () => "night";
+    drawMascot();
+    r.nightPlain = box.innerHTML.indexOf("#F5C33F") < 0;
+    currentMood = () => "day";
+
+    // 옷을 입은 도트가 얼굴을 덮지 않는지
+    r.faceKept = WEATHER.rain.filter(x => x.indexOf("ohkho") >= 0).length === 2
+              && WEATHER.snow.filter(x => x.indexOf("ohkho") >= 0).length === 2;
+    r.sameWidth = WEATHER.rain.every(x => x.length === 28) && WEATHER.snow.every(x => x.length === 28);
+    r.poses = Object.keys(WEATHER).sort();
+
+    currentMood = realMood;
+    data = JSON.parse(backup); persist(); drawMascot(); go("home");
+    return r;
+  });
+  ok("꺼두면 평소 모습이다", wx.offIsNull === true && wx.offPlain === true);
+  eq("비를 고르면 비가 된다", wx.rain, "rain");
+  ok("비에는 우비를 입는다", wx.rainDrawn === true);
+  ok("비에는 장화도 신는다", wx.bootsDrawn === true);
+  ok("눈에는 털모자를 쓴다", wx.hatDrawn === true);
+  ok("눈에는 목도리도 두른다", wx.scarfDrawn === true);
+  ok("맑음에는 갈아입을 옷이 없다", wx.clearIsNull === true);
+  eq("자동은 앱이 알려준 날씨를 따른다", [wx.autoFromApp, wx.autoFollowsApp], ["snow", "rain"]);
+  ok("앱이 없으면 계절로 어림한다", wx.autoFallsBackToSeason === true && wx.seasonKnown === true);
+  ok("앱이 엉뚱한 값을 주면 무시한다", wx.junkIgnored === true);
+  ok("밤에는 옷을 입히지 않는다", wx.nightPlain === true);
+  ok("옷을 입어도 얼굴은 가리지 않는다", wx.faceKept === true);
+  ok("모든 줄의 폭이 같다", wx.sameWidth === true);
+  eq("옷은 비와 눈 두 벌", wx.poses, ["rain", "snow"]);
+
+  // 말풍선도 날씨를 안다
+  const wxSay = await page.evaluate(() => {
+    const backup = JSON.stringify(data);
+    data.wx = "rain";
+    const realMood = currentMood;
+    currentMood = () => "day";
+    const seen = {};
+    for(let i = 0; i < 200; i++) seen[cheerPool() === CHEERS ? "cheer" : "weather"] = true;
+    const r = { mixes: !!(seen.cheer && seen.weather),
+                rainLine: WX_SAY.rain[0], snowLine: WX_SAY.snow[0] };
+    currentMood = realMood;
+    data = JSON.parse(backup); persist();
+    return r;
+  });
+  ok("응원과 날씨 얘기를 섞어 한다", wxSay.mixes === true);
+  ok("비 대사가 비를 말한다", wxSay.rainLine.indexOf("비") >= 0, wxSay.rainLine);
+  ok("눈 대사가 눈을 말한다", wxSay.snowLine.indexOf("눈") >= 0, wxSay.snowLine);
+
+  // 취향이니 백업을 따라가고 전체 삭제에도 남는다
+  const wxKeep = await page.evaluate(() => {
+    const backup = JSON.stringify(data);
+    data.wx = "auto";
+    const json = JSON.parse(backupJSON());
+    const r = { inBackup: json.data.wx };
+    document.querySelector("#wipeAll").click();
+    document.querySelector("#dlgYes").click();
+    r.afterWipe = data.wx;
+    data = JSON.parse(backup); persist(); go("home");
+    return r;
+  });
+  eq("날씨 설정이 백업에 담긴다", wxKeep.inBackup, "auto");
+  eq("전체 삭제해도 날씨 설정이 남는다", wxKeep.afterWipe, "auto");
 
   // ── 6-6. iOS 앱 껍데기 ──────────────────────────────────────────
   // 앱 안에서는 "홈 화면에 추가" 안내가 뜨면 안 된다. 이미 앱이기 때문이다.
