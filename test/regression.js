@@ -725,6 +725,56 @@ const LEGACY = {
   eq("날씨 설정이 백업에 담긴다", wxKeep.inBackup, "auto");
   eq("전체 삭제해도 날씨 설정이 남는다", wxKeep.afterWipe, "auto");
 
+  // ── 6-10. 레시피 화면 좌우 넘기기 ───────────────────────────────
+  // 민 방향으로 나가야 한다. 반대로 두면 왼쪽으로 끌다 손을 뗐을 때
+  // 화면이 오른쪽으로 되돌아 건너가며 내용이 제자리를 훑어 깜빡여 보인다.
+  const slide = await page.evaluate(async () => {
+    go("list");
+    state.listTab = "recipe"; renderList();
+    await new Promise(r => setTimeout(r, 60));
+    const pane = document.querySelector("#listPane");
+    const xOf = () => {
+      const m = /translate3d\((-?[\d.]+)px/.exec(pane.style.transform || "");
+      return m ? Number(m[1]) : 0;
+    };
+    const r = { still: !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) };
+
+    /* 들어오는 자리는 한 프레임만 머물러 시각으로 재면 놓친다. 바뀌는 대로 받아 적는다 */
+    const seen = [];
+    const obs = new MutationObserver(()=>{ const v = xOf(); if(seen[seen.length-1] !== v) seen.push(v); });
+    obs.observe(pane, { attributes: true, attributeFilter: ["style"] });
+
+    segSlideTo("sub", 1);            // 왼쪽으로 밀었을 때
+    r.outLeft = xOf();
+    await new Promise(x => setTimeout(x, 760));
+    obs.disconnect();
+    r.steps = seen;
+    r.inLeft = seen.filter(v => v > 0)[0] || 0;   // 다음 장은 반대편에서 들어온다
+    r.restX = xOf();
+    r.restOpacity = pane.style.opacity;
+    r.landed = state.listTab;
+
+    segSlideTo("recipe", -1);        // 오른쪽으로 밀었을 때
+    r.outRight = xOf();
+    await new Promise(x => setTimeout(x, 800));
+    r.backTo = state.listTab;
+    /* 되돌아 건너가는 구간이 없어야 한다 — 나갈 때 부호가 뒤집히면 그게 깜빡임이다 */
+    r.crossedBack = r.steps.slice(0, r.steps.indexOf(r.inLeft)).some(v => v > 0);
+    return r;
+  });
+  if (slide.still) {
+    ok("움직임 줄이기가 켜져 있어 방향 검사는 건너뛴다", true);
+  } else {
+    ok("왼쪽으로 밀면 왼쪽으로 나간다", slide.outLeft < 0, String(slide.outLeft));
+    ok("다음 장은 오른쪽에서 들어온다", slide.inLeft > 0, String(slide.inLeft));
+    ok("오른쪽으로 밀면 오른쪽으로 나간다", slide.outRight > 0, String(slide.outRight));
+    ok("나가는 도중에 반대편으로 건너가지 않는다", slide.crossedBack === false, JSON.stringify(slide.steps));
+  }
+  eq("넘기면 그 칸에 도착한다", slide.landed, "sub");
+  eq("되돌아가면 원래 칸이다", slide.backTo, "recipe");
+  eq("끝나면 제자리로 돌아온다", slide.restX, 0);
+  eq("끝나면 다시 또렷하다", slide.restOpacity, "1");
+
   // ── 6-6. iOS 앱 껍데기 ──────────────────────────────────────────
   // 앱 안에서는 "홈 화면에 추가" 안내가 뜨면 안 된다. 이미 앱이기 때문이다.
   // 앱은 웹뷰가 뜰 때 window.__amgijwiNative 를 심어 그 사실을 알린다.
