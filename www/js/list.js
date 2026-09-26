@@ -344,25 +344,32 @@ function segNeighbor(dir){
   const i = SEG_ORDER.indexOf(state.listTab) + dir;
   return (i >= 0 && i < SEG_ORDER.length) ? SEG_ORDER[i] : null;
 }
+/* 민 방향으로 따라 나가고, 다음 장은 반대편에서 들어온다.
+   반대로 두면 왼쪽으로 끌다 손을 뗐을 때 화면이 오른쪽으로 되돌아 건너간다.
+   그때 아직 안 투명해서 내용이 제자리를 훑고 지나가 깜빡여 보인다. */
 function segSlideTo(tab, dir){
   const pane = $("#listPane");
   const still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   const off = 42;
   const at = px => `translate3d(${still ? 0 : px}px,0,0)`;   // 레이어를 놓지 않는다
+  const out = dir < 0 ? off : -off;                    // 왼쪽으로 밀면(dir 1) 왼쪽으로 나간다
   segS.busy = true;
   pane.classList.remove("drag");
-  pane.style.transform = at(dir < 0 ? -off : off);
+  pane.style.transform = at(out);
   pane.style.opacity = "0";
   setTimeout(()=>{
     state.listTab = tab;
     renderList();                                      // 검색어는 지우지 않는다
     pane.style.transition = "none";
-    pane.style.transform = at(dir < 0 ? off : -off);
+    pane.style.transform = at(-out);                   // 반대편에서 시작
+    /* 여기서 한 번 값을 읽어 위 두 줄을 굳힌다. 안 그러면 브라우저가 묶어 처리해
+       건너뛰기가 없던 일이 되고, 나갔던 쪽에서 도로 미끄러져 들어온다 */
+    void pane.offsetWidth;
     requestAnimationFrame(()=>{
       pane.style.transition = "";
       pane.style.transform = at(0);
       pane.style.opacity = "1";
-      setTimeout(()=>{ pane.style.opacity = "1"; segS.busy = false; }, 220);
+      setTimeout(()=>{ segS.busy = false; }, 220);
     });
   }, still ? 120 : 190);
 }
