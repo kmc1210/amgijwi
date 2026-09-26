@@ -9,13 +9,31 @@ let calCursor = null;        // 보고 있는 달. 첫 진입에 이번 달로 �
 function evSorted(list){
   return (list || data.events).slice().sort((a,b)=> a.date < b.date ? -1 : (a.date > b.date ? 1 : -0));
 }
-function evOn(key){ return data.events.filter(e=>e.date === key); }
+/* 기간이 있으면 끝나는 날까지 모두 그 일정의 날이다 */
+function evEnd(e){ return e.end || e.date; }
+function evOn(key){ return data.events.filter(e=>key >= e.date && key <= evEnd(e)); }
 /* 오늘부터 며칠 남았나. 지난 일정은 음수 */
 function evDDay(e){ return dayGap(ymd(new Date()), e.date); }
+/* 시작 전 · 진행 중 · 지남 중 어디인가 */
+function evStatus(e){
+  const today = ymd(new Date());
+  const start = dayGap(today, e.date);
+  const left = dayGap(today, evEnd(e));
+  if(start > 0) return { kind:"soon", text: evDDayText(start) };
+  if(left >= 0) return { kind:"now", text: e.end ? "진행 중" : "오늘" };
+  return { kind:"late", text: Math.abs(left) + "일 지남" };
+}
 /* "2026-09-24" → "9월 24일". 앞의 0 은 떼야 읽기 편하다 */
 function evDateText(key){
   const p = key.split("-");
   return Number(p[1]) + "월 " + Number(p[2]) + "일";
+}
+/* 기간이면 "9월 15일 ~ 18일". 달이 같으면 뒤쪽 달은 뺀다 */
+function evRangeText(e){
+  if(!e.end) return evDateText(e.date);
+  const a = e.date.split("-"), b = e.end.split("-");
+  const tail = a[1] === b[1] ? Number(b[2]) + "일" : evDateText(e.end);
+  return evDateText(e.date) + " ~ " + tail;
 }
 function evDDayText(n){
   if(n === 0) return "오늘";
@@ -23,13 +41,15 @@ function evDDayText(n){
   if(n > 0) return "D-" + n;
   return Math.abs(n) + "일 지남";
 }
-/* 홈에 띄울 것 — 아직 안 끝났고, 미리 알림 기간에 들어왔거나 이미 지난 것 */
+/* 홈에 띄울 것 — 아직 안 끝났고, 미리 알림 기간에 들어왔거나 이미 지난 것.
+   기간 일정은 끝나는 날을 기준으로 지났는지 본다. 한창 진행 중인데 사라지면 안 된다 */
 function evUpcoming(){
+  const today = ymd(new Date());
   return evSorted().filter(e=>{
     if(e.done) return false;
-    const n = evDDay(e);
-    if(n < 0) return n >= -7;             // 지난 것도 이레까지는 보여준다. 놓친 걸 알아야 한다
-    return n <= (e.remind || 0);
+    const left = dayGap(today, evEnd(e));
+    if(left < 0) return left >= -7;       // 끝난 것도 이레까지는 보여준다. 놓친 걸 알아야 한다
+    return evDDay(e) <= (e.remind || 0);  // 시작이 코앞이거나 이미 진행 중
   });
 }
 
@@ -41,13 +61,12 @@ function renderUpcoming(){
   if(!list.length){ sect.style.display = "none"; return; }
   sect.style.display = "block";
   $("#upcomingList").innerHTML = list.map(e=>{
-    const n = evDDay(e);
-    const late = n < 0;
+    const st = evStatus(e);
     return `<button class="row" data-ev="${esc(e.id)}">
-      <span class="emo">${late ? "⚠️" : "📅"}</span>
+      <span class="emo">${st.kind === "late" ? "⚠️" : "📅"}</span>
       <span class="meta"><b>${esc(e.title)}</b>
-        <span>${esc(evDateText(e.date))}${e.note ? " · " + esc(e.note) : ""}</span></span>
-      <span class="pill${late ? "" : " done"}">${esc(evDDayText(n))}</span>
+        <span>${esc(evRangeText(e))}${e.note ? " · " + esc(e.note) : ""}</span></span>
+      <span class="pill${st.kind === "late" ? "" : " done"}">${esc(st.text)}</span>
     </button>`;
   }).join("");
   $("#upcomingList").querySelectorAll(".row").forEach(b=>
@@ -100,8 +119,8 @@ function renderCalDay(){
   $("#calDayList").innerHTML = list.length
     ? list.map(e=>`<button class="evrow${e.done ? " done" : ""}" data-ev="${esc(e.id)}">
         <span class="nm">${esc(e.title)}</span>
-        ${e.note ? `<span class="nt">${esc(e.note)}</span>` : ""}
-        <span class="dd">${e.done ? "끝남" : esc(evDDayText(evDDay(e)))}</span>
+        <span class="nt">${esc(evRangeText(e))}${e.note ? " · " + esc(e.note) : ""}</span>
+        <span class="dd">${e.done ? "끝남" : esc(evStatus(e).text)}</span>
       </button>`).join("")
     : `<p class="calempty">이 날은 비어 있어요.</p>`;
   $("#calDayList").querySelectorAll(".evrow").forEach(b=>
@@ -131,6 +150,8 @@ function openEventSheet(id){
       <input type="text" id="evTitle" maxlength="60" value="${ev ? esc(ev.title) : ""}" placeholder="예: 신메뉴 출시" autocomplete="off"></div>
     <div class="fld"><label>언제 *</label>
       <input type="date" id="evDate" value="${esc(date)}"></div>
+    <div class="fld"><label>언제까지 (하루짜리면 비워두세요)</label>
+      <input type="date" id="evEnd" value="${ev && ev.end ? esc(ev.end) : ""}"></div>
     <div class="fld"><label>메모</label>
       <textarea id="evNote" placeholder="예: 라떼 3종 레시피 외우기">${ev ? esc(ev.note) : ""}</textarea></div>
     <div class="fld"><label>며칠 전부터 홈에 띄울까요</label>
@@ -153,10 +174,14 @@ function openEventSheet(id){
   $("#evSave").addEventListener("click", ()=>{
     const title = $("#evTitle").value.trim();
     const d = $("#evDate").value;
+    let end = $("#evEnd").value;
     if(!title){ toast("무슨 일인지 적어주세요"); return; }
     if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){ toast("날짜를 골라주세요"); return; }
-    if(ev){ ev.title = title; ev.date = d; ev.note = $("#evNote").value.trim(); ev.remind = remind; }
-    else data.events.push({id:uid(), title:title, date:d, note:$("#evNote").value.trim(), remind:remind, done:false});
+    if(end && !/^\d{4}-\d{2}-\d{2}$/.test(end)) end = "";
+    if(end && end < d){ toast("끝나는 날이 시작보다 앞서요"); return; }
+    if(end === d) end = "";                    // 같은 날이면 하루짜리다
+    if(ev){ ev.title = title; ev.date = d; ev.end = end; ev.note = $("#evNote").value.trim(); ev.remind = remind; }
+    else data.events.push({id:uid(), title:title, date:d, end:end, note:$("#evNote").value.trim(), remind:remind, done:false});
     persist(); closeSheet();
     state.calDay = d;
     calCursor = {y:Number(d.slice(0,4)), m:Number(d.slice(5,7)) - 1};

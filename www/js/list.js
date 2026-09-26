@@ -179,6 +179,12 @@ function renderShelf(){
 
 function renderList(){
   document.querySelectorAll("#listSeg button").forEach(b=>b.classList.toggle("on", b.dataset.tab===state.listTab));
+  /* 차례 고르기는 레시피 칸에서만, 그리고 고를 게 있을 때만 보인다 */
+  const sortRow = $("#sortRow");
+  if(sortRow){
+    sortRow.style.display = (state.listTab === "recipe" && liveDrinks().length > 1) ? "flex" : "none";
+    sortRow.querySelectorAll(".sortb").forEach(b=>b.classList.toggle("on", b.dataset.sort === data.listSort));
+  }
   const tab = state.listTab;
   const shelfMode = tab === "shelf";
   const subMode   = tab === "sub";
@@ -230,16 +236,22 @@ function renderList(){
     $("#selBtn").style.display = "none";
     return;
   }
-  data.cats.forEach(c=>{
-    const items = hit.filter(d=>d.cat===c.id);
-    if(!items.length && q) return;                 // 검색 중일 땐 빈 분류를 숨긴다
-    html += `<div class="grp"><span class="ge">${esc(c.emo)}</span>${esc(c.label)}</div>`;
-    html += items.length
-      ? items.map(d=>rowHTML(d,null,sm)).join("")
-      : `<div class="empty" style="padding:16px;margin-bottom:9px;font-size:13px">아직 이 분류에 레시피가 없어요.</div>`;
-  });
-  const others = hit.filter(d=>!catOf(d.cat));
-  if(others.length) html += `<div class="grp">기타</div>` + others.map(d=>rowHTML(d,null,sm)).join("");
+  if(data.listSort === "new"){
+    /* 최신순에서는 분류 제목을 접는다. 방금 넣은 것이 맨 위여야 하는데
+       분류로 묶으면 그 분류 안에서만 위가 되어 눈에 안 띈다 */
+    html += byNewest(hit).map(d=>rowHTML(d,null,sm)).join("");
+  } else {
+    data.cats.forEach(c=>{
+      const items = hit.filter(d=>d.cat===c.id);
+      if(!items.length && q) return;               // 검색 중일 땐 빈 분류를 숨긴다
+      html += `<div class="grp"><span class="ge">${esc(c.emo)}</span>${esc(c.label)}</div>`;
+      html += items.length
+        ? items.map(d=>rowHTML(d,null,sm)).join("")
+        : `<div class="empty" style="padding:16px;margin-bottom:9px;font-size:13px">아직 이 분류에 레시피가 없어요.</div>`;
+    });
+    const others = hit.filter(d=>!catOf(d.cat));
+    if(others.length) html += `<div class="grp">기타</div>` + others.map(d=>rowHTML(d,null,sm)).join("");
+  }
   $("#listBody").innerHTML = html || noResultHTML(q, "레시피가");
   bindRows("#listBody", sm);
 
@@ -319,6 +331,11 @@ document.querySelectorAll("#listSeg button").forEach(b=>{
     if(state.selMode) exitSel();
     state.listTab = b.dataset.tab;
     renderList();                 // 검색어는 그대로 둔다 (스와이프와 같게)
+  });
+});
+document.querySelectorAll("#sortRow .sortb").forEach(b=>{
+  b.addEventListener("click", ()=>{
+    data.listSort = b.dataset.sort; persist(); renderList();
   });
 });
 

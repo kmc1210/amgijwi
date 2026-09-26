@@ -163,6 +163,8 @@ data.events.forEach(e=>{
   e.note = String(e.note || "").slice(0, 300);
   e.remind = Math.min(30, Math.max(0, Number(e.remind) || 0));
   e.done = !!e.done;
+  /* 끝나는 날. 하루짜리면 비어 있다. 시작보다 앞서면 잘못 들어온 것이라 버린다 */
+  e.end = (typeof e.end === "string" && /^\d{4}-\d{2}-\d{2}$/.test(e.end) && e.end > e.date) ? e.end : "";
 });
 /* 날씨 옷 — off(기본) · auto · clear · rain · snow.
    소리처럼 꺼진 채로 시작한다. 묻지도 않고 옷을 갈아입히면 놀란다 */
@@ -174,7 +176,13 @@ if(!Array.isArray(data.shelf)) data.shelf = [];
 data.shelf.forEach(s=>{ if(!s.id) s.id = uid(); });
 if(!Array.isArray(data.memos)) data.memos = [];     // 예전 백업에는 없는 항목 — 빈 목록으로 시작
 data.memos.forEach(m=>{ if(!m.id) m.id = uid(); if(typeof m.text !== "string") m.text = ""; m.pin = !!m.pin; });
+/* 레시피를 늘어놓는 차례 — cat(분류순) · new(최신 등록순, 기본) */
+if(["cat","new"].indexOf(data.listSort) < 0) data.listSort = "new";
+
 data.drinks.forEach(d=>{
+  /* 등록한 날. 이 기능이 생기기 전에 넣은 레시피에는 없다.
+     없는 것은 만들어낼 수 없으므로 배열 차례로 대신한다 (뒤에 있을수록 나중에 넣은 것) */
+  d.at = (typeof d.at === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d.at)) ? d.at : "";
   if(!Array.isArray(d.cups)) d.cups = d.cup ? [String(d.cup)] : [];
   d.arch = !!d.arch;               // 보관한 레시피 — 학습과 목록에서 빠진다
 });

@@ -340,6 +340,7 @@ function applyBackup(text){
       /* 일정은 백업을 따라온다. 모양은 core.js 가 불러올 때 다시 다듬는다 */
       events:Array.isArray(d.events) ? d.events : [],
       wx:d.wx || data.wx,                 /* 날씨 옷도 취향이라 백업을 따라간다 */
+      listSort:d.listSort || data.listSort,
       cats:keepCats, shelf:keepShelf, memos:keepMemos,
       /* 새 백업은 공용 부재료 목록을 갖고 있고, 예전 백업은 레시피 안에 부재료가 박혀 있다.
          둘 다 받아서 아래 liftSubs로 하나의 모양으로 맞춘다 */
@@ -352,6 +353,7 @@ function applyBackup(text){
       ingHot:Array.isArray(x.ingHot)?x.ingHot.map(p=>[String(p[0]||""),String(p[1]||"")]):[],
         steps:Array.isArray(x.steps)?x.steps.map(String):[], tip:String(x.tip||""),
         arch:!!x.arch,
+        at:String(x.at||""),                 /* 등록한 날. 옛 백업에는 없어서 빈 값이 된다 */
         subRefs:Array.isArray(x.subRefs)?x.subRefs.map(String):[],
         subs:Array.isArray(x.subs)?x.subs.map(cleanSub):[]
       })), mastered:Array.isArray(d.mastered)?d.mastered:[], needReview:Array.isArray(d.needReview)?d.needReview:[]};
@@ -398,7 +400,7 @@ $("#wipeAll").addEventListener("click", ()=>{
   confirmBox("전체 데이터 삭제", "레시피와 학습 기록, 일정까지 모두 지웁니다. 백업 파일이 없으면 복구할 수 없어요.", "전부 삭제", ()=>{
     /* 지우는 건 레시피와 학습 기록이다. 테마·소리 같은 취향과 안내를 본 기록은 그대로 둔다.
        sound 가 빠져 있어 전체 삭제 때마다 소리가 조용히 꺼지던 것도 여기서 바로잡는다 */
-    data = {v:1, mode:data.mode, theme:data.theme, sound:data.sound, wx:data.wx, enCase:data.enCase, pin:data.pin,
+    data = {v:1, mode:data.mode, theme:data.theme, sound:data.sound, wx:data.wx, listSort:data.listSort, enCase:data.enCase, pin:data.pin,
       visit:data.visit, hints:data.hints || [], cats:data.cats,
       shelf:[], memos:[], subs:[], drinks:[], mastered:[], needReview:[], events:[]};
     Store.clear(); persist(); renderSettings(); toast("모두 삭제했어요"); go("home");

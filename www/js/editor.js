@@ -622,6 +622,9 @@ $("#saveBtn").addEventListener("click", ()=>{
     /* 저장할 때 레코드를 새로 만들기 때문에 보관 상태를 명시적으로 물려받아야 한다.
        안 그러면 보관해 둔 레시피를 고치는 순간 학습에 다시 튀어나온다 */
     arch: state.editingId ? !!(data.drinks.find(x=>x.id===state.editingId)||{}).arch : false,
+    /* 등록한 날. 고칠 때는 처음 넣은 날을 그대로 물려받는다.
+       손볼 때마다 새것이 되면 "최근에 넣은 것" 이 뜻을 잃는다 */
+    at: state.editingId ? ((data.drinks.find(x=>x.id===state.editingId)||{}).at || "") : ymd(new Date()),
     subRefs: state.editSubRefs.filter(subById)
   };
   if(state.editingId){
