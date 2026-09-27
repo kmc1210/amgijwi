@@ -92,7 +92,7 @@ function renderCats(){
   const box = $("#catList");
   box.innerHTML = data.cats.map((c,i)=>`
     <div class="catrow">
-      <button type="button" class="ce" data-edit="${i}" style="background:none;border:none;padding:0">${esc(c.emo)}</button>
+      <button type="button" class="ce" data-edit="${i}" style="background:none;border:none;padding:0">${catMark(c.emo)}</button>
       <button type="button" class="cl" data-edit="${i}" style="background:none;border:none;padding:0;text-align:left">${esc(c.label)}</button>
       <span class="cn">${data.drinks.filter(d=>d.cat===c.id).length}개</span>
       <button class="minibtn" data-up="${i}"${i===0?" disabled":""}>↑</button>
@@ -110,22 +110,44 @@ function moveCat(i, dir){
   const t = data.cats[i]; data.cats[i] = data.cats[j]; data.cats[j] = t;
   persist(); renderCats();
 }
+/* 그림은 도트 아이콘에서 고르거나 이모지를 직접 넣는다.
+   직접 만든 분류에 원하는 이모지를 넣던 자유를 없애지 않는다 */
+const CAT_MARKS = ["@coffee", "@ade", "@tea", "@cup", "@ice", "@flame"];
 function openCatSheet(idx){
-  const c = (idx === null) ? {emo:"🥤", label:""} : data.cats[idx];
+  const c = (idx === null) ? {emo:"@cup", label:""} : data.cats[idx];
+  let mark = c.emo;
   $("#sheetBody").innerHTML = `
     <h2 style="margin:0 0 4px;font-size:21px;font-weight:800;letter-spacing:-.4px">${idx===null?"카테고리 추가":"카테고리 수정"}</h2>
-    <div style="font-size:12.5px;color:var(--muted);margin-bottom:18px">이모지와 이름을 정해주세요</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:18px">그림과 이름을 정해주세요</div>
+    <div class="fld"><label>그림</label>
+      <div class="pickers" id="c-marks"></div></div>
     <div class="two">
-      <div class="fld" style="flex:0 0 88px"><label>이모지</label>
-        <input type="text" id="c-emo" maxlength="4" value="${esc(c.emo)}" style="text-align:center;font-size:20px"></div>
+      <div class="fld" style="flex:0 0 108px"><label>직접 넣기</label>
+        <input type="text" id="c-emo" maxlength="4" value="${c.emo.charAt(0) === "@" ? "" : esc(c.emo)}"
+               placeholder="이모지" style="text-align:center;font-size:20px"></div>
       <div class="fld"><label>이름 *</label>
         <input type="text" id="c-label" value="${esc(c.label)}" placeholder="예: 시그니처" autocomplete="off"></div>
     </div>
     <button class="cta" id="catSave">저장</button>`;
+
+  const drawMarks = ()=>{
+    $("#c-marks").innerHTML = CAT_MARKS.map(m=>
+      `<button type="button" class="pick${mark === m ? " on" : ""}" data-mark="${m}">${icon(m.slice(1))}</button>`).join("");
+    $("#c-marks").querySelectorAll(".pick").forEach(b=>b.addEventListener("click", ()=>{
+      mark = b.dataset.mark; $("#c-emo").value = ""; drawMarks();
+    }));
+  };
+  drawMarks();
+  /* 이모지를 직접 넣으면 고른 도트는 풀린다. 둘 다 고른 상태가 없어야 헷갈리지 않는다 */
+  $("#c-emo").addEventListener("input", ()=>{
+    if($("#c-emo").value.trim()){ mark = ""; drawMarks(); }
+  });
+
   $("#mask").classList.add("on"); $("#sheet").classList.add("on");
   $("#catSave").addEventListener("click", ()=>{
     const label = $("#c-label").value.trim();
-    const emo = $("#c-emo").value.trim() || "🥤";
+    const typed = $("#c-emo").value.trim();
+    const emo = typed || mark || "@cup";
     if(!label){ toast("이름을 입력해 주세요"); return; }
     if(idx === null) data.cats.push({id:uid(), label:label, emo:emo});
     else { data.cats[idx].label = label; data.cats[idx].emo = emo; }
@@ -318,7 +340,7 @@ function applyBackup(text){
     const keepTheme = ["cream","dark","green"].indexOf(d.theme) >= 0 ? d.theme : data.theme;
     const keepSound = ["off","sfx","all"].indexOf(d.sound) >= 0 ? d.sound : data.sound;
     const keepCats = (Array.isArray(d.cats) && d.cats.length)
-      ? d.cats.map(c=>({id:String(c.id||uid()), label:String(c.label||"분류"), emo:String(c.emo||"🥤")}))
+      ? d.cats.map(c=>({id:String(c.id||uid()), label:String(c.label||"분류"), emo:String(c.emo||"@cup")}))
       : data.cats;
     const cleanSub = s => ({
       id:String(s.id||uid()), name:String(s.name||""),
@@ -426,35 +448,35 @@ function openGuideSheet(){
     <h2 style="margin:0 0 4px;font-size:21px;font-weight:800;letter-spacing:-.4px">사용법</h2>
     <p style="margin:0 0 20px;font-size:12.5px;color:var(--muted)">처음이라면 이만큼만 알면 됩니다</p>
 
-    ${part("🔄", "카드로 외우기", [
+    ${part(icon("flip"), "카드로 외우기", [
       "홈에서 <b>학습 시작하기</b>를 누르면 방식을 고를 수 있어요.",
       "<b>카드 뒤집기</b>는 이름을 보고 재료를 통째로 떠올려요.",
       "<b>빈칸 채우기</b>는 용량만 가려서 하나씩 확인해요.",
       "다 보고 나면 <b>외웠어요</b> 또는 <b>다시 볼래요</b>를 누르세요."
     ])}
 
-    ${part("🎯", "오늘 볼 것만 고르기", [
+    ${part(icon("target"), "오늘 볼 것만 고르기", [
       "방식 고르는 화면에서 <b>고르기</b>를 누르면 됩니다.",
       "카테고리를 골라도 전부 다 돌 필요는 없어요."
     ])}
 
-    ${part("↩️", "틀린 것 다시 보기", [
+    ${part(icon("back"), "틀린 것 다시 보기", [
       "<b>다시 볼래요</b>를 누른 레시피는 복습 목록에 담겨요.",
       "설정 탭의 <b>복습이 필요해요</b>에서 그것만 모아 볼 수 있어요."
     ])}
 
-    ${part("➕", "우리 매장 레시피 넣기", [
+    ${part(icon("plus"), "우리 매장 레시피 넣기", [
       "<b>레시피</b> 탭 오른쪽 아래 <b>+</b> 버튼이에요.",
       "종이에 적힌 레시피는 <b>사진에서 글자 가져오기</b>로 옮길 수 있어요.",
       "기기 안에서만 읽어요. 사진이 어디로도 올라가지 않아요."
     ])}
 
-    ${part("🧊", "ICE 와 HOT 이 다를 때", [
+    ${part(icon("ice"), "ICE 와 HOT 이 다를 때", [
       "레시피를 만들 때 온도를 <b>ICE/HOT</b> 으로 두면 재료를 두 벌 적을 수 있어요.",
       "학습 카드에는 두 벌이 나란히 나옵니다."
     ])}
 
-    ${part("💾", "백업 — 이것만은 꼭", [
+    ${part(icon("save"), "백업 — 이것만은 꼭", [
       "레시피는 <b>이 기기 안에만</b> 있어요. 서버에 사본이 없습니다.",
       "설정 탭의 <b>백업 내보내기</b>로 파일을 하나 만들어 두세요.",
       "기기를 바꾸거나 앱을 다시 깔면 그 파일로 되살립니다."

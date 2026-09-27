@@ -63,7 +63,7 @@ function renderUpcoming(){
   $("#upcomingList").innerHTML = list.map(e=>{
     const st = evStatus(e);
     return `<button class="row" data-ev="${esc(e.id)}">
-      <span class="emo">${st.kind === "late" ? "⚠️" : "📅"}</span>
+      <span class="emo">${st.kind === "late" ? icon("warn") : icon("calendar")}</span>
       <span class="meta"><b>${esc(e.title)}</b>
         <span>${esc(evRangeText(e))}${e.note ? " · " + esc(e.note) : ""}</span></span>
       <span class="pill${st.kind === "late" ? "" : " done"}">${esc(st.text)}</span>

@@ -443,7 +443,7 @@ function openSubPickSheet(){
     <h2 style="margin:0 0 4px;font-size:21px;font-weight:800;letter-spacing:-.4px">부재료 추가</h2>
     <div style="font-size:12.5px;color:var(--muted);margin-bottom:20px">이미 등록해 둔 부재료를 고르면 다시 입력하지 않아도 돼요</div>
     <button class="row" id="subNew">
-      <span class="emo">✏️</span>
+      <span class="emo">${icon("pencil")}</span>
       <span class="meta"><b>새로 만들기</b><span>재료와 순서를 새로 입력합니다</span></span>
     </button>
     <div class="lb" style="margin:20px 0 10px">등록된 부재료</div>

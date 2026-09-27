@@ -343,33 +343,33 @@ function situationCheer(now, streak, v){
 
   /* ── 급한 말 ── */
   if(total === 0)
-    return {ico:"📝", msg:"레시피가 아직 없츄. 한 개만 넣어보면 바로 시작이츄"};
+    return {ico:icon("note"), msg:"레시피가 아직 없츄. 한 개만 넣어보면 바로 시작이츄"};
   if(kill > 0 && hour < 14)                       // 오픈·미들 시간대에만
-    return {ico:"🗑️", msg:"오늘 버릴 게 " + kill + "개 있츄. 개봉관리 먼저 보고 가자츄"};
+    return {ico:icon("trash"), msg:"오늘 버릴 게 " + kill + "개 있츄. 개봉관리 먼저 보고 가자츄"};
   if(rev >= 5)
-    return {ico:"🔁", msg:"다시 볼 메뉴가 " + rev + "개나 쌓였츄. 오늘 좀 덜어내자츄"};
+    return {ico:icon("repeat"), msg:"다시 볼 메뉴가 " + rev + "개나 쌓였츄. 오늘 좀 덜어내자츄"};
   if(done === 0)
-    return {ico:"🥤", msg:"첫 한 잔부터 외워보자츄. " + total + "개가 기다리고 있츄"};
+    return {ico:icon("cup"), msg:"첫 한 잔부터 외워보자츄. " + total + "개가 기다리고 있츄"};
   if(done === total)
-    return {ico:"🏆", msg:"전부 외웠츄! 가끔 한 바퀴만 돌려주면 안 까먹츄"};
+    return {ico:icon("trophy"), msg:"전부 외웠츄! 가끔 한 바퀴만 돌려주면 안 까먹츄"};
 
   /* ── 해당되면 후보에 넣고 날짜로 고르는 말 ── */
   const pool = [];
   if(rev >= 1)
-    pool.push({ico:"🔁", msg:"다시 볼래요 해둔 게 " + rev + "개 있츄. 이것만 보고 가도 되츄"});
+    pool.push({ico:icon("repeat"), msg:"다시 볼래요 해둔 게 " + rev + "개 있츄. 이것만 보고 가도 되츄"});
   if(kill > 0)
-    pool.push({ico:"🗑️", msg:"오늘 폐기 " + kill + "개, 마감 전에 확인했츄?"});
+    pool.push({ico:icon("trash"), msg:"오늘 폐기 " + kill + "개, 마감 전에 확인했츄?"});
   if(total >= 5 && done / total >= 0.8)
-    pool.push({ico:"🎯", msg:(total - done) + "개만 더 하면 끝이츄. 거의 다 왔츄"});
+    pool.push({ico:icon("target"), msg:(total - done) + "개만 더 하면 끝이츄. 거의 다 왔츄"});
   if(v && v.kind === "back" && v.gap >= 3)
-    pool.push({ico:"👋", msg:v.gap + "일 만이츄! 가볍게 다섯 장만 넘겨보자츄"});
+    pool.push({ico:icon("wave"), msg:v.gap + "일 만이츄! 가볍게 다섯 장만 넘겨보자츄"});
   if(streak >= 7)
-    pool.push({ico:"🔥", msg:streak + "일 연속이라니! 이 정도면 습관이 된 거츄"});
+    pool.push({ico:icon("flame"), msg:streak + "일 연속이라니! 이 정도면 습관이 된 거츄"});
   else if(streak >= 3)
-    pool.push({ico:"🔥", msg:streak + "일 연속이야, 잘하고 있츄!"});
+    pool.push({ico:icon("flame"), msg:streak + "일 연속이야, 잘하고 있츄!"});
 
   const seed = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);
-  pool.push({ico:"☕️", msg:CHEERS[seed % CHEERS.length]});   // 늘 하나는 평범한 응원
+  pool.push({ico:icon("coffee"), msg:CHEERS[seed % CHEERS.length]});   // 늘 하나는 평범한 응원
   return pool[seed % pool.length];
 }
 function cheerOf(now, streak, v){

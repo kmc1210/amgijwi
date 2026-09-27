@@ -552,15 +552,20 @@ const LEGACY = {
     r.homeShown = document.querySelector("#upcomingSect").style.display !== "none";
     r.homeRows = document.querySelectorAll("#upcomingList .row").length;
 
-    // 달력에 점이 찍히는지
-    calCursor = null; state.calDay = null; renderCal();
-    const cell = document.querySelector('#calGrid .calcell[data-day="' + day(3) + '"]');
+    // 달력에 점이 찍히는지. 오늘이 말일에 가까우면 사흘 뒤가 다음 달이라
+    // 이번 달 격자에는 그 칸이 없다. 보는 달을 날짜에 맞춰 옮겨 놓고 찾는다
+    const cellOn = d => {
+      calCursor = {y:Number(d.slice(0,4)), m:Number(d.slice(5,7)) - 1};
+      state.calDay = null; renderCal();
+      return document.querySelector('#calGrid .calcell[data-day="' + d + '"]');
+    };
+    const cell = cellOn(day(3));
     r.dotOnDay = !!(cell && cell.querySelector(".dot"));
-    const doneCell = document.querySelector('#calGrid .calcell[data-day="' + day(1) + '"]');
+    const doneCell = cellOn(day(1));
     r.doneDotDim = !!(doneCell && doneCell.querySelector(".dot.off"));
 
     // 그 날을 누르면 아래에 목록이 뜬다
-    cell.click();
+    cellOn(day(3)).click();
     r.dayListed = document.querySelectorAll("#calDayList .evrow").length;
     r.dayTitleHas = document.querySelector("#calDayTitle").textContent;
 
@@ -870,6 +875,84 @@ const LEGACY = {
   ok("레시피 칸에서는 차례 고르기가 보인다", order.sortShown === true);
   ok("분류순으로 돌리면 분류 제목이 돌아온다", order.hasGroups === true);
   ok("부재료 칸에서는 차례 고르기가 숨는다", order.hiddenOnSub === true);
+
+  // ── 6-13. 도트 아이콘 ───────────────────────────────────────────
+  // 이모지를 도트 그림으로 바꿨다. 다시 새어 들어오면 여기서 걸린다.
+  const dots = await page.evaluate(() => {
+    const r = {};
+    const pic = /\p{Extended_Pictographic}/u;
+
+    r.count = Object.keys(ICONS).length;
+    /* 대부분 16x16 이지만 눈 결정은 가지까지 담느라 더 크다.
+       크기는 달라도 되고, 정사각이라야 글줄에서 찌그러지지 않는다 */
+    r.square = Object.keys(ICONS).every(k => {
+      const h = ICONS[k].length;
+      return h >= 16 && ICONS[k].every(x => x.length === h);
+    });
+    r.sizes = [...new Set(Object.keys(ICONS).map(k => ICONS[k].length))].sort((a,b)=>a-b);
+    r.knownColors = Object.keys(ICONS).every(k =>
+      ICONS[k].every(row => [...row].every(ch => ch === "." || !!ICON_PAL[ch])));
+    /* 두 팔레트는 따로 산다. 같은 글자가 다른 색을 가리켜도 섞어 쓰지 않으니 괜찮다.
+       확인할 것은 icon() 이 ICON_PAL 만 본다는 것이다 */
+    const all = Object.keys(ICONS).map(k => icon(k)).join("");
+    const mine = Object.keys(ICON_PAL).map(k => ICON_PAL[k]);
+    r.onlyIconPal = [...new Set((all.match(/fill="#[0-9A-Fa-f]{6}"/g) || [])
+      .map(s => s.slice(6, 13)))].every(c => mine.indexOf(c) >= 0);
+
+    const svg = icon("coffee");
+    r.isSvg = svg.indexOf("<svg") === 0 && svg.indexOf('class="ico"') > 0;
+    r.unknownIsEmpty = icon("없는이름") === "";
+
+    /* 기본 분류는 도트, 직접 넣은 이모지는 그대로 */
+    r.dotMark = catMark("@coffee").indexOf("<svg") === 0;
+    r.emojiMark = catMark("🥐") === "🥐";
+    r.escapes = catMark("<b>") === "&lt;b&gt;";
+
+    /* 정적 마크업의 자리표시자가 채워졌는지 */
+    r.placeholders = [...document.querySelectorAll("[data-ico]")].length;
+    r.painted = [...document.querySelectorAll("[data-ico]")].every(el => el.querySelector("svg"));
+
+    /* 화면에 이모지가 남아 있는지 — 홈·목록·설정을 훑는다 */
+    const sweep = () => {
+      const hit = [];
+      document.querySelectorAll("#s-home *, #s-list *, #s-set *").forEach(el => {
+        if (el.children.length) return;
+        const t = (el.textContent || "").trim();
+        if (t && pic.test(t)) hit.push(t.slice(0, 24));
+      });
+      return hit;
+    };
+    const backup = JSON.stringify(data);
+    data.backup = null; renderHome();
+    go("list"); state.listTab = "recipe"; renderList();
+    go("set"); renderSettings();
+    r.onScreen = sweep();
+    data = JSON.parse(backup); persist(); go("home");
+    return r;
+  });
+  eq("아이콘이 스물일곱 개다", dots.count, 27);
+  ok("모두 정사각이고 16칸 이상이다", dots.square === true, JSON.stringify(dots.sizes));
+  ok("팔레트에 없는 색을 쓰지 않는다", dots.knownColors === true);
+  ok("아이콘은 제 팔레트 색만 쓴다", dots.onlyIconPal === true);
+  ok("icon() 이 인라인 SVG 를 준다", dots.isSvg === true);
+  ok("없는 이름에는 빈 값을 준다", dots.unknownIsEmpty === true);
+  ok("기본 분류는 도트로 그린다", dots.dotMark === true);
+  ok("직접 넣은 이모지는 그대로 둔다", dots.emojiMark === true);
+  ok("분류 이름은 여전히 이스케이프한다", dots.escapes === true);
+  ok("정적 자리표시자가 채워진다", dots.placeholders > 0 && dots.painted === true, String(dots.placeholders));
+  eq("화면에 이모지가 남아 있지 않다", dots.onScreen, []);
+
+  // 소스에도 남지 않았는지 — 걷어내는 정규식 안의 ▪ 하나만 예외다
+  const srcEmoji = [];
+  jsFiles.concat(["../index.html"]).forEach(f => {
+    const p = f.indexOf("..") === 0
+      ? path.resolve(__dirname, "..", "www", "index.html")
+      : path.resolve(__dirname, "..", "www", "js", f);
+    fs.readFileSync(p, "utf8").split(/\r?\n/).forEach((line, i) => {
+      if (/\p{Extended_Pictographic}/u.test(line)) srcEmoji.push(f + ":" + (i + 1));
+    });
+  });
+  eq("소스에 남은 이모지는 글머리표 정규식 한 줄뿐이다", srcEmoji, ["editor.js:34"]);
 
   // ── 6-6. iOS 앱 껍데기 ──────────────────────────────────────────
   // 앱 안에서는 "홈 화면에 추가" 안내가 뜨면 안 된다. 이미 앱이기 때문이다.

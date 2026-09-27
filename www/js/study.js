@@ -98,8 +98,8 @@ function openModeSheet(customPool, scopeLabel){
       <span style="font-size:12.5px;color:var(--muted)">${esc(scope)} · ${pool.length}개 메뉴</span>
       ${pool.length > 1 ? `<button class="linkbtn" id="pickBtn" style="padding:0;min-height:0">고르기</button>` : ""}
     </div>
-    ${opt("flip","🔄","카드 뒤집기","이름 보고 재료를 통째로 떠올리기")}
-    ${opt("blank","✏️","빈칸 채우기","용량만 가리고 하나씩 확인하기")}`;
+    ${opt("flip",icon("flip"),"카드 뒤집기","이름 보고 재료를 통째로 떠올리기")}
+    ${opt("blank",icon("pencil"),"빈칸 채우기","용량만 가리고 하나씩 확인하기")}`;
   $("#mask").classList.add("on"); $("#sheet").classList.add("on");
   const pick = $("#pickBtn");
   if(pick) pick.addEventListener("click", ()=>openPickSheet(pool, scope));
@@ -266,7 +266,7 @@ function renderBlankActions(d){
 }
 function frontHTML(d){
   return `<div class="face"><div class="front">
-    <div class="cat">${esc(catEmo(d.cat))} ${esc(catLabel(d.cat) || "기타")}</div>
+    <div class="cat">${catMark(catEmo(d.cat))} ${esc(catLabel(d.cat) || "기타")}</div>
     <h2>${esc(d.name)}</h2>
     ${d.en?`<div class="en">${esc(enText(d.en))}</div>`:""}
     <div class="tags">${d.temp?`<span class="tag">${esc(d.temp)}</span>`:""}${cupList(d).map(c=>`<span class="tag">${esc(c)}</span>`).join("")}</div>

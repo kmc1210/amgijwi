@@ -4,10 +4,12 @@
 /* ---------- 홈 ---------- */
 function renderHome(){
   renderGreeting();
-  const items = [["all","전체"]].concat(data.cats.map(c=>[c.id, c.emo + " " + c.label]));
+  /* 칩 이름은 그림 + 글자다. 그림이 SVG 라 통째로 esc 하면 안 되고, 글자만 esc 한다 */
+  const items = [["all","전체"]].concat(data.cats.map(c=>[c.id, catMark(c.emo) + " " + esc(c.label)]));
   $("#chips").innerHTML = items.map(([k,l])=>{
     const n = drinksOf(k).length;
-    return `<button class="chip ${state.filter===k?"on":""}" data-cat="${k}">${esc(l)} ${n}</button>`;
+    /* l 은 그림(SVG)과 이름이 합쳐진 것이라 통째로 esc 하면 안 된다. 이름은 만들 때 이미 esc 했다 */
+    return `<button class="chip ${state.filter===k?"on":""}" data-cat="${k}">${l} ${n}</button>`;
   }).join("");
   document.querySelectorAll("#chips .chip").forEach(c=>c.addEventListener("click",()=>{ state.filter=c.dataset.cat; renderHome(); }));
 
@@ -33,16 +35,16 @@ function renderHome(){
   /* 안심 문구는 초반 5회까지만. 저장이 막힌 경고는 항상 띄운다 */
   const visits = (data.visit && data.visit.count) || 1;
   $("#storeBanner").innerHTML = !Store.available
-    ? `<div class="banner warn"><span>⚠️</span><div><b>지금은 저장이 안 되는 상태예요.</b><br>앱을 닫으면 기록이 사라집니다. 설정 탭의 안내를 확인해 주세요.</div></div>`
+    ? `<div class="banner warn"><span>${icon("warn")}</span><div><b>지금은 저장이 안 되는 상태예요.</b><br>앱을 닫으면 기록이 사라집니다. 설정 탭의 안내를 확인해 주세요.</div></div>`
     : (!isStandalone() && deviceOS() !== "desktop"
       /* 브라우저 탭으로 쓰면 저장 데이터가 지워질 위험이 훨씬 크다.
          차이를 모르는 사람이 대부분이라 홈 화면에 넣을 때까지 계속 알린다.
          PC 에는 홈 화면이 없으니 띄우지 않는다 */
-      ? `<div class="banner warn"><span>📲</span><div><b>홈 화면에 추가해서 써주세요.</b><br>
+      ? `<div class="banner warn"><span>${icon("install")}</span><div><b>홈 화면에 추가해서 써주세요.</b><br>
            ${INSTALL[deviceOS()].why}
            ${INSTALL[deviceOS()].how}</div></div>`
       : (visits <= 5
-        ? `<div class="banner ok"><span>🔒</span><div><b>이 기기 안에만 저장됩니다.</b><br>서버로 전송되는 정보가 없어요.</div></div>`
+        ? `<div class="banner ok"><span>${icon("lock")}</span><div><b>이 기기 안에만 저장됩니다.</b><br>서버로 전송되는 정보가 없어요.</div></div>`
         : ""));
 
   renderToday();
@@ -95,7 +97,7 @@ function tempBadge(d){
   if(t === "HOT") return `<span class="tempb hot">HOT</span>`;
   if(t === "ICE") return `<span class="tempb ice">ICE</span>`;
   if(t.includes("HOT") && t.includes("ICE")) return `<span class="tempb both"><i>ICE</i><i>HOT</i></span>`;
-  return `<span class="tempb none">${catEmo(d.cat)}</span>`;
+  return `<span class="tempb none">${catMark(catEmo(d.cat))}</span>`;
 }
 /* 앱바 부제: 안내문 대신 현재 상태를 보여준다 */
 /* 검색 결과가 없을 때: 무엇을 찾고 있었는지 보여주고 빠져나갈 길을 준다 */
@@ -126,7 +128,7 @@ function renderListSub(){
   }
   const live = liveDrinks();
   const done = live.filter(d=>has(data.mastered,d.id)).length;
-  /* 보관 개수는 앱바 오른쪽 📦 버튼이 이미 말해준다. 여기서 또 쓰면 줄이 넘어간다 */
+  /* 보관 개수는 앱바 오른쪽 보관함 버튼이 이미 말해준다. 여기서 또 쓰면 줄이 넘어간다 */
   el.textContent = "레시피 " + live.length + "개 · 외운 것 " + done + "개";
 }
 /* 이레 안에 넣은 레시피에 표를 단다. 등록한 날이 없는 것(이 기능 전에 넣은 것)은 달지 않는다.

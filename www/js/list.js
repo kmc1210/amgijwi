@@ -74,7 +74,7 @@ function renderBackupBanner(){
     : (due.kind === "grew"
       ? `마지막 백업 뒤로 레시피가 ${due.grew}개 늘었어요.`
       : `마지막 백업이 ${due.days}일 전이에요.`);
-  box.innerHTML = `<div class="banner warn"><span>💾</span><div>
+  box.innerHTML = `<div class="banner warn"><span>${icon("save")}</span><div>
       <b>백업 파일을 만들어 두세요.</b><br>${esc(msg)} ${isNativeApp() ? "앱을 지우거나" : "브라우저 데이터를 지우거나"} 기기를 바꾸면 사라집니다.
       <div class="bkbtns">
         <button class="go" id="bkNow">지금 백업</button>
@@ -96,7 +96,7 @@ function renderToday(){
   $("#todayList").innerHTML = groups.map(g=>{
     const open = addDays(now, -(g.days-1));
     return `<button class="row" data-days="${g.days}">
-      <span class="emo">🗓</span>
+      <span class="emo">${icon("calToday")}</span>
       <span class="meta"><b>${g.days}일 · ${fmtDate(open)} 개봉분</b>
         <span>${g.items.map(s=>esc(s.name)).join(" · ")}</span></span>
       <span class="pill">오늘 폐기</span>
@@ -244,7 +244,7 @@ function renderList(){
     data.cats.forEach(c=>{
       const items = hit.filter(d=>d.cat===c.id);
       if(!items.length && q) return;               // 검색 중일 땐 빈 분류를 숨긴다
-      html += `<div class="grp"><span class="ge">${esc(c.emo)}</span>${esc(c.label)}</div>`;
+      html += `<div class="grp"><span class="ge">${catMark(c.emo)}</span>${esc(c.label)}</div>`;
       html += items.length
         ? items.map(d=>rowHTML(d,null,sm)).join("")
         : `<div class="empty" style="padding:16px;margin-bottom:9px;font-size:13px">아직 이 분류에 레시피가 없어요.</div>`;
@@ -467,7 +467,7 @@ function renderSubTab(){
         return `<button class="row" data-id="${esc(s.id)}">
           <span class="subb">부재료</span>
           <span class="meta"><b>${esc(s.name)}</b><span>${uses.length
-            ? uses.map(d=>esc(d.name) + (d.arch ? " 📦" : "")).join(" · ")
+            ? uses.map(d=>esc(d.name) + (d.arch ? " " + icon("box") : "")).join(" · ")
             : "아직 연결된 메뉴가 없어요"}</span></span>
           ${uses.length > 1 ? `<span class="pill done">${uses.length}곳</span>` : ""}
         </button>`;
@@ -529,7 +529,7 @@ function openSubLinkSheet(id){
     const list = q ? data.drinks.filter(d=>textHit([d.name,d.en||""].join(" "), q.toLowerCase())) : data.drinks;
     $("#linkList").innerHTML = list.length
       ? list.map(d=>`<button type="button" class="pick linkrow${picked.has(d.id)?" on":""}" data-id="${esc(d.id)}">
-           <span class="box">✓</span>${esc(d.name)}${d.arch?" 📦":""}</button>`).join("")
+           <span class="box">✓</span>${esc(d.name)}${d.arch ? " " + icon("box") : ""}</button>`).join("")
       : `<p class="cap" style="margin:6px 0 0">“${esc(q)}”에 맞는 메뉴가 없어요.</p>`;
     $("#linkList").querySelectorAll(".linkrow").forEach(b=>b.addEventListener("click", ()=>{
       const did = b.dataset.id;
@@ -541,7 +541,7 @@ function openSubLinkSheet(id){
   $("#sheetBody").innerHTML = `
     <h2 style="margin:0 0 2px;font-size:21px;font-weight:800;letter-spacing:-.4px">쓰이는 메뉴</h2>
     <div style="font-size:12.5px;color:var(--muted);margin-bottom:16px">“${esc(s.name)}”를 쓰는 메뉴를 모두 골라 주세요 · <span id="linkCnt"></span></div>
-    ${data.drinks.length > 8 ? `<div class="search" style="margin-bottom:14px"><span style="color:var(--muted);font-size:15px">🔍</span>
+    ${data.drinks.length > 8 ? `<div class="search" style="margin-bottom:14px"><span>${icon("search")}</span>
       <input id="linkQ" type="search" placeholder="메뉴 이름으로 좁히기" autocomplete="off"></div>` : ""}
     <div class="pickers" id="linkList" style="margin-bottom:4px"></div>
     <button class="cta" id="linkSave" style="margin-top:20px">저장하기</button>
@@ -589,7 +589,7 @@ function renderMemoTab(){
   box.innerHTML = hit.length
     ? hit.map(m=>`<button class="memorow${m.pin?" pinned":""}" data-id="${esc(m.id)}">
         <span class="mtxt">${esc(m.text)}</span>
-        <span class="mat">${m.pin?`<b class="mpin">📌 고정됨</b> · `:""}${esc(fmtMemoAt(m.at))}</span>
+        <span class="mat">${m.pin?`<b class="mpin">${icon("pin")} 고정됨</b> · `:""}${esc(fmtMemoAt(m.at))}</span>
       </button>`).join("")
     : noResultHTML(q, "메모가");
   box.querySelectorAll(".memorow").forEach(b=>b.addEventListener("click", ()=>
@@ -603,7 +603,7 @@ function openMemoSheet(idx){
     <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px">${isNew?"이 기기 안에만 저장됩니다":esc(fmtMemoAt(m.at))}</div>
     <div class="fld"><textarea id="mm-text" rows="7" placeholder="인수인계, 공지, 아이디어…" style="min-height:150px">${esc(m.text)}</textarea></div>
     <div class="fld"><div class="pickers">
-      <button type="button" class="pick${m.pin?" on":""}" id="mm-pin"><span class="box">✓</span>📌 맨 위에 고정</button>
+      <button type="button" class="pick${m.pin?" on":""}" id="mm-pin"><span class="box">✓</span>${icon("pin")} 맨 위에 고정</button>
     </div></div>
     <button class="cta" id="mmSave">저장</button>
     ${isNew?"":`<button class="cta danger" id="mmDel">삭제</button>`}`;
@@ -689,11 +689,11 @@ $("#newBtn").addEventListener("click", ()=>{
     <h2 style="margin:0 0 4px;font-size:21px;font-weight:800;letter-spacing:-.4px">레시피 추가</h2>
     <div style="font-size:12.5px;color:var(--muted);margin-bottom:20px">어떻게 넣을까요?</div>
     <button class="row" id="addManual">
-      <span class="emo">✏️</span>
+      <span class="emo">${icon("pencil")}</span>
       <span class="meta"><b>직접 입력하기</b><span>재료와 순서를 하나씩 입력합니다</span></span>
     </button>
     <button class="row" id="addPhoto" style="margin-bottom:4px">
-      <span class="emo">📷</span>
+      <span class="emo">${icon("camera")}</span>
       <span class="meta"><b>사진에서 가져오기</b><span>사진 속 글자를 복사해 붙여넣으면 자동 정리</span></span>
     </button>`;
   $("#mask").classList.add("on"); $("#sheet").classList.add("on");
@@ -713,7 +713,7 @@ function openSheet(id){
   $("#sheetBody").innerHTML = `
     <h2 style="margin:0 0 2px;font-size:23px;font-weight:800;letter-spacing:-.5px">${esc(d.name)}</h2>
     <div style="font-size:12.5px;color:var(--muted);margin-bottom:18px">${[enText(d.en),d.temp,cupText(d)].filter(Boolean).map(esc).join(" · ")}</div>
-    ${d.arch ? `<div class="banner ok" style="margin:0 0 18px"><span>📦</span><div><b>보관 중인 레시피예요.</b><br>학습과 레시피 목록에는 나오지 않습니다.</div></div>` : ""}
+    ${d.arch ? `<div class="banner ok" style="margin:0 0 18px"><span>${icon("box")}</span><div><b>보관 중인 레시피예요.</b><br>학습과 레시피 목록에는 나오지 않습니다.</div></div>` : ""}
     ${detailHTML(d)}
     <button class="cta" id="sheetEdit" style="margin-top:22px">수정하기</button>
     ${d.arch ? "" : `<button class="cta ghost" id="sheetStudy">이 메뉴만 학습</button>`}
