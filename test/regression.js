@@ -878,7 +878,13 @@ const LEGACY = {
     const pic = /\p{Extended_Pictographic}/u;
 
     r.count = Object.keys(ICONS).length;
-    r.square = Object.keys(ICONS).every(k => ICONS[k].length === 16 && ICONS[k].every(x => x.length === 16));
+    /* 대부분 16x16 이지만 눈 결정은 가지까지 담느라 더 크다.
+       크기는 달라도 되고, 정사각이라야 글줄에서 찌그러지지 않는다 */
+    r.square = Object.keys(ICONS).every(k => {
+      const h = ICONS[k].length;
+      return h >= 16 && ICONS[k].every(x => x.length === h);
+    });
+    r.sizes = [...new Set(Object.keys(ICONS).map(k => ICONS[k].length))].sort((a,b)=>a-b);
     r.knownColors = Object.keys(ICONS).every(k =>
       ICONS[k].every(row => [...row].every(ch => ch === "." || !!ICON_PAL[ch])));
     /* 두 팔레트는 따로 산다. 같은 글자가 다른 색을 가리켜도 섞어 쓰지 않으니 괜찮다.
@@ -920,7 +926,7 @@ const LEGACY = {
     return r;
   });
   eq("아이콘이 스물일곱 개다", dots.count, 27);
-  ok("모두 16x16 이다", dots.square === true);
+  ok("모두 정사각이고 16칸 이상이다", dots.square === true, JSON.stringify(dots.sizes));
   ok("팔레트에 없는 색을 쓰지 않는다", dots.knownColors === true);
   ok("아이콘은 제 팔레트 색만 쓴다", dots.onlyIconPal === true);
   ok("icon() 이 인라인 SVG 를 준다", dots.isSvg === true);
