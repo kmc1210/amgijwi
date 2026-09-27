@@ -8,9 +8,10 @@
    ========================================================= */
 
 const DEFAULT_CATS = [
-  {id:"coffee", label:"커피",        emo:"☕️"},
-  {id:"ade",    label:"에이드·주스", emo:"🍋"},
-  {id:"tea",    label:"티·기타",     emo:"🍵"}
+  /* 기본 분류는 도트 아이콘("@이름"). 직접 만든 분류는 이모지를 그대로 쓴다 */
+  {id:"coffee", label:"커피",        emo:"@coffee"},
+  {id:"ade",    label:"에이드·주스", emo:"@ade"},
+  {id:"tea",    label:"티·기타",     emo:"@tea"}
 ];
 /* 영문 이름 표기: 저장된 글자는 그대로 두고 보이는 모양만 바꾼다 */
 function enText(s){
@@ -35,7 +36,7 @@ function cupList(d){ return Array.isArray(d.cups) ? d.cups.filter(Boolean) : (d.
 function cupText(d){ return cupList(d).join(" · "); }
 function catOf(id){ for(let i=0;i<data.cats.length;i++){ if(data.cats[i].id===id) return data.cats[i]; } return null; }
 function catLabel(id){ const c=catOf(id); return c ? c.label : ""; }
-function catEmo(id){ const c=catOf(id); return c ? c.emo : "🥤"; }
+function catEmo(id){ const c=catOf(id); return c ? c.emo : "@cup"; }
 function firstCatId(){ return data.cats.length ? data.cats[0].id : "etc"; }
 const KEY = "brewnote.v1";
 
@@ -269,7 +270,7 @@ function showHint(id, text){
   if(!el) return;
   if(hintSeen(id)){ el.hidden = true; return; }
   el.dataset.hint = id;
-  el.innerHTML = '<span aria-hidden="true">💡</span> ' + text;
+  el.innerHTML = '<span>' + icon("bulb") + '</span> ' + text;
   el.hidden = false;
 }
 /* 알려줄 게 없는 화면에서는 남은 안내만 걷는다. 본 것으로 치지는 않는다 */
@@ -314,6 +315,71 @@ const BELLY = {y0:29,
   normal:[".owppcwwwwwwwwwwwwwwwwcppwo.",".ocddcwwwwwwwwwwwwwwwwcddco.",".owcwwwwwwwwwwwwwwwwwwwwcwo.","..ocwwwwwwwwwwwwwwwwwwwwco..","...occwwwwwwwwwwwwwwwwcco...","..occcwwwwwwwwwwwwwwwwccco..","...ooccwwwwwwwwwwwwwwccoo..."],
   puff:[".owppcwwwwwwwwwwwwwwwwcppwo.",".ocddcwwwwwwwwwwwwwwwwcddco.","owcwwwwwwwwwwwwwwwwwwwwwwcwo",".oocwwwwwwwwwwwwwwwwwwwwcoo.","..occwwwwwwwwwwwwwwwwwwcco..","..occwwwwwwwwwwwwwwwwwwcco..","...occwwwwwwwwwwwwwwwwcco..."]
 };
+/* ---------- 도트 아이콘 ----------
+   이모지 대신 쓴다. 쥐돌이와 같은 도트 문법이지만 16x16 이고 팔레트를 따로 둔다.
+   MOUSE_PAL 에 이미 글자가 차 있어 섞으면 부딪힌다 (B·S 로 한 번 겪었다).
+   icon("search") 처럼 부르면 글자 크기에 맞는 인라인 SVG 가 나온다 */
+const ICON_PAL = {B:"#A9C6E4", G:"#3E7A50", N:"#7C4520", R:"#8F3129", Y:"#F2C94C", b:"#4A7FB5", c:"#EBDDCD", g:"#5E9E6E", h:"#FFFFFF", k:"#3A322B", n:"#A65E2E", o:"#8A7A6A", r:"#C0564C", s:"#C7BDB1", w:"#FCF7F1", y:"#C1802A"};
+const ICONS = {
+  ade:["................","..........gg....",".........ggg....",".....oooooo.....","...ooYYYYYYoo...","..oYYYYYYYYYYo..","..oYhYYYYYYYYo..","..oYhYYYYYYYYo..","..oYYYYYYYYYYo..","..oYYYYYYYYYYo..","...ooYYYYYYoo...",".....oooooo.....","................","................","................","................"],
+  back:["................","................","................","................",".........NNNNN..",".........N...N..",".........N...N..","....N....N...N..","...NN....N...N..","..NNNNNNNN...N..","...NN........N..","....N........N..",".............N..","................","................","................"],
+  box:["................","................","..oooooooooooo..","..oyyyyyyyyyyo..","..oyyyyyyyyyyo..","..oooooooooooo..","..oNNNNNNNNNNo..","..oNNNNNNNNNNo..","..oNNNNNNNNNNo..","..oNNNNNNNNNNo..","..oNNNNNNNNNNo..","..oNNNNNNNNNNo..","..oooooooooooo..","................","................","................"],
+  bulb:["................","................",".....oooooo.....","....oYYYYYYo....","...oYYhhhhYYo...","...oYYhhhhYYo...","...oYYYhhYYYo...","....oYYhhYYo....",".....oYhhYo.....","......oooo......","......okko......","......oooo......","......okko......",".......oo.......","................","................"],
+  calToday:["................","....o......o....","....o......o....","..oooooooooooo..","..oyyyyyyyyyyo..","..oooooooooooo..","..owwwwwwwwwwo..","..owcwcwcwcwwo..","..owwwoooowwwo..","..owwornrowwwo..","..owwornrowwwo..","..owwwoooowwwo..","..oooooooooooo..","................","................","................"],
+  calendar:["................","....o......o....","....o......o....","..oooooooooooo..","..orrrrrrrrrro..","..oooooooooooo..","..owwwwwwwwwwo..","..owcwcwcwcwwo..","..owwwwwwwwwwo..","..owcwcwcwcwwo..","..owwwwwwwwwwo..","..owcwcwwwwwwo..","..oooooooooooo..","................","................","................"],
+  camera:["................","................",".....oooo.......","....oNNNNo......","..oooooooooooo..","..oNNNNNNNNNNo..","..oNNoooooNNNo..","..oNowwwwwoNNo..","..oNowBBBBwoNo..","..oNowBBBBwoNo..","..oNowwwwwwoNo..","..oNNoooooNNNo..","..oNNNNNNNNNNo..","..oooooooooooo..","................","................"],
+  coffee:["................",".....n..n.......","....n..n........",".....n..n.......","................","..oooooooooo....","..owwwwwwwwo....","..oNNNNNNNNoooo.","..oNNNNNNNNo..o.","..oNNNNNNNNo..o.","..oNNNNNNNNoooo.","..oNNNNNNNNo....","...oNNNNNNo.....","....oooooo......","................","................"],
+  cup:["..........oo....",".........oYo....","........oYo.....","..oooooooooo....","..occcccccco....","..oooooooooo....","...owwwwwwo.....","...owBBBBwo.....","...owBBBBwo.....","....owBBBwo.....","....owBBBwo.....",".....owBBwo.....",".....owwwwo.....","......oooo......","................","................"],
+  flame:["................","................",".......k........","......rkr.......",".....rrRrr......",".....rrRrr......","....rrrRrrr.....","....rrYYYrr.....","...rrrYYYrrr....","...rrYYYYYrr....","...rrYYhYYrr....","...rrYYhYYrr....","....rrYYYrr.....",".....rrrrr......","................","................"],
+  flip:["................","................","...........N....","...........NN...","..NNNNNNNNNNN...","...........NN...","...........N....","................","................","....N...........","...NN...........","..NNNNNNNNNNN...","...NN...........","....N...........","................","................"],
+  ice:[".......bb.......","bb.....bb.....bb",".bb....bb....bb.","..bb...bb...bb..","...bb..bb..bb...","....bb.bb.bb....",".....bbbbbb.....","......bbbb......","......bbbb......",".....bbbbbb.....","....bb.bb.bb....","...bb..bb..bb...","..bb...bb...bb..",".bb....bb....bb.","bb.....bb.....bb",".......bb......."],
+  install:["................","..ooooooo.......","..owwwwwo.......","..owwwwwo..gg...","..owwwwwo..gg...","..owwwwwo..gg...","..owwwwwo..gg...","..owwwwwogggggg.","..owwwwwo.gggg..","..owwwwwo..gg...","..owwwwwo.......","..owwowwo.......","..ooooooo.......","................","................","................"],
+  lock:["................","................",".....oooooo.....","....oo....oo....","....o......o....","....o......o....","..oooooooooooo..","..oYYYYYYYYYYo..","..oYYYYkkYYYYo..","..oYYYYkkYYYYo..","..oYYYYkkYYYYo..","..oYYYYYkYYYYo..","..oYYYYYYYYYYo..","..oooooooooooo..","................","................"],
+  note:["................","..oooooooooo....","..owwwwwwwwo....","..owkkkkkwwo....","..owwwwwwwwo..oo","..owkkkkwwwo.oYo","..owwwwwwwo.oYo.","..owkkkwwo.oYo..","..owwwwwo.oYo...","..owkkwo.oYo....","..owwwo.oYo.....","..owwo.owo......","..oooo.oko......","................","................","................"],
+  pencil:["................","............oo..","...........oYyo.","..........oYYyo.",".........oYYyo..","........oYYyo...",".......oYYyo....","......oYYyo.....",".....oYYyo......","....oYYyo.......","...owwyo........","..owwwo.........","..okko..........","..ooo...........","................","................"],
+  pin:["................","................",".....oooooo.....",".....orrrro.....",".....orrrro.....","....oorrrroo....","...orrrrrrrro...","...orrrrrrrro...","...oooooooooo...",".......oo.......",".......oo.......",".......oo.......","........o.......","................","................","................"],
+  plus:["................","................","......oooo......","......onno......","......onno......","..ooooonnooooo..","..onnnnnnnnnno..","..onnnnnnnnnno..","..ooooonnooooo..","......onno......","......onno......","......onno......","......oooo......","................","................","................"],
+  repeat:["................","................",".....NNNNNN.N...","...NNN.....NNN..","..NN........NNNN","..N..........NNN",".N............N.",".N..............",".N..............",".N..............","..N..........N..","..NN........NN..","...NNN....NNN...",".....NNNNNN.....","................","................"],
+  save:["................","..oooooooooooo..","..obbbbbbbbbbo..","..obboooooobbo..","..obbosskssobo..","..obbosskssobo..","..obbosskssobo..","..obboooooobbo..","..obbbbbbbbbbo..","..oowwwwwwwwoo..","..owkkkkkkkkwo..","..owwwwwwwwwwo..","..owkkkkkkkwwo..","..owkkkkkwwwwo..","..oooooooooooo..","................"],
+  search:["................","....oooooo......","...oBBBBBBo.....","..oBhhhhhBBo....","..oBhhhhhBBo....","..oBhhhhhBBo....","..oBBhhhBBBo....","...oBBBBBBo.....","....ooooooo.....",".........ooo....","..........ooo...","...........ooo..","............oo..","................","................","................"],
+  target:["................","................","....oooooooo....","...orrrrrrrro...","..orrhhhhhhrro..","..orhhrrrrhhro..","..orhrrhhrrhro..","..orhrhhhhrhro..","..orhrhhhhrhro..","..orhrrhhrrhro..","..orhhrrrrhhro..","..orrhhhhhhrro..","...orrrrrrrro...","....oooooooo....","................","................"],
+  tea:["................","......g..g......",".....g..g.......","......g..g......","................",".ooooooooooooo..",".owwwwwwwwwwwo..",".ogggggggggggo..","..oggggggggo....","..oGGGGGGGGo....","...oGGGGGGo.....","....oooooo......","...oooooooo.....","................","................","................"],
+  trash:["................","......oooo......","..oooooooooooo..","..osssssssssso..","..oooooooooooo..","...oooooooooo...","...oswswswswo...","...oswswswswo...","...oswswswswo...","...oswswswswo...","....oswswswo....","....oswswswo....","....oooooooo....","................","................","................"],
+  trophy:["................","..oooooooooooo..","..oYYYYYYYYYYo..",".ooYYYYYYYYYYoo.",".oyoYYYYYYYYoyo.",".oyoYYYYYYYYoyo.",".oyyoYYYYYYoyyo.","..ooooYYYYoooo..",".....oYYYYo.....","......oYYo......","......oYYo......","....ooYYYYoo....","...oyyyyyyyyo...","...oooooooooo...","................","................"],
+  warn:["................","................",".......oo.......","......oYYo......","......oYYo......",".....oYkkYo.....",".....oYkkYo.....","....oYYkkYYo....","....oYYkkYYo....","...oYYYkkYYYo...","...oYYYYYYYYo...","..oYYYYkkYYYYo..","..oYYYYYYYYYYo..","..oooooooooooo..","................","................"],
+  wave:["................","................","................","................","..n...n..nnnnn..","..n...n....n....","..n...n....n....","..nnnnn....n....","..nnnnn....n....","..n...n....n....","..n...n....n....","..n...n..nnnnn..","................","................","................","................"]
+};
+function icon(name, cls){
+  const rows = ICONS[name];
+  if(!rows) return "";
+  const w = rows[0].length, h = rows.length;
+  let out = "";
+  for(let y = 0; y < h; y++){
+    let x = 0;
+    while(x < w){
+      const ch = rows[y][x];
+      if(ch === "."){ x++; continue; }
+      let n = 1;
+      while(x + n < w && rows[y][x + n] === ch) n++;
+      out += '<rect x="' + x + '" y="' + y + '" width="' + n + '" height="1" fill="' + ICON_PAL[ch] + '"/>';
+      x += n;
+    }
+  }
+  return '<svg class="ico' + (cls ? " " + cls : "") + '" viewBox="0 0 ' + w + ' ' + h + '" shape-rendering="crispEdges" aria-hidden="true">' + out + '</svg>';
+}
+/* 정적 마크업에 심어둔 자리(data-ico="이름")를 채운다. 앱이 켜질 때 한 번 부른다 */
+function paintIcons(root){
+  (root || document).querySelectorAll("[data-ico]").forEach(el=>{
+    const svg = icon(el.getAttribute("data-ico"));
+    if(svg) el.innerHTML = svg;
+  });
+}
+/* 분류 그림 — 기본 분류는 도트("@coffee"), 직접 만든 분류는 이모지 그대로.
+   사용자가 아무 이모지나 넣을 수 있는 칸이라 그 자유를 빼앗지 않는다 */
+function catMark(emo){
+  return (typeof emo === "string" && emo.charAt(0) === "@") ? icon(emo.slice(1)) : esc(emo || "");
+}
+
 const MOUSE_PAL = {o:"#C4AE98", w:"#FCF7F1", c:"#EBDDCD", p:"#F5BEAC", d:"#DF9B88", n:"#78543A", k:"#261F1C", h:"#FFFFFF",
                    Y:"#F7CE66", y:"#E2AF42", j:"#C69132",
                    G:"#EEE7DC", g:"#C6B7A3",

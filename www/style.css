@@ -680,3 +680,8 @@
 .sortb.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink);}
 /* 방금 넣은 레시피 표. 완료 표와 같은 자리를 쓰므로 색으로만 가른다 */
 .pill.new{background:var(--accent-soft);color:var(--accent-ink);}
+
+/* ---------- 도트 아이콘 ----------
+   이모지가 있던 자리에 그대로 들어간다. 글자 크기를 따라가고 글줄에 앉는 높이를 맞춘다 */
+.ico{width:1.15em;height:1.15em;display:inline-block;vertical-align:-.22em;flex:0 0 auto;}
+.ico.lg{width:1.6em;height:1.6em;vertical-align:-.4em;}

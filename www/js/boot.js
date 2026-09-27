@@ -82,6 +82,7 @@ function checkPersist(){
 applyTheme();
 applyDeviceText();
 applyEnvText();
+paintIcons();
 initVisit();
 renderHome();
 checkPersist();

@@ -22,7 +22,7 @@
      두 벌이면 교집합이 적용되니 고칠 때는 반드시 둘 다 고친다. 어긋나면 test/headers.js 가 실패한다. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>암기쥐 · 카페 음료 레시피 외우기</title>
-<link rel="stylesheet" href="style.css?v=19">
+<link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
 <div class="phone">
@@ -119,7 +119,7 @@
       <div class="appbar" id="listBar">
         <div><h1>레시피</h1><p id="listSub">탭하면 상세 보기 · + 로 추가</p></div>
         <div class="tools">
-          <button class="archbtn" id="archBtn" style="display:none">📦 <b id="archCnt">0</b></button>
+          <button class="archbtn" id="archBtn" style="display:none"><span data-ico="box"></span> <b id="archCnt">0</b></button>
           <button class="add" id="newBtn">+</button>
         </div>
       </div>
@@ -141,7 +141,7 @@
           <button class="sortb" data-sort="cat">분류순</button>
         </div>
         <div class="searchrow">
-          <div class="search"><span style="color:var(--muted);font-size:15px">🔍</span>
+          <div class="search"><span data-ico="search"></span>
             <input id="q" type="search" placeholder="메뉴 이름 · 재료로 검색" autocomplete="off"></div>
           <button class="linkbtn" id="selBtn">선택</button>
         </div>
@@ -164,7 +164,7 @@
         <button class="icon-btn" id="archClose" style="margin-bottom:4px">✕</button></div>
       <div class="scroll notabs">
         <div class="searchrow" style="margin-bottom:14px">
-          <div class="search"><span style="color:var(--muted);font-size:15px">🔍</span>
+          <div class="search"><span data-ico="search"></span>
             <input id="archQ" type="search" placeholder="메뉴 이름 · 재료로 검색" autocomplete="off"></div>
         </div>
         <div id="archBody"></div>
@@ -247,7 +247,7 @@
         </ol>
         <!-- "기기가 처리합니다" 라고 약속하지 않는다. 이 앱이 보장하는 건 앱이 보내지 않는다는 것까지다.
              Google 렌즈처럼 사진을 서버로 보내 읽는 도구가 있어서, 아이폰 외에는 확인하는 방법을 알려준다 -->
-        <div class="banner ok" style="margin:0 0 16px"><span>🔒</span><div>이 앱은 사진도 글자도 <b>어디로도 보내지 않아요.</b>
+        <div class="banner ok" style="margin:0 0 16px"><span data-ico="lock"></span><div>이 앱은 사진도 글자도 <b>어디로도 보내지 않아요.</b>
           <span data-os="ios">사진 앱의 글자 인식도 기기 안에서 처리돼요.</span>
           <span data-os="android samsung desktop">다만 글자 인식 도구에 따라 사진을 외부 서버로 보내 읽는 경우가 있어요. 비행기 모드에서도 되는 기능이면 기기 안에서 처리하는 거예요.</span></div></div>
         <textarea class="mono" id="ocrBox" style="min-height:190px;font-family:inherit;font-size:14px;line-height:1.6"
@@ -431,16 +431,16 @@
 
 <!-- 한 파일이던 app.js 를 구역별로 나눴다. 전역을 그대로 쓰는 고전 script 라 순서가 중요하다.
      core 가 데이터와 헬퍼를 만들고, boot 가 마지막에 첫 화면을 그린다. -->
-<script src="js/core.js?v=19"></script>
-<script src="js/sound.js?v=19"></script>
-<script src="js/mascot.js?v=19"></script>
-<script src="js/shell.js?v=19"></script>
-<script src="js/home.js?v=19"></script>
-<script src="js/cal.js?v=19"></script>
-<script src="js/study.js?v=19"></script>
-<script src="js/list.js?v=19"></script>
-<script src="js/editor.js?v=19"></script>
-<script src="js/settings.js?v=19"></script>
-<script src="js/boot.js?v=19"></script>
+<script src="js/core.js?v=20"></script>
+<script src="js/sound.js?v=20"></script>
+<script src="js/mascot.js?v=20"></script>
+<script src="js/shell.js?v=20"></script>
+<script src="js/home.js?v=20"></script>
+<script src="js/cal.js?v=20"></script>
+<script src="js/study.js?v=20"></script>
+<script src="js/list.js?v=20"></script>
+<script src="js/editor.js?v=20"></script>
+<script src="js/settings.js?v=20"></script>
+<script src="js/boot.js?v=20"></script>
 </body>
 </html>
