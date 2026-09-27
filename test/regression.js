@@ -552,15 +552,20 @@ const LEGACY = {
     r.homeShown = document.querySelector("#upcomingSect").style.display !== "none";
     r.homeRows = document.querySelectorAll("#upcomingList .row").length;
 
-    // 달력에 점이 찍히는지
-    calCursor = null; state.calDay = null; renderCal();
-    const cell = document.querySelector('#calGrid .calcell[data-day="' + day(3) + '"]');
+    // 달력에 점이 찍히는지. 오늘이 말일에 가까우면 사흘 뒤가 다음 달이라
+    // 이번 달 격자에는 그 칸이 없다. 보는 달을 날짜에 맞춰 옮겨 놓고 찾는다
+    const cellOn = d => {
+      calCursor = {y:Number(d.slice(0,4)), m:Number(d.slice(5,7)) - 1};
+      state.calDay = null; renderCal();
+      return document.querySelector('#calGrid .calcell[data-day="' + d + '"]');
+    };
+    const cell = cellOn(day(3));
     r.dotOnDay = !!(cell && cell.querySelector(".dot"));
-    const doneCell = document.querySelector('#calGrid .calcell[data-day="' + day(1) + '"]');
+    const doneCell = cellOn(day(1));
     r.doneDotDim = !!(doneCell && doneCell.querySelector(".dot.off"));
 
     // 그 날을 누르면 아래에 목록이 뜬다
-    cell.click();
+    cellOn(day(3)).click();
     r.dayListed = document.querySelectorAll("#calDayList .evrow").length;
     r.dayTitleHas = document.querySelector("#calDayTitle").textContent;
 
