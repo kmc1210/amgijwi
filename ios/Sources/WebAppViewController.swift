@@ -7,6 +7,7 @@ final class WebAppViewController: UIViewController {
 
     private var webView: WKWebView!
     private let handler: BundleSchemeHandler?
+    private let alarms = AlarmBridge()
 
     init() {
         handler = BundleSchemeHandler()
@@ -36,8 +37,12 @@ final class WebAppViewController: UIViewController {
                                 forMainFrameOnly: true)
         config.userContentController.addUserScript(flag)
 
+        /// 일정 알림 통로. 무엇을 언제 보낼지는 웹이 정하고 여기서는 예약만 한다 (AlarmBridge.swift).
+        config.userContentController.add(alarms, name: AlarmBridge.name)
+
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
+        alarms.attach(webView)
 
         /// 안전 영역까지 페이지가 직접 그린다. index.html 의 viewport-fit=cover 와 짝이다.
         /// 여기서 여백을 자동으로 넣어버리면 노치 대응 CSS 와 이중으로 겹친다.

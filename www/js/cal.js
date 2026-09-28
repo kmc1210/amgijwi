@@ -53,6 +53,71 @@ function evUpcoming(){
   });
 }
 
+/* ---------- 알림 (iOS 앱만) ----------
+   앱이 꺼져 있어도 울려야 하므로 iOS 로컬 알림을 쓴다. 웹에는 이 기능이 없다.
+   무엇을 언제 보낼지와 문구는 여기서 정하고, 앱(AlarmBridge.swift)은 받은 목록을 예약만 한다.
+   서버로 나가는 것은 없다. connect-src 'none' 은 그대로다 */
+const ALARM_MAX = 64;             // iOS 가 한 앱에 걸어 두는 로컬 알림 수의 한계
+let alarmPerm = "unknown";        // unknown · granted · denied. 앱이 알려준다
+let alarmRedraw = null;           // 일정 시트가 열려 있으면 권한 답을 받았을 때 다시 그린다
+
+/* 앱이 심어 두는 통로. 이름은 AlarmBridge.swift 의 name 과 같아야 한다 */
+function alarmBridge(){
+  const w = window.webkit;
+  if(!isNativeApp() || !w || !w.messageHandlers || !w.messageHandlers.amgijwiAlarm) return null;
+  return w.messageHandlers.amgijwiAlarm;
+}
+function alarmPost(msg){
+  const b = alarmBridge();
+  if(b) b.postMessage(msg);
+}
+function alarmTime(e){ return /^([01]\d|2[0-3]):[0-5]\d$/.test(e.alarmAt) ? e.alarmAt : "09:00"; }
+/* 알림이 가는 때. "며칠 전부터" 날에 한 번, 당일에 한 번 더. 당일이면 한 번뿐이다.
+   이미 지난 시각은 뺀다 */
+function alarmShots(e, now){
+  if(!e || !e.alarm || e.done || !/^\d{4}-\d{2}-\d{2}$/.test(e.date)) return [];
+  const p = e.date.split("-").map(Number), t = alarmTime(e);
+  const h = Number(t.slice(0, 2)), m = Number(t.slice(3, 5));
+  const rem = Math.max(0, Number(e.remind) || 0);
+  return (rem > 0 ? [rem, 0] : [0])
+    .map(n=>({n:n, at:new Date(p[0], p[1]-1, p[2]-n, h, m)}))
+    .filter(s=>s.at > (now || new Date()));
+}
+/* 쥐돌이 말투. 제목은 남은 날, 둘째 줄은 메모(없으면 쥐돌이 한마디) */
+function alarmText(e, n){
+  const head = n === 0 ? "오늘이츄!" : (n === 1 ? "내일이츄" : n + "일 남았츄");
+  const body = e.note ? e.note : (n === 0 ? "잊지 말고 챙기자츄" : "슬슬 준비해보자츄");
+  return {title: head + " · " + e.title, body: body};
+}
+/* 오전 9:00 · 오후 2:30 */
+function alarmClock(d){
+  const h = d.getHours();
+  return (h < 12 ? "오전 " : "오후 ") + (h % 12 === 0 ? 12 : h % 12) + ":" + String(d.getMinutes()).padStart(2, "0");
+}
+/* 앱에 넘길 목록. 가까운 것부터 ALARM_MAX 개까지. 시각은 기기 시간대의 "YYYY-MM-DDTHH:MM" */
+function alarmPlan(now){
+  const list = [];
+  data.events.forEach(e=>alarmShots(e, now).forEach(s=>{
+    const t = alarmText(e, s.n);
+    const at = ymd(s.at) + "T" + String(s.at.getHours()).padStart(2, "0") + ":" + String(s.at.getMinutes()).padStart(2, "0");
+    list.push({id: e.id + "-" + s.n, at: at, title: t.title, body: t.body, when: s.at.getTime()});
+  }));
+  list.sort((a, b)=>a.when - b.when);
+  return list.slice(0, ALARM_MAX).map(x=>({id:x.id, at:x.at, title:x.title, body:x.body}));
+}
+/* 일정이 바뀔 때마다 부른다. 앱은 걸어 둔 것을 모두 지우고 이 목록으로 다시 건다 */
+function syncAlarms(){
+  if(!alarmBridge()) return;
+  alarmPost({op:"sync", items: alarmPlan(new Date())});
+}
+/* 앱이 권한 상태를 알려줄 때 부른다. 앱을 열 때마다 오므로, 설정 앱에서 허용하고 돌아와도 다시 건다.
+   이 이름은 AlarmBridge.swift 에도 적혀 있다 */
+function alarmStatusFromApp(s){
+  alarmPerm = (s === "granted" || s === "denied") ? s : "unknown";
+  if(alarmPerm === "granted") syncAlarms();
+  if(alarmRedraw && $("#evAlarm")) alarmRedraw();
+}
+
 /* ---------- 홈 카드 ---------- */
 function renderUpcoming(){
   const sect = $("#upcomingSect");
@@ -141,6 +206,9 @@ function openEventSheet(id){
   const ev = id ? data.events.filter(e=>e.id === id)[0] : null;
   const date = ev ? ev.date : (state.calDay || ymd(new Date()));
   let remind = ev ? ev.remind : 3;
+  /* 알림은 꺼진 채로 시작한다. 켜는 순간 오전 9시가 들어가 있다 */
+  let alarm = ev ? !!ev.alarm : false;
+  let alarmAt = ev ? alarmTime(ev) : "09:00";
 
   /* 폼 모양은 개봉 항목 시트와 같은 틀을 쓴다 (.fld · .pickers · .pick) */
   $("#sheetBody").innerHTML = `
@@ -156,6 +224,7 @@ function openEventSheet(id){
       <textarea id="evNote" placeholder="예: 라떼 3종 레시피 외우기">${ev ? esc(ev.note) : ""}</textarea></div>
     <div class="fld"><label>며칠 전부터 홈에 띄울까요</label>
       <div class="pickers" id="evRem"></div></div>
+    ${alarmBridge() ? `<div class="fld" id="evAlarm"></div>` : ""}
     ${ev ? `<button class="cta ghost" id="evDone">${ev.done ? "아직 안 끝났어요" : "끝난 일로 표시"}</button>` : ""}
     <button class="cta" id="evSave">${ev ? "저장" : "넣기"}</button>
     ${ev ? `<button class="cta danger" id="evDel">삭제</button>` : ""}`;
@@ -164,10 +233,47 @@ function openEventSheet(id){
     $("#evRem").innerHTML = [0,1,3,7,14].map(n=>
       `<button type="button" class="pick${remind === n ? " on" : ""}" data-rem="${n}"><span class="box">✓</span>${n === 0 ? "당일" : n + "일 전"}</button>`).join("");
     $("#evRem").querySelectorAll(".pick").forEach(b=>b.addEventListener("click", ()=>{
-      remind = Number(b.dataset.rem); drawRem();
+      remind = Number(b.dataset.rem); drawRem(); drawAlarmInfo();
     }));
   };
+
+  /* 알림 칸. 앱에서만 있다. 날짜·며칠 전·시각이 바뀌면 "알림이 오는 때" 도 따라 바뀐다 */
+  const drawAlarmInfo = ()=>{
+    const info = $("#evAlInfo");
+    if(!info) return;
+    if(alarmPerm === "denied"){
+      info.innerHTML = `<div class="warnbox alarmnote">알림이 꺼져 있어요. iPhone <b>설정 → 암기쥐 → 알림</b>에서 켜면 이 일정 알림이 옵니다.</div>`;
+      return;
+    }
+    const shots = alarmShots({alarm:true, done:false, date:$("#evDate").value, remind:remind, alarmAt:alarmAt});
+    info.innerHTML = shots.length
+      ? `<div class="okbox">알림이 오는 때<br>${shots.map(s=>
+          `<b>${evDateText(ymd(s.at))}(${DOW_S[s.at.getDay()]}) ${alarmClock(s.at)}</b> · ${s.n ? s.n + "일 전" : "당일"}`).join("<br>")}</div>`
+      : `<div class="warnbox alarmnote">이미 지난 시각이라 알림이 가지 않아요.</div>`;
+  };
+  const drawAlarm = ()=>{
+    const box = $("#evAlarm");
+    if(!box) return;
+    box.innerHTML = `<label>알림</label>
+      <div class="seg"><button type="button" data-al="0" class="${alarm ? "" : "on"}">받지 않기</button><button type="button" data-al="1" class="${alarm ? "on" : ""}">받기</button></div>
+      ${alarm ? `<div class="alarmat"><label for="evAlAt">몇 시에 받을까요</label><input type="time" id="evAlAt" value="${esc(alarmAt)}"></div><div id="evAlInfo"></div>` : ""}`;
+    box.querySelectorAll("[data-al]").forEach(b=>b.addEventListener("click", ()=>{
+      alarm = b.dataset.al === "1";
+      /* 권한은 처음 켤 때만 묻는다. 앱을 열자마자 물으면 이유를 몰라 거절하기 쉽다 */
+      if(alarm && alarmPerm === "unknown") alarmPost({op:"ask"});
+      drawAlarm();
+    }));
+    const t = $("#evAlAt");
+    if(t) t.addEventListener("change", ()=>{
+      if(/^([01]\d|2[0-3]):[0-5]\d/.test(t.value)){ alarmAt = t.value.slice(0, 5); drawAlarmInfo(); }
+    });
+    drawAlarmInfo();
+  };
+  alarmRedraw = drawAlarmInfo;
+
   drawRem();
+  drawAlarm();
+  $("#evDate").addEventListener("change", drawAlarmInfo);
 
   $("#mask").classList.add("on"); $("#sheet").classList.add("on");
 
@@ -180,9 +286,9 @@ function openEventSheet(id){
     if(end && !/^\d{4}-\d{2}-\d{2}$/.test(end)) end = "";
     if(end && end < d){ toast("끝나는 날이 시작보다 앞서요"); return; }
     if(end === d) end = "";                    // 같은 날이면 하루짜리다
-    if(ev){ ev.title = title; ev.date = d; ev.end = end; ev.note = $("#evNote").value.trim(); ev.remind = remind; }
-    else data.events.push({id:uid(), title:title, date:d, end:end, note:$("#evNote").value.trim(), remind:remind, done:false});
-    persist(); closeSheet();
+    if(ev){ ev.title = title; ev.date = d; ev.end = end; ev.note = $("#evNote").value.trim(); ev.remind = remind; ev.alarm = alarm; ev.alarmAt = alarmAt; }
+    else data.events.push({id:uid(), title:title, date:d, end:end, note:$("#evNote").value.trim(), remind:remind, alarm:alarm, alarmAt:alarmAt, done:false});
+    persist(); syncAlarms(); closeSheet();
     state.calDay = d;
     calCursor = {y:Number(d.slice(0,4)), m:Number(d.slice(5,7)) - 1};
     renderCal(); renderHome();
@@ -191,7 +297,7 @@ function openEventSheet(id){
 
   const doneBtn = $("#evDone");
   if(doneBtn) doneBtn.addEventListener("click", ()=>{
-    ev.done = !ev.done; persist(); closeSheet(); renderCal(); renderHome();
+    ev.done = !ev.done; persist(); syncAlarms(); closeSheet(); renderCal(); renderHome();
     toast(ev.done ? "끝난 일로 표시했어요" : "다시 진행 중으로 두었어요");
   });
 
@@ -200,7 +306,7 @@ function openEventSheet(id){
     closeSheet();
     confirmBox("일정 삭제", `"${ev.title}" 을(를) 지웁니다.`, "삭제", ()=>{
       data.events = data.events.filter(x=>x.id !== ev.id);
-      persist(); renderCal(); renderHome(); toast("지웠어요");
+      persist(); syncAlarms(); renderCal(); renderHome(); toast("지웠어요");
     });
   });
 }

@@ -164,6 +164,9 @@ data.events.forEach(e=>{
   e.note = String(e.note || "").slice(0, 300);
   e.remind = Math.min(30, Math.max(0, Number(e.remind) || 0));
   e.done = !!e.done;
+  /* 알림 — iOS 앱에서만 쓴다. 옛 일정에는 값이 없으니 꺼짐, 시각은 오전 9시로 읽는다 */
+  e.alarm = !!e.alarm;
+  e.alarmAt = /^([01]\d|2[0-3]):[0-5]\d$/.test(e.alarmAt) ? e.alarmAt : "09:00";
   /* 끝나는 날. 하루짜리면 비어 있다. 시작보다 앞서면 잘못 들어온 것이라 버린다 */
   e.end = (typeof e.end === "string" && /^\d{4}-\d{2}-\d{2}$/.test(e.end) && e.end > e.date) ? e.end : "";
 });

@@ -381,7 +381,7 @@ function applyBackup(text){
       })), mastered:Array.isArray(d.mastered)?d.mastered:[], needReview:Array.isArray(d.needReview)?d.needReview:[]};
     liftSubs(data);
     data.drinks.forEach(x=>{ x.subRefs = (x.subRefs||[]).filter(id=>data.subs.some(s=>s.id===id)); });
-    persist(); applyTheme(); applySound(); applyWx(); $("#impBox").value=""; toast("복원했어요"); go("home");
+    persist(); syncAlarms(); applyTheme(); applySound(); applyWx(); $("#impBox").value=""; toast("복원했어요"); go("home");
   });
 }
 const SHELF_SAMPLES = [
