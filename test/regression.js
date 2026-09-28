@@ -598,6 +598,146 @@ const LEGACY = {
   eq("시트에서 고치면 반영된다", cal.edited, "출시일 변경");
   eq("날짜가 깨진 일정은 걸러진다", cal.droppedBad, 1);
 
+  // ── 6-9. 일정 알림 (iOS 앱) ─────────────────────────────────────
+  // 무엇을 언제 보낼지는 웹이 정하고 앱은 예약만 한다. 웹에는 알림 칸이 없다.
+  const alm = await page.evaluate(async () => {
+    const backup = JSON.stringify(data);
+    const r = {};
+    const at = d => d.getMonth() + 1 + "/" + d.getDate() + " " + d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0");
+    const now = new Date(2026, 9, 1, 8, 0);   // 10월 1일 오전 8시
+    const ev = { id:"a1", title:"신메뉴 출시", date:"2026-10-05", note:"", remind:3, alarm:true, alarmAt:"09:00", done:false };
+
+    // 언제 가나
+    r.twoShots = alarmShots(ev, now).map(s => [s.n, at(s.at)]);
+    r.sameDay = alarmShots(Object.assign({}, ev, { remind:0 }), now).map(s => s.n);
+    r.done = alarmShots(Object.assign({}, ev, { done:true }), now).length;
+    r.off = alarmShots(Object.assign({}, ev, { alarm:false }), now).length;
+    r.oldData = alarmShots({ id:"o", title:"옛 일정", date:"2026-10-05", remind:3, done:false }, now).length;
+    r.pastSkipped = alarmShots(ev, new Date(2026, 9, 2, 10, 0)).map(s => s.n);
+    r.badTime = [alarmTime({}), alarmTime({ alarmAt:"25:00" }), alarmTime({ alarmAt:"14:30" })];
+
+    // 쥐돌이 말투
+    r.text = [3, 1, 0].map(n => alarmText(ev, n));
+    r.noteBody = alarmText(Object.assign({}, ev, { note:"라떼 3종" }), 3).body;
+    r.clock = [alarmClock(new Date(2026, 9, 1, 9, 0)), alarmClock(new Date(2026, 9, 1, 14, 5)), alarmClock(new Date(2026, 9, 1, 0, 30))];
+
+    // 앱에 넘기는 목록 — 가까운 것부터, iOS 한도까지만
+    data.events = [];
+    for (let i = 0; i < 40; i++) {
+      data.events.push({ id:"m" + i, title:"일정 " + i, date:ymd(new Date(2026, 9, 10 + i)), note:"", remind:1, alarm:true, alarmAt:"09:00", done:false });
+    }
+    const plan = alarmPlan(now);
+    r.planLen = plan.length;
+    r.planSorted = plan.every((p, i) => i === 0 || plan[i - 1].at <= p.at);
+    r.planStamp = plan.every(p => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(p.at));
+    r.planFirst = plan[0];
+
+    // 웹: 알림 칸도, 앱으로 가는 메시지도 없다
+    data.events = [];
+    openEventSheet(null);
+    r.webField = !!document.querySelector("#evAlarm");
+    closeSheet();
+    let threw = false;
+    try { syncAlarms(); alarmPost({ op:"status" }); } catch (e) { threw = true; }
+    r.webQuiet = !threw;
+
+    // 앱: 통로를 흉내 낸다
+    const posted = [];
+    window.__amgijwiNative = true;
+    window.webkit = { messageHandlers: { amgijwiAlarm: { postMessage: m => posted.push(JSON.parse(JSON.stringify(m))) } } };
+    alarmPerm = "unknown";
+    openEventSheet(null);
+    r.appField = !!document.querySelector("#evAlarm");
+    r.startsOff = document.querySelector('#evAlarm [data-al="0"]').classList.contains("on");
+    r.noTimeWhenOff = !document.querySelector("#evAlAt");
+    r.noAskYet = posted.filter(m => m.op === "ask").length;
+    document.querySelector('#evAlarm [data-al="1"]').click();
+    r.askedOnce = posted.filter(m => m.op === "ask").length;
+    r.defaultTime = (document.querySelector("#evAlAt") || {}).value;
+    document.querySelector("#evDate").value = ymd(new Date(Date.now() + 10 * 86400000));
+    document.querySelector("#evDate").dispatchEvent(new Event("change"));
+    r.infoLines = document.querySelectorAll("#evAlInfo .okbox b").length;
+    alarmStatusFromApp("denied");
+    r.deniedNote = !!document.querySelector("#evAlInfo .alarmnote");
+    // 거절했다가 설정 앱에서 허용하고 돌아온 경우. 다시 켜도 또 묻지 않는다
+    alarmStatusFromApp("granted");
+    r.grantedInfo = !!document.querySelector("#evAlInfo .okbox");
+    document.querySelector('#evAlarm [data-al="0"]').click();
+    document.querySelector('#evAlarm [data-al="1"]').click();
+    r.askedStillOnce = posted.filter(m => m.op === "ask").length;
+    document.querySelector("#evTitle").value = "알림 켠 일정";
+    const t = document.querySelector("#evAlAt");
+    t.value = "07:30"; t.dispatchEvent(new Event("change"));
+    document.querySelector("#evSave").click();
+    const saved = data.events.filter(e => e.title === "알림 켠 일정")[0] || {};
+    r.saved = [saved.alarm, saved.alarmAt];
+    const lastSync = posted.filter(m => m.op === "sync").pop() || { items:[] };
+    r.syncItems = lastSync.items.map(i => [i.title, i.at.slice(11)]);
+
+    // 끝난 일로 표시하면 예약이 빠진다
+    saved.done = true; syncAlarms();
+    r.afterDone = (posted.filter(m => m.op === "sync").pop() || { items:[1] }).items.length;
+
+    delete window.webkit;
+    delete window.__amgijwiNative;
+    alarmPerm = "unknown";
+    closeSheet();
+    data = JSON.parse(backup);
+    persist(); go("home");
+    return r;
+  });
+  eq("며칠 전 날과 당일, 두 번 간다", alm.twoShots, [[3, "10/2 9:00"], [0, "10/5 9:00"]]);
+  eq("며칠 전이 당일이면 한 번만 간다", alm.sameDay, [0]);
+  eq("끝난 일정에는 알림이 없다", alm.done, 0);
+  eq("알림을 안 켠 일정에는 알림이 없다", alm.off, 0);
+  eq("옛 일정(값 없음)은 꺼진 것으로 읽는다", alm.oldData, 0);
+  eq("이미 지난 시각은 건너뛴다", alm.pastSkipped, [0]);
+  eq("시각이 없거나 깨졌으면 오전 9시로 읽는다", alm.badTime, ["09:00", "09:00", "14:30"]);
+  eq("알림 제목은 쥐돌이 말투다", alm.text.map(t => t.title),
+     ["3일 남았츄 · 신메뉴 출시", "내일이츄 · 신메뉴 출시", "오늘이츄! · 신메뉴 출시"]);
+  eq("메모가 없으면 쥐돌이 한마디가 들어간다", alm.text.map(t => t.body),
+     ["슬슬 준비해보자츄", "슬슬 준비해보자츄", "잊지 말고 챙기자츄"]);
+  eq("메모가 있으면 메모가 들어간다", alm.noteBody, "라떼 3종");
+  eq("시각을 오전·오후로 읽어준다", alm.clock, ["오전 9:00", "오후 2:05", "오전 12:30"]);
+  eq("iOS 한도(64개)까지만 넘긴다", alm.planLen, 64);
+  ok("가까운 것부터 넘긴다", alm.planSorted === true);
+  ok("시각은 YYYY-MM-DDTHH:MM 로 넘긴다", alm.planStamp === true);
+  eq("가장 가까운 알림이 맨 앞이다", alm.planFirst, { id:"m0-1", at:"2026-10-09T09:00", title:"내일이츄 · 일정 0", body:"슬슬 준비해보자츄" });
+  ok("웹에서는 알림 칸이 없다", alm.webField === false);
+  ok("웹에서는 앱으로 보내는 것이 조용히 넘어간다", alm.webQuiet === true);
+  ok("앱에서는 알림 칸이 생긴다", alm.appField === true);
+  ok("새 일정은 알림이 꺼진 채로 시작한다", alm.startsOff === true);
+  ok("꺼져 있으면 시각 칸이 없다", alm.noTimeWhenOff === true);
+  eq("시트를 열기만 해서는 권한을 묻지 않는다", alm.noAskYet, 0);
+  eq("처음 켤 때 권한을 묻는다", alm.askedOnce, 1);
+  eq("켜면 오전 9시가 들어가 있다", alm.defaultTime, "09:00");
+  eq("알림이 오는 때를 두 줄로 보여준다", alm.infoLines, 2);
+  ok("거절하면 설정 앱 안내가 뜬다", alm.deniedNote === true);
+  ok("허용으로 바뀌면 안내가 알림 시각으로 돌아온다", alm.grantedInfo === true);
+  eq("답을 받은 뒤에는 다시 묻지 않는다", alm.askedStillOnce, 1);
+  eq("알림 켜짐과 시각이 저장된다", alm.saved, [true, "07:30"]);
+  eq("저장하면 앱에 예약 목록을 보낸다", alm.syncItems,
+     [["3일 남았츄 · 알림 켠 일정", "07:30"], ["오늘이츄! · 알림 켠 일정", "07:30"]]);
+  eq("끝난 일로 표시하면 예약에서 빠진다", alm.afterDone, 0);
+
+  // 통로 이름·함수 이름·한도가 Swift 와 JS 두 곳에 적힌다. 한쪽만 고치면 알림이 조용히 안 온다
+  {
+    const src = f => fs.readFileSync(path.resolve(__dirname, "..", f), "utf8");
+    const bridge = src("ios/Sources/AlarmBridge.swift");
+    const vc = src("ios/Sources/WebAppViewController.swift");
+    const calJs = src("www/js/cal.js");
+    const pick = re => (re.exec(bridge) || [])[1];
+    const hName = pick(/static let name = "([^"]+)"/);
+    const fName = pick(/static let reply = "([^"]+)"/);
+    const limit = pick(/static let limit = (\d+)/);
+    ok("앱의 통로 이름을 웹이 부른다", !!hName && calJs.indexOf("messageHandlers." + hName) >= 0, String(hName));
+    ok("앱이 부르는 함수가 웹에 있다", !!fName && calJs.indexOf("function " + fName + "(") >= 0, String(fName));
+    ok("알림 한도가 두 곳에서 같다", !!limit && calJs.indexOf("ALARM_MAX = " + limit + ";") >= 0, String(limit));
+    ok("웹뷰에 알림 통로를 단다", vc.indexOf("userContentController.add(alarms, name: AlarmBridge.name)") >= 0);
+    ok("권한은 앱을 열 때가 아니라 ask 로만 묻는다",
+       (bridge.match(/requestAuthorization/g) || []).length === 1 && /case "ask": ask\(\)/.test(bridge));
+  }
+
   // 칸 하나가 제 몫보다 넓어지면 토요일이 화면 밖으로 밀린다.
   // 빈 앞자리에 .empty 를 썼다가 그 여백이 딸려와 실제로 겪은 일이다
   const calFit = await page.evaluate(() => {

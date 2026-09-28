@@ -86,6 +86,8 @@ paintIcons();
 initVisit();
 renderHome();
 checkPersist();
+/* 앱이면 알림 권한 상태를 물어본다. 허용돼 있으면 답을 받는 대로 일정 알림을 다시 건다 */
+alarmPost({op:"status"});
 /* 옮기는 김에 이름이 겹쳤던 부재료는 나눠 두었다. 조용히 바꾸면 놀라니까 한 번 알려준다 */
 if(_lift.split) setTimeout(()=>toast(`배합이 다른 같은 이름 부재료 ${_lift.split}개를 따로 나눴어요`), 900);
 if(data.pin) openLock("enter");

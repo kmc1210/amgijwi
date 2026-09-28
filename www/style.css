@@ -409,11 +409,16 @@
 
   .fld{margin-bottom:16px;}
   .fld label{display:block;font-size:12px;font-weight:800;letter-spacing:.6px;color:var(--accent);margin-bottom:7px;}
-  .fld input[type=text],.fld input[type=date],.fld textarea,.fld select{
+  .fld input[type=text],.fld input[type=date],.fld input[type=time],.fld textarea,.fld select{
     width:100%;padding:13px 14px;border-radius:13px;border:1px solid var(--line);background:var(--surface);
     font-size:15px;outline:none;-webkit-appearance:none;appearance:none;}
   .fld textarea{min-height:84px;resize:vertical;line-height:1.55;}
   .fld input:focus,.fld textarea:focus,.fld select:focus{border-color:var(--accent);}
+  /* 일정 알림 (iOS 앱만). 시각 칸과 "알림이 오는 때" 안내 */
+  .alarmat{margin-top:14px;}
+  .okbox{background:var(--ok-soft);color:var(--ok-ink);border-radius:13px;padding:12px 14px;font-size:12.8px;line-height:1.65;margin-top:10px;font-variant-numeric:tabular-nums;}
+  .okbox b{font-weight:800;}
+  .warnbox.alarmnote{margin:10px 0 0;}
   .pickers{display:flex;flex-wrap:wrap;gap:8px;}
   .pick{padding:10px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);
     font-size:14px;font-weight:700;color:var(--ink-2);display:flex;align-items:center;gap:7px;}
