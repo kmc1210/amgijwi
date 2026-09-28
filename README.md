@@ -90,6 +90,9 @@ Chromium 을 띄워 `www/index.html` 을 열고, 부재료 마이그레이션 ·
 PR 을 올리면 GitHub Actions(`.github/workflows/ci.yml`)가 같은 테스트를 돌리고,
 통과해야 main 에 머지합니다.
 
+앱을 눈으로 보려면 `www/` 를 아무 정적 서버로 열면 됩니다(예: `python3 -m http.server -d www`).
+번들러도 트랜스파일러도 없어서 따로 빌드할 것이 없습니다.
+
 ```
 npm run test:headers
 ```
