@@ -8,6 +8,7 @@ final class WebAppViewController: UIViewController {
     private var webView: WKWebView!
     private let handler: BundleSchemeHandler?
     private let alarms = AlarmBridge()
+    private let share = ShareBridge()
 
     init() {
         handler = BundleSchemeHandler()
@@ -41,9 +42,13 @@ final class WebAppViewController: UIViewController {
         /// 일정 알림 통로. 무엇을 언제 보낼지는 웹이 정하고 여기서는 예약만 한다 (AlarmBridge.swift).
         config.userContentController.add(alarms, name: AlarmBridge.name)
 
+        /// 백업 파일 내보내기 통로. 웹뷰는 파일 내려받기를 못 받아서 공유 시트로 내보낸다 (ShareBridge.swift).
+        config.userContentController.add(share, name: ShareBridge.name)
+
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
         alarms.attach(webView)
+        share.attach(webView, host: self)
 
         /// 안전 영역까지 페이지가 직접 그린다. index.html 의 viewport-fit=cover 와 짝이다.
         /// 여기서 여백을 자동으로 넣어버리면 노치 대응 CSS 와 이중으로 겹친다.
@@ -54,6 +59,9 @@ final class WebAppViewController: UIViewController {
 
         /// 뒤로 쓸어넘기면 앱이 빈 화면이 된다. 화면 이동은 앱이 알아서 한다.
         webView.allowsBackForwardNavigationGestures = false
+
+        /// 링크를 길게 누르면 사파리 미리보기가 뜬다. 앱 안에서 웹 페이지처럼 보이는 순간이라 끈다.
+        webView.allowsLinkPreview = false
 
         /// 페이지 배경이 그대로 보이게 둔다. 테마를 바꿔도 가장자리가 따로 놀지 않는다.
         webView.isOpaque = false

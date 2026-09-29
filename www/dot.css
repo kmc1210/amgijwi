@@ -606,3 +606,8 @@ html.dot #onboard .ob-warn{color:var(--d-late);}
 
 /* 비상 달리기의 비상등 (js/mascot.js SIREN_DOT, 15x10 을 한 칸 2px) */
 html.dot #panicBell{width:30px;height:20px;}
+
+/* 앱에서는 길게 눌러도 글자가 선택되거나 "복사 · 찾아보기" 메뉴가 뜨지 않게 한다(웹 페이지처럼 보이는 순간).
+   글을 쓰거나 복사해야 하는 칸(입력칸 · 백업 글 칸)만 예외로 둔다 */
+html.dot body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+html.dot :is(input, textarea, [contenteditable="true"]){-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
