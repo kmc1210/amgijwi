@@ -3,7 +3,7 @@
    이 파일의 모든 규칙은 html.dot 아래에 있어 웹(amgijwi.com)은 지금 모습 그대로다.
    웹을 내리면 style.css 의 옛 모습만 걷어내면 된다.
 
-   지금은 홈 화면(카페 전표 목록 포함)과 탭바까지. 나머지 화면은 화면마다 차례로 옮긴다.
+   지금은 홈(카페 전표 목록 포함) · 학습 · 결과 화면과 탭바까지. 나머지 화면은 화면마다 차례로 옮긴다.
 
    글꼴 규칙: Neo둥근모는 16px 이상에서만 쓴다(또렷한 건 16·32px).
    16px 격자 글꼴을 줄이면 "체"의 ㅊ 꼭지처럼 한 칸짜리 획이 사라진다.
@@ -194,6 +194,91 @@ html.dot #backupBanner .bkbtns .later{background:var(--d-surface);color:var(--d-
 
 /* 목록이 비었을 때 — 둥근 점선 대신 네모 점선 */
 html.dot #s-home .empty{border-radius:0;border:2px dashed var(--d-drop);color:var(--d-t2);}
+
+/* ── 학습 ───────────────────────────────── */
+html.dot #s-study,
+html.dot #s-result{background:var(--d-bg);color:var(--d-t1);}
+
+/* 위: 닫기 · 진행 칸 · 몇 번째 */
+html.dot #s-study .icon-btn{border:0;border-radius:0;background:var(--d-surface);color:var(--d-t1);
+  box-shadow:0 -2px 0 0 var(--d-line), 0 2px 0 0 var(--d-line), -2px 0 0 0 var(--d-line), 2px 0 0 0 var(--d-line);}
+html.dot #s-study .track{height:12px;border-radius:0;background:var(--d-surface);overflow:hidden;
+  box-shadow:0 -2px 0 0 var(--d-line), 0 2px 0 0 var(--d-line), -2px 0 0 0 var(--d-line), 2px 0 0 0 var(--d-line);}
+html.dot #s-study .track i{border-radius:0;background:var(--d-acc);box-shadow:inset 0 3px 0 0 var(--d-acc-hi);}
+html.dot #s-study .count{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;color:var(--d-t1);-webkit-font-smoothing:none;}
+
+/* 카드 — 테두리 한 칸 비운 3px 외곽선 + 단색 그림자. 외곽선이 잘리지 않게 한 칸 안쪽으로 */
+html.dot #s-study .card{border-radius:0;margin:3px;
+  box-shadow:0 -3px 0 0 var(--d-line), 0 3px 0 0 var(--d-line), -3px 0 0 0 var(--d-line), 3px 0 0 0 var(--d-line),
+             3px 6px 0 0 var(--d-drop), 6px 3px 0 0 var(--d-drop);}
+
+/* 앞면 — 진도 카드처럼 단색 + 위아래 한 칸 빛·그늘. 메뉴 이름은 도트 글꼴 32px(설계 크기 두 배) */
+html.dot #s-study .front{background:var(--d-hero);color:var(--d-hero-t);
+  box-shadow:inset 0 3px 0 0 var(--d-hero-hi), inset 0 -3px 0 0 var(--d-hero-lo);}
+html.dot #s-study .front .cat{color:var(--d-hero-t2);letter-spacing:.5px;}
+html.dot #s-study .front h2{font-family:"NeoDGM",monospace;font-weight:400;font-size:32px;letter-spacing:0;line-height:1.25;-webkit-font-smoothing:none;}
+html.dot #s-study .front .en{color:var(--d-hero-t2);}
+html.dot #s-study .front .tag{border-radius:0;background:transparent;color:var(--d-hero-t);padding:3px 9px;
+  font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;
+  box-shadow:0 -2px 0 0 var(--d-hero-t2), 0 2px 0 0 var(--d-hero-t2), -2px 0 0 0 var(--d-hero-t2), 2px 0 0 0 var(--d-hero-t2);}
+html.dot #s-study .front .hint{color:var(--d-hero-t2);}
+
+/* 뒷면 — 레시피 주문서. 재료 ····· 용량 을 점선으로 이어 짝이 한눈에 맞는다 */
+html.dot #s-study .back{background:var(--d-surface);color:var(--d-t1);}
+html.dot #s-study .back h2{font-family:"NeoDGM",monospace;font-weight:400;font-size:32px;letter-spacing:0;line-height:1.2;-webkit-font-smoothing:none;}
+html.dot #s-study .back .sub{color:var(--d-t2);}
+html.dot #s-study .blk .lb{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;letter-spacing:0;color:var(--d-acc);-webkit-font-smoothing:none;}
+html.dot #s-study .ingset{color:var(--d-t2);}
+html.dot #s-study .ing{border-bottom:0;align-items:flex-end;padding:6px 0;}
+html.dot #s-study .ing.q{align-items:flex-end;padding:7px 0;}
+html.dot #s-study .ing b{flex:1;min-width:0;display:flex;align-items:flex-end;color:var(--d-t1);font-weight:500;}
+html.dot #s-study .ing b::after{content:"";flex:1;min-width:14px;height:3px;margin:0 6px 7px;
+  background:repeating-linear-gradient(90deg,var(--d-dot) 0 3px,transparent 3px 6px);}
+html.dot #s-study .ing span,
+html.dot #s-study .amt-on{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #s-study ol.steps li{color:var(--d-t1);}
+html.dot #s-study ol.steps li::marker{color:var(--d-acc);font-weight:800;}
+html.dot #s-study .tipbox{border-radius:0;border:2px dashed var(--d-dot);background:transparent;color:var(--d-t1);}
+
+/* 빈칸 채우기 — 네모 점선 칸 */
+html.dot #s-study .blank{border-radius:0;border:2px dashed var(--d-acc);background:transparent;color:var(--d-acc);letter-spacing:0;
+  font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #s-study .blank:active{transform:translate(2px,2px);}
+html.dot #s-study .disc{border:0;border-radius:0;background:var(--d-bg);color:var(--d-t1);margin:2px;width:calc(100% - 4px);
+  box-shadow:0 -2px 0 0 var(--d-line), 0 2px 0 0 var(--d-line), -2px 0 0 0 var(--d-line), 2px 0 0 0 var(--d-line);}
+
+/* 아래 버튼 */
+html.dot #s-study .actions{gap:14px;padding-left:calc(var(--pad-l) + 3px);padding-right:calc(var(--pad-r) + 6px);}
+html.dot #s-study .act{border-radius:0;font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;
+  box-shadow:0 -3px 0 0 var(--d-line), 0 3px 0 0 var(--d-line), -3px 0 0 0 var(--d-line), 3px 0 0 0 var(--d-line),
+             3px 6px 0 0 var(--d-drop), 6px 3px 0 0 var(--d-drop);}
+html.dot #s-study .act:active{transform:translate(3px,3px);
+  box-shadow:0 -3px 0 0 var(--d-line), 0 3px 0 0 var(--d-line), -3px 0 0 0 var(--d-line), 3px 0 0 0 var(--d-line);}
+html.dot #s-study .act.flip{background:var(--d-t1);color:var(--d-bg);}
+html.dot #s-study .act.again{background:var(--d-surface);color:var(--d-t1);}
+html.dot #s-study .act.ok{background:var(--d-acc);color:var(--d-on-acc);}
+
+/* 처음 한 번 뜨는 안내 */
+html.dot #s-study .tiphint{border-radius:0;background:var(--d-surface);color:var(--d-t1);
+  box-shadow:0 -2px 0 0 var(--d-line), 0 2px 0 0 var(--d-line), -2px 0 0 0 var(--d-line), 2px 0 0 0 var(--d-line);}
+
+/* ── 결과 ───────────────────────────────── */
+html.dot #s-result .result h2{font-family:"NeoDGM",monospace;font-weight:400;font-size:32px;-webkit-font-smoothing:none;}
+html.dot #s-result .result p{color:var(--d-t2);}
+html.dot #resCheer{color:var(--d-acc) !important;}
+html.dot #s-result .score{gap:14px;}
+html.dot #s-result .score div{background:var(--d-surface);padding:10px 12px 9px;min-width:84px;
+  box-shadow:0 -3px 0 0 var(--d-line), 0 3px 0 0 var(--d-line), -3px 0 0 0 var(--d-line), 3px 0 0 0 var(--d-line),
+             3px 6px 0 0 var(--d-drop), 6px 3px 0 0 var(--d-drop);}
+html.dot #s-result .score b{font-family:"NeoDGM",monospace;font-weight:400;font-size:32px;color:var(--d-t1);-webkit-font-smoothing:none;}
+html.dot #s-result .score span{color:var(--d-t2);}
+html.dot #againBtn{border-radius:0;background:var(--d-acc);color:var(--d-on-acc);
+  font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;
+  box-shadow:0 -3px 0 0 var(--d-line), 0 3px 0 0 var(--d-line), -3px 0 0 0 var(--d-line), 3px 0 0 0 var(--d-line),
+             inset 0 3px 0 0 var(--d-acc-hi), inset 0 -3px 0 0 var(--d-acc-dark),
+             3px 6px 0 0 var(--d-drop), 6px 3px 0 0 var(--d-drop);}
+html.dot #againBtn:active{transform:translate(3px,3px);filter:none;}
+html.dot #homeBtn{color:var(--d-t2) !important;}
 
 /* ── 탭바 ───────────────────────────────── */
 /* 선 아이콘 대신 도트 아이콘. 탭 이름은 10.5px 라 시스템 글꼴 그대로 */

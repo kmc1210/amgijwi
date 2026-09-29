@@ -333,7 +333,13 @@ function finish(){
   if(s.again > 0) crow.innerHTML = crowSVG("idle");
   $("#resMsg").textContent = s.again===0
     ? "전부 한 번에 맞혔어요. 완벽합니다!"
-    : `${s.again}개 까먹었다 까악~ 복습 목록에 담아뒀다 까악~`;
+    : `${cupN(s.again)} 까먹었다 까악~ 복습 목록에 담아뒀다 까악~`;
+  /* 도트 화면(앱)은 카페 말투. 웹은 index.html 에 적힌 그대로 */
+  $("#resTitle").textContent = cafeSay("세션 완료!", "한 바퀴 끝!");
+  $("#resOkL").textContent = cafeSay("한 번에 맞춤", "한 번에 맞춘 잔");
+  $("#resAgainL").textContent = cafeSay("다시 본 카드", "다시 본 잔");
+  $("#resTotalL").textContent = cafeSay("전체 카드", "전체 잔");
+  $("#againBtn").textContent = cafeSay("한 번 더 학습", "한 바퀴 더");
   const rate = s.total ? s.ok / s.total : 1;
   $("#resCheer").textContent = rate === 1 ? "이 기세로 내일도 한 번 더!"
     : (rate >= 0.7 ? "잘하고 있어요. 조금만 더 하면 돼요!" : "오늘 본 것만으로도 남아요. 내일 또 봐요!");
