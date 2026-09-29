@@ -489,3 +489,115 @@ html.dot .tab .tabpx{display:block;width:24px;height:24px;opacity:.5;}
 html.dot .tab .tabpx svg{display:block;width:100%;height:100%;image-rendering:pixelated;}
 html.dot .tab.on{color:var(--d-t1);}
 html.dot .tab.on .tabpx{opacity:1;}
+
+/* ── 첫 실행 가이드 (js/guide.js) ─────────────────────────
+   앱에서만 뜨므로 여기에만 둔다. 이름은 전부 ob- 로 시작해 앱의 .card · .face · .tag 와 부딪히지 않는다 */
+html.dot #onboard{position:absolute;inset:0;z-index:110;background:var(--d-bg);color:var(--d-t1);display:flex;flex-direction:column;overflow:hidden;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+html.dot #onboard[hidden]{display:none;}
+html.dot #onboard button{font-family:inherit;border:0;background:none;color:inherit;padding:0;}
+html.dot #onboard .ob-top{display:flex;justify-content:flex-end;padding:18px 18px 0;min-height:44px;}
+html.dot #onboard .ob-skip{font-size:13px;font-weight:700;color:var(--d-t2);padding:6px 4px;}
+html.dot #onboard .ob-rail{flex:1;min-height:0;display:flex;transition:transform .35s steps(5);touch-action:pan-y;}
+html.dot #onboard .ob-page{flex:0 0 100%;min-width:0;display:flex;flex-direction:column;align-items:center;padding:6px 26px 0;text-align:center;}
+html.dot #onboard .ob-stage{flex:1;width:100%;display:flex;align-items:center;justify-content:center;min-height:0;position:relative;}
+html.dot #onboard h2{font-family:"NeoDGM",monospace;font-weight:400;font-size:22px;letter-spacing:0;margin:14px 0 8px;-webkit-font-smoothing:none;}
+html.dot #onboard p{font-size:14px;line-height:1.65;color:var(--d-t2);margin:0 0 18px;max-width:30ch;word-break:keep-all;}
+html.dot #onboard .ob-foot{padding:10px 24px 26px;display:flex;flex-direction:column;align-items:center;gap:16px;}
+html.dot #onboard .ob-dots{display:flex;gap:9px;}
+html.dot #onboard .ob-dots i{width:9px;height:9px;background:var(--d-drop);display:block;}
+html.dot #onboard .ob-dots i.on{background:var(--d-acc);width:21px;}
+html.dot #onboard .ob-next{width:calc(100% - 6px);max-width:400px;padding:15px 10px 14px;background:var(--d-acc);color:var(--d-on-acc);
+  font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;
+  box-shadow:var(--d-box),inset 0 3px 0 0 var(--d-acc-hi),inset 0 -3px 0 0 var(--d-acc-dark),var(--d-drop-sh);}
+html.dot #onboard .ob-next:active{transform:translate(3px,3px);}
+html.dot #onboard .ob-box{background:var(--d-surface);box-shadow:var(--d-box),var(--d-drop-sh);}
+html.dot #onboard .ob-m{image-rendering:pixelated;}
+html.dot #onboard .ob-m svg{width:100%;height:100%;display:block;}
+/* 1. 반가워요 */
+html.dot #onboard .ob-hello .ob-m{width:112px;height:160px;}
+/* 말풍선은 쥐돌이(160px, 가운데) 머리 오른쪽 위에 붙인다. 화면이 길어도 떨어지지 않게 가운데 기준으로 잰다 */
+html.dot #onboard .ob-bub{position:absolute;bottom:calc(50% + 60px);left:calc(50% + 24px);white-space:nowrap;padding:8px 11px;font-family:"NeoDGM",monospace;font-size:16px;letter-spacing:-1px;line-height:24px;
+  -webkit-font-smoothing:none;animation:obPop .4s steps(3) both;animation-delay:.3s;}
+@keyframes obPop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* 2. 카드로 외우기 */
+html.dot #onboard .ob-flip{perspective:900px;width:220px;height:280px;position:relative;margin-bottom:54px;}
+html.dot #onboard .ob-fc{position:absolute;inset:0;transition:transform .45s steps(6);transform-style:preserve-3d;}
+html.dot #onboard .ob-fc.on{transform:rotateY(180deg);}
+html.dot #onboard .ob-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;}
+html.dot #onboard .ob-front{background:var(--d-hero);color:var(--d-hero-t);align-items:center;justify-content:center;gap:8px;
+  box-shadow:var(--d-box),inset 0 3px 0 0 var(--d-hero-hi),inset 0 -3px 0 0 var(--d-hero-lo),var(--d-drop-sh);}
+html.dot #onboard .ob-front b{font-family:"NeoDGM",monospace;font-weight:400;font-size:32px;-webkit-font-smoothing:none;}
+html.dot #onboard .ob-front small{font-size:12px;color:var(--d-hero-t2);}
+html.dot #onboard .ob-tag{font-family:"NeoDGM",monospace;font-size:16px;padding:2px 8px;box-shadow:0 0 0 2px var(--d-hero-t2);-webkit-font-smoothing:none;}
+html.dot #onboard .ob-back{transform:rotateY(180deg);padding:14px 14px 10px;text-align:left;}
+html.dot #onboard .ob-nm{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #onboard .ob-lb{font-family:"NeoDGM",monospace;font-size:16px;color:var(--d-acc);margin:10px 0 4px;-webkit-font-smoothing:none;}
+html.dot #onboard .ob-ing,html.dot #onboard .ob-row{display:flex;align-items:flex-end;font-size:12.5px;padding:3px 0;}
+html.dot #onboard .ob-ld{flex:1;height:3px;margin:0 5px 5px;background:repeating-linear-gradient(90deg,var(--d-dot) 0 3px,transparent 3px 6px);}
+html.dot #onboard .ob-v{font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #onboard .ob-q{font-family:"NeoDGM",monospace;font-size:16px;color:var(--d-acc);padding:0 6px;box-shadow:inset 0 0 0 2px var(--d-acc);-webkit-font-smoothing:none;}
+html.dot #onboard .ob-mode{position:absolute;top:-26px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:700;color:var(--d-t2);white-space:nowrap;}
+html.dot #onboard .ob-acts{position:absolute;left:0;right:0;bottom:-54px;display:flex;gap:10px;}
+html.dot #onboard .ob-acts span{flex:1;padding:8px 4px;text-align:center;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #onboard .ob-acts .ob-ok{background:var(--d-acc);color:var(--d-on-acc);}
+/* 누르기 표시: 쥐돌이 발바닥이 가서 꾹 찍고 도트 고리가 두 겹 퍼진다 */
+html.dot #onboard .ob-paw{position:absolute;width:48px;height:48px;pointer-events:none;z-index:5;opacity:0;image-rendering:pixelated;
+  transition:left .32s steps(4),top .32s steps(4),opacity .1s;}
+html.dot #onboard .ob-paw.on{opacity:1;}
+html.dot #onboard .ob-paw svg{display:block;width:100%;height:100%;transition:transform .08s steps(1);}
+html.dot #onboard .ob-paw.press svg{transform:translateY(3px);}
+html.dot #onboard .ob-rip{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;pointer-events:none;z-index:4;color:var(--d-acc);image-rendering:pixelated;opacity:0;}
+html.dot #onboard .ob-rip svg{display:block;width:100%;height:100%;}
+html.dot #onboard .ob-rip.go{animation:obRip .6s steps(5) both;}
+html.dot #onboard .ob-rip.go.ob-two{animation-delay:.14s;}
+@keyframes obRip{0%{opacity:1;transform:scale(.4)}70%{opacity:.9}100%{opacity:0;transform:scale(1.6)}}
+/* 3. 레시피 넣기 */
+html.dot #onboard .ob-imp{display:grid;gap:14px;width:100%;max-width:270px;}
+html.dot #onboard .ob-paper{padding:10px 12px;text-align:left;font-size:12.5px;line-height:1.7;position:relative;}
+html.dot #onboard .ob-hl{transition:background .2s steps(2);}
+html.dot #onboard .ob-paper.on .ob-hl{background:rgba(74,155,238,.28);}
+html.dot #onboard .ob-copy{position:absolute;right:8px;top:-12px;font-size:11px;font-weight:700;background:var(--d-t1);color:var(--d-bg);padding:3px 7px;opacity:0;}
+html.dot #onboard .ob-paper.on .ob-copy{opacity:1;}
+html.dot #onboard .ob-arrow{font-family:"NeoDGM",monospace;font-size:16px;color:var(--d-t2);-webkit-font-smoothing:none;}
+html.dot #onboard .ob-txt{padding:9px 11px;text-align:left;font-size:12.5px;min-height:52px;white-space:pre-line;box-shadow:var(--d-box2);background:var(--d-surface);}
+html.dot #onboard .ob-made{display:flex;align-items:center;gap:10px;padding:10px 12px;text-align:left;opacity:0;transform:translateY(8px);transition:all .3s steps(3);}
+html.dot #onboard .ob-made.on{opacity:1;transform:none;}
+html.dot #onboard .ob-t{width:36px;height:36px;flex:0 0 auto;background:#dfe8f4;color:#3a6fae;font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+html.dot #onboard .ob-made b{display:block;font-size:14px;}
+html.dot #onboard .ob-made small{font-size:11.5px;color:var(--d-t2);}
+/* 4. 일정과 알림 */
+html.dot #onboard .ob-alarm{position:relative;width:100%;max-width:280px;height:260px;padding:0;}
+html.dot #onboard .ob-lockbg{position:absolute;inset:0;background:linear-gradient(160deg,#5A4132,#3A2C22);}
+html.dot #onboard .ob-clock{position:absolute;top:26px;left:0;right:0;text-align:center;color:#F6EEE6;font-size:44px;font-weight:300;letter-spacing:-1px;}
+html.dot #onboard .ob-date{position:absolute;top:10px;left:0;right:0;text-align:center;color:#F6EEE6;opacity:.8;font-size:12px;}
+html.dot #onboard .ob-ban{position:absolute;left:12px;right:12px;top:108px;background:var(--d-surface);color:var(--d-t1);border-radius:14px;padding:10px 11px;display:flex;gap:9px;text-align:left;
+  transform:translateY(-140px);opacity:0;transition:transform .45s steps(6),opacity .2s;}
+html.dot #onboard .ob-ban.on{transform:none;opacity:.96;}
+html.dot #onboard .ob-ai{width:32px;height:32px;border-radius:7px;overflow:hidden;flex:0 0 auto;}
+html.dot #onboard .ob-ai img{width:100%;height:100%;image-rendering:pixelated;display:block;}
+html.dot #onboard .ob-bt{flex:1;min-width:0;}
+html.dot #onboard .ob-r1{display:flex;justify-content:space-between;font-size:11.5px;}
+html.dot #onboard .ob-r1 span{opacity:.55;}
+html.dot #onboard .ob-tt{font-size:13px;font-weight:700;margin-top:1px;}
+html.dot #onboard .ob-bd{font-size:12.5px;opacity:.85;}
+html.dot #onboard .ob-tk{position:absolute;left:12px;right:12px;bottom:14px;display:grid;grid-template-columns:58px 1fr;background:var(--d-surface);text-align:left;}
+html.dot #onboard .ob-stub{background:var(--d-acc);color:var(--d-on-acc);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 2px;}
+html.dot #onboard .ob-stub small{font-size:10.5px;opacity:.85;}
+html.dot #onboard .ob-stub b{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #onboard .ob-mt{padding:8px 10px;}
+html.dot #onboard .ob-mt b{display:block;font-size:13.5px;}
+html.dot #onboard .ob-mt small{font-size:11.5px;color:var(--d-t2);}
+/* 5. 백업 */
+html.dot #onboard .ob-bk{display:grid;justify-items:center;gap:14px;}
+html.dot #onboard .ob-bk .ob-m{width:84px;height:120px;}
+html.dot #onboard .ob-rc{width:230px;padding:10px 14px;text-align:left;position:relative;background:var(--d-surface);}
+html.dot #onboard .ob-rc::before,html.dot #onboard .ob-rc::after{content:"";position:absolute;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--d-surface) 50%,transparent 50%) 0 0/12px 3px repeat-x;}
+html.dot #onboard .ob-rc::before{top:-3px;}
+html.dot #onboard .ob-rc::after{bottom:-3px;background-position:6px 0;}
+html.dot #onboard .ob-warn{color:var(--d-late);}
+@media (prefers-reduced-motion: reduce){
+  html.dot #onboard .ob-rail,html.dot #onboard .ob-fc,html.dot #onboard .ob-made,html.dot #onboard .ob-ban,html.dot #onboard .ob-hl{transition:none !important;}
+  html.dot #onboard .ob-bub{animation:none !important;opacity:1;}
+}

@@ -1348,7 +1348,8 @@ const LEGACY = {
     const dotCss = fs.readFileSync(path.resolve(__dirname, "..", "www", "dot.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
     const loose = [];
     // @media (...) { 는 선택자가 아니라 묶음이다. 여는 줄만 걷어내면 안쪽 규칙이 그대로 검사된다
-    dotCss.replace(/@font-face\s*\{[^}]*\}/g, "").replace(/@media[^{]*\{/g, "").replace(/([^{}]+)\{[^}]*\}/g, (m, sel) => {
+    // @keyframes 안의 from{} · 0%{} 도 선택자가 아니다. 통째로 걷어낸다
+    dotCss.replace(/@font-face\s*\{[^}]*\}/g, "").replace(/@keyframes[^{]*\{(?:[^{}]*\{[^}]*\})*[^{}]*\}/g, "").replace(/@media[^{]*\{/g, "").replace(/([^{}]+)\{[^}]*\}/g, (m, sel) => {
       // :is(a, b) 처럼 괄호 안의 쉼표는 선택자 구분이 아니다. 괄호 밖 쉼표에서만 나눈다
       const parts = []; let depth = 0, cur = "";
       for (const ch of sel) {
@@ -1674,6 +1675,81 @@ const LEGACY = {
     await page.setViewportSize(before);
     eq("아이패드 폭에서 도트 진도 카드 · 레시피 탭 · 설정 카드가 가운데에 있다(좌우 차이 8px 이하)",
        [tab.hero <= 8, tab.seg <= 8, tab.card <= 8], [true, true, true]);
+  }
+
+  // ── 6-10h. 첫 실행 가이드 (도트 화면만) ──────────────────────────────
+  {
+    const ob = await page.evaluate(async () => {
+      const seen = el => !!el && el.getClientRects().length > 0;
+      const backup = JSON.stringify(data), visit0 = VISIT;
+      const r = {};
+      data.hints = (data.hints || []).filter(h => h !== "onboard");
+      VISIT = { info:{ kind:"first" }, now:new Date() };
+      // 웹: 처음이어도 뜨지 않고, 사용법 보기는 예전 글 시트
+      r.webDue = guideDue();
+      $("#openGuide").click();
+      r.webSheet = $("#sheet").classList.contains("on"); r.webOnboard = !$("#onboard").hidden;
+      closeSheet();
+      // 앱
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot");
+      await new Promise(res => setTimeout(res, 350));
+      r.appDue = guideDue();
+      VISIT = { info:{ kind:"back", gap:1 }, now:new Date() };
+      r.backDue = guideDue();
+      VISIT = { info:{ kind:"first" }, now:new Date() };
+      openGuide();
+      r.shown = seen($("#onboard"));
+      r.pages = document.querySelectorAll("#onboard .ob-page").length;
+      r.dots = document.querySelectorAll("#obDots i").length;
+      r.cover = getComputedStyle($("#onboard")).zIndex;
+      const small = [];
+      document.querySelectorAll("#onboard *").forEach(el => {
+        if (!seen(el) || ![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
+        const c = getComputedStyle(el);
+        if (c.fontFamily.indexOf("NeoDGM") >= 0 && parseFloat(c.fontSize) < 16) small.push((el.className || el.tagName) + " " + c.fontSize);
+      });
+      r.small = small;
+      // 카드 장면: 뒤집기와 빈칸 열기는 발바닥이 꾹 찍는 순간에만 일어난다
+      $("#obNext").click();
+      const paw = $("#obPaw"), fc = $("#obFc"), ings = $("#obIngs");
+      r.flipAtPress = []; r.openAtPress = [];
+      let was = fc.classList.contains("on");
+      const mo1 = new MutationObserver(() => { const now = fc.classList.contains("on"); if (now && !was) r.flipAtPress.push(paw.classList.contains("press")); was = now; });
+      mo1.observe(fc, { attributes:true, attributeFilter:["class"] });
+      let q0 = 3;
+      const mo2 = new MutationObserver(() => {
+        const q = ings.querySelectorAll(".ob-q").length;
+        if (q < q0) r.openAtPress.push(paw.classList.contains("press"));
+        q0 = q;
+      });
+      mo2.observe(ings, { childList:true });
+      await new Promise(res => setTimeout(res, 7500));
+      mo1.disconnect(); mo2.disconnect();
+      for (let i = 0; i < 3; i++) $("#obNext").click();
+      r.lastLabel = $("#obNext").textContent;
+      $("#obNext").click();
+      r.closed = $("#onboard").hidden && !guide;
+      r.marked = data.hints.indexOf("onboard") >= 0;
+      r.againDue = guideDue();
+      // 설정 → 사용법 보기로 다시 열린다
+      go("set"); $("#openGuide").click();
+      r.reopen = !$("#onboard").hidden;
+      $("#obSkip").click();
+      r.skipClosed = $("#onboard").hidden;
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot");
+      data = JSON.parse(backup); VISIT = visit0; persist(); go("home");
+      return r;
+    });
+    ok("웹은 처음 와도 가이드를 띄우지 않고, 사용법 보기는 글 시트 그대로다", ob.webDue === false && ob.webSheet === true && ob.webOnboard === false);
+    ok("앱을 처음 열면 가이드가 뜨고, 이미 쓰던 사람에게는 뜨지 않는다", ob.appDue === true && ob.backDue === false);
+    eq("가이드는 다섯 장, 점도 다섯 개다", [ob.shown, ob.pages, ob.dots], [true, 5, 5]);
+    ok("가이드는 탭바 위를 덮는다", Number(ob.cover) > 65, ob.cover);
+    eq("가이드의 도트 글꼴도 16px 이상이다", ob.small, []);
+    ok("카드는 발바닥이 찍는 순간에 뒤집힌다", ob.flipAtPress.length >= 1 && ob.flipAtPress.every(Boolean), JSON.stringify(ob.flipAtPress));
+    ok("빈칸은 발바닥이 찍는 순간에 하나씩 열린다", ob.openAtPress.length >= 1 && ob.openAtPress.every(Boolean), JSON.stringify(ob.openAtPress));
+    eq("마지막 장 버튼은 시작하기다", ob.lastLabel, "시작하기");
+    ok("다 보면 닫히고, 본 표시가 남아 다시 저절로 뜨지 않는다", ob.closed && ob.marked && ob.againDue === false);
+    ok("설정의 사용법 보기로 다시 열리고 건너뛰기로 닫힌다", ob.reopen && ob.skipClosed);
   }
 
   await browser.close();
