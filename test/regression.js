@@ -1347,7 +1347,8 @@ const LEGACY = {
     // 파일 규칙: dot.css 의 모든 규칙은 html.dot 아래에 있어야 웹이 안전하다
     const dotCss = fs.readFileSync(path.resolve(__dirname, "..", "www", "dot.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
     const loose = [];
-    dotCss.replace(/@font-face\s*\{[^}]*\}/g, "").replace(/([^{}]+)\{[^}]*\}/g, (m, sel) => {
+    // @media (...) { 는 선택자가 아니라 묶음이다. 여는 줄만 걷어내면 안쪽 규칙이 그대로 검사된다
+    dotCss.replace(/@font-face\s*\{[^}]*\}/g, "").replace(/@media[^{]*\{/g, "").replace(/([^{}]+)\{[^}]*\}/g, (m, sel) => {
       // :is(a, b) 처럼 괄호 안의 쉼표는 선택자 구분이 아니다. 괄호 밖 쉼표에서만 나눈다
       const parts = []; let depth = 0, cur = "";
       for (const ch of sel) {
@@ -1651,6 +1652,28 @@ const LEGACY = {
     // 버튼의 외곽선(3px)은 그림자(아래로 6px) 안에 들어간다. 보이는 틈 = 간격 − 그림자 6 − 글 칸 외곽선 2
     ok("가져오기 글 칸과 붙여넣기 버튼 사이도 넉넉하다(외곽선을 빼고도 8px 이상)", a.ocrGap - 5 >= 8, String(a.ocrGap));
     ok("파일 선택 버튼과 글 칸 사이도 넉넉하다(그림자 · 외곽선을 빼고도 8px 이상)", a.fileGap - 8 >= 8, String(a.fileGap));
+  }
+
+  // ── 6-10g. 태블릿(아이패드) 폭에서 도트 화면도 가운데 모인다 ─────────────
+  {
+    const before = page.viewportSize();
+    await page.setViewportSize({ width: 820, height: 1180 });
+    const tab = await page.evaluate(async () => {
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot");
+      await new Promise(res => setTimeout(res, 350));
+      const off = (screen, sel) => {
+        go(screen);
+        const sc = document.querySelector("#s-" + screen + " .scroll").getBoundingClientRect(), el = document.querySelector(sel).getBoundingClientRect();
+        return Math.round(Math.abs((el.left + el.right) / 2 - (sc.left + sc.right) / 2));
+      };
+      const r = { hero: off("home", "#s-home .hero"), seg: off("list", "#listSeg"), card: off("set", "#s-set .setcard") };
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot");
+      go("home");
+      return r;
+    });
+    await page.setViewportSize(before);
+    eq("아이패드 폭에서 도트 진도 카드 · 레시피 탭 · 설정 카드가 가운데에 있다(좌우 차이 8px 이하)",
+       [tab.hero <= 8, tab.seg <= 8, tab.card <= 8], [true, true, true]);
   }
 
   await browser.close();

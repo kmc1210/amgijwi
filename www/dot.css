@@ -297,7 +297,8 @@ html.dot #s-list .appbar .archbtn{border:0;border-radius:0;background:var(--d-su
 html.dot #s-arch .icon-btn{border:0;border-radius:0;background:var(--d-surface);color:var(--d-t1);box-shadow:var(--d-box2);}
 
 /* 레시피 · 부재료 · 개봉관리 · 메모 */
-html.dot #s-list .seg{border:0;border-radius:0;background:var(--d-surface);margin:3px 3px 17px !important;box-shadow:var(--d-box);}
+/* 마크업의 style="margin-bottom:14px" 를 이기려고 위아래만 !important. 좌우는 태블릿 가운데 정렬(auto)에 맡긴다 */
+html.dot #s-list .seg{border:0;border-radius:0;background:var(--d-surface);margin:3px 3px 17px;margin-top:3px !important;margin-bottom:17px !important;box-shadow:var(--d-box);}
 html.dot #s-list .seg button{border-radius:0;color:var(--d-t2);
   font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;letter-spacing:-1px;-webkit-font-smoothing:none;}
 html.dot #s-list .seg button.on{background:var(--d-t1);color:var(--d-bg);}
@@ -471,6 +472,14 @@ html.dot #dlg .btns{gap:14px;padding:0 3px 3px;}
 html.dot #dlg .btns button{border:0;border-radius:0;font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;box-shadow:var(--d-box);}
 html.dot #dlg .no{background:var(--d-surface);color:var(--d-t1);}
 html.dot .toast{border-radius:0;box-shadow:var(--d-box2);}
+
+/* ── 태블릿 ─────────────────────────────── */
+/* 넓은 화면에서는 style.css 가 화면 안 부품을 최대 폭 · 좌우 auto 로 가운데 모은다(태블릿 최대 폭).
+   도트 규칙이 외곽선 자리로 준 좌우 3px 여백이 그 auto 를 덮어 진도 카드 · 설정 카드 · 레시피 탭이
+   왼쪽에 붙었다(아이패드에서 발견). 태블릿에서는 좌우 auto 를 되살린다 */
+@media (min-width:700px){
+  html.dot .scroll > *{margin-left:auto !important;margin-right:auto !important;}
+}
 
 /* ── 탭바 ───────────────────────────────── */
 /* 선 아이콘 대신 도트 아이콘. 탭 이름은 10.5px 라 시스템 글꼴 그대로 */
