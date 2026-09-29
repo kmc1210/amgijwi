@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- index.html 과 같은 정책. 이 페이지는 스크립트가 없어 더 좁혀도 되지만,
+     배포 뒤 헤더 검사가 사이트 전체에 같은 헤더를 기대하므로 맞춰 둔다 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="color-scheme" content="light dark">
+<title>암기쥐 개인정보 처리방침</title>
+<!-- 앱스토어·테스트플라이트에 적는 개인정보 처리방침 주소(https://amgijwi.com/privacy.html).
+     웹(CloudFront)을 내리더라도 이 페이지는 어딘가에 남아 있어야 한다 -->
+<style>
+  :root{--bg:#F7F3EE;--card:#FFFFFF;--ink:#241F1A;--ink-2:#5B524A;--muted:#9A8F85;--line:#EAE0D6;--accent:#8A4A20;}
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#14110E;--card:#1E1A16;--ink:#F2EBE3;--ink-2:#C3B7AB;--muted:#8C8076;--line:#312A23;--accent:#EBB783;}
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR",system-ui,sans-serif;
+    line-height:1.7;-webkit-font-smoothing:antialiased;word-break:keep-all;}
+  main{max-width:680px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 40px) 20px calc(env(safe-area-inset-bottom,0px) + 56px);}
+  h1{font-size:26px;line-height:1.3;margin:0 0 6px;}
+  .date{color:var(--muted);font-size:14px;margin:0 0 28px;}
+  .lead{font-size:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:0 0 32px;}
+  h2{font-size:17px;margin:32px 0 8px;}
+  p,li{font-size:15px;color:var(--ink-2);}
+  p{margin:0 0 10px;}
+  ul{margin:0 0 10px;padding-left:20px;}
+  li{margin:4px 0;}
+  b{color:var(--ink);}
+  a{color:var(--accent);}
+</style>
+</head>
+<body>
+<main>
+  <h1>암기쥐 개인정보 처리방침</h1>
+  <p class="date">시행일: 2026년 9월 30일</p>
+
+  <p class="lead"><b>암기쥐는 개인정보를 수집하지 않습니다.</b> 계정도, 서버도, 광고나 분석 도구도 없습니다. 입력한 레시피와 학습 기록은 이용자의 기기 안에만 저장되고, 어디로도 보내지 않습니다.</p>
+
+  <h2>1. 수집하는 정보</h2>
+  <p>없습니다. 암기쥐는 이름, 이메일, 전화번호, 위치, 기기 식별자 같은 개인정보를 받거나 보관하지 않습니다. 회원가입이나 로그인도 없습니다.</p>
+
+  <h2>2. 기기 안에만 저장되는 것</h2>
+  <p>앱을 쓰면서 이용자가 직접 입력하거나 만든 아래 내용은 이용자의 기기 안에만 저장됩니다.</p>
+  <ul>
+    <li>레시피, 부재료, 개봉 항목, 메모</li>
+    <li>학습 기록(외운 메뉴, 다시 볼 메뉴)과 접속한 날</li>
+    <li>일정과 알림 설정</li>
+    <li>테마, 소리 같은 앱 설정과 잠금 PIN(PIN 은 원래 숫자가 아니라 변환된 값으로만 남습니다)</li>
+  </ul>
+  <p>아이폰 앱에서는 앱의 저장 공간에, 웹(amgijwi.com)에서는 그 브라우저의 저장소에 남습니다. 앱을 지우거나 브라우저 데이터를 지우면 함께 사라지며, 개발자는 이 내용을 볼 수도 되살릴 수도 없습니다.</p>
+
+  <h2>3. 외부로 보내는 정보</h2>
+  <p>없습니다. 암기쥐에는 인터넷으로 데이터를 보내는 기능이 없습니다. 웹에서는 브라우저의 보안 정책(Content-Security-Policy)으로 외부 통신 자체를 막아 두었습니다. 광고, 분석, 추적 도구도 넣지 않았습니다.</p>
+
+  <h2>4. 이용자가 직접 하는 것</h2>
+  <ul>
+    <li><b>백업 파일</b>: 설정에서 백업을 내보낼 때만 파일이 만들어지며, 어디에 저장하거나 누구에게 보낼지는 이용자가 정합니다.</li>
+    <li><b>붙여넣기와 복사</b>: 레시피를 붙여넣기 버튼으로 가져올 때와 백업을 복사할 때만 기기의 클립보드를 씁니다.</li>
+    <li><b>사진에서 가져오기</b>: 암기쥐는 사진을 받지 않습니다. 이용자가 사진 앱 등에서 글자를 복사해 붙여넣는 방식입니다. 이때 쓰는 글자 인식 기능은 해당 앱이나 서비스의 방침을 따릅니다.</li>
+  </ul>
+
+  <h2>5. 알림</h2>
+  <p>일정 알림은 아이폰 안에서 예약되는 알림(로컬 알림)으로, 서버를 거치지 않습니다. 알림 권한은 이용자가 일정에서 알림을 처음 켤 때만 묻고, 아이폰 설정에서 언제든 끌 수 있습니다.</p>
+
+  <h2>6. 어린이</h2>
+  <p>암기쥐는 카페 음료 레시피를 외우는 앱으로, 어린이를 대상으로 만들지 않았습니다. 어떤 연령의 이용자에게서도 개인정보를 수집하지 않습니다.</p>
+
+  <h2>7. 방침이 바뀌면</h2>
+  <p>이 방침을 바꾸게 되면 이 페이지에 새 시행일과 함께 알립니다. 앞으로 개인정보를 다루는 기능(예: 실제 날씨를 알기 위한 위치)을 넣게 되면, 그 기능을 켜기 전에 이 방침을 먼저 고칩니다.</p>
+
+  <h2>8. 문의</h2>
+  <p>궁금한 점은 <a href="https://github.com/kmc1210/amgijwi/issues">github.com/kmc1210/amgijwi/issues</a> 에 남겨 주세요. 테스트플라이트로 쓰는 중이라면 테스트플라이트 앱의 피드백 보내기도 쓸 수 있습니다.</p>
+</main>
+</body>
+</html>
