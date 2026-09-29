@@ -639,6 +639,9 @@ const LEGACY = {
     const selCell = document.querySelector("#calGrid .calcell.sel");
     const cs = selCell && getComputedStyle(selCell), ns = selCell && getComputedStyle(selCell.querySelector(".n"));
     r.selMark = selCell ? [cs.boxShadow, cs.backgroundColor, ns.backgroundColor !== "rgba(0, 0, 0, 0)"] : null;
+    // 고른 날 표시와 그 아래 첫 막대 사이에 틈이 있어야 한다(붙으면 표시가 막대에 올라탄 것처럼 보인다)
+    const firstBar = selCell && selCell.closest(".calweek").querySelector(".calbar");
+    r.selGap = firstBar ? Math.round(firstBar.getBoundingClientRect().top - selCell.querySelector(".n").getBoundingClientRect().bottom) : null;
     // 이름이 긴 하루짜리도 칸 밖으로 넘치지 않는다
     const w = document.querySelector("#calGrid .calweek").getBoundingClientRect().width;
     r.fits = [...document.querySelectorAll("#calGrid .calbar")].every(b => b.getBoundingClientRect().width <= w + 1);
@@ -655,6 +658,7 @@ const LEGACY = {
   eq("고른 날의 일정이 모두 목록에 나온다", bars.listed, bars.clickDay === "2026-10-09" ? 3 : 1);
   ok("막대가 달력 폭을 넘지 않는다", bars.fits === true);
   eq("고른 날은 칸이 아니라 숫자에만 표시한다", bars.selMark, ["none", "rgba(0, 0, 0, 0)", true]);
+  ok("고른 날 표시와 막대 사이에 틈이 있다", bars.selGap !== null && bars.selGap >= 3, String(bars.selGap));
 
   // ── 6-9. 일정 알림 (iOS 앱) ─────────────────────────────────────
   // 무엇을 언제 보낼지는 웹이 정하고 앱은 예약만 한다. 웹에는 알림 칸이 없다.
@@ -1555,6 +1559,42 @@ const LEGACY = {
     ok("앱의 레시피 탭과 시트 제목은 도트 글꼴이다", a.segFont.indexOf("NeoDGM") === 0 && a.sheetTitle.indexOf("NeoDGM") === 0);
     eq("앱의 목록 줄 · 시트 · 입력 칸은 네모다", [a.rowRadius, a.sheetRadius, a.fldRadius], ["0px", "0px", "0px"]);
     eq("레시피 화면과 시트에서도 도트 글꼴은 16px 이상이다", a.small, []);
+  }
+
+  // ── 6-10e. 일정 화면 (도트 화면만) ─────────────────────────────────
+  {
+    const calLook = await page.evaluate(async () => {
+      const seen = el => !!el && el.getClientRects().length > 0;
+      const backup = JSON.stringify(data);
+      data.events = [{ id:"g1", title:"가을 시즌 음료 교육", date:"2026-10-05", end:"2026-10-09", note:"", remind:0, done:false },
+                     { id:"g2", title:"재고 조사", date:"2026-10-07", end:"", note:"", remind:0, done:false }];
+      const run = () => {
+        go("cal"); calCursor = { y:2026, m:9 }; state.calDay = "2026-10-07"; renderCal();
+        const cs = s => getComputedStyle(document.querySelector(s));
+        const small = [];
+        document.querySelectorAll("#s-cal *").forEach(el => {
+          if (!seen(el) || ![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
+          const c = getComputedStyle(el);
+          if (c.fontFamily.indexOf("NeoDGM") >= 0 && parseFloat(c.fontSize) < 16) small.push((el.className || el.tagName) + " " + c.fontSize);
+        });
+        return { selN: cs("#calGrid .calcell.sel .n").borderTopLeftRadius, selClip: cs("#calGrid .calcell.sel .n").clipPath,
+                 bar: cs("#calGrid .calbar").borderTopLeftRadius,
+                 title: cs("#calTitle").fontFamily, dd: cs("#calDayList .evrow .dd").fontFamily, small: small };
+      };
+      const r = { web: run() };
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot");
+      await new Promise(res => setTimeout(res, 350));
+      r.app = run();
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot");
+      data = JSON.parse(backup); calCursor = null; state.calDay = null; persist(); go("home");
+      return r;
+    });
+    const w = calLook.web, a = calLook.app;
+    ok("웹의 달력은 동그라미 표시와 둥근 막대 그대로다", w.selN !== "0px" && w.bar !== "0px" && w.title.indexOf("NeoDGM") < 0, [w.selN, w.bar].join(" / "));
+    ok("앱의 고른 날 표시는 도트로 찍은 동그라미다(매끈한 원이 아님)", a.selN === "0px" && /^polygon\(/.test(a.selClip), a.selN + " " + a.selClip);
+    eq("앱의 일정 막대는 네모다", a.bar, "0px");
+    ok("앱의 달력 제목과 남은 날은 도트 글꼴이다", a.title.indexOf("NeoDGM") === 0 && a.dd.indexOf("NeoDGM") === 0);
+    eq("일정 화면에서도 도트 글꼴은 16px 이상이다", a.small, []);
   }
 
   await browser.close();
