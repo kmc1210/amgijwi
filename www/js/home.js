@@ -23,6 +23,8 @@ function renderHome(){
   const C = 2*Math.PI*37;
   $("#ringFill").style.strokeDashoffset = C - C*pct/100;
   $("#ringPct").textContent = pct + "%";
+  /* 앱(도트 화면)에서는 링도 도트로. 웹에서는 그리지 않는다 */
+  if(document.documentElement.classList.contains("dot")) $("#ringPx").innerHTML = ringPixelSVG(pct);
   const nArch = data.drinks.length - total;
   $("#heroTitle").textContent = total===0 ? (nArch ? "모두 보관해 두셨어요" : "레시피를 추가해 주세요")
     : (done===0 ? "아직 외운 메뉴가 없어요" : `${total}개 중 ${done}개를 외웠어요`);
@@ -161,4 +163,22 @@ function rowHTML(d, pill, selectable){
     <span class="meta"><b>${esc(d.name)}</b><span>${d.ing.slice(0,3).map(i=>esc(i[0])).join(" · ")}</span></span>
     ${badge}
   </button>`;
+}
+
+/* 도트 진도 링. 88px 링을 3px 칸 30×30 으로 쪼갠다.
+   칸 중심까지의 거리로 고리를 골라 두께가 고르고, 12시에서 시계 방향 각도로 진도만큼 채운다.
+   바깥 한 겹은 빛, 안쪽 한 겹은 그늘. 0% 여도 원래 링처럼 시작점 한 점은 보인다.
+   색은 dot.css 의 --d-ring-* 가 테마마다 정한다 */
+function ringPixelSVG(pct){
+  const N = 30, c = 14.5;
+  let out = "";
+  for(let y = 0; y < N; y++) for(let x = 0; x < N; x++){
+    const dx = x - c, dy = y - c, d = Math.sqrt(dx*dx + dy*dy);
+    if(d < 10.9 || d > 14.4) continue;
+    const a = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
+    const on = a < pct * 3.6 || ((a < 7 || a > 353) && d > 11.9 && d < 13.6 && y < c);
+    const k = !on ? "track" : (d > 13.4 ? "hi" : (d < 11.9 ? "lo" : "fill"));
+    out += '<rect x="' + x + '" y="' + y + '" width="1" height="1" class="rp-' + k + '"/>';
+  }
+  return '<svg viewBox="0 0 30 30" shape-rendering="crispEdges">' + out + '</svg>';
 }

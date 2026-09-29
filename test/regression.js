@@ -1123,7 +1123,7 @@ const LEGACY = {
     data = JSON.parse(backup); persist(); go("home");
     return r;
   });
-  eq("아이콘이 스물일곱 개다", dots.count, 27);
+  eq("아이콘이 스물아홉 개다(탭바의 홈·설정 포함)", dots.count, 29);
   ok("모두 정사각이고 16칸 이상이다", dots.square === true, JSON.stringify(dots.sizes));
   ok("팔레트에 없는 색을 쓰지 않는다", dots.knownColors === true);
   ok("아이콘은 제 팔레트 색만 쓴다", dots.onlyIconPal === true);
@@ -1267,6 +1267,87 @@ const LEGACY = {
     // 전체 주소여야 앱에서 사파리로 열린다. 상대 주소면 웹뷰 안에서 열려 돌아올 길이 없다
     eq("처리방침 링크는 전체 주소다", link && link.href, "https://amgijwi.com/privacy.html");
     ok("처리방침 링크는 새 창을 열지 않는다(웹뷰가 무시함)", !!link && link.target === null);
+  }
+
+  // ── 6-10. 도트 화면 (iOS 앱 전용) ────────────────────────────────
+  // 앱에서는 <html> 에 dot 이 붙고 dot.css 가 켜진다. 웹은 지금 모습 그대로여야 한다
+  {
+    const look = await page.evaluate(async () => {
+      const fam = s => getComputedStyle(document.querySelector(s)).fontFamily;
+      // SVG 에는 offsetParent 가 없어 늘 "보임"으로 나온다. 그려진 상자가 있는지로 본다
+      const seen = el => !!el && el.getClientRects().length > 0;
+      const r = {};
+      go("home"); renderHome();
+      r.webClass = document.documentElement.classList.contains("dot");
+      r.webGreet = fam("#greetT");
+      r.webRing = seen(document.querySelector("#ringPx"));
+      r.webTabPx = [...document.querySelectorAll(".tabpx")].filter(seen).length;
+      r.webTabSvg = [...document.querySelectorAll(".tab > svg")].filter(seen).length;
+
+      // 앱처럼 만든다
+      window.__amgijwiNative = true;
+      document.documentElement.classList.add("dot");
+      const backup = JSON.stringify(data);
+      data.backup = null;                         // 백업 권유가 뜨는 상태
+      renderHome(); renderBackupBanner();
+      r.appGreet = fam("#greetT");
+      r.ringShown = seen(document.querySelector("#ringPx"));
+      r.ringOldHidden = getComputedStyle(document.querySelector(".ring > svg")).display === "none";
+      r.ringCells = document.querySelectorAll("#ringPx rect").length;
+      r.ringOn0 = document.querySelectorAll("#ringPx .rp-fill, #ringPx .rp-hi, #ringPx .rp-lo").length;
+      r.tabPx = [...document.querySelectorAll(".tabpx")].filter(el => seen(el) && el.querySelector("svg")).length;
+      r.tabSvg = [...document.querySelectorAll(".tab > svg")].filter(seen).length;
+      r.okBanner = [...document.querySelectorAll("#storeBanner .banner.ok")].filter(seen).length;
+      const msg = document.querySelector("#backupBanner .bkmsg");
+      r.bkmsgHidden = !!msg && !seen(msg);
+      r.bkNow = seen(document.querySelector("#bkNow"));
+
+      // 도트 글꼴은 16px 이상에서만. 홈과 탭바의 글자가 있는 모든 요소를 훑는다
+      r.small = [];
+      document.querySelectorAll("#s-home *, .tabs *").forEach(el => {
+        if (!seen(el) || !el.childNodes.length) return;
+        const hasText = [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim());
+        if (!hasText) return;
+        const cs = getComputedStyle(el);
+        if (cs.fontFamily.indexOf("NeoDGM") >= 0 && parseFloat(cs.fontSize) < 16)
+          r.small.push((el.id || el.className || el.tagName) + " " + cs.fontSize);
+      });
+
+      delete window.__amgijwiNative;
+      document.documentElement.classList.remove("dot");
+      data = JSON.parse(backup); renderHome(); renderBackupBanner();
+      r.backToWeb = fam("#greetT") === r.webGreet;
+      return r;
+    });
+    ok("웹에는 도트 표시가 없다", look.webClass === false);
+    ok("웹의 인사말은 원래 글꼴이다", look.webGreet.indexOf("NeoDGM") < 0, look.webGreet);
+    ok("웹에는 도트 링이 안 보인다", look.webRing === false);
+    eq("웹의 탭은 원래 선 아이콘이다", [look.webTabPx, look.webTabSvg], [0, 5]);
+    ok("앱의 인사말은 도트 글꼴이다", look.appGreet.indexOf("NeoDGM") === 0, look.appGreet);
+    ok("앱에서는 도트 링이 원래 링을 대신한다", look.ringShown === true && look.ringOldHidden === true);
+    ok("도트 링은 고리 칸으로 그린다", look.ringCells > 200, String(look.ringCells));
+    ok("0% 에도 시작점은 보인다", look.ringOn0 > 0 && look.ringOn0 < 12, String(look.ringOn0));
+    eq("앱의 탭은 도트 아이콘 다섯 개다", [look.tabPx, look.tabSvg], [5, 0]);
+    eq("앱에서는 저장 안심 문구를 홈에서 뺀다(설정에 같은 말)", look.okBanner, 0);
+    ok("백업 권유는 한 줄로 줄이고 버튼은 남긴다", look.bkmsgHidden === true && look.bkNow === true);
+    eq("도트 글꼴은 16px 보다 작게 쓰지 않는다", look.small, []);
+    ok("도트 표시를 떼면 원래 모습으로 돌아온다", look.backToWeb === true);
+
+    // 파일 규칙: dot.css 의 모든 규칙은 html.dot 아래에 있어야 웹이 안전하다
+    const dotCss = fs.readFileSync(path.resolve(__dirname, "..", "www", "dot.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+    const loose = [];
+    dotCss.replace(/@font-face\s*\{[^}]*\}/g, "").replace(/([^{}]+)\{[^}]*\}/g, (m, sel) => {
+      sel.split(",").map(x => x.trim()).filter(Boolean).forEach(x => { if (x.indexOf("html.dot") !== 0) loose.push(x); });
+      return "";
+    });
+    eq("dot.css 의 규칙은 모두 html.dot 아래에 있다", loose, []);
+    const fontDir = path.resolve(__dirname, "..", "www", "fonts");
+    ok("도트 글꼴 파일이 있다", fs.existsSync(path.join(fontDir, "neodgm.woff2")) && dotCss.indexOf("fonts/neodgm.woff2") >= 0);
+    ok("글꼴 라이선스(OFL)를 함께 싣는다", /SIL Open Font License/.test(fs.readFileSync(path.join(fontDir, "neodgm-LICENSE.txt"), "utf8")));
+    const cspMeta = (/http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(html) || [])[1] || "";
+    ok("CSP 가 이 사이트의 글꼴만 허용한다", /font-src 'self';/.test(cspMeta), cspMeta);
+    const swiftVc = fs.readFileSync(path.resolve(__dirname, "..", "ios", "Sources", "WebAppViewController.swift"), "utf8");
+    ok("앱이 문서가 뜨기 전에 dot 표시를 붙인다", swiftVc.indexOf("classList.add('dot')") >= 0);
   }
 
   await browser.close();
