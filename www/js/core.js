@@ -40,6 +40,23 @@ function fmtDate(d){
   return String(d.getFullYear()).slice(2)+"."+p(d.getMonth()+1)+"."+p(d.getDate());
 }
 const TAG_COLORS = ["#E1832E","#E0A82E","#3E9E6B","#4A9BD1","#3C5A94","#7A4E9E","#C4483E"];
+/* 요일 색의 처음 값(일 ~ 토). 예시일 뿐이고 매장 라벨에 맞게 사용자가 바꾼다 */
+const TAG_DAY_COLORS = ["#E1832E","#4A7FC1","#D9A21E","#C4483E","#3E9E6B","#8A5A3C","#7A4E9E"];
+/* 개봉 택 표시 규칙. 번호 택 · 요일 라벨 색은 매장마다 달라서 앱이 색을 정해 두지 않는다.
+   mode  day 요일만(색 없음) · dayColor 요일 색 · num 번호 색(오늘 버릴 줄이 1번 — 예전 방식)
+   base  요일을 개봉일(open) · 폐기일(kill) 중 어디서 읽을지
+   day · num  사용자가 고친 색 7개씩 */
+function cleanTagRule(r, fallbackMode){
+  r = (r && typeof r === "object") ? r : {};
+  const hex = c => typeof c === "string" && /^#[0-9A-Fa-f]{6}$/.test(c);
+  const pal = (a, def) => def.map((c, i) => (Array.isArray(a) && hex(a[i])) ? a[i] : c);
+  return {
+    mode: ["day","dayColor","num"].indexOf(r.mode) >= 0 ? r.mode : fallbackMode,
+    base: r.base === "kill" ? "kill" : "open",
+    day: pal(r.day, TAG_DAY_COLORS),
+    num: pal(r.num, TAG_COLORS)
+  };
+}
 function cupList(d){ return Array.isArray(d.cups) ? d.cups.filter(Boolean) : (d.cup ? [d.cup] : []); }
 function cupText(d){ return cupList(d).join(" · "); }
 function catOf(id){ for(let i=0;i<data.cats.length;i++){ if(data.cats[i].id===id) return data.cats[i]; } return null; }
@@ -53,6 +70,15 @@ const KEY = "brewnote.v1";
    웹에서는 "브라우저 데이터를 지우면" 이 맞고, 앱에서는 "앱을 지우면" 이 맞다.
    앱이 문서가 뜨기 전에 표시를 심는다 (ios/Sources/WebAppViewController.swift). */
 function isNativeApp(){ return window.__amgijwiNative === true; }
+/* 진동(앱만). 손으로 "눌렀다 · 끝났다 · 잘못됐다" 를 알아야 할 때만 짧게 울린다.
+   스크롤 · 글쓰기 · 일반 버튼에는 넣지 않는다. 설정에서 끌 수 있다(data.haptic === false).
+   light 톡 · soft 뭉툭 · selection 딸깍 · success 따닥 · warning 두 번 · error 부르르 (HapticBridge.swift) */
+function haptic(kind){
+  if(!isNativeApp() || (typeof data !== "undefined" && data.haptic === false)) return;
+  const w = window.webkit;
+  if(!w || !w.messageHandlers || !w.messageHandlers.amgijwiHaptic) return;
+  try{ w.messageHandlers.amgijwiHaptic.postMessage(kind); }catch(e){}
+}
 
 /* ---------- 저장소 (localStorage, 실패 시 메모리) ---------- */
 const Store = (()=>{
@@ -149,9 +175,11 @@ function uid(){
 
 /* ---------- 상태 ---------- */
 let data = Store.load();
+let freshData = false;
 if(!data || !Array.isArray(data.drinks)){
   data = {v:1, drinks:seed(), mastered:[], needReview:[]};
   Store.save(data);
+  freshData = true;
 }
 data.mastered = data.mastered || [];
 data.needReview = data.needReview || [];
@@ -162,6 +190,8 @@ if(["as-is","upper","lower"].indexOf(data.enCase) < 0) data.enCase = "as-is";
 if(["off","sfx","all"].indexOf(data.sound) < 0) data.sound = "off";
 /* 처음 한 번만 보여주는 안내를 본 기록. 한 번 본 것은 다시 나오지 않는다 */
 if(!Array.isArray(data.hints)) data.hints = [];
+/* 새로 설치하면 요일만(색 없음). 이미 쓰던 사람은 업데이트해도 화면이 바뀌지 않게 번호 색으로 둔다 */
+data.tagRule = cleanTagRule(data.tagRule, freshData ? "day" : "num");
 /* 일정 — 날짜 하나짜리. 되풀이는 아직 없다.
    remind 는 며칠 전부터 홈에 띄울지다. 0 이면 당일에만 뜬다 */
 if(!Array.isArray(data.events)) data.events = [];

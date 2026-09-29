@@ -29,6 +29,7 @@ function drawKeys(){
   $("#lockKeys").querySelectorAll("[data-k]").forEach(b=>b.addEventListener("click",()=>pressKey(b.dataset.k)));
 }
 function lockBad(msg){
+  haptic("error");
   const d = $("#lockDots");
   d.classList.remove("bad"); void d.offsetWidth; d.classList.add("bad");
   lock.buf = ""; drawDots();
@@ -210,6 +211,19 @@ document.querySelectorAll("#soundBtns .theme-b").forEach(b=>{
   });
 });
 
+/* 진동은 기본으로 켠다. 끈 사람만 data.haptic = false 로 남긴다(백업을 따라간다) */
+function applyHaptic(){
+  document.querySelectorAll("#hapticBtns .theme-b").forEach(b=>{
+    b.classList.toggle("on", b.dataset.haptic === (data.haptic === false ? "off" : "on"));
+  });
+}
+document.querySelectorAll("#hapticBtns .theme-b").forEach(b=>{
+  b.addEventListener("click", ()=>{
+    data.haptic = b.dataset.haptic !== "off"; persist(); applyHaptic();
+    haptic("light");              // 켠 느낌을 바로 준다. 끄기를 골랐으면 조용하다
+  });
+});
+
 function applyWx(){
   document.querySelectorAll("#wxBtns .theme-b").forEach(b=>{
     b.classList.toggle("on", b.dataset.wx === data.wx);
@@ -225,7 +239,7 @@ document.querySelectorAll("#wxBtns .theme-b").forEach(b=>{
 function renderSettings(){
   applyTheme();
   applyWx();
-  applySound();
+  applySound(); applyHaptic();
   renderPinCard();
   renderCats();
   document.querySelectorAll("#enSeg button").forEach(b=>b.classList.toggle("on", b.dataset.en === data.enCase));
@@ -376,6 +390,9 @@ function applyBackup(text){
       /* 일정은 백업을 따라온다. 모양은 core.js 가 불러올 때 다시 다듬는다 */
       events:Array.isArray(d.events) ? d.events : [],
       wx:d.wx || data.wx,                 /* 날씨 옷도 취향이라 백업을 따라간다 */
+      haptic:typeof d.haptic === "boolean" ? d.haptic : data.haptic,
+      /* 택 색은 매장 규칙이라 백업을 따라간다. 예전 백업(규칙 없음)이면 지금 것을 둔다 */
+      tagRule:d.tagRule ? cleanTagRule(d.tagRule, "num") : data.tagRule,
       listSort:d.listSort || data.listSort,
       cats:keepCats, shelf:keepShelf, memos:keepMemos,
       /* 새 백업은 공용 부재료 목록을 갖고 있고, 예전 백업은 레시피 안에 부재료가 박혀 있다.
@@ -395,7 +412,7 @@ function applyBackup(text){
       })), mastered:Array.isArray(d.mastered)?d.mastered:[], needReview:Array.isArray(d.needReview)?d.needReview:[]};
     liftSubs(data);
     data.drinks.forEach(x=>{ x.subRefs = (x.subRefs||[]).filter(id=>data.subs.some(s=>s.id===id)); });
-    persist(); syncAlarms(); applyTheme(); applySound(); applyWx(); $("#impBox").value=""; toast("복원했어요"); go("home");
+    persist(); syncAlarms(); applyTheme(); applySound(); applyHaptic(); applyWx(); $("#impBox").value=""; toast("복원했어요"); go("home");
   });
 }
 const SHELF_SAMPLES = [

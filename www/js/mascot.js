@@ -120,6 +120,7 @@ function stopPanic(){
 function runPanic(laps){
   if(panicT || reduceMotion()) return;
   if(!$("#s-home").classList.contains("active")) return;
+  haptic("warning");                        // 하루 한 번. 오늘 폐기가 있다는 신호
   if(isDot()){ runLane(laps); return; }
   const L = $("#panicLayer"), R = $("#panicRun"), S = $("#panicSh"), B = $("#panicBell");
   let panicLit = null;
