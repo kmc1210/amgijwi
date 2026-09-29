@@ -462,7 +462,7 @@ function openGuideSheet(){
 
     ${part(icon("back"), "틀린 것 다시 보기", [
       "<b>다시 볼래요</b>를 누른 레시피는 복습 목록에 담겨요.",
-      "설정 탭의 <b>복습이 필요해요</b>에서 그것만 모아 볼 수 있어요."
+      "홈의 <b>복습이 필요해요</b>에서 그것만 모아 볼 수 있어요."
     ])}
 
     ${part(icon("plus"), "우리 매장 레시피 넣기", [
@@ -488,4 +488,5 @@ function openGuideSheet(){
   $("#sheet").classList.add("on");
   $("#guideClose").addEventListener("click", closeSheet);
 }
-$("#openGuide").addEventListener("click", openGuideSheet);
+/* 앱은 움직이는 도트 가이드(guide.js), 웹은 이 글 시트 */
+$("#openGuide").addEventListener("click", ()=>openGuide());

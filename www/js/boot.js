@@ -91,3 +91,5 @@ alarmPost({op:"status"});
 /* 옮기는 김에 이름이 겹쳤던 부재료는 나눠 두었다. 조용히 바꾸면 놀라니까 한 번 알려준다 */
 if(_lift.split) setTimeout(()=>toast(`배합이 다른 같은 이름 부재료 ${_lift.split}개를 따로 나눴어요`), 900);
 if(data.pin) openLock("enter");
+/* 앱을 처음 설치해 처음 열었으면 다섯 장짜리 가이드를 한 번 보여준다(웹은 띄우지 않는다) */
+if(guideDue()) openGuide();
