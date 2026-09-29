@@ -1128,7 +1128,7 @@ const LEGACY = {
     data = JSON.parse(backup); persist(); go("home");
     return r;
   });
-  eq("아이콘이 스물아홉 개다(탭바의 홈·설정 포함)", dots.count, 29);
+  eq("아이콘이 서른 개다(탭바의 홈·학습 카드·설정 포함)", dots.count, 30);
   ok("모두 정사각이고 16칸 이상이다", dots.square === true, JSON.stringify(dots.sizes));
   ok("팔레트에 없는 색을 쓰지 않는다", dots.knownColors === true);
   ok("아이콘은 제 팔레트 색만 쓴다", dots.onlyIconPal === true);
@@ -1333,6 +1333,8 @@ const LEGACY = {
     ok("도트 링은 고리 칸으로 그린다", look.ringCells > 200, String(look.ringCells));
     ok("0% 에도 시작점은 보인다", look.ringOn0 > 0 && look.ringOn0 < 12, String(look.ringOn0));
     eq("앱의 탭은 도트 아이콘 다섯 개다", [look.tabPx, look.tabSvg], [5, 0]);
+    eq("탭 아이콘은 원래 뜻을 따른다(학습은 뒤집기 화살표가 아니라 암기 카드)",
+       (html.match(/class="tabpx" data-ico="([a-z]+)"/g) || []).map(t => /data-ico="([a-z]+)"/.exec(t)[1]), ["home", "cards", "note", "calendar", "gear"]);
     eq("앱에서는 저장 안심 문구를 홈에서 뺀다(설정에 같은 말)", look.okBanner, 0);
     ok("백업 권유는 한 줄로 줄이고 버튼은 남긴다", look.bkmsgHidden === true && look.bkNow === true);
     eq("도트 글꼴은 16px 보다 작게 쓰지 않는다", look.small, []);
@@ -1342,7 +1344,15 @@ const LEGACY = {
     const dotCss = fs.readFileSync(path.resolve(__dirname, "..", "www", "dot.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
     const loose = [];
     dotCss.replace(/@font-face\s*\{[^}]*\}/g, "").replace(/([^{}]+)\{[^}]*\}/g, (m, sel) => {
-      sel.split(",").map(x => x.trim()).filter(Boolean).forEach(x => { if (x.indexOf("html.dot") !== 0) loose.push(x); });
+      // :is(a, b) 처럼 괄호 안의 쉼표는 선택자 구분이 아니다. 괄호 밖 쉼표에서만 나눈다
+      const parts = []; let depth = 0, cur = "";
+      for (const ch of sel) {
+        if (ch === "(") depth++;
+        if (ch === ")") depth--;
+        if (ch === "," && depth === 0) { parts.push(cur); cur = ""; } else cur += ch;
+      }
+      parts.push(cur);
+      parts.map(x => x.trim()).filter(Boolean).forEach(x => { if (x.indexOf("html.dot") !== 0) loose.push(x); });
       return "";
     });
     eq("dot.css 의 규칙은 모두 html.dot 아래에 있다", loose, []);
@@ -1490,6 +1500,61 @@ const LEGACY = {
     eq("앱의 결과 화면은 카페 말투다", [a.title, a.labels, a.again], ["한 바퀴 끝!", ["한 번에 맞춘 잔", "다시 본 잔", "전체 잔"], "한 바퀴 더"]);
     ok("앱의 까마귀는 잔으로 센다", /^2잔 까먹었다 까악/.test(a.msg), a.msg);
     eq("학습·결과 화면에서도 도트 글꼴은 16px 이상이다", a.small, []);
+  }
+
+  // ── 6-10d. 레시피 화면 · 공용 시트 (도트 화면만) ─────────────────────
+  {
+    const lst = await page.evaluate(async () => {
+      const seen = el => !!el && el.getClientRects().length > 0;
+      const fam = s => getComputedStyle(document.querySelector(s)).fontFamily;
+      const smallNeo = root => {
+        const out = [];
+        document.querySelectorAll(root + " *").forEach(el => {
+          if (!seen(el) || ![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
+          const cs = getComputedStyle(el);
+          if (cs.fontFamily.indexOf("NeoDGM") >= 0 && parseFloat(cs.fontSize) < 16) out.push(root + " " + (el.className || el.tagName) + " " + cs.fontSize);
+        });
+        return out;
+      };
+      const backup = JSON.stringify(data);
+      data.shelf = [{ id:"s1", name:"개봉한 우유", place:"냉장", dur:"5일", note:"" }, { id:"s2", name:"휘핑크림", place:"냉장", dur:"8시간", note:"" }];
+      data.memos = [{ id:"m1", text:"우유는 개봉일 라벨", at:new Date().toISOString(), pin:true }];
+      const run = () => {
+        const r = { small: [] };
+        for (const tab of ["recipe", "sub", "shelf", "memo"]) {
+          state.listTab = tab; go("list");
+          if (tab === "shelf") { const g = document.querySelector("#shelfBody .durgrp-h"); if (g) g.click(); }
+          r.small = r.small.concat(smallNeo("#s-list"));
+        }
+        r.segFont = fam("#listSeg button");
+        r.rowRadius = (() => { state.listTab = "recipe"; go("list"); return getComputedStyle(document.querySelector("#listBody .row")).borderTopLeftRadius; })();
+        openSheet(liveDrinks()[0].id);
+        r.sheetTitle = fam("#sheetBody h2");
+        r.sheetRadius = getComputedStyle(document.querySelector("#sheet")).borderTopLeftRadius;
+        r.small = r.small.concat(smallNeo("#sheet"));
+        closeSheet();
+        openEventSheet(null);                          // 같은 시트 틀을 쓰는 일정 입력
+        r.fldRadius = getComputedStyle(document.querySelector("#sheet .fld input[type=text]")).borderTopLeftRadius;
+        r.small = r.small.concat(smallNeo("#sheet"));
+        closeSheet(); go("home");
+        return r;
+      };
+      const r = { web: run() };
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot");
+      // 실제 앱은 처음부터 dot 이 붙어 있다. 테스트는 도중에 붙이므로, 탭 버튼의
+      // transition:all(.15s) 이 끝나기 전에 재면 바뀌는 중인 크기가 나온다. 끝날 때까지 기다린다
+      go("list"); await new Promise(res => setTimeout(res, 350));
+      r.app = run();
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot");
+      data = JSON.parse(backup); persist(); go("home");
+      return r;
+    });
+    const w = lst.web, a = lst.app;
+    ok("웹의 레시피 화면은 그대로다", w.segFont.indexOf("NeoDGM") < 0 && w.rowRadius !== "0px" && w.sheetRadius !== "0px" && w.fldRadius !== "0px",
+       [w.segFont, w.rowRadius, w.sheetRadius, w.fldRadius].join(" / "));
+    ok("앱의 레시피 탭과 시트 제목은 도트 글꼴이다", a.segFont.indexOf("NeoDGM") === 0 && a.sheetTitle.indexOf("NeoDGM") === 0);
+    eq("앱의 목록 줄 · 시트 · 입력 칸은 네모다", [a.rowRadius, a.sheetRadius, a.fldRadius], ["0px", "0px", "0px"]);
+    eq("레시피 화면과 시트에서도 도트 글꼴은 16px 이상이다", a.small, []);
   }
 
   await browser.close();
