@@ -76,7 +76,9 @@ node ios/make-icon.js
 
 1. 애플 개발자 프로그램 등록 (연 $99). 승인에 며칠 걸리기도 한다
 2. Xcode 에 애플 계정을 넣어 팀을 만든다
-3. `project.yml` 의 `settings.base` 에 `DEVELOPMENT_TEAM` 을 넣는다
+3. `project.yml` 의 `settings.base` 에 `DEVELOPMENT_TEAM` 을 넣는다 (넣어 두었다: 개인 팀 `KC5GYLLW34`)
+   - 새 계정은 "Your team has no devices …" 가 뜬다. 자동 서명이 개발용 프로파일도 만들려는데
+     등록된 아이폰이 없어서다. 아이폰을 케이블로 한 번 연결해 실행 기기로 고르면 등록된다
 4. `xcodegen generate && open Amgijwi.xcodeproj`
 5. Xcode 에서 Archive → Distribute App → App Store Connect
 6. App Store Connect 에서 테스트플라이트 테스터를 부른다
