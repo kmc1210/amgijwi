@@ -1752,6 +1752,65 @@ const LEGACY = {
     ok("설정의 사용법 보기로 다시 열리고 건너뛰기로 닫힌다", ob.reopen && ob.skipClosed);
   }
 
+  // ── 6-10i. 쥐돌이 움직임: 치즈 먹기 순서 · 비상 달리기 · 비상등 ─────────
+  {
+    const mv = await page.evaluate(async () => {
+      const r = {};
+      const cheese = k => (MOUSE[k] || MOUSE.day).join("").replace(/[^Yy]/g, "").length;
+      r.eat4b = MOUSE.eat4b.slice(0, 24).join() === MOUSE.eat3.slice(0, 24).join() && MOUSE.eat4b.slice(24).join() === MOUSE.eat4.slice(24).join();
+      // 치즈가 도중에 다시 커지는 곳(마지막 빈손 → 새 치즈 한 곳만 빼고)
+      r.grow = [];
+      for (let i = 1; i < EAT_SEQ.length; i++) if (cheese(EAT_SEQ[i]) > cheese(EAT_SEQ[i - 1])) r.grow.push(EAT_SEQ[i - 1] + "→" + EAT_SEQ[i]);
+      r.first = EAT_SEQ[0]; r.last = EAT_SEQ[EAT_SEQ.length - 1];
+      r.allDrawn = EAT_SEQ.every(k => !!MOUSE[k]);
+
+      // 비상 달리기를 한 칸씩 돌려 본다
+      const step = async (dot) => {
+        if (dot) { window.__amgijwiNative = true; document.documentElement.classList.add("dot"); }
+        await new Promise(res => setTimeout(res, 350));
+        go("home"); stopPanic(); panicDay = null;
+        let tick = null; const si = window.setInterval;
+        window.setInterval = (fn, ms) => { if (ms === 42) { tick = fn; return 4242; } return si(fn, ms); };
+        runPanic(1); window.setInterval = si;
+        const hero = $("#s-home .hero").getBoundingClientRect(), base = $("#panicLayer").getBoundingClientRect();
+        const heroTop = hero.top - base.top, heroBottom = hero.bottom - base.top;
+        const out = { frames:0, onCard:0, standing:0, bell:"" };
+        const tmp = document.createElement("div"); tmp.innerHTML = rowsSVG(MOUSE.day, false); const dayHTML = tmp.innerHTML;
+        let guard = 0;
+        while (panicT && guard++ < 1000) {
+          tick();
+          if (!panicT) break;
+          out.frames++;
+          const m = /translate3d\((-?[\d.]+)px,\s*(-?[\d.]+)px/.exec($("#panicRun").style.transform);
+          const x = +m[1], y = +m[2];
+          if (y + 80 > heroTop + 1 && y < heroBottom) out.onCard++;
+          if ($("#panicRun").innerHTML === dayHTML) out.standing++;
+          out.bell = (/viewBox="([^"]+)"/.exec($("#panicBell").innerHTML) || [])[1];
+          out.last = [x, y];
+        }
+        const mr = $("#mascot").getBoundingClientRect();
+        out.home = [Math.round(mr.left - base.left), Math.round(mr.top - base.top)];
+        out.back = $("#mascot").style.visibility === "" && !$("#panicLayer").classList.contains("on");
+        if (dot) { delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); }
+        return out;
+      };
+      const reduce = window.reduceMotion; window.reduceMotion = () => false;
+      r.web = await step(false);
+      r.app = await step(true);
+      window.reduceMotion = reduce;
+      return r;
+    });
+    ok("작은 치즈 + 오른쪽 볼 그림은 eat3 머리와 eat4 몸을 이은 것이다", mv.eat4b);
+    eq("먹는 도중에 치즈가 다시 커지지 않는다(빈손 → 새 치즈만)", mv.grow, []);
+    ok("큰 치즈로 시작해 빈손으로 끝난 뒤 새 치즈로 돌아간다", mv.first === "eat1" && mv.last === "day" && mv.allDrawn);
+    ok("앱의 비상 달리기는 진도 카드를 밟지 않는다", mv.app.frames > 0 && mv.app.onCard === 0, JSON.stringify(mv.app));
+    eq("앱의 비상 달리기는 서 있는 그림으로 미끄러지지 않는다", mv.app.standing, 0);
+    eq("앱의 비상 달리기는 제자리에서 끝난다", mv.app.last, mv.app.home);
+    ok("달리기가 끝나면 쥐돌이가 제자리에 돌아온다", mv.app.back && mv.web.back);
+    eq("앱의 비상등은 15x10 새 그림, 웹은 그대로", [mv.app.bell, mv.web.bell], ["0 0 15 10", "0 0 13 6"]);
+    ok("웹의 비상 달리기는 예전 타원 그대로다(정면 · 뒤는 서 있는 그림)", mv.web.frames === 48 && mv.web.standing > 0, JSON.stringify(mv.web));
+  }
+
   await browser.close();
 
   console.log("");

@@ -601,3 +601,6 @@ html.dot #onboard .ob-warn{color:var(--d-late);}
   html.dot #onboard .ob-rail,html.dot #onboard .ob-fc,html.dot #onboard .ob-made,html.dot #onboard .ob-ban,html.dot #onboard .ob-hl{transition:none !important;}
   html.dot #onboard .ob-bub{animation:none !important;opacity:1;}
 }
+
+/* 비상 달리기의 비상등 (js/mascot.js SIREN_DOT, 15x10 을 한 칸 2px) */
+html.dot #panicBell{width:30px;height:20px;}

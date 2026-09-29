@@ -92,6 +92,24 @@ function sirenSVG(lit){
   return '<svg viewBox="0 0 13 6" shape-rendering="crispEdges" aria-hidden="true">'+out+'</svg>';
 }
 
+/* 도트 화면(앱)의 비상등 — 15x10. 둥근 빨간 유리 돔 + 금속 받침 + 짙은 외곽선.
+   흰 심지가 왼쪽 → 가운데 → 오른쪽 → 뒤(어두움)로 돌고, 빛살은 빛이 향한 쪽으로 뻗는다.
+   13x6 비상등은 머리 위에서 빨간 점 몇 개로만 보여 무엇인지 잘 안 읽혔다 */
+const SIREN_DOT = {
+  L:["y..............",".y.............","..y..kkkkk.....","yy..kCLRRRk....","...kLCLRRRrk...","y..kLLRRRrrk...","...kRRRRrrrk...","..kGGGGGGGggk..","..kggggggggggk.","...kkkkkkkkkk.."],
+  C:["...y...y...y...","....y..y..y....",".....kkkkk.....","....kRLCLRk....","yy.kRRLCLRrk.yy","...kRRLLLRrk...","...kRRRRRrrk...","..kGGGGGGGggk..","..kggggggggggk.","...kkkkkkkkkk.."],
+  R:["..............y",".............y.",".....kkkkk..y..","....kRRRLCk..yy","...kRRRRLCLk...","...kRRRRLLrk..y","...kRRRRrrrk...","..kGGGGGGGggk..","..kggggggggggk.","...kkkkkkkkkk.."],
+  O:["...............","...............",".....kkkkk.....","....kdddddk....","...kdDddddek...","...kdddddeek...","...kddddeeek...","..kGGGGGGGggk..","..kggggggggggk.","...kkkkkkkkkk.."]
+};
+const SIREN_DOT_ROT = ["L","C","R","O"];
+const SIREN_DOT_PAL = {k:"#5A2620", R:"#E0453A", r:"#B8322A", L:"#FF9A7E", C:"#FFF3E8", y:"#FF6A3D", d:"#9A3A30", e:"#7A2C25", D:"#C4675A", G:"#B9ADA2", g:"#7F736A"};
+function sirenDotSVG(k){
+  const rows = SIREN_DOT[k];
+  let out = "";
+  rows.forEach((r, y)=>{ for(let x = 0; x < r.length; x++) if(r[x] !== ".") out += `<rect x="${x}" y="${y}" width="1" height="1" fill="${SIREN_DOT_PAL[r[x]]}"/>`; });
+  return `<svg viewBox="0 0 15 10" shape-rendering="crispEdges" aria-hidden="true">${out}</svg>`;
+}
+
 let panicT = null, panicDay = null;
 function stopPanic(){
   if(panicT){ clearInterval(panicT); panicT = null; }
@@ -102,6 +120,7 @@ function stopPanic(){
 function runPanic(laps){
   if(panicT || reduceMotion()) return;
   if(!$("#s-home").classList.contains("active")) return;
+  if(isDot()){ runLane(laps); return; }
   const L = $("#panicLayer"), R = $("#panicRun"), S = $("#panicSh"), B = $("#panicBell");
   let panicLit = null;
   const W = $("#s-home").clientWidth || 390;
@@ -145,6 +164,70 @@ function runPanic(laps){
     S.style.opacity = String(0.8 - hop*0.05);
     i++;
   }, 42);                                    // 한 바퀴 약 2초 — 다급하게
+}
+
+/* 도트 화면(앱)은 타원 대신 인사말과 진도 카드 사이 빈 줄을 좌우로 왕복한다.
+   타원은 칸마다 외곽선이 또렷한 도트 홈에서 글자 · 카드를 밟아 그림이 겹쳐 나온 것처럼 보였고,
+   위아래로 갈 때는 서 있는 그림이 미끄러졌다. 좌우만 달리면 옆모습 6포즈로 계속 다리가 움직인다.
+   줄은 그때 잰다: 바닥은 진도 카드 윗면(말풍선이 두 줄이면 카드가 내려가고 줄도 따라간다) */
+function lanePlan(laps){
+  const base = $("#panicLayer").getBoundingClientRect();
+  const m = $("#mascot").getBoundingClientRect(), hero = $("#s-home .hero").getBoundingClientRect();
+  const W = $("#s-home").clientWidth || 390;
+  const floor = Math.round(hero.top - base.top) - 3, top = floor - 80;   // 발이 카드 윗면에 닿는다
+  const home = { x:Math.round(m.left - base.left), y:Math.round(m.top - base.top) };
+  const xR = W - 20 - 56, xL = 20, STEP = 10, HOP = [0,2,6,0,2,6];
+  const out = [];
+  const sh = (x, hop)=>({ x:x + 11, y:floor - 5, s:1 - hop*0.035, o:0.8 - hop*0.05 });
+  /* 제자리와 줄 끝 사이를 포물선으로 폴짝. 그림자는 바닥에 닿을수록 진해진다 */
+  const jump = (x0, y0, x1, y1, down)=>{
+    const n = 7;
+    for(let k = 1; k <= n; k++){
+      const t = k / n, x = Math.round(x0 + (x1 - x0)*t), y = Math.round(y0 + (y1 - y0)*t) - Math.round(Math.sin(t*Math.PI)*18);
+      const g = down ? t : 1 - t;
+      out.push({ rows:RUN_SPR.qf, flip:false, x:x, y:y, sh:{ x:x + 11, y:floor - 5, s:0.5 + 0.5*g, o:0.8*g } });
+    }
+  };
+  jump(home.x, home.y, xR, top, true);
+  let x = xR, ph = 0;
+  for(let p = 0; p < (laps || 2)*2; p++){
+    const left = p % 2 === 0, to = left ? xL : xR;
+    while(left ? x > to : x < to){
+      x = left ? Math.max(to, x - STEP) : Math.min(to, x + STEP);
+      const hop = HOP[ph % 6];
+      out.push({ rows:RUN_SPR["s" + (ph % 6)], flip:!left, x:x, y:top - hop, sh:sh(x, hop) });
+      ph++;
+    }
+    [0,3,0].forEach(hop=>out.push({ rows:RUN_SPR.qf, flip:left, x:x, y:top - hop, sh:sh(x, hop) }));   // 끝에서 정면을 한 번 보고 돌아선다
+  }
+  jump(xR, top, home.x, home.y, false);
+  return out;
+}
+function runLane(laps){
+  const L = $("#panicLayer"), R = $("#panicRun"), S = $("#panicSh"), B = $("#panicBell");
+  stopSip();
+  L.classList.add("on");                    // 켠 뒤에 재야 자리가 나온다
+  const plan = lanePlan(laps);
+  $("#mascot").style.visibility = "hidden";
+  $("#mbubble").style.opacity = "0";        // 뛰는 줄이 말풍선 자리다. 끝나면 다시 말한다
+  let i = 0, rot = null;
+  panicT = setInterval(()=>{
+    if(i >= plan.length || !$("#s-home").classList.contains("active")){
+      const done = $("#s-home").classList.contains("active");
+      stopPanic(); drawMascot();
+      if(done) sayBubble($("#mbubble").textContent);
+      return;
+    }
+    const f = plan[i];
+    R.innerHTML = rowsSVG(f.rows, f.flip);
+    R.style.transform = "translate3d(" + f.x + "px," + f.y + "px,0)";
+    const k = SIREN_DOT_ROT[Math.floor(i/3) % 4];
+    if(k !== rot){ rot = k; B.innerHTML = sirenDotSVG(k); }
+    B.style.transform = "translate3d(" + (f.x + 13) + "px," + (f.y - 14) + "px,0)";
+    S.style.transform = "translate3d(" + f.sh.x + "px," + f.sh.y + "px,0) scale(" + f.sh.s.toFixed(2) + ")";
+    S.style.opacity = String(f.sh.o);
+    i++;
+  }, 42);
 }
 
 /* 빈 화면용 쥐돌이 — 글자만 있던 자리를 채운다.
