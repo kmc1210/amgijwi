@@ -127,6 +127,17 @@ function renderUpcoming(){
   sect.style.display = "block";
   $("#upcomingList").innerHTML = list.map(e=>{
     const st = evStatus(e);
+    /* 도트 화면은 주문 전표: 왼쪽 떼는 칸에 날짜와 남은 날, 점선 절취선, 구멍 두 개 */
+    if(isDot()){
+      const p = e.date.split("-");
+      /* 떼는 칸은 좁고 도트 글꼴은 16px 아래로 못 줄인다. 지난 일은 "2일 지남" 대신 D+2 로 짧게(빨간 칸이라 지난 건 보인다) */
+      const tag = st.kind === "late" ? "D+" + Math.abs(dayGap(ymd(new Date()), evEnd(e))) : st.text;
+      return `<button class="row tk${st.kind === "late" ? " late" : ""}" data-ev="${esc(e.id)}">
+        <span class="stub"><small>${Number(p[1])}/${Number(p[2])}</small><b>${esc(tag)}</b></span>
+        <i class="perf"></i><i class="hole t"></i><i class="hole b"></i>
+        <span class="meta"><b>${esc(e.title)}</b><span>${esc(evRangeText(e))}${e.note ? " · " + esc(e.note) : ""}</span></span>
+      </button>`;
+    }
     return `<button class="row" data-ev="${esc(e.id)}">
       <span class="emo">${st.kind === "late" ? icon("warn") : icon("calendar")}</span>
       <span class="meta"><b>${esc(e.title)}</b>

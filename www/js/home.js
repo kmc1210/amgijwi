@@ -9,12 +9,17 @@ function renderHome(){
   $("#chips").innerHTML = items.map(([k,l])=>{
     const n = drinksOf(k).length;
     /* l 은 그림(SVG)과 이름이 합쳐진 것이라 통째로 esc 하면 안 된다. 이름은 만들 때 이미 esc 했다 */
-    return `<button class="chip ${state.filter===k?"on":""}" data-cat="${k}">${l} ${n}</button>`;
+    return `<button class="chip ${state.filter===k?"on":""}" data-cat="${k}">${l} ${cafeSay(n, cupN(n))}</button>`;
   }).join("");
   document.querySelectorAll("#chips .chip").forEach(c=>c.addEventListener("click",()=>{ state.filter=c.dataset.cat; renderHome(); }));
 
   const pool = drinksOf(state.filter);
-  $("#deckCount").textContent = pool.length + "개 메뉴";
+  $("#deckCount").textContent = cafeSay(pool.length + "개 메뉴", cupN(pool.length));
+  /* 정적 마크업의 말도 카페 말투로. 웹은 index.html 에 적힌 그대로다 */
+  $("#scopeTitle").textContent = cafeSay("학습 범위", "오늘 외울 메뉴");
+  $("#startBtn").textContent = cafeSay("학습 시작하기", "한 잔씩 외우기");
+  $("#reviewTitle").textContent = cafeSay("복습이 필요해요", "다시 볼 메뉴");
+  $("#ringLbl").textContent = cafeSay("마스터", "외운 잔");
   $("#startBtn").disabled = pool.length===0;
 
   const live = liveDrinks();
@@ -27,7 +32,8 @@ function renderHome(){
   if(document.documentElement.classList.contains("dot")) $("#ringPx").innerHTML = ringPixelSVG(pct);
   const nArch = data.drinks.length - total;
   $("#heroTitle").textContent = total===0 ? (nArch ? "모두 보관해 두셨어요" : "레시피를 추가해 주세요")
-    : (done===0 ? "아직 외운 메뉴가 없어요" : `${total}개 중 ${done}개를 외웠어요`);
+    : (done===0 ? cafeSay("아직 외운 메뉴가 없어요", "아직 외운 잔이 없어요")
+                : cafeSay(`${total}개 중 ${done}개를 외웠어요`, `${total}잔 중 ${done}잔 외웠어요`));
   $("#heroSub").textContent = total===0 ? (nArch
       ? "레시피 탭의 보관함에서 되돌리면 다시 학습할 수 있어요."
       : "레시피 탭의 + 버튼으로 우리 매장 레시피를 넣어보세요.")
@@ -54,9 +60,9 @@ function renderHome(){
   renderBackupBanner();
 
   const rev = liveDrinks().filter(d=>has(data.needReview,d.id));
-  $("#reviewCount").textContent = rev.length ? rev.length+"개" : "";
+  $("#reviewCount").textContent = rev.length ? cupN(rev.length) : "";
   $("#revStudy").style.display = rev.length ? "inline" : "none";
-  $("#reviewList").innerHTML = rev.length ? rev.map(d=>rowHTML(d,"다시")).join("")
+  $("#reviewList").innerHTML = rev.length ? (isDot() ? reviewTicketHTML(rev) : rev.map(d=>rowHTML(d,"다시")).join(""))
     : `<div class="empty">학습 중 <b>“다시 볼래요”</b>를 누른 메뉴가<br>여기에 모입니다.</div>`;
   bindRows("#reviewList");
 }
@@ -181,4 +187,14 @@ function ringPixelSVG(pct){
     out += '<rect x="' + x + '" y="' + y + '" width="1" height="1" class="rp-' + k + '"/>';
   }
   return '<svg viewBox="0 0 30 30" shape-rendering="crispEdges">' + out + '</svg>';
+}
+
+/* 도트 화면의 "다시 볼 메뉴" — 카페 주문 대기표 한 장과, 메뉴마다 영수증 한 줄.
+   줄은 .row 라 누르면 원래처럼 메뉴가 열린다(bindRows) */
+function reviewTicketHTML(rev){
+  const head = rev.length > 1 ? `${esc(rev[0].name)} 외 ${rev.length - 1}잔` : esc(rev[0].name);
+  return `<div class="qn"><div class="no"><small>대기</small><b>${rev.length}<span class="u">잔</span></b></div>
+      <div class="tx"><b>${head}</b><span>차례대로 한 번 더 보자츄</span></div></div>
+    <div class="rcpt">${rev.map(d=>`<button class="row rline" data-id="${esc(d.id)}">
+      <span class="nm">${esc(d.name)}</span><i class="ld"></i><span class="v">${esc(d.temp || "다시")}</span></button>`).join("")}</div>`;
 }

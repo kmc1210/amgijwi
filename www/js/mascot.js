@@ -347,20 +347,20 @@ function situationCheer(now, streak, v){
   if(kill > 0 && hour < 14)                       // 오픈·미들 시간대에만
     return {ico:icon("trash"), msg:"오늘 버릴 게 " + kill + "개 있츄. 개봉관리 먼저 보고 가자츄"};
   if(rev >= 5)
-    return {ico:icon("repeat"), msg:"다시 볼 메뉴가 " + rev + "개나 쌓였츄. 오늘 좀 덜어내자츄"};
+    return {ico:icon("repeat"), msg:"다시 볼 메뉴가 " + cupN(rev) + "나 쌓였츄. 오늘 좀 덜어내자츄"};
   if(done === 0)
-    return {ico:icon("cup"), msg:"첫 한 잔부터 외워보자츄. " + total + "개가 기다리고 있츄"};
+    return {ico:icon("cup"), msg:"첫 한 잔부터 외워보자츄. " + total + cafeSay("개가", "잔이") + " 기다리고 있츄"};
   if(done === total)
     return {ico:icon("trophy"), msg:"전부 외웠츄! 가끔 한 바퀴만 돌려주면 안 까먹츄"};
 
   /* ── 해당되면 후보에 넣고 날짜로 고르는 말 ── */
   const pool = [];
   if(rev >= 1)
-    pool.push({ico:icon("repeat"), msg:"다시 볼래요 해둔 게 " + rev + "개 있츄. 이것만 보고 가도 되츄"});
+    pool.push({ico:icon("repeat"), msg:"다시 볼래요 해둔 게 " + cupN(rev) + " 있츄. 이것만 보고 가도 되츄"});
   if(kill > 0)
     pool.push({ico:icon("trash"), msg:"오늘 폐기 " + kill + "개, 마감 전에 확인했츄?"});
   if(total >= 5 && done / total >= 0.8)
-    pool.push({ico:icon("target"), msg:(total - done) + "개만 더 하면 끝이츄. 거의 다 왔츄"});
+    pool.push({ico:icon("target"), msg:cupN(total - done) + "만 더 하면 끝이츄. 거의 다 왔츄"});
   if(v && v.kind === "back" && v.gap >= 3)
     pool.push({ico:icon("wave"), msg:v.gap + "일 만이츄! 가볍게 다섯 장만 넘겨보자츄"});
   if(streak >= 7)

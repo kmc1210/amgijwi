@@ -93,6 +93,15 @@ function renderToday(){
   if(!groups.length){ $("#todaySect").style.display = "none"; return; }
   $("#todaySect").style.display = "block";
   $("#todayDate").textContent = (now.getMonth()+1) + "월 " + now.getDate() + "일 기준";
+  /* 도트 화면은 영수증 한 장: 기한별 묶음이 한 줄씩, 이름 ····· 개봉한 날 */
+  if(isDot()){
+    $("#todayList").innerHTML = `<div class="rcpt">${groups.map(g=>{
+      const open = addDays(now, -(g.days-1));
+      return `<button class="row rline" data-days="${g.days}">
+        <span class="nm">${g.items.map(s=>esc(s.name)).join(" · ")}</span><i class="ld"></i>
+        <span class="v">${open.getMonth()+1}/${open.getDate()} 개봉</span></button>`;
+    }).join("")}<div class="cut"></div><div class="ft">${g2txt(groups)} · 누르면 개봉관리로</div></div>`;
+  } else
   $("#todayList").innerHTML = groups.map(g=>{
     const open = addDays(now, -(g.days-1));
     return `<button class="row" data-days="${g.days}">
@@ -107,6 +116,13 @@ function renderToday(){
     state.shelfOpen.add(Number(b.dataset.days));   // 누른 기한을 펼쳐서 보여준다
     go("list");
   }));
+}
+
+/* 영수증 맨 아래 한 줄: "냉장 2 · 실온 1" 처럼 보관 장소별 개수 */
+function g2txt(groups){
+  const n = {};
+  groups.forEach(g=>g.items.forEach(s=>{ const k = s.place || "기타"; n[k] = (n[k] || 0) + 1; }));
+  return Object.keys(n).map(k=>esc(k) + " " + n[k]).join(" · ");
 }
 
 /* 기한(일수)별로 묶는다. 목록은 고정이 아니라 등록한 만큼 생긴다. */

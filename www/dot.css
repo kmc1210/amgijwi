@@ -3,7 +3,7 @@
    이 파일의 모든 규칙은 html.dot 아래에 있어 웹(amgijwi.com)은 지금 모습 그대로다.
    웹을 내리면 style.css 의 옛 모습만 걷어내면 된다.
 
-   지금은 홈 화면과 탭바까지. 나머지 화면은 화면마다 차례로 옮긴다.
+   지금은 홈 화면(카페 전표 목록 포함)과 탭바까지. 나머지 화면은 화면마다 차례로 옮긴다.
 
    글꼴 규칙: Neo둥근모는 16px 이상에서만 쓴다(또렷한 건 16·32px).
    16px 격자 글꼴을 줄이면 "체"의 ㅊ 꼭지처럼 한 칸짜리 획이 사라진다.
@@ -29,6 +29,7 @@ html.dot body{
   --d-ring-track:#6B4A30; --d-ring-fill:#E8B98A; --d-ring-hi:#F3CE86; --d-ring-lo:#C97F4B;
   --d-warn-bg:#F3CE86; --d-warn-t:#5E3412;
   --d-tab:#FCF7F1;
+  --d-dot:#A8998A; --d-late:#B5453C;
 }
 /* 다크 — 까마귀처럼 외곽선을 몸보다 밝게 둘러야 어두운 바탕에 안 묻힌다 */
 html.dot body[data-theme="dark"]{
@@ -40,6 +41,7 @@ html.dot body[data-theme="dark"]{
   --d-ring-track:#5A3E28; --d-ring-fill:#E8B98A; --d-ring-hi:#F3CE86; --d-ring-lo:#C97F4B;
   --d-warn-bg:#4A3818; --d-warn-t:#F3CE86;
   --d-tab:#1B1714;
+  --d-dot:#8A7A6A; --d-late:#E0736A;
 }
 /* 그린 — 바탕은 흰 종이와 구분되게 앱 그린 바탕(#F1F6F1)보다 한 단계 짙게 */
 html.dot body[data-theme="green"]{
@@ -51,6 +53,7 @@ html.dot body[data-theme="green"]{
   --d-ring-track:#2A7D53; --d-ring-fill:#8FD6AC; --d-ring-hi:#C4E8D1; --d-ring-lo:#6BB58C;
   --d-warn-bg:#F6EBD6; --d-warn-t:#7E5713;
   --d-tab:#F6FAF5;
+  --d-dot:#7F9488; --d-late:#B5453C;
 }
 
 /* ── 도트 상자 ──────────────────────────── */
@@ -123,8 +126,56 @@ html.dot #startBtn:active{transform:translate(3px,3px);filter:none;
   box-shadow:0 -3px 0 0 var(--d-line), 0 3px 0 0 var(--d-line), -3px 0 0 0 var(--d-line), 3px 0 0 0 var(--d-line),
              inset 0 3px 0 0 var(--d-acc-dark);}
 
-/* 홈 목록(다가오는 일정 · 오늘 폐기 · 복습). 영수증·전표 모양은 다음 차례 */
+/* 홈 목록의 기본 줄 */
 html.dot #s-home .row{background:var(--d-surface);margin:3px 3px 12px;}
+
+/* ── 카페 전표 ──────────────────────────── */
+/* 테두리 상자를 늘어놓으면 다시 "같은 카드의 반복" 이 된다. 목록은 종이로 — 테두리는 누르는 것에만 */
+
+/* 다가오는 일정 = 주문 전표. 왼쪽 떼는 칸(날짜·남은 날) + 점선 절취선 + 구멍 두 개 */
+/* 원래 .row 는 내용을 세로 가운데로 모은다(align-items:center). 그대로 두면 떼는 칸이 위아래 끝까지 안 늘어나
+   종이가 비친다. 전표는 칸을 끝까지 늘린다 */
+html.dot #s-home .row.tk{position:relative;display:grid;grid-template-columns:64px 1fr;align-items:stretch;gap:0;padding:0;margin:3px 0 12px;
+  box-shadow:none;border-radius:0;background:var(--d-surface);text-align:left;overflow:hidden;}
+html.dot #s-home .row.tk:active{transform:translate(0,2px);box-shadow:none;}
+html.dot #s-home .tk .stub{background:var(--d-acc);color:var(--d-on-acc);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:10px 4px;}
+html.dot #s-home .tk.late .stub{background:var(--d-late);}
+html.dot #s-home .tk .stub small{font-size:10.5px;font-weight:700;opacity:.85;}
+html.dot #s-home .tk .stub b{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #s-home .tk .perf{position:absolute;left:61px;top:0;bottom:0;width:3px;
+  background:repeating-linear-gradient(180deg,var(--d-surface) 0 6px,transparent 6px 9px);}
+html.dot #s-home .tk .hole{position:absolute;left:58px;width:9px;height:6px;background:var(--d-bg);}
+html.dot #s-home .tk .hole.t{top:0;}
+html.dot #s-home .tk .hole.b{bottom:0;}
+html.dot #s-home .tk .meta{padding:10px 12px;min-width:0;align-self:center;}
+
+/* 오늘 폐기·다시 볼 메뉴 = 영수증 한 장. 위아래 가장자리는 3px 칸으로 뜯긴 모양 */
+html.dot #s-home .rcpt{position:relative;background:var(--d-surface);color:var(--d-t1);padding:8px 14px;margin:6px 0 14px;}
+html.dot #s-home .rcpt::before,
+html.dot #s-home .rcpt::after{content:"";position:absolute;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--d-surface) 50%,transparent 50%) 0 0/12px 3px repeat-x;}
+html.dot #s-home .rcpt::before{top:-3px;}
+html.dot #s-home .rcpt::after{bottom:-3px;background-position:6px 0;}
+/* 영수증 한 줄: 이름 ····· 값. 줄은 .row 라 누르면 원래 동작 그대로 */
+html.dot #s-home .rcpt .row.rline{display:flex;align-items:flex-end;gap:0;width:100%;margin:0;padding:6px 0;
+  background:transparent;box-shadow:none;border-radius:0;text-align:left;font-size:14px;line-height:1.5;color:var(--d-t1);}
+html.dot #s-home .rcpt .row.rline:active{transform:none;box-shadow:none;opacity:.6;}
+html.dot #s-home .rline .nm{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+html.dot #s-home .rline .ld{flex:1;min-width:18px;height:3px;margin:0 6px 7px;
+  background:repeating-linear-gradient(90deg,var(--d-dot) 0 3px,transparent 3px 6px);}
+html.dot #s-home .rline .v{flex:0 0 auto;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #s-home .rcpt .cut{height:3px;margin:8px 0;background:repeating-linear-gradient(90deg,var(--d-dot) 0 6px,transparent 6px 12px);}
+html.dot #s-home .rcpt .ft{font-size:12.5px;color:var(--d-t2);padding-bottom:2px;}
+
+/* 다시 볼 메뉴 머리 = 주문 대기표. "대기 3잔" — 차례 번호가 아니라 밀린 잔 수라서 단위를 붙인다 */
+html.dot #s-home .qn{display:flex;align-items:center;gap:12px;background:var(--d-surface);color:var(--d-t1);padding:10px 12px;margin:6px 0 8px;}
+html.dot #s-home .qn .no{display:flex;flex-direction:column;align-items:center;padding:4px 10px;border:3px solid var(--d-t1);}
+html.dot #s-home .qn .no small{font-size:10.5px;font-weight:700;}
+html.dot #s-home .qn .no b{font-family:"NeoDGM",monospace;font-weight:400;font-size:32px;line-height:1;-webkit-font-smoothing:none;}
+html.dot #s-home .qn .no b .u{font-size:16px;margin-left:2px;}
+html.dot #s-home .qn .tx{min-width:0;}
+html.dot #s-home .qn .tx b{display:block;font-size:15px;font-weight:700;}
+html.dot #s-home .qn .tx span{display:block;font-size:13px;color:var(--d-t2);margin-top:2px;}
 
 /* 첫 화면 정리: "이 기기 안에만 저장" 안내는 설정의 "이 앱의 보안" 칸에 같은 말이 있어 숨긴다.
    저장이 막혔다는 경고(.warn)는 데이터 안전이라 그대로 보인다 */
