@@ -1250,6 +1250,25 @@ const LEGACY = {
   });
   eq("외부에서 불러오는 리소스가 없다", remote, []);
 
+  // 개인정보 처리방침. 앱스토어·테스트플라이트에 적는 주소이고, 앱 안에서도 찾을 수 있어야 한다
+  {
+    const privacy = fs.readFileSync(path.resolve(__dirname, "..", "www", "privacy.html"), "utf8");
+    const cspOf = s => (/http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(s) || [])[1];
+    ok("처리방침 페이지가 있다", privacy.indexOf("개인정보 처리방침") >= 0);
+    ok("처리방침에는 스크립트가 없다", !/<script/i.test(privacy));
+    eq("처리방침의 CSP 가 앱과 같다", cspOf(privacy), cspOf(html));
+    const link = await page.evaluate(() => {
+      go("set");
+      const a = document.querySelector("#privacyLink");
+      return a ? { href: a.getAttribute("href"), target: a.getAttribute("target"), shown: a.offsetParent !== null } : null;
+    });
+    await page.evaluate(() => go("home"));
+    ok("설정에 처리방침 링크가 보인다", !!link && link.shown === true);
+    // 전체 주소여야 앱에서 사파리로 열린다. 상대 주소면 웹뷰 안에서 열려 돌아올 길이 없다
+    eq("처리방침 링크는 전체 주소다", link && link.href, "https://amgijwi.com/privacy.html");
+    ok("처리방침 링크는 새 창을 열지 않는다(웹뷰가 무시함)", !!link && link.target === null);
+  }
+
   await browser.close();
 
   console.log("");

@@ -388,6 +388,10 @@
         <div class="setcard">
           <h4>이 앱의 보안</h4>
           <p style="margin-bottom:0">외부로 나가는 통신이 전혀 없습니다. 서버도, 계정도, 분석 도구도 사용하지 않아요. 입력한 레시피는 <span data-env="web">이 기기의 브라우저 저장소에만 남고, <span data-os="ios">홈 화면 앱을 삭제하거나 </span>브라우저 데이터를 지우면</span><span data-env="app">이 기기 안에만 남고, 앱을 지우면</span> 함께 사라집니다. 그래서 백업 파일을 한 번 만들어 두시는 걸 권해요.</p>
+          <!-- 앱스토어 심사 기준상 개인정보 처리방침은 앱 안에서도 찾을 수 있어야 한다.
+               전체 주소로 걸어야 앱에서는 사파리로 열린다(WebAppViewController 가 https 를 밖으로 넘김).
+               상대 주소면 앱 웹뷰 안에서 열려 돌아올 길이 없다. target=_blank 는 웹뷰가 무시한다 -->
+          <a id="privacyLink" href="https://amgijwi.com/privacy.html" style="display:inline-block;margin-top:12px;font-size:13px;font-weight:700;color:var(--accent-ink)">개인정보 처리방침 ›</a>
         </div>
       </div>
     </section>
