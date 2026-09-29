@@ -76,7 +76,9 @@ www/                   앱 본체. iOS 앱 번들에 그대로 들어가고, 웹
 ios/                   iOS 껍데기 (WKWebView). 자세한 건 ios/README.md
   project.yml          xcodegen 설정. .xcodeproj 는 저장소에 넣지 않습니다
   Sources/             웹뷰 · 번들 스킴 처리기 · 알림 · 공유 시트 · 진동 통로
-docs/screenshots/      README 스크린샷
+docs/
+  screenshots/         README 스크린샷
+  deploy.md            웹 배포(S3 · CloudFront) · AWS OIDC
 test/
   regression.js        실제 브라우저로 돌리는 회귀 테스트
   headers.js           배포된 사이트의 보안 헤더 검사
@@ -126,36 +128,4 @@ PR 을 올리면 GitHub Actions 가 같은 테스트(`ci.yml`)와 iOS 빌드(`io
 앱을 눈으로 보려면 `www/` 를 아무 정적 서버로 열면 됩니다(예: `python3 -m http.server -d www`).
 번들러도 트랜스파일러도 없어서 따로 빌드할 것이 없습니다.
 
-```
-npm run test:headers
-```
-
-배포된 사이트의 보안 헤더와, 헤더 CSP 가 meta CSP 와 같은지 확인합니다.
-네트워크가 필요하고 **배포가 끝난 뒤에** 돌립니다.
-
-## 배포
-
-```
-GitHub Actions → Deploy → Run workflow
-```
-
-`www/` 를 S3 에 올리고 CloudFront 캐시를 비운 뒤, 배포된 파일이 저장소와 같은지와
-보안 헤더를 확인합니다(`.github/workflows/deploy.yml`).
-저장소 변수 `AUTO_DEPLOY` 가 `true` 면 `www/` 변경이 main 에 머지될 때 자동으로 배포합니다.
-
-AWS 키는 저장소에 없고 OIDC 로 IAM 역할을 받습니다. 역할은 main 브랜치만 허용합니다.
-
-### IAM 역할 신뢰 정책의 sub
-
-저장소 이름이 아니라 아래 형식입니다.
-
-```
-repo:kmc1210@57215151/amgijwi@1313381059:ref:refs/heads/main
-```
-
-계정 id 와 저장소 id 가 붙는 형식(immutable subject)이라 **이름만 적으면 인증이 거절됩니다.**
-실제 값은 아래로 확인합니다.
-
-```
-gh api repos/kmc1210/amgijwi/actions/oidc/customization/sub
-```
+배포(S3 · CloudFront, 보안 헤더 확인, AWS OIDC 설정)는 [docs/deploy.md](docs/deploy.md) 에 있습니다.
