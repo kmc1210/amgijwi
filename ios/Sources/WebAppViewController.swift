@@ -32,7 +32,8 @@ final class WebAppViewController: UIViewController {
 
         /// 웹 앱이 "홈 화면에 추가하세요" 를 앱 안에서 띄우지 않도록 알려준다.
         /// 웹뷰에서는 display-mode: standalone 도 navigator.standalone 도 잡히지 않는다.
-        let flag = WKUserScript(source: "window.__amgijwiNative = true;",
+        /// 같은 때에 도트 화면(www/dot.css) 표시도 붙인다. 문서가 그려지기 전이라 웹 모습이 잠깐 비치지 않는다.
+        let flag = WKUserScript(source: "window.__amgijwiNative = true; document.documentElement.classList.add('dot');",
                                 injectionTime: .atDocumentStart,
                                 forMainFrameOnly: true)
         config.userContentController.addUserScript(flag)

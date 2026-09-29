@@ -2,6 +2,9 @@
    나머지 파일이 여기서 만든 data / state / 헬퍼를 그대로 쓴다. 가장 먼저 로드한다. */
 
 "use strict";
+/* iOS 앱에서는 도트 화면(dot.css)을 쓰고, 웹은 지금 모습 그대로 둔다.
+   앱은 문서가 뜨기 전에 같은 클래스를 붙여 두지만(WebAppViewController), 여기서도 한 번 더 붙인다 */
+if(window.__amgijwiNative === true) document.documentElement.classList.add("dot");
 /* =========================================================
    암기쥐 — 전부 기기 안에서만 동작합니다.
    네트워크 요청 없음 / 외부 스크립트 없음 / 서버 없음
@@ -335,6 +338,8 @@ const ICONS = {
   cup:["..........RrR...",".........RrR....","........RrR.....",".CCCCCCCCCCCCCC.",".CwwwwwwwwwwwwC.",".CCCCCCCCCCCCCC.","..CwXXXXXXXXwC..","..CwYYYYYYYYwC..","..CwYYYYYYYYwC..","..CwYYYYYYYYwC..","...CwYYYYYYwC...","...CwyyyyyywC...","....CwyyyywC....","....CwccccwC....","....CCCCCCCC....","................"],
   flame:["................","................",".......k........","......rkr.......",".....rrRrr......",".....rrRrr......","....rrrRrrr.....","....rrYXYrr.....","...rrrYYYrrr....","...rrYYYYYrr....","...rrYYhYYrr....","...rrYYhYYrr....","....rrYyYrr.....",".....rrrrr......","................","................"],
   flip:["...DDDDDDDDDD...",".DDEEEhEEEEEEDD.","DEEEEEhhEEEEEEED","EEEEEhhhhEhEEEEE","EEEEhhhhEEhhEEEE","EEEhhhhEEEhhhEEE","EEEhhEEEEEEhhEEE","EEEhhEEEEEEhhEEE","EEEhhEEEEEEhhEEE","EEEhhEEEEEEhhEEE","EEEhhhEEEhhhhEEE","EEEEhhEEhhhhEEEE","EEEEEhEhhhhEEEEE","eEEEEEEEhhEEEEEe",".eeEEEEEEhEEEee.","...eeeeeeeeee..."],
+  gear:["......KKKK......","......KssK......","..KK.KKsSKK.KK..","..KKKKSSSSKKKK..","...KssSSSSSSK...","..KKsSSSSSSSKK..","KKKSSSKKKKSSSKKK","KssSSSK..KSSSSSK","KsSSSSK..KSSSSSK","KKKSSSKKKKSSSKKK","..KKSSSSSSSSKK..","...KSSSSSSSSK...","..KKKKSSSSKKKK..","..KK.KKSSKK.KK..","......KSSK......","......KKKK......"],
+  home:["................","......qqqq......",".....qqrrqq.....","....qqQQrrqq....","...qqQQrrrrqq...","..qqQQrrrrrrqq..",".qqQQrrrrrrrrqq.","qqqqqqqqqqqqqqqq","..CwwwwwwwwwcC..","..CwwwwwwwwwcC..","..CEEwmmmmwEEC..","..CDDwmnnmwDDC..","..CwwwmnnmwwcC..","..CwwwmnYmwwcC..","..CwwwmnnmwwcC..","..CCCCmmmmCCCC.."],
   ice:[".........................",".b..........b..........b.","..b.b.....b.b.b.....b.b..","...bb......bbb......bb...","..bbb.......b.......bbb..",".....b......b......b.....","......b.b.b.b.b.b.b......",".......bb..bbb..bb.......","......bbb...b...bbb......",".........b..b..b.........","..........b.b.b..........","...........bbb...........","............b............","...........bbb...........","..........b.b.b..........",".........b..b..b.........","......bbb...b...bbb......",".......bb..bbb..bb.......","......b.b.b.b.b.b.b......",".....b......b......b.....","..bbb.......b.......bbb..","...bb......bbb......bb...","..b.b.....b.b.b.....b.b..",".b..........b..........b.","........................."],
   install:["................","..KKKKKKK.......","..KkkkkkK.......","..KkBBBkK..gg...","..KkBBBkK..gg...","..KkBBBkK..gg...","..KkBBBkK..gg...","..KkBBBkKgggggg.","..KkBBBkK.gggg..","..KkBBBkK..gg...","..KkkkkkK.......","..KkkSkkK.......","..KKKKKKK.......","................","................","................"],
   lock:["................","................",".....xxxxxx.....","....xx....xx....","....x......x....","....x......x....","..xxxxxxxxxxxx..","..xYXXXyyXXXYx..","..xYYYYkkYYYYx..","..xYYYYkkYYYYx..","..xYYYYkkYYYYx..","..xYYYYYkYYYYx..","..xYyyyyyyyyYx..","..xxxxxxxxxxxx..","................","................"],
