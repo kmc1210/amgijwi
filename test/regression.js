@@ -1350,6 +1350,87 @@ const LEGACY = {
     ok("앱이 문서가 뜨기 전에 dot 표시를 붙인다", swiftVc.indexOf("classList.add('dot')") >= 0);
   }
 
+  // ── 6-10b. 카페 전표 · 카페 말투 (도트 화면만) ──────────────────────
+  // 목록은 종이(전표·영수증·대기표)로, 말은 카페 말로. 웹은 문구까지 그대로다
+  {
+    const cafe = await page.evaluate(async () => {
+      const txt = s => (document.querySelector(s) || {}).textContent || "";
+      const seen = el => !!el && el.getClientRects().length > 0;
+      const day = n => ymd(new Date(Date.now() + n * 86400000));
+      const backup = JSON.stringify(data);
+      const live = liveDrinks();
+      data.events = [{ id:"k1", title:"신메뉴 출시", date:day(3), end:"", note:"라떼 3종", remind:7, done:false },
+                     { id:"k2", title:"위생 점검", date:day(-2), end:"", note:"", remind:0, done:false }];
+      // 오늘 폐기는 기한이 날짜(일)인 것만 모인다(tagGroups). 시간·초 단위는 빠진다
+      data.shelf = [{ id:"s1", name:"개봉한 우유", place:"냉장", dur:"5일", note:"" },
+                    { id:"s2", name:"과일청", place:"냉장", dur:"14일", note:"" },
+                    { id:"s3", name:"원두", place:"실온", dur:"7일", note:"" },
+                    { id:"s4", name:"휘핑크림", place:"냉장", dur:"8시간", note:"" }];
+      data.needReview = live.slice(0, 3).map(d => d.id);
+      data.mastered = live.slice(3, 9).map(d => d.id);
+      const shot = () => {
+        go("home"); renderHome();
+        return {
+          scope: txt("#scopeTitle"), start: txt("#startBtn"), review: txt("#reviewTitle"), ring: txt("#ringLbl"),
+          deck: txt("#deckCount"), chip: txt("#chips .chip"), hero: txt("#heroTitle"), revCount: txt("#reviewCount"),
+          tk: document.querySelectorAll("#upcomingList .row.tk").length,
+          stubs: [...document.querySelectorAll("#upcomingList .tk .stub b")].map(b => b.textContent),
+          lateTk: document.querySelectorAll("#upcomingList .tk.late").length,
+          // 떼는 칸이 전표 위아래 끝까지 차야 한다. 가운데 떠 있으면 위아래로 종이가 비친다
+          stubGap: [...document.querySelectorAll("#upcomingList .tk")].map(tk => {
+            const a = tk.getBoundingClientRect(), b = tk.querySelector(".stub").getBoundingClientRect();
+            return Math.round(Math.abs(a.top - b.top) + Math.abs(a.bottom - b.bottom));
+          }),
+          openDay: txt("#todayList .rline .v"),
+          rlineToday: document.querySelectorAll("#todayList .rcpt .rline").length,
+          todayFt: txt("#todayList .rcpt .ft"),
+          qn: txt("#reviewList .qn .no b"),
+          qnHead: txt("#reviewList .qn .tx b"),
+          rlineRev: document.querySelectorAll("#reviewList .rcpt .rline").length,
+          plainRows: document.querySelectorAll("#reviewList > .row").length,
+          cheer: situationCheer(new Date(), 1, {}).msg
+        };
+      };
+      const r = { web: shot() };
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot");
+      r.app = shot();
+      // 영수증 줄을 눌러도 원래처럼 메뉴가 열린다
+      const line = document.querySelector("#reviewList .rcpt .rline");
+      line.click();
+      r.opened = document.querySelector("#sheet").classList.contains("on");
+      closeSheet();
+      // 전표·영수증에서도 도트 글꼴은 16px 이상
+      r.small = [];
+      document.querySelectorAll("#s-home *").forEach(el => {
+        if (!seen(el)) return;
+        if (![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
+        const cs = getComputedStyle(el);
+        if (cs.fontFamily.indexOf("NeoDGM") >= 0 && parseFloat(cs.fontSize) < 16) r.small.push((el.className || el.tagName) + " " + cs.fontSize);
+      });
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot");
+      data = JSON.parse(backup); persist(); renderHome();
+      return r;
+    });
+    const w = cafe.web, a = cafe.app;
+    eq("웹의 말은 그대로다", [w.scope, w.start, w.review, w.ring], ["학습 범위", "학습 시작하기", "복습이 필요해요", "마스터"]);
+    eq("앱은 카페 말투다", [a.scope, a.start, a.review, a.ring], ["오늘 외울 메뉴", "한 잔씩 외우기", "다시 볼 메뉴", "외운 잔"]);
+    ok("웹은 메뉴를 개로 센다", /개 메뉴$/.test(w.deck) && /개$/.test(w.revCount) && /개를 외웠어요$/.test(w.hero), [w.deck, w.revCount, w.hero].join(" / "));
+    ok("앱은 메뉴를 잔으로 센다", /^\d+잔$/.test(a.deck) && /잔$/.test(a.chip) && /^\d+잔$/.test(a.revCount) && /잔 외웠어요$/.test(a.hero), [a.deck, a.chip, a.revCount, a.hero].join(" / "));
+    ok("쥐돌이도 앱에서는 잔으로 센다", a.cheer.indexOf("개") < 0 || /폐기|버릴/.test(a.cheer), a.cheer);
+    eq("웹의 일정은 원래 줄이다", w.tk, 0);
+    eq("앱의 다가오는 일정은 주문 전표다(지난 일은 D+ 로 짧게, 빨간 칸)", [a.tk, a.stubs, a.lateTk], [2, ["D+2", "D-3"], 1]);
+    eq("전표의 떼는 칸이 위아래 끝까지 찬다", a.stubGap, [0, 0]);
+    ok("영수증의 개봉일은 월/일로 짧게 쓴다", /^\d{1,2}\/\d{1,2} 개봉$/.test(a.openDay), a.openDay);
+    eq("웹의 폐기는 원래 줄이다", w.rlineToday, 0);
+    ok("앱의 오늘 폐기는 영수증 한 장이다(기한별 한 줄, 맨 아래 보관 장소별 개수)",
+       a.rlineToday === 3 && /냉장 2/.test(a.todayFt) && /실온 1/.test(a.todayFt), a.rlineToday + " " + a.todayFt);
+    eq("앱의 다시 볼 메뉴는 대기표와 영수증 줄이다", [a.qn, a.rlineRev, a.plainRows], ["3잔", 3, 0]);
+    ok("대기표는 첫 메뉴와 나머지 잔 수를 말한다", / 외 2잔$/.test(a.qnHead), a.qnHead);
+    eq("웹의 다시 볼 메뉴는 원래 줄이다", w.plainRows, 3);
+    ok("영수증 줄을 누르면 메뉴가 열린다", cafe.opened === true);
+    eq("전표·영수증에서도 도트 글꼴은 16px 이상이다", cafe.small, []);
+  }
+
   await browser.close();
 
   console.log("");

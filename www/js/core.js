@@ -5,6 +5,11 @@
 /* iOS 앱에서는 도트 화면(dot.css)을 쓰고, 웹은 지금 모습 그대로 둔다.
    앱은 문서가 뜨기 전에 같은 클래스를 붙여 두지만(WebAppViewController), 여기서도 한 번 더 붙인다 */
 if(window.__amgijwiNative === true) document.documentElement.classList.add("dot");
+function isDot(){ return document.documentElement.classList.contains("dot"); }
+/* 도트 화면(앱)은 카페 말투다. 메뉴는 "잔" 으로 센다. 웹은 원래 말 그대로 둔다.
+   백업·저장·삭제처럼 데이터 안전에 걸린 말과 탭 이름은 바꾸지 않는다 */
+function cafeSay(web, cafe){ return isDot() ? cafe : web; }
+function cupN(n){ return n + (isDot() ? "잔" : "개"); }
 /* =========================================================
    암기쥐 — 전부 기기 안에서만 동작합니다.
    네트워크 요청 없음 / 외부 스크립트 없음 / 서버 없음
