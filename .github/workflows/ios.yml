@@ -89,7 +89,9 @@ jobs:
           xcrun simctl io "$DEVICE" screenshot "$GITHUB_WORKSPACE/ios-home.png"
 
           # 켜자마자 죽었으면 여기서 걸린다.
-          if xcrun simctl spawn "$DEVICE" launchctl list | grep -q com.amgijwi.app; then
+          # grep -q 는 찾자마자 입력을 닫아 launchctl 이 Broken pipe(신호 13)로 끝난다.
+          # pipefail 이 켜져 있어 그 실패가 판정으로 번지므로, 목록을 끝까지 읽게 한다
+          if xcrun simctl spawn "$DEVICE" launchctl list | grep com.amgijwi.app > /dev/null; then
             echo "앱이 실행 중이다"
           else
             echo "앱이 실행 중이 아니다"
