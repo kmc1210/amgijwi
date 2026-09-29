@@ -647,24 +647,39 @@
 @media (prefers-reduced-motion: reduce){ .tiphint{ animation:none } }
 
 /* ---------- 일정 달력 ----------
-   한 칸을 정사각에 가깝게 두고, 일정이 있는 날에만 점을 찍는다.
-   끝난 일만 남은 날은 점을 흐리게 해서 아직 할 일이 있는 날과 구분한다 */
+   한 주를 한 줄로 그리고, 날짜 칸 위에 일정 이름이 든 막대를 겹친다.
+   며칠짜리 일정은 한 줄로 이어지고, 주·달을 넘으면 끝을 화살표로 자른다(cal.js calLayWeek).
+   끝난 일은 회색 막대로 흐리게 해서 아직 할 일과 구분한다 */
 .calhead{display:flex;align-items:center;gap:6px;margin-bottom:14px;}
 .calhead b{font-size:17px;font-weight:800;letter-spacing:-.3px;min-width:104px;text-align:center;}
 .calnow{margin-left:auto;padding:7px 13px;border-radius:999px;border:1px solid var(--line);
   background:var(--surface);color:var(--ink-2);font-size:12.5px;font-weight:700;}
 .caldow{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px;}
 .caldow span{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0;}
-.calgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
-.calcell{position:relative;aspect-ratio:1/1;border:0;background:transparent;border-radius:12px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+.calgrid{display:flex;flex-direction:column;gap:3px;}
+/* 한 주. 숫자 한 줄 + 막대 두 줄 + "+n" 한 줄. 칸 사이 3px 는 테스트가 폭 계산에 쓴다 */
+.calweek{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:24px 16px 16px 13px;column-gap:3px;row-gap:2px;}
+.calcell{grid-row:1 / -1;position:relative;border:0;background:transparent;border-radius:12px;min-width:0;
+  /* 버튼은 내용을 세로 가운데로 두므로 숫자를 위에 붙여야 막대 줄과 안 겹친다 */
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:6px 0 0;
   font-size:13.5px;color:var(--ink);}
 .calcell.calpad{visibility:hidden;}
 .calcell .n{line-height:1;}
 .calcell.today .n{font-weight:800;color:var(--accent-ink);}
-.calcell.sel{background:var(--accent-soft);}
-.calcell .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);}
-.calcell .dot.off{background:var(--muted);opacity:.5;}
+/* 고른 날은 테두리로. 막대와 같은 색으로 칸을 칠하면 그 날을 지나는 막대가 묻힌다 */
+.calcell.sel{background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--accent);}
+/* 막대는 칸 위에 겹쳐 그리되 클릭은 아래 칸이 받는다 */
+.calbar{pointer-events:none;z-index:1;min-width:0;margin:0 2px;padding:0 3px;display:flex;align-items:center;
+  font-size:10.5px;font-weight:700;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  background:var(--accent-soft);color:var(--accent-ink);border-radius:4px;}
+.calbar.done{background:var(--line);color:var(--muted);}
+/* 다음 주·다음 달로 이어지는 끝은 붙이고 화살표로 자른다 */
+.calbar.l{margin-left:0;border-top-left-radius:0;border-bottom-left-radius:0;padding-left:7px;
+  clip-path:polygon(0 0,100% 0,100% 100%,0 100%,5px 50%);}
+.calbar.r{margin-right:0;border-top-right-radius:0;border-bottom-right-radius:0;padding-right:7px;
+  clip-path:polygon(0 0,calc(100% - 5px) 0,100% 50%,calc(100% - 5px) 100%,0 100%);}
+.calbar.l.r{clip-path:polygon(0 0,calc(100% - 5px) 0,100% 50%,calc(100% - 5px) 100%,0 100%,5px 50%);}
+.calmore{grid-row:4;pointer-events:none;z-index:1;align-self:center;text-align:center;font-size:10px;font-weight:700;color:var(--muted);}
 
 .calday{margin-top:22px;}
 .calday h4{margin:0 0 10px;font-size:14px;font-weight:800;}

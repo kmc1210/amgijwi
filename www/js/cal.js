@@ -142,6 +142,29 @@ function renderUpcoming(){
 function calKey(y, m, d){
   return y + "-" + String(m+1).padStart(2,"0") + "-" + String(d).padStart(2,"0");
 }
+/* 한 주의 막대 배치. 먼저 시작한 것, 같은 날 시작하면 긴 것부터 비어 있는 가장 위 줄에 넣는다.
+   그래서 한 주 안에서는 막대 줄이 흔들리지 않는다. 주·달을 넘는 쪽 끝은 l · r 로 표시해 화살표로 자른다.
+   CAL_LANES 줄을 넘는 일정은 막대 대신 그 날 칸에 "+n" 으로 센다 */
+const CAL_LANES = 2;
+function calLayWeek(keys){
+  const more = [0,0,0,0,0,0,0];
+  const real = keys.filter(Boolean);
+  if(!real.length) return {bars:[], more:more};
+  const lo = real[0], hi = real[real.length-1];
+  const list = data.events.filter(e=>e.date <= hi && evEnd(e) >= lo).sort((a, b)=>
+    a.date !== b.date ? (a.date < b.date ? -1 : 1) : (evEnd(a) === evEnd(b) ? 0 : (evEnd(a) > evEnd(b) ? -1 : 1)));
+  const lanes = [], bars = [];
+  list.forEach(e=>{
+    const s = keys.indexOf(e.date < lo ? lo : e.date), t = keys.indexOf(evEnd(e) > hi ? hi : evEnd(e));
+    let lane = 0;
+    while(lanes[lane] !== undefined && lanes[lane] >= s) lane++;
+    lanes[lane] = t;
+    if(lane < CAL_LANES) bars.push({e:e, s:s, t:t, lane:lane, l:e.date < lo, r:evEnd(e) > hi});
+    else for(let i=s; i<=t; i++) more[i]++;
+  });
+  return {bars:bars, more:more};
+}
+
 function renderCal(){
   const now = new Date();
   if(!calCursor) calCursor = {y: now.getFullYear(), m: now.getMonth()};
@@ -152,20 +175,30 @@ function renderCal(){
   const days = new Date(y, m+1, 0).getDate();
   const todayKey = ymd(now);
 
-  let cells = "";
-  /* 첫 주의 빈 앞자리. 클래스 이름을 empty 로 두면 안 된다 —
-     목록 빈 상태용 .empty 가 이미 있어서 그 여백이 딸려오고, 칸 폭이 밀려 달력이 넘친다 */
-  for(let i=0;i<first;i++) cells += `<div class="calcell calpad"></div>`;
-  for(let d=1; d<=days; d++){
-    const key = calKey(y, m, d);
-    const on = evOn(key);
-    const undone = on.filter(e=>!e.done).length;
-    cells += `<button class="calcell${key === todayKey ? " today" : ""}${on.length ? " has" : ""}" data-day="${key}">
-      <span class="n">${d}</span>
-      ${on.length ? `<span class="dot${undone ? "" : " off"}"></span>` : ""}
-    </button>`;
+  /* 한 주를 한 줄로 그린다. 빈 앞뒷자리는 null */
+  const slots = [];
+  for(let i=0;i<first;i++) slots.push(null);
+  for(let d=1; d<=days; d++) slots.push(calKey(y, m, d));
+  while(slots.length % 7) slots.push(null);
+
+  let html = "";
+  for(let w=0; w<slots.length; w+=7){
+    const keys = slots.slice(w, w+7), lay = calLayWeek(keys);
+    html += `<div class="calweek">`;
+    keys.forEach((key, i)=>{
+      /* 빈 자리. 클래스 이름을 empty 로 두면 안 된다 —
+         목록 빈 상태용 .empty 가 이미 있어서 그 여백이 딸려오고, 칸 폭이 밀려 달력이 넘친다 */
+      if(!key){ html += `<span class="calcell calpad" style="grid-column:${i+1}"></span>`; return; }
+      html += `<button class="calcell${key === todayKey ? " today" : ""}" data-day="${key}" style="grid-column:${i+1}"><span class="n">${Number(key.slice(8))}</span></button>`;
+    });
+    /* 막대는 칸 위에 겹친다. 누르면 아래 칸이 눌리도록 막대는 클릭을 받지 않는다(style.css) */
+    lay.bars.forEach(b=>{
+      html += `<span class="calbar${b.e.done ? " done" : ""}${b.l ? " l" : ""}${b.r ? " r" : ""}" data-ev="${esc(b.e.id)}" data-from="${keys[b.s]}" data-to="${keys[b.t]}" style="grid-column:${b.s+1} / ${b.t+2};grid-row:${b.lane+2}">${esc(b.e.title)}</span>`;
+    });
+    lay.more.forEach((n, i)=>{ if(n) html += `<span class="calmore" data-day="${keys[i]}" style="grid-column:${i+1}">+${n}</span>`; });
+    html += `</div>`;
   }
-  $("#calGrid").innerHTML = cells;
+  $("#calGrid").innerHTML = html;
   $("#calGrid").querySelectorAll(".calcell[data-day]").forEach(b=>
     b.addEventListener("click", ()=>{ state.calDay = b.dataset.day; renderCalDay(); }));
 

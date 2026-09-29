@@ -559,10 +559,15 @@ const LEGACY = {
       state.calDay = null; renderCal();
       return document.querySelector('#calGrid .calcell[data-day="' + d + '"]');
     };
-    const cell = cellOn(day(3));
-    r.dotOnDay = !!(cell && cell.querySelector(".dot"));
-    const doneCell = cellOn(day(1));
-    r.doneDotDim = !!(doneCell && doneCell.querySelector(".dot.off"));
+    // 일정 있는 날에는 그 일정의 막대가 그 날을 덮는다
+    const barOn = (id, d) => [...document.querySelectorAll('#calGrid .calbar[data-ev="' + id + '"]')]
+      .filter(b => b.dataset.from <= d && d <= b.dataset.to)[0];
+    cellOn(day(3));
+    const bar1 = barOn("e1", day(3));
+    r.dotOnDay = !!bar1 && bar1.textContent.indexOf("신메뉴") >= 0;
+    cellOn(day(1));
+    const bar3 = barOn("e3", day(1));
+    r.doneDotDim = !!bar3 && bar3.classList.contains("done");
 
     // 그 날을 누르면 아래에 목록이 뜬다
     cellOn(day(3)).click();
@@ -591,12 +596,60 @@ const LEGACY = {
   eq("미리 알림 기간에 든 것과 놓친 것만 홈에 올린다", cal.upcoming, ["e4", "e1"]);
   ok("홈에 다가오는 일정이 뜬다", cal.homeShown === true);
   eq("홈에 올라온 줄 수가 맞는다", cal.homeRows, 2);
-  ok("일정 있는 날에 점이 찍힌다", cal.dotOnDay === true);
-  ok("끝난 일만 남은 날은 점이 흐리다", cal.doneDotDim === true);
+  ok("일정 있는 날에 이름이 든 막대가 그려진다", cal.dotOnDay === true);
+  ok("끝난 일은 막대가 흐리다", cal.doneDotDim === true);
   eq("날짜를 누르면 그 날 일정이 나온다", cal.dayListed, 1);
   ok("고른 날짜를 제목에 보여준다", /\d+월 \d+일 .요일/.test(cal.dayTitleHas), cal.dayTitleHas);
   eq("시트에서 고치면 반영된다", cal.edited, "출시일 변경");
   eq("날짜가 깨진 일정은 걸러진다", cal.droppedBad, 1);
+
+  // ── 6-8b. 달력 막대 ─────────────────────────────────────────────
+  // 며칠짜리 일정은 한 줄로 이어지고, 주·달을 넘으면 끝을 잘라 이어짐을 보인다.
+  // 2026년 10월은 목요일에 시작한다(첫 주: 1~3일, 둘째 주: 4~10일 …)
+  const bars = await page.evaluate(() => {
+    const backup = JSON.stringify(data);
+    const r = {};
+    data.events = [
+      { id:"b1", title:"월말 마감",    date:"2026-09-29", end:"2026-10-02", note:"", remind:0, done:false },
+      { id:"b2", title:"가을 음료 교육", date:"2026-10-05", end:"2026-10-09", note:"", remind:0, done:false },
+      { id:"b3", title:"재고 조사",    date:"2026-10-09", end:"",           note:"", remind:0, done:false },
+      { id:"b4", title:"원두 입고",    date:"2026-10-09", end:"",           note:"", remind:0, done:false },
+      { id:"b5", title:"할로윈",       date:"2026-10-23", end:"2026-10-27", note:"", remind:0, done:false },
+      { id:"b6", title:"위생 점검",    date:"2026-10-15", end:"",           note:"", remind:0, done:true }
+    ];
+    go("cal");
+    calCursor = { y:2026, m:9 }; state.calDay = null; renderCal();
+    const seg = id => [...document.querySelectorAll('#calGrid .calbar[data-ev="' + id + '"]')];
+    const cls = b => (b.classList.contains("l") ? "l" : "") + (b.classList.contains("r") ? "r" : "");
+    r.weeks = document.querySelectorAll("#calGrid .calweek").length;
+    r.b1 = seg("b1").map(b => [b.dataset.from, b.dataset.to, cls(b)]);
+    r.b2 = seg("b2").map(b => [b.style.gridColumn.replace(/\s/g, ""), b.style.gridRow, b.textContent]);
+    r.b5 = seg("b5").map(b => [b.dataset.from, b.dataset.to, cls(b)]);
+    r.done = seg("b6").map(b => b.classList.contains("done"));
+    r.more = [...document.querySelectorAll("#calGrid .calmore")].map(m => [m.dataset.day, m.textContent]);
+    // 막대를 눌러도 그 아래 날짜가 골라진다
+    const b2 = seg("b2")[0].getBoundingClientRect();
+    const hit = document.elementFromPoint(b2.left + b2.width * 0.7, b2.top + b2.height / 2);
+    const cell = hit && hit.closest(".calcell");
+    if (cell) cell.click();
+    r.clickDay = cell ? cell.dataset.day : null;
+    r.picked = state.calDay;
+    r.listed = document.querySelectorAll("#calDayList .evrow").length;
+    // 이름이 긴 하루짜리도 칸 밖으로 넘치지 않는다
+    const w = document.querySelector("#calGrid .calweek").getBoundingClientRect().width;
+    r.fits = [...document.querySelectorAll("#calGrid .calbar")].every(b => b.getBoundingClientRect().width <= w + 1);
+    data = JSON.parse(backup); calCursor = null; state.calDay = null; persist(); go("home");
+    return r;
+  });
+  eq("10월은 다섯 주로 그린다", bars.weeks, 5);
+  eq("지난달에서 넘어온 일정은 왼쪽을 잘라 이어 그린다", bars.b1, [["2026-10-01", "2026-10-02", "l"]]);
+  eq("닷새짜리 일정은 한 줄 막대 하나다", bars.b2, [["2/7", "2", "가을 음료 교육"]]);
+  eq("주를 넘는 일정은 두 조각으로 이어진다", bars.b5, [["2026-10-23", "2026-10-24", "r"], ["2026-10-25", "2026-10-27", "l"]]);
+  eq("끝난 일 막대는 흐리다", bars.done, [true]);
+  eq("두 줄을 넘는 날은 +n 으로 센다", bars.more, [["2026-10-09", "+1"]]);
+  ok("막대 위를 눌러도 그 날짜가 골라진다", bars.clickDay !== null && bars.picked === bars.clickDay, String(bars.clickDay));
+  eq("고른 날의 일정이 모두 목록에 나온다", bars.listed, bars.clickDay === "2026-10-09" ? 3 : 1);
+  ok("막대가 달력 폭을 넘지 않는다", bars.fits === true);
 
   // ── 6-9. 일정 알림 (iOS 앱) ─────────────────────────────────────
   // 무엇을 언제 보낼지는 웹이 정하고 앱은 예약만 한다. 웹에는 알림 칸이 없다.
