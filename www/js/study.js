@@ -76,6 +76,7 @@ $("#mascot").addEventListener("click", ()=>{
   const pool = cheerPool();
   sayBubble(pool[Math.floor(Math.random() * pool.length)]);
   sfx(currentMood() === "night" ? "chuSleep" : "chu");   // 자는 중엔 느리고 낮게
+  haptic("soft");
   if(currentMood() === "morning"){ playSip(); return; }
   if(currentMood() !== "night"){          // 말할 때 한 번 깜빡
     mascot.blink = true; drawMascot();
@@ -246,7 +247,7 @@ function bindBlanks(d){
       const i = btn.dataset.b;
       clearHint();
       state.revealed.add(i);
-      sfx("reveal");
+      sfx("reveal"); haptic("light");
       const span = document.createElement("span");
       span.className = "amt-on";
       span.textContent = ingAt(d, i)[1] || "—";
@@ -296,7 +297,7 @@ function backHTML(d){
 }
 function flipCard(){
   clearHint();
-  sfx("flip");
+  sfx("flip"); haptic("light");
   const card = $("#card"); card.classList.add("flipping");
   setTimeout(()=>{ state.flipped = !state.flipped; renderCard(); card.classList.remove("flipping"); }, 180);
 }
@@ -311,8 +312,8 @@ function action(a){
     renderCard();
     return;
   }
-  if(a==="ok"){ state.stat.ok++; add(data.mastered,d.id); rm(data.needReview,d.id); sfx("ok"); }
-  else { state.stat.again++; add(data.needReview,d.id); rm(data.mastered,d.id); sfx("again"); }
+  if(a==="ok"){ state.stat.ok++; add(data.mastered,d.id); rm(data.needReview,d.id); sfx("ok"); haptic("light"); }
+  else { state.stat.again++; add(data.needReview,d.id); rm(data.mastered,d.id); sfx("again"); haptic("soft"); }   // 외웠어요와 손으로 구분
   persist();
   state.idx++; state.flipped = false;
   state.revealed.clear(); state.discOpen = false;
@@ -349,7 +350,7 @@ function finish(){
     : (rate >= 0.7 ? "잘하고 있어요. 조금만 더 하면 돼요!" : "오늘 본 것만으로도 남아요. 내일 또 봐요!");
   go("result");
   startEat();
-  sfx("done");
+  sfx("done"); haptic("success");
   if(s.again > 0) setTimeout(startCaw, 900);   // 마무리 소리가 지나간 뒤에 끼어든다
 }
 /* 학습을 마치면 쥐돌이가 치즈를 먹는다.

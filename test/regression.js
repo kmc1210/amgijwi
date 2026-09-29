@@ -1908,6 +1908,120 @@ const LEGACY = {
     ok("웹은 글자 선택 그대로이고 백업 통로를 쓰지 않는다", bk.webBody !== "none" && bk.webBridge === null, bk.webBody);
   }
 
+  // ── 6-10l. 진동 · 개봉 택 표시 규칙 · 설정 카테고리 줄 ─────────────────
+  {
+    const iosSrc = f => fs.readFileSync(path.resolve(__dirname, "..", "ios", f), "utf8");
+    ok("앱 껍데기가 진동 통로(amgijwiHaptic)를 단다",
+       /static let name = "amgijwiHaptic"/.test(iosSrc("Sources/HapticBridge.swift"))
+       && iosSrc("Sources/WebAppViewController.swift").indexOf("add(haptics, name: HapticBridge.name)") >= 0);
+    const coreSrc = fs.readFileSync(path.resolve(__dirname, "..", "www", "js", "core.js"), "utf8");
+    ok("새로 설치하면 요일만, 이미 쓰던 사람은 번호 색으로 시작한다", /cleanTagRule\(data\.tagRule, freshData \? "day" : "num"\)/.test(coreSrc));
+
+    const hp = await page.evaluate(async () => {
+      const r = {};
+      const got = [];
+      const w0 = window.webkit;
+      window.webkit = { messageHandlers: { amgijwiHaptic: { postMessage: k => got.push(k) } } };
+      const take = () => got.splice(0).join(",");
+      r.webSilent = (haptic("light"), take());
+      window.__amgijwiNative = true;
+      const backup = JSON.stringify(data);
+      startSession(liveDrinks().slice(0, 2));
+      take();
+      flipCard(); r.flip = take();
+      action("ok"); r.ok = take();
+      action("again"); r.again = take();       // 두 장이라 여기서 끝난다
+      r.done = take() || "";
+      r.finish = r.again.split(",").slice(1).join(",");
+      r.again = r.again.split(",")[0];
+      confirmBox("확인", "지울까요?", "삭제", () => {}); r.confirm = take(); $("#dlg").classList.remove("on");
+      openLock("set"); lockBad("번호가 맞지 않아요"); r.pin = take(); $("#lock").classList.remove("on");
+      go("home"); take();
+      document.querySelector('.tab[data-go="home"]').click(); r.sameTab = take();
+      document.querySelector('.tab[data-go="list"]').click(); r.otherTab = take();
+      data.haptic = false; flipCard(); r.off = take();
+      delete data.haptic;
+      window.webkit = w0; delete window.__amgijwiNative;
+      data = JSON.parse(backup); persist(); go("home");
+      return r;
+    });
+    eq("웹은 진동을 보내지 않는다", hp.webSilent, "");
+    eq("뒤집기 · 외웠어요 · 다시 볼래요 · 끝 · 확인 창 · PIN 틀림",
+       [hp.flip, hp.ok, hp.again, hp.finish, hp.confirm, hp.pin], ["light", "light", "soft", "success", "warning", "error"]);
+    eq("다른 탭으로 갈 때만 딸깍", [hp.sameTab, hp.otherTab], ["", "selection"]);
+    eq("설정에서 끄면 울리지 않는다", hp.off, "");
+
+    const tg = await page.evaluate(async () => {
+      const r = {};
+      const backup = JSON.stringify(data);
+      const now = new Date(2026, 8, 29);            // 화요일
+      const cell = (rule) => { const d = document.createElement("div"); d.innerHTML = tagRowsHTML(5, now, rule); const c = d.querySelector(".tagno"); return [c.textContent, c.classList.contains("plain"), c.style.backgroundColor]; };
+      r.dflt = cleanTagRule(undefined, "day");
+      r.bad = cleanTagRule({ mode:"x", base:"y", day:["#12345Z"], num:"no" }, "num");
+      r.num = cell(cleanTagRule({ mode:"num" }, "num"));
+      r.day = cell(cleanTagRule({ mode:"day" }, "day"));                    // 첫 줄 = 9/25(금) 개봉 · 9/29(화) 폐기
+      r.dayKill = cell(cleanTagRule({ mode:"day", base:"kill" }, "day"));
+      const custom = cleanTagRule({ mode:"dayColor" }, "day"); custom.day[5] = "#112233";
+      r.dayColor = cell(custom);
+      r.head = tagTableHTML(5, now).match(/<h4>([^<]+)<\/h4><span>([^<]+)<\/span>/).slice(1);
+      r.dates = /26\.09\.25 \(금\) 개봉/.test(tagRowsHTML(5, now, data.tagRule)) && /26\.09\.29 \(화\) 폐기/.test(tagRowsHTML(5, now, data.tagRule));
+
+      // 시트에서 고르고 색을 바꿔 저장
+      data.shelf = [{ id:"t5", name:"개봉한 우유", place:"냉장", dur:"5일", note:"" }];
+      data.tagRule = cleanTagRule({ mode:"day" }, "day");
+      state.listTab = "shelf"; go("list");
+      r.ruleBtn = $("#tagRuleBtn") && $("#tagRuleBtn b").textContent;
+      $("#tagRuleBtn").click();
+      document.querySelector('#tr-mode [data-v="dayColor"]').click();
+      document.querySelector('#tr-base [data-v="kill"]').click();
+      const inp = document.querySelector('.trc input[data-i="2"]'); inp.value = "#abcdef"; inp.dispatchEvent(new Event("change"));
+      r.preview = document.querySelectorAll("#sheet .trprev .tagrow").length;
+      const beforeSave = data.tagRule.mode;
+      $("#trSave").click();
+      r.saved = [beforeSave, data.tagRule.mode, data.tagRule.base, data.tagRule.day[2]];
+      // 예전 백업(규칙 없음)을 되살려도 지금 규칙을 지킨다
+      const old = JSON.parse(backupJSON()); delete old.data.tagRule; delete old.data.haptic;
+      applyBackup(JSON.stringify(old)); $("#dlgYes").click();
+      r.afterOldRestore = data.tagRule.mode;
+
+      // 도트: 택 표시 줄 · 시트 · 카테고리 줄
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      await new Promise(res => setTimeout(res, 350));
+      state.listTab = "shelf"; go("list");
+      const seen = el => !!el && el.getClientRects().length > 0;
+      const small = root => [...document.querySelectorAll(root + " *")].filter(el => seen(el) && [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()))
+        .map(el => getComputedStyle(el)).filter(c => c.fontFamily.indexOf("NeoDGM") >= 0 && parseFloat(c.fontSize) < 16).map(c => c.fontSize);
+      r.dotSmall = small("#s-list");
+      $("#tagRuleBtn").click();
+      r.sheetSmall = small("#sheet");
+      r.swRad = getComputedStyle(document.querySelector("#sheet .trc .sw")).borderTopLeftRadius;
+      closeSheet();
+      go("set");
+      r.catRad = getComputedStyle(document.querySelector("#catList .catrow")).borderTopLeftRadius;
+      r.miniRad = getComputedStyle(document.querySelector("#catList .minibtn")).borderTopLeftRadius;
+      r.hapticCard = seen($("#hapticBtns"));
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot");
+      applyEnvText();
+      r.hapticCardWeb = seen($("#hapticBtns"));
+      data = JSON.parse(backup); persist(); go("home");
+      return r;
+    });
+    ok("규칙이 없거나 틀린 값이면 처음 값으로 다듬는다",
+       tg.dflt.mode === "day" && tg.dflt.base === "open" && tg.dflt.day.length === 7 && tg.bad.mode === "num" && tg.bad.base === "open" && tg.bad.day[0] === "#E1832E");
+    eq("번호 색: 오늘 버릴 줄이 1번, 번호 색", tg.num, ["1", false, "rgb(225, 131, 46)"]);
+    eq("요일만: 색 없이 개봉 요일", tg.day, ["금", true, ""]);
+    eq("요일 기준을 버리는 날로 바꾸면 폐기 요일", tg.dayKill[0], "화");
+    eq("요일 색: 사용자가 고친 색을 쓴다", tg.dayColor, ["금", false, "rgb(17, 34, 51)"]);
+    eq("이름은 N일 기한 · 오늘 기준 N줄", tg.head, ["5일 기한", "오늘 기준 5줄"]);
+    ok("날짜 옆에 요일을 적는다", tg.dates);
+    eq("개봉관리 맨 위에 지금 규칙이 보인다", tg.ruleBtn, "요일만");
+    eq("시트에서 고르고 색을 바꿔 저장해야 바뀐다(미리보기 3줄)", [tg.preview].concat(tg.saved), [3, "day", "dayColor", "kill", "#ABCDEF"]);
+    eq("규칙 없는 예전 백업을 되살려도 지금 규칙을 지킨다", tg.afterOldRestore, "dayColor");
+    eq("도트: 개봉관리 · 규칙 시트의 도트 글꼴도 16px 이상", tg.dotSmall.concat(tg.sheetSmall), []);
+    eq("도트: 색 칸 · 카테고리 줄 · 작은 버튼이 네모다", [tg.swRad, tg.catRad, tg.miniRad], ["0px", "0px", "0px"]);
+    ok("진동 설정은 앱에만 보인다", tg.hapticCard === true && tg.hapticCardWeb === false);
+  }
+
   await browser.close();
 
   console.log("");

@@ -142,15 +142,28 @@ function shelfRowHTML(s){
     <span class="du">${esc(s.dur||"—")}</span>
   </button>`;
 }
+/* 택 한 줄의 앞칸. 규칙(data.tagRule)에 따라 요일 · 요일 색 · 번호 색.
+   요일은 날짜가 바뀌어도 그대로라 라벨에 적은 것과 맞출 수 있고, 번호는 "오늘 버릴 줄 = 1번" 이라 매일 밀린다 */
+const TAG_MODE_LABEL = {day:"요일만", dayColor:"요일 색", num:"번호 색"};
+function tagCellHTML(r, rule){
+  if(rule.mode === "num") return `<span class="tagno" style="background:${rule.num[(r.no-1) % rule.num.length]}">${r.no}</span>`;
+  const d = rule.base === "kill" ? r.kill : r.open;
+  const w = DOW[d.getDay()];
+  if(rule.mode === "dayColor") return `<span class="tagno" style="background:${rule.day[d.getDay()]}">${w}</span>`;
+  return `<span class="tagno plain">${w}</span>`;
+}
+function tagRowsHTML(days, now, rule){
+  return tagRows(days, now).map(r=>`
+      <div class="tagrow${r.today?" today":""}">
+        ${tagCellHTML(r, rule)}
+        <span class="tagdates"><span class="o">${fmtDate(r.open)} (${DOW[r.open.getDay()]}) 개봉</span><span class="x">${fmtDate(r.kill)} (${DOW[r.kill.getDay()]}) 폐기</span></span>
+        ${r.today?`<span class="tagbadge">오늘 폐기</span>`:""}
+      </div>`).join("");
+}
 function tagTableHTML(days, now){
   return `<div class="tagset" style="margin-top:16px">
-    <div class="tagset-h"><h4>${days}일택</h4><span>${days}가지 조합</span></div>
-    ${tagRows(days, now).map(r=>`
-      <div class="tagrow${r.today?" today":""}">
-        <span class="tagno" style="background:${TAG_COLORS[(r.no-1) % TAG_COLORS.length]}">${r.no}</span>
-        <span class="tagdates"><span class="o">${fmtDate(r.open)} 개봉</span><span class="x">${fmtDate(r.kill)} 폐기</span></span>
-        ${r.today?`<span class="tagbadge">오늘 폐기</span>`:""}
-      </div>`).join("")}
+    <div class="tagset-h"><h4>${days}일 기한</h4><span>오늘 기준 ${days}줄</span></div>
+    ${tagRowsHTML(days, now, data.tagRule)}
   </div>`;
 }
 function renderShelf(){
@@ -163,7 +176,10 @@ function renderShelf(){
     box.innerHTML = `<div class="empty" style="padding-bottom:18px">${emptyMouse(2)}등록된 개봉 항목이 없어요.<br>오른쪽 위 + 로 추가하면<br>기한별로 여기에 묶여서 보입니다.</div>`;
     return;
   }
-  let html = "";
+  /* 택 표시 규칙은 기한 있는 항목이 있을 때만 맨 위에 한 줄 */
+  let html = groups.some(g=>g.days) && !q
+    ? `<button type="button" class="tagrule" id="tagRuleBtn"><span>택 표시</span><b>${TAG_MODE_LABEL[data.tagRule.mode]}</b><span class="ar">›</span></button>`
+    : "";
   groups.forEach(g=>{
     const items = g.items.filter(s=>!q ||
       textHit(s.name+" "+(s.place||"")+" "+(s.dur||""), q));
@@ -191,6 +207,55 @@ function renderShelf(){
   }));
   box.querySelectorAll(".shelfrow").forEach(b=>b.addEventListener("click", ()=>
     openShelfSheet(data.shelf.findIndex(x=>x.id===b.dataset.id))));
+  const tr = $("#tagRuleBtn");
+  if(tr) tr.addEventListener("click", openTagRuleSheet);
+}
+
+/* 택 표시 규칙 시트. 매장 라벨 규칙에 맞춰 고르고 색도 직접 바꾼다.
+   고치는 동안은 사본(r)만 바꾸고, 저장을 눌러야 data.tagRule 에 들어간다 */
+function openTagRuleSheet(){
+  const r = cleanTagRule(data.tagRule, data.tagRule.mode);
+  const pick = (id, list, cur) => `<div class="pickers" id="${id}">${list.map(([v, t])=>
+    `<button type="button" class="pick${cur===v?" on":""}" data-v="${v}"><span class="box">✓</span>${t}</button>`).join("")}</div>`;
+  const draw = ()=>{
+    const isNum = r.mode === "num";
+    const pal = isNum ? r.num : r.day;
+    const names = isNum ? ["1","2","3","4","5","6","7"] : DOW;
+    const now = new Date();
+    $("#sheetBody").innerHTML = `
+      <h2 style="margin:0 0 4px;font-size:21px;font-weight:800;letter-spacing:-.4px">택 표시</h2>
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:18px">매장에서 쓰는 라벨 규칙에 맞춰 고르세요</div>
+      <div class="fld"><label>표시 방법</label>${pick("tr-mode", [["day","요일만"],["dayColor","요일 색"],["num","번호 색"]], r.mode)}</div>
+      ${isNum
+        ? `<p class="trnote">오늘 버릴 줄이 1번이에요. 날마다 번호가 한 칸씩 당겨집니다.</p>`
+        : `<div class="fld"><label>요일 기준</label>${pick("tr-base", [["open","개봉한 날"],["kill","버리는 날"]], r.base)}</div>`}
+      ${r.mode === "day"
+        ? `<p class="trnote">색 없이 요일만 보여줘요. 어느 매장 라벨과도 어긋나지 않아요.</p>`
+        : `<div class="fld"><label>${isNum ? "번호별 색" : "요일별 색"} · 눌러서 바꾸기</label>
+            <div class="trcolors">${names.map((n, i)=>`<label class="trc"><span class="sw" style="background:${pal[i]}">${n}</span>
+              <input type="color" value="${pal[i]}" data-i="${i}" aria-label="${n} 색"></label>`).join("")}</div>
+            <button type="button" class="linkbtn mute" id="trReset">처음 색으로</button></div>`}
+      <div class="fld"><label>미리보기 · 3일 기한</label><div class="trprev">${tagRowsHTML(3, now, r)}</div></div>
+      <button class="cta" id="trSave">저장</button>`;
+    $("#tr-mode").querySelectorAll(".pick").forEach(b=>b.addEventListener("click", ()=>{ r.mode = b.dataset.v; draw(); }));
+    const base = $("#tr-base");
+    if(base) base.querySelectorAll(".pick").forEach(b=>b.addEventListener("click", ()=>{ r.base = b.dataset.v; draw(); }));
+    $("#sheetBody").querySelectorAll(".trc input").forEach(inp=>inp.addEventListener("change", ()=>{
+      pal[Number(inp.dataset.i)] = inp.value.toUpperCase(); draw();
+    }));
+    const reset = $("#trReset");
+    if(reset) reset.addEventListener("click", ()=>{
+      if(isNum) r.num = TAG_COLORS.slice(); else r.day = TAG_DAY_COLORS.slice();
+      draw();
+    });
+    $("#trSave").addEventListener("click", ()=>{
+      data.tagRule = cleanTagRule(r, r.mode);
+      persist(); closeSheet(); renderList();
+      toast("택 표시를 바꿨어요");
+    });
+  };
+  draw();
+  $("#mask").classList.add("on"); $("#sheet").classList.add("on");
 }
 
 function renderList(){
@@ -345,6 +410,7 @@ $("#q").addEventListener("input", renderList);
 document.querySelectorAll("#listSeg button").forEach(b=>{
   b.addEventListener("click", ()=>{
     if(state.selMode) exitSel();
+    if(state.listTab !== b.dataset.tab) haptic("selection");
     state.listTab = b.dataset.tab;
     renderList();                 // 검색어는 그대로 둔다 (스와이프와 같게)
   });

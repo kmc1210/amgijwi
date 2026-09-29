@@ -9,6 +9,7 @@ final class WebAppViewController: UIViewController {
     private let handler: BundleSchemeHandler?
     private let alarms = AlarmBridge()
     private let share = ShareBridge()
+    private let haptics = HapticBridge()
 
     init() {
         handler = BundleSchemeHandler()
@@ -44,6 +45,9 @@ final class WebAppViewController: UIViewController {
 
         /// 백업 파일 내보내기 통로. 웹뷰는 파일 내려받기를 못 받아서 공유 시트로 내보낸다 (ShareBridge.swift).
         config.userContentController.add(share, name: ShareBridge.name)
+
+        /// 진동 통로. 웹이 느낌 이름만 넘긴다 (HapticBridge.swift).
+        config.userContentController.add(haptics, name: HapticBridge.name)
 
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self

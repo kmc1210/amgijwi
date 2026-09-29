@@ -10,6 +10,7 @@ let onYes = null;
 function confirmBox(title, msg, yesLabel, cb){
   $("#dlgT").textContent = title; $("#dlgM").textContent = msg;
   $("#dlgYes").textContent = yesLabel || "확인"; onYes = cb; $("#dlg").classList.add("on");
+  haptic("warning");            // 지우기 · 덮어쓰기처럼 되돌릴 수 없는 일 앞에서 멈칫
 }
 $("#dlgNo").addEventListener("click", ()=>{ $("#dlg").classList.remove("on"); onYes=null; });
 $("#dlgYes").addEventListener("click", ()=>{ $("#dlg").classList.remove("on"); if(onYes){ const f=onYes; onYes=null; f(); } });
@@ -31,6 +32,9 @@ function go(name){
   if(name==="set") renderSettings();
 }
 document.querySelectorAll(".tab").forEach(t=>{
-  t.addEventListener("click", ()=>{ t.dataset.go==="study" ? openModeSheet() : go(t.dataset.go); });
+  t.addEventListener("click", ()=>{
+    if(!t.classList.contains("on")) haptic("selection");     // 다른 탭으로 갈 때만 딸깍
+    t.dataset.go==="study" ? openModeSheet() : go(t.dataset.go);
+  });
 });
 

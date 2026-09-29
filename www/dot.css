@@ -611,3 +611,26 @@ html.dot #panicBell{width:30px;height:20px;}
    글을 쓰거나 복사해야 하는 칸(입력칸 · 백업 글 칸)만 예외로 둔다 */
 html.dot body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
 html.dot :is(input, textarea, [contenteditable="true"]){-webkit-user-select:text;user-select:text;-webkit-touch-callout:default;}
+
+/* 개봉 택 표시 규칙 (list.js openTagRuleSheet) */
+html.dot #s-list .tagrule{border:0;border-radius:0;background:var(--d-surface);color:var(--d-t2);margin:3px 3px 14px;width:calc(100% - 6px);
+  box-shadow:var(--d-box), var(--d-drop-sh);}
+html.dot #s-list .tagrule b{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;color:var(--d-t1);-webkit-font-smoothing:none;}
+html.dot #s-list .tagrule:active{transform:translate(3px,3px);box-shadow:var(--d-box);}
+html.dot :is(#s-list, #sheet) .tagno.plain{box-shadow:inset 0 0 0 3px var(--d-line);color:var(--d-t1);
+  font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot :is(#s-list, #sheet) .tagno:not(.plain){font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #sheet .tagrow{border:0;border-radius:0;background:var(--d-surface);margin:3px 3px 12px;width:calc(100% - 6px);box-shadow:var(--d-box), var(--d-drop-sh);}
+html.dot #sheet .tagrow.today{background:var(--d-warn-bg);}
+html.dot #sheet :is(.tagno, .tagbadge){border-radius:0;}
+html.dot #sheet .trc .sw{border-radius:0;box-shadow:var(--d-box2);font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #sheet .trcolors{gap:8px;padding:2px;}
+
+/* 설정의 카테고리 목록 줄과 ↑ ↓ ✕ 작은 버튼 (둥근 모양이 남아 있었다) */
+html.dot #s-set .catrow{border:0;border-radius:0;background:var(--d-bg);margin:2px 2px 12px;box-shadow:var(--d-box2);}
+html.dot #s-set .catrow .cl{color:var(--d-t1);}
+html.dot #s-set .catrow .cn{color:var(--d-t2);}
+html.dot #s-set .minibtn{border:0;border-radius:0;background:var(--d-surface);color:var(--d-t1);margin:2px;box-shadow:var(--d-box2);}
+html.dot #s-set .minibtn.warn{color:var(--d-late);}
+html.dot #s-set .minibtn:disabled{opacity:.4;}
+html.dot #s-set .minibtn:not(:disabled):active{transform:translate(2px,2px);}
