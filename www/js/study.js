@@ -348,8 +348,10 @@ function finish(){
   sfx("done");
   if(s.again > 0) setTimeout(startCaw, 900);   // 마무리 소리가 지나간 뒤에 끼어든다
 }
-/* 학습을 마치면 쥐돌이가 치즈를 먹는다 */
-const EAT_SEQ = ["eat1","eat2","eat3","eat4","eat5","eat4","eat3","eat2"];
+/* 학습을 마치면 쥐돌이가 치즈를 먹는다.
+   치즈는 앞으로만 줄어든다: 큰 치즈를 들고 → 좌 · 우 볼로 씹고 → 작은 치즈도 좌 · 우로 → 부스러기에서 눈 감고 쉬고 → 빈손 한 박자 → 새 치즈.
+   되감으면(5→1) 먹은 치즈가 다시 자라 보인다. 입은 명암으로만 두고 씹기는 볼로 보여준다 */
+const EAT_SEQ = ["eat1","eat1","eat2","eat3","eat2","eat3","eat4","eat4b","eat4","eat4b","eat5","eat5","eat5","eat5","day"];
 let eatT = null;
 function startEat(){
   const el = $("#resMascot"); if(!el) return;
