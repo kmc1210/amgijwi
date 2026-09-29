@@ -665,9 +665,13 @@
   font-size:13.5px;color:var(--ink);}
 .calcell.calpad{visibility:hidden;}
 .calcell .n{line-height:1;}
+/* 고른 날·오늘은 날짜 숫자에만 표시한다. 칸 전체에 상자를 그리면 기간 일정 막대가
+   그 상자를 가로로 뚫고 지나가 테두리가 끊겨 보인다. 누르는 영역은 칸 전체 그대로 */
+.calcell .n{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;margin-top:-4px;
+  padding:0 4px;border-radius:999px;}
 .calcell.today .n{font-weight:800;color:var(--accent-ink);}
-/* 고른 날은 테두리로. 막대와 같은 색으로 칸을 칠하면 그 날을 지나는 막대가 묻힌다 */
-.calcell.sel{background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--accent);}
+.calcell.sel .n{background:var(--ink);color:var(--on-ink);font-weight:800;}
+.calcell.sel.today .n{background:var(--accent);color:var(--on-accent);}
 /* 막대는 칸 위에 겹쳐 그리되 클릭은 아래 칸이 받는다 */
 .calbar{pointer-events:none;z-index:1;min-width:0;margin:0 2px;padding:0 3px;display:flex;align-items:center;
   font-size:10.5px;font-weight:700;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;

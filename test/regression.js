@@ -635,6 +635,10 @@ const LEGACY = {
     r.clickDay = cell ? cell.dataset.day : null;
     r.picked = state.calDay;
     r.listed = document.querySelectorAll("#calDayList .evrow").length;
+    // 고른 날은 숫자에만 표시한다. 칸 전체에 상자를 그리면 기간 막대가 그 상자를 뚫고 지나가 끊겨 보인다
+    const selCell = document.querySelector("#calGrid .calcell.sel");
+    const cs = selCell && getComputedStyle(selCell), ns = selCell && getComputedStyle(selCell.querySelector(".n"));
+    r.selMark = selCell ? [cs.boxShadow, cs.backgroundColor, ns.backgroundColor !== "rgba(0, 0, 0, 0)"] : null;
     // 이름이 긴 하루짜리도 칸 밖으로 넘치지 않는다
     const w = document.querySelector("#calGrid .calweek").getBoundingClientRect().width;
     r.fits = [...document.querySelectorAll("#calGrid .calbar")].every(b => b.getBoundingClientRect().width <= w + 1);
@@ -650,6 +654,7 @@ const LEGACY = {
   ok("막대 위를 눌러도 그 날짜가 골라진다", bars.clickDay !== null && bars.picked === bars.clickDay, String(bars.clickDay));
   eq("고른 날의 일정이 모두 목록에 나온다", bars.listed, bars.clickDay === "2026-10-09" ? 3 : 1);
   ok("막대가 달력 폭을 넘지 않는다", bars.fits === true);
+  eq("고른 날은 칸이 아니라 숫자에만 표시한다", bars.selMark, ["none", "rgba(0, 0, 0, 0)", true]);
 
   // ── 6-9. 일정 알림 (iOS 앱) ─────────────────────────────────────
   // 무엇을 언제 보낼지는 웹이 정하고 앱은 예약만 한다. 웹에는 알림 칸이 없다.
