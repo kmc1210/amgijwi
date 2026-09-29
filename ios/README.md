@@ -34,6 +34,25 @@
 이름이 두 곳에 적히므로 한쪽만 고치면 조용히 안내가 다시 뜬다.
 `test/regression.js` 6-6 이 두 이름이 같은지 확인한다.
 
+같은 때에 `<html class="dot">` 도 붙인다. `www/dot.css` 의 도트 화면이 이 표시로 켜진다.
+문서가 그려지기 전이라 웹 모습이 잠깐 비치지 않는다.
+
+### 웹이 앱에 부탁하는 통로
+
+무엇을 할지는 웹이 정하고 앱은 iOS 기능으로 처리만 한다. 이름은 웹 쪽과 같아야 한다.
+
+| 통로 | 파일 | 하는 일 |
+|---|---|---|
+| `amgijwiAlarm` | `AlarmBridge.swift` | 일정 알림 권한 묻기 · 로컬 알림 예약(최대 64개) |
+| `amgijwiShare` | `ShareBridge.swift` | 백업 JSON 을 임시 파일로 만들어 공유 시트 띄우기. 웹뷰는 `<a download>` 를 받지 못한다 |
+| `amgijwiHaptic` | `HapticBridge.swift` | 진동. 웹이 `light` · `soft` · `selection` · `success` · `warning` · `error` 중 하나를 넘긴다 |
+
+### 웹 페이지처럼 보이는 순간을 막는다
+
+확대 · 출렁임 · 뒤로 쓸기 · 링크 미리보기(`allowsLinkPreview`)를 끄고,
+도트 화면에서는 길게 눌러도 글자 선택 · "복사" 메뉴가 뜨지 않게 한다(입력칸은 예외).
+런치 화면과 창 바탕은 크림색(`LaunchBackground`)이라 첫 화면 전 흰 화면이 번쩍이지 않는다.
+
 ## 빌드
 
 `.xcodeproj` 는 저장소에 없다. `project.yml` 에서 만들어 쓴다.
@@ -83,6 +102,32 @@ node ios/make-icon.js
 5. Xcode 에서 Archive → Distribute App → App Store Connect
 6. App Store Connect 에서 테스트플라이트 테스터를 부른다
 
+Xcode 를 열지 않고 터미널로 올릴 수도 있다. 지금은 이렇게 올린다.
+
+```sh
+cd ios
+xcodegen generate
+xcodebuild archive -project Amgijwi.xcodeproj -scheme Amgijwi -configuration Release \
+  -destination 'generic/platform=iOS' -allowProvisioningUpdates \
+  -archivePath ~/Library/Developer/Xcode/Archives/$(date +%Y-%m-%d)/Amgijwi-1.0-<빌드번호>.xcarchive
+xcodebuild -exportArchive -allowProvisioningUpdates -exportOptionsPlist ExportOptions.plist \
+  -archivePath ~/Library/Developer/Xcode/Archives/$(date +%Y-%m-%d)/Amgijwi-1.0-<빌드번호>.xcarchive \
+  -exportPath /tmp/amgijwi-export
+```
+
+`ExportOptions.plist` 는 "App Store Connect 로 바로 올린다" 는 설정이다. 비밀 값은 없다.
+`Upload succeeded` 가 나오면 애플 처리에 10~30분 걸린 뒤 App Store Connect 에 빌드가 보인다.
+외부 테스터는 첫 빌드만 심사를 받고, 같은 버전(1.0)에 빌드 번호만 올린 다음 빌드들은 대개 바로 나간다.
+
+폰에 바로 깔아 볼 때는 케이블이나 같은 와이파이로 연결한 뒤
+
+```sh
+xcrun devicectl list devices                      # 기기 id 확인
+xcodebuild build -project Amgijwi.xcodeproj -scheme Amgijwi -destination id=<기기 id> \
+  -derivedDataPath /tmp/amgijwi-dd -allowProvisioningUpdates
+xcrun devicectl device install app --device <기기 id> /tmp/amgijwi-dd/Build/Products/Debug-iphoneos/Amgijwi.app
+```
+
 올릴 때마다 `project.yml` 의 `CURRENT_PROJECT_VERSION` 을 올려야 한다.
 같은 빌드 번호는 App Store Connect 가 두 번 받지 않는다.
 
@@ -95,11 +140,9 @@ node ios/make-icon.js
   레시피를 앱의 저장 공간에도 같이 복사해 두면 그런 경우에도 복구된다.
   웹뷰와 앱 사이에 다리를 놓아야 하므로 `www/` 코드도 조금 손댄다.
 - **데이터 이사 안내.** 사파리의 `amgijwi.com` 저장소와 앱 웹뷰의 저장소는 전혀 다른 공간이다.
-  앱을 깔아도 기존 레시피가 따라오지 않는다. 지금은 사용자가 한 명이라 앱에 안내 화면을 만들지 않고
+  앱을 깔아도 기존 레시피가 따라오지 않는다. 지금은 사용자가 적어 앱에 안내 화면을 만들지 않고
   말로 전한다. 옮기는 건 이미 있는 백업 내보내기·복원으로 된다. 사용자가 늘면 그때 다시 본다.
-- **서명과 배포.** 위 "서명과 테스트플라이트" 순서대로 한다.
-- **일정 알림.** 로컬 알림은 푸시와 달리 별도 권한이나 서버가 필요 없고 시뮬레이터에서도 뜬다.
-  만들어 보는 데는 개발자 프로그램 등록이 필요 없다. 등록이 필요한 건 남에게 줄 때다.
 - **WeatherKit 연결.** 웹 쪽 `window.__amgijwiWeather` 자리는 이미 만들어져 있다.
-  값을 넣어 주는 네이티브 코드만 붙이면 된다. WeatherKit 은 개발자 프로그램 등록이 필요하다.
-- **햅틱.** 카드를 넘길 때 짧은 진동.
+  값을 넣어 주는 네이티브 코드만 붙이면 된다. 위치 권한 · 애플 날씨 표기가 따라온다.
+
+서명 · 테스트플라이트 배포, 일정 알림, 햅틱은 끝났다.
