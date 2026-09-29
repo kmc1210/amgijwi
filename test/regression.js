@@ -1431,6 +1431,62 @@ const LEGACY = {
     eq("전표·영수증에서도 도트 글꼴은 16px 이상이다", cafe.small, []);
   }
 
+  // ── 6-10c. 학습 · 결과 화면 (도트 화면만) ─────────────────────────
+  {
+    const study = await page.evaluate(async () => {
+      const seen = el => !!el && el.getClientRects().length > 0;
+      const smallNeo = root => {
+        const out = [];
+        document.querySelectorAll(root + " *").forEach(el => {
+          if (!seen(el) || ![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
+          const cs = getComputedStyle(el);
+          if (cs.fontFamily.indexOf("NeoDGM") >= 0 && parseFloat(cs.fontSize) < 16) out.push((el.className || el.tagName) + " " + cs.fontSize);
+        });
+        return out;
+      };
+      const backup = JSON.stringify(data);
+      const run = () => {
+        const r = { small: [] };
+        data.hints = ["study-flip", "study-blank", "study-result", "flip", "blank"];
+        data.mode = "flip";
+        const lat = liveDrinks().filter(d => d.ing.length >= 3)[0];
+        startSession([lat].concat(liveDrinks().filter(d => d !== lat).slice(0, 2)));
+        r.frontFont = getComputedStyle(document.querySelector("#card .front h2")).fontFamily;
+        r.small = r.small.concat(smallNeo("#s-study"));
+        state.flipped = true; renderCard();
+        const ingB = document.querySelector("#card .ing b");
+        r.leader = getComputedStyle(ingB, "::after").content !== "none" && getComputedStyle(ingB, "::after").flexGrow === "1";
+        r.small = r.small.concat(smallNeo("#s-study"));
+        data.mode = "blank"; state.flipped = false; state.revealed = new Set(); renderCard();
+        r.blankFont = getComputedStyle(document.querySelector("#card .blank")).fontFamily;
+        r.small = r.small.concat(smallNeo("#s-study"));
+        data.mode = "flip"; state.stat = { ok:3, again:2, total:5 }; finish();
+        r.title = document.querySelector("#resTitle").textContent;
+        r.labels = ["#resOkL", "#resAgainL", "#resTotalL"].map(s => document.querySelector(s).textContent);
+        r.again = document.querySelector("#againBtn").textContent;
+        r.msg = document.querySelector("#resMsg").textContent;
+        r.small = r.small.concat(smallNeo("#s-result"));
+        go("home");
+        return r;
+      };
+      const r = { web: run() };
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot");
+      r.app = run();
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot");
+      data = JSON.parse(backup); persist(); go("home");
+      return r;
+    });
+    const w = study.web, a = study.app;
+    ok("웹의 학습 카드는 원래 글꼴이다", w.frontFont.indexOf("NeoDGM") < 0 && w.blankFont.indexOf("NeoDGM") < 0);
+    eq("웹의 결과 화면 말은 그대로다", [w.title, w.labels, w.again], ["세션 완료!", ["한 번에 맞춤", "다시 본 카드", "전체 카드"], "한 번 더 학습"]);
+    ok("웹의 까마귀는 개로 센다", /^2개 까먹었다/.test(w.msg), w.msg);
+    ok("앱의 카드 이름과 빈칸은 도트 글꼴이다", a.frontFont.indexOf("NeoDGM") === 0 && a.blankFont.indexOf("NeoDGM") === 0);
+    ok("앱의 카드 뒷면은 재료 ····· 용량 점선으로 잇는다", a.leader === true);
+    eq("앱의 결과 화면은 카페 말투다", [a.title, a.labels, a.again], ["한 바퀴 끝!", ["한 번에 맞춘 잔", "다시 본 잔", "전체 잔"], "한 바퀴 더"]);
+    ok("앱의 까마귀는 잔으로 센다", /^2잔 까먹었다 까악/.test(a.msg), a.msg);
+    eq("학습·결과 화면에서도 도트 글꼴은 16px 이상이다", a.small, []);
+  }
+
   await browser.close();
 
   console.log("");
