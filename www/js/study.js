@@ -51,8 +51,12 @@ function bindRows(sel, selectable){
 }
 /* 마스코트를 누르면 응원 한마디 */
 function sayBubble(msg){
+  $("#mbubble").textContent = sentenceLines(msg);
+  popBubble();
+}
+/* 말은 그대로 두고 말풍선만 다시 톡 튀긴다(비상 달리기에서 돌아왔을 때 — 아이콘도 그대로 남는다) */
+function popBubble(){
   const el = $("#mbubble");
-  el.textContent = msg;
   el.classList.remove("pop");
   void el.offsetWidth;          // 애니메이션 재시작
   el.classList.add("pop");
@@ -60,8 +64,8 @@ function sayBubble(msg){
 const SLEEPY = ["쿨… 자는 중이츄", "내일 보자츄…", "Zzz… 츄…", "조금만 더 잘게츄", "지금은 꿈에서 레시피 외우는 중이츄"];
 /* 옷을 갈아입었으면 그 얘기도 한다. 절반만 섞어 매번 날씨 얘기만 하지 않게 한다 */
 const WX_SAY = {
-  rain: ["비가 온다 츄", "비 온다 츄 우산 챙겼츄?", "장화 신었츄"],
-  snow: ["눈이 온다 츄 춥다 츄", "눈 온다 츄 미끄럽다 츄", "목도리 둘렀츄"]
+  rain: ["비가 온다 츄", "비 온다 츄. 우산 챙겼츄?", "장화 신었츄"],
+  snow: ["눈이 온다 츄. 춥다 츄", "눈 온다 츄. 미끄럽다 츄", "목도리 둘렀츄"]
 };
 function cheerPool(){
   if(currentMood() === "night") return SLEEPY;
