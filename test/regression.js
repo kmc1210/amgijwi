@@ -1853,6 +1853,61 @@ const LEGACY = {
     eq("앱 말풍선은 낱말 가운데서 접히지 않는다", bl.midWord, []);
   }
 
+  // ── 6-10k. 앱다움: 백업은 공유 시트로 · 길게 눌러도 글자 선택 없음 · 런치 화면 색 ─────
+  {
+    const iosSrc = f => fs.readFileSync(path.resolve(__dirname, "..", "ios", f), "utf8");
+    const shareSwift = iosSrc("Sources/ShareBridge.swift"), vcSwift = iosSrc("Sources/WebAppViewController.swift"), yml = iosSrc("project.yml");
+    ok("앱 껍데기가 백업 통로(amgijwiShare)를 달고 결과를 shareDoneFromApp 으로 돌려준다",
+       /static let name = "amgijwiShare"/.test(shareSwift) && /static let reply = "shareDoneFromApp"/.test(shareSwift)
+       && vcSwift.indexOf("add(share, name: ShareBridge.name)") >= 0);
+    ok("아이패드에서 공유 시트가 멈추지 않게 기준 자리를 준다", shareSwift.indexOf("popoverPresentationController") >= 0 && shareSwift.indexOf("sourceView") >= 0);
+    ok("파일 이름은 마지막 조각만 써서 임시 폴더 밖으로 못 나간다", shareSwift.indexOf("lastPathComponent") >= 0);
+    ok("링크를 길게 눌러도 사파리 미리보기가 뜨지 않는다", vcSwift.indexOf("allowsLinkPreview = false") >= 0);
+    ok("런치 화면과 창 바탕이 크림색이라 흰 화면이 번쩍이지 않는다",
+       /UILaunchScreen:\s*\n\s*UIColorName: LaunchBackground/.test(yml)
+       && fs.existsSync(path.resolve(__dirname, "..", "ios", "Assets.xcassets", "LaunchBackground.colorset", "Contents.json"))
+       && iosSrc("Sources/SceneDelegate.swift").indexOf('UIColor(named: "LaunchBackground")') >= 0);
+
+    const bk = await page.evaluate(async () => {
+      const r = {};
+      const before = JSON.stringify(data.backup || null);
+      const sent = [];
+      const w0 = window.webkit;
+      window.webkit = { messageHandlers: { amgijwiShare: { postMessage: m => sent.push(m) } } };
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      await new Promise(res => setTimeout(res, 350));
+      go("set");
+      r.label = $("#expFile").innerText.trim();
+      $("#expFile").click();
+      r.sent = sent.length;
+      r.name = sent[0] && sent[0].name;
+      try { r.app = JSON.parse(sent[0].text).app; } catch (e) { r.app = null; }
+      r.notYet = JSON.stringify(data.backup || null) === before;
+      shareDoneFromApp(false);
+      r.cancelKept = JSON.stringify(data.backup || null) === before;
+      shareDoneFromApp(true);
+      r.marked = !!data.backup && data.backup.at === ymd(new Date());
+      const cs = s => getComputedStyle(document.querySelector(s));
+      r.appBody = cs("body").webkitUserSelect || cs("body").userSelect;
+      r.appInput = cs("#impBox").webkitUserSelect || cs("#impBox").userSelect;
+      window.webkit = w0;
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      await new Promise(res => setTimeout(res, 50));
+      r.webLabel = $("#expFile").innerText.trim();
+      r.webBody = cs("body").webkitUserSelect || cs("body").userSelect;
+      r.webBridge = shareBridge();
+      if (before === "null") delete data.backup; else data.backup = JSON.parse(before);
+      persist(); go("home");
+      return r;
+    });
+    eq("앱의 백업 버튼은 파일로 내보내기, 웹은 파일로 저장", [bk.label, bk.webLabel], ["파일로 내보내기", "파일로 저장"]);
+    ok("앱에서 백업을 누르면 파일 이름과 백업 내용이 앱으로 넘어간다", bk.sent === 1 && /^암기쥐-백업-\d{8}-\d{4}\.json$/.test(bk.name) && bk.app === "brewnote", JSON.stringify(bk));
+    ok("공유 시트에서 보내기 전에는 백업한 것으로 치지 않는다", bk.notYet && bk.cancelKept);
+    ok("보냈다는 답이 오면 백업한 것으로 적는다", bk.marked);
+    ok("앱은 길게 눌러도 글자가 선택되지 않고, 입력칸은 선택된다", bk.appBody === "none" && bk.appInput === "text", bk.appBody + " / " + bk.appInput);
+    ok("웹은 글자 선택 그대로이고 백업 통로를 쓰지 않는다", bk.webBody !== "none" && bk.webBridge === null, bk.webBody);
+  }
+
   await browser.close();
 
   console.log("");

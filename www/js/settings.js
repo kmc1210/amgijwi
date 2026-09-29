@@ -295,12 +295,26 @@ function stamp(){
   const n = new Date(), p = x=>String(x).padStart(2,"0");
   return n.getFullYear()+p(n.getMonth()+1)+p(n.getDate())+"-"+p(n.getHours())+p(n.getMinutes());
 }
+/* 앱의 웹뷰는 <a download> 를 받지 못한다(아무것도 안 저장되는데 저장했다고 뜬다).
+   앱에서는 내용을 넘겨 iOS 공유 시트로 내보내고, 결과는 shareDoneFromApp 으로 받는다 (ShareBridge.swift) */
+function shareBridge(){
+  const w = window.webkit;
+  if(!isNativeApp() || !w || !w.messageHandlers || !w.messageHandlers.amgijwiShare) return null;
+  return w.messageHandlers.amgijwiShare;
+}
+function shareDoneFromApp(ok){
+  if(ok){ markBackedUp(); toast("백업 파일을 내보냈어요"); }
+  else toast("백업을 내보내지 않았어요");      // 시트를 닫았으면 백업한 것으로 치지 않는다
+}
 function saveBackupFile(){
+  const name = "암기쥐-백업-"+stamp()+".json";
+  const br = shareBridge();
+  if(br){ br.postMessage({name:name, text:backupJSON()}); return; }
   try{
     const blob = new Blob([backupJSON()], {type:"application/json"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = "암기쥐-백업-"+stamp()+".json";
+    a.href = url; a.download = name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(url), 1500);
     markBackedUp();
