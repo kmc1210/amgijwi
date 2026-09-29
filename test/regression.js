@@ -1811,6 +1811,48 @@ const LEGACY = {
     ok("웹의 비상 달리기는 예전 타원 그대로다(정면 · 뒤는 서 있는 그림)", mv.web.frames === 48 && mv.web.standing > 0, JSON.stringify(mv.web));
   }
 
+  // ── 6-10j. 쥐돌이 대사 줄바꿈 (도트 화면만) ─────────────────────────
+  {
+    const bl = await page.evaluate(async () => {
+      const r = {};
+      r.split = sentenceLines("오늘 버릴 게 3개 있츄. 개봉관리 먼저 보고 가자츄");
+      r.bang = sentenceLines("전부 외웠츄! 가끔 한 바퀴만 돌려주면 안 까먹츄");
+      r.dots = sentenceLines("쿨… 자는 중이츄");
+      r.again = sentenceLines(r.split) === r.split;
+      // 두 문장이 마침표 없이 붙은 대사가 없다(“츄 ” 뒤에 바로 다음 말)
+      r.glued = CHEERS.concat(WX_SAY.rain, WX_SAY.snow, SLEEPY).filter(m => /츄 [^.!?…]*츄/.test(m) && !/[.!?,]/.test(m));
+      const lines = () => { const el = $("#mbubble"); return Math.round((el.getBoundingClientRect().height - parseFloat(getComputedStyle(el).paddingTop) * 2) / parseFloat(getComputedStyle(el).lineHeight)); };
+      go("home");
+      sayBubble("첫 한 잔부터 외워보자츄. 15잔이 기다리고 있츄");
+      r.webWS = getComputedStyle($("#mbubble")).whiteSpace;
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot");
+      await new Promise(res => setTimeout(res, 350));
+      const c = getComputedStyle($("#mbubble"));
+      r.appWS = c.whiteSpace; r.appWB = c.wordBreak;
+      r.twoLines = lines();
+      // 낱말 가운데서 접히지 않는다: 줄마다 끝 글자 뒤가 빈칸 · 줄바꿈 · 끝이어야 한다
+      const range = document.createRange(), tn = [...$("#mbubble").childNodes].filter(n => n.nodeType === 3).pop();
+      r.midWord = [];
+      let prevTop = null;
+      for (let i = 0; i < tn.length; i++) {
+        range.setStart(tn, i); range.setEnd(tn, i + 1);
+        const rc = range.getClientRects()[0]; if (!rc) continue;
+        if (prevTop !== null && rc.top > prevTop + 4 && !/\s/.test(tn.data[i - 1]) && !/\s/.test(tn.data[i])) r.midWord.push(tn.data.slice(i - 3, i + 3));
+        prevTop = rc.top;
+      }
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot");
+      renderHome();
+      return r;
+    });
+    eq("문장이 끝나면(. !) 줄바꿈 문자를 넣는다", [bl.split, bl.bang], ["오늘 버릴 게 3개 있츄.\n개봉관리 먼저 보고 가자츄", "전부 외웠츄!\n가끔 한 바퀴만 돌려주면 안 까먹츄"]);
+    ok("말줄임표 뒤는 잇고, 두 번 거쳐도 같다", bl.dots === "쿨… 자는 중이츄" && bl.again);
+    eq("두 문장이 마침표 없이 붙은 대사가 없다", bl.glued, []);
+    ok("웹 말풍선은 줄바꿈을 빈칸으로 접는다(예전 그대로)", bl.webWS === "normal", bl.webWS);
+    ok("앱 말풍선은 문장마다 줄을 나누고 낱말 사이에서만 접는다", bl.appWS === "pre-line" && bl.appWB === "keep-all", bl.appWS + " " + bl.appWB);
+    eq("두 문장 대사는 앱에서 두 줄이다", bl.twoLines, 2);
+    eq("앱 말풍선은 낱말 가운데서 접히지 않는다", bl.midWord, []);
+  }
+
   await browser.close();
 
   console.log("");

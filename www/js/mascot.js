@@ -136,7 +136,7 @@ function runPanic(laps){
     if(i >= total || !$("#s-home").classList.contains("active")){
       const done = $("#s-home").classList.contains("active");
       stopPanic(); drawMascot();
-      if(done) sayBubble($("#mbubble").textContent);  // 돌아와서 다시 말한다
+      if(done) popBubble();                           // 돌아와서 다시 말한다
       return;
     }
     const t = 2*Math.PI*(i % FR)/FR;             // 꼭대기에서 시계 방향
@@ -215,7 +215,7 @@ function runLane(laps){
     if(i >= plan.length || !$("#s-home").classList.contains("active")){
       const done = $("#s-home").classList.contains("active");
       stopPanic(); drawMascot();
-      if(done) sayBubble($("#mbubble").textContent);
+      if(done) popBubble();                     // 아이콘까지 그대로 다시 말한다
       return;
     }
     const f = plan[i];
@@ -392,6 +392,10 @@ function timeGreet(h){
   return "하루 마무리 중이네요";
 }
 
+/* 쥐돌이 대사는 문장이 끝나면 줄을 바꾼다. 마침표 · 느낌표 · 물음표 뒤 빈칸을 줄바꿈 문자로 바꿔 두면
+   앱(도트)은 white-space:pre-line 으로 줄을 나누고, 웹은 줄바꿈을 빈칸 하나로 접어 예전 그대로 보인다.
+   말줄임표(…)는 문장 끝이 아니라 쉼이라 그대로 이어 둔다 */
+function sentenceLines(msg){ return String(msg).replace(/([.!?])[ \t]+(?=\S)/g, "$1\n"); }
 const CHEERS = [
   "오늘 하루도 화이팅이츄!",
   "한 잔씩 천천히 하면 다 외워지츄",
@@ -430,7 +434,7 @@ function situationCheer(now, streak, v){
   if(kill > 0 && hour < 14)                       // 오픈·미들 시간대에만
     return {ico:icon("trash"), msg:"오늘 버릴 게 " + kill + "개 있츄. 개봉관리 먼저 보고 가자츄"};
   if(rev >= 5)
-    return {ico:icon("repeat"), msg:"다시 볼 메뉴가 " + cupN(rev) + "나 쌓였츄. 오늘 좀 덜어내자츄"};
+    return {ico:icon("repeat"), msg:"다시 볼 메뉴가 " + cupN(rev) + cafeSay("나", "이나") + " 쌓였츄. 오늘 좀 덜어내자츄"};
   if(done === 0)
     return {ico:icon("cup"), msg:"첫 한 잔부터 외워보자츄. " + total + cafeSay("개가", "잔이") + " 기다리고 있츄"};
   if(done === total)
@@ -484,7 +488,7 @@ function renderGreeting(){
   $("#greetP").innerHTML = esc(line1) + "<br>" + esc(line2);
 
   const c = cheerOf(now, v.streak, v);
-  $("#mbubble").innerHTML = `${c.ico} ${esc(c.msg)}`;
+  $("#mbubble").innerHTML = `${c.ico} ${esc(sentenceLines(c.msg))}`;
   drawMascot();
   scheduleBlink();
 

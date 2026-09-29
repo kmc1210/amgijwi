@@ -91,7 +91,9 @@ html.dot #greetP{color:var(--d-t2);}
 html.dot #s-home .bubblerow{padding-top:4px;padding-bottom:10px;}
 html.dot #s-home .bubble{background:var(--d-surface);color:var(--d-t1);margin-right:6px;
   font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;letter-spacing:-1px;line-height:24px;
-  -webkit-font-smoothing:none;padding:9px 12px;}
+  -webkit-font-smoothing:none;padding:9px 12px;
+  /* 문장마다 한 줄(sentenceLines 가 넣은 줄바꿈). 긴 문장은 낱말 사이에서만 접고, 여러 줄은 왼쪽에 맞춘다 */
+  white-space:pre-line;word-break:keep-all;overflow-wrap:anywhere;text-align:left;}
 html.dot #s-home .bubble:after{display:none;}
 
 /* 진도 카드 — 그라데이션 대신 단색 + 위아래 한 칸 빛·그늘 */
