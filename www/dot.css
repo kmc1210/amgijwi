@@ -3,7 +3,8 @@
    이 파일의 모든 규칙은 html.dot 아래에 있어 웹(amgijwi.com)은 지금 모습 그대로다.
    웹을 내리면 style.css 의 옛 모습만 걷어내면 된다.
 
-   지금은 홈(카페 전표 목록 포함) · 학습 · 결과 화면과 탭바까지. 나머지 화면은 화면마다 차례로 옮긴다.
+   지금은 홈(카페 전표 목록 포함) · 학습 · 결과 · 레시피(목록 · 보관함) · 공용 시트와 탭바까지.
+   나머지 화면은 화면마다 차례로 옮긴다.
 
    글꼴 규칙: Neo둥근모는 16px 이상에서만 쓴다(또렷한 건 16·32px).
    16px 격자 글꼴을 줄이면 "체"의 ㅊ 꼭지처럼 한 칸짜리 획이 사라진다.
@@ -54,6 +55,13 @@ html.dot body[data-theme="green"]{
   --d-warn-bg:#F6EBD6; --d-warn-t:#7E5713;
   --d-tab:#F6FAF5;
   --d-dot:#7F9488; --d-late:#B5453C;
+}
+
+/* 자주 쓰는 도트 외곽선. body 에서 계산되므로 테마마다 --d-line 색을 따라간다 */
+html.dot body{
+  --d-box:0 -3px 0 0 var(--d-line), 0 3px 0 0 var(--d-line), -3px 0 0 0 var(--d-line), 3px 0 0 0 var(--d-line);
+  --d-box2:0 -2px 0 0 var(--d-line), 0 2px 0 0 var(--d-line), -2px 0 0 0 var(--d-line), 2px 0 0 0 var(--d-line);
+  --d-drop-sh:3px 6px 0 0 var(--d-drop), 6px 3px 0 0 var(--d-drop);
 }
 
 /* ── 도트 상자 ──────────────────────────── */
@@ -279,6 +287,90 @@ html.dot #againBtn{border-radius:0;background:var(--d-acc);color:var(--d-on-acc)
              3px 6px 0 0 var(--d-drop), 6px 3px 0 0 var(--d-drop);}
 html.dot #againBtn:active{transform:translate(3px,3px);filter:none;}
 html.dot #homeBtn{color:var(--d-t2) !important;}
+
+/* ── 레시피 (목록 · 보관함) ─────────────────── */
+html.dot :is(#s-list, #s-arch){background:var(--d-bg);color:var(--d-t1);}
+html.dot :is(#s-list, #s-arch) .appbar h1{font-family:"NeoDGM",monospace;font-weight:400;font-size:22px;letter-spacing:0;-webkit-font-smoothing:none;}
+html.dot :is(#s-list, #s-arch) .appbar p{color:var(--d-t2);}
+html.dot #s-list .appbar .add{border-radius:0;background:var(--d-t1);color:var(--d-bg);box-shadow:var(--d-drop-sh);}
+html.dot #s-list .appbar .archbtn{border:0;border-radius:0;background:var(--d-surface);color:var(--d-t1);box-shadow:var(--d-box2);}
+html.dot #s-arch .icon-btn{border:0;border-radius:0;background:var(--d-surface);color:var(--d-t1);box-shadow:var(--d-box2);}
+
+/* 레시피 · 부재료 · 개봉관리 · 메모 */
+html.dot #s-list .seg{border:0;border-radius:0;background:var(--d-surface);margin:3px 3px 17px !important;box-shadow:var(--d-box);}
+html.dot #s-list .seg button{border-radius:0;color:var(--d-t2);
+  font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;letter-spacing:-1px;-webkit-font-smoothing:none;}
+html.dot #s-list .seg button.on{background:var(--d-t1);color:var(--d-bg);}
+html.dot #s-list .sortb{border:0;border-radius:0;background:var(--d-surface);color:var(--d-t2);margin:2px;box-shadow:var(--d-box2);}
+html.dot #s-list .sortb.on{background:var(--d-acc);color:var(--d-on-acc);}
+html.dot :is(#s-list, #s-arch) .search{border:0;border-radius:0;background:var(--d-surface);margin:2px 2px 8px;box-shadow:var(--d-box2);}
+html.dot :is(#s-list, #s-arch) .linkbtn{color:var(--d-acc);}
+html.dot :is(#s-list, #s-arch) .linkbtn.mute{color:var(--d-t2);}
+
+/* 분류 머리 — 도트 글꼴 16px */
+html.dot :is(#s-list, #s-arch) .grp{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;letter-spacing:0;color:var(--d-t2);-webkit-font-smoothing:none;}
+
+/* 목록 줄 · 개봉관리 줄 · 기한 태그 · 메모 */
+html.dot :is(#s-list, #s-arch) :is(.row, .shelfrow, .tagrow, .memorow){border:0;border-radius:0;background:var(--d-surface);color:var(--d-t1);
+  margin:3px 3px 12px;width:calc(100% - 6px);box-shadow:var(--d-box), var(--d-drop-sh);}
+html.dot :is(#s-list, #s-arch) :is(.row, .shelfrow, .memorow):active{transform:translate(3px,3px);box-shadow:var(--d-box);}
+html.dot :is(#s-list, #s-arch) .row.on{background:var(--d-warn-bg);}
+html.dot :is(#s-list, #s-arch) .tagrow.today{background:var(--d-warn-bg);}
+html.dot :is(#s-list, #s-arch) .memorow.pinned{background:var(--d-warn-bg);}
+html.dot :is(#s-list, #s-arch) .row .meta span,
+html.dot :is(#s-list, #s-arch) .memorow .mat,
+html.dot #s-list .tagset-h span{color:var(--d-t2);}
+html.dot #s-list .tagset-h h4{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+/* 개봉관리의 기한별 묶음(누르면 펼쳐지는 상자) */
+html.dot #s-list .durgrp{border:0;border-radius:0;background:var(--d-surface);margin:3px 3px 14px;overflow:visible;
+  box-shadow:var(--d-box), var(--d-drop-sh);}
+html.dot #s-list .durgrp-h .dd{border-radius:0;font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #s-list .durgrp-h .nm span{color:var(--d-t2);}
+html.dot #s-list .durgrp-b .shelfrow{background:var(--d-bg);box-shadow:var(--d-box2);margin:2px 2px 10px;width:calc(100% - 4px);}
+
+/* 네모 칸들: 온도 · 부재료 · 분류 그림 · 태그 번호 · 배지 · 선택 표시 */
+html.dot :is(#s-list, #s-arch) :is(.tempb, .subb, .emo, .tagno, .tagbadge, .pill, .pl){border-radius:0;}
+html.dot :is(#s-list, #s-arch) .checkc{border-radius:0;}
+html.dot :is(#s-list, #s-arch) .uses button{border-radius:0;box-shadow:var(--d-box2);border:0;}
+html.dot :is(#s-list, #s-arch) .empty{border-radius:0;border:2px dashed var(--d-drop);color:var(--d-t2);}
+
+/* 고르기 모드 */
+html.dot #s-list .selbar .cnt{font-family:"NeoDGM",monospace;font-weight:400;font-size:22px;letter-spacing:0;-webkit-font-smoothing:none;}
+html.dot #s-list .selactions button{border-radius:0;font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;box-shadow:var(--d-box);}
+
+/* ── 아래에서 올라오는 시트 (레시피 상세 · 개봉 항목 · 일정 등 공용) ── */
+html.dot #sheet{border-radius:0;background:var(--d-surface);color:var(--d-t1);box-shadow:0 -3px 0 0 var(--d-line);}
+html.dot #sheet .grab{border-radius:0;height:4px;background:var(--d-drop);}
+/* 제목은 마크업에 적힌 크기(20px 넘음)를 두고 글꼴만 도트로 */
+html.dot #sheet h2{font-family:"NeoDGM",monospace !important;font-weight:400 !important;letter-spacing:0 !important;-webkit-font-smoothing:none;}
+html.dot #sheet .blk .lb{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;letter-spacing:0;color:var(--d-acc);-webkit-font-smoothing:none;}
+html.dot #sheet .ing{border-bottom:0;align-items:flex-end;padding:6px 0;}
+html.dot #sheet .ing b{flex:1;min-width:0;display:flex;align-items:flex-end;color:var(--d-t1);font-weight:500;}
+html.dot #sheet .ing b::after{content:"";flex:1;min-width:14px;height:3px;margin:0 6px 7px;
+  background:repeating-linear-gradient(90deg,var(--d-dot) 0 3px,transparent 3px 6px);}
+html.dot #sheet .ing span{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #sheet ol.steps li{color:var(--d-t1);}
+html.dot #sheet ol.steps li::marker{color:var(--d-acc);font-weight:800;}
+html.dot #sheet .tipbox{border-radius:0;border:2px dashed var(--d-dot);background:transparent;color:var(--d-t1);}
+html.dot #sheet .banner{border-radius:0;}
+/* 시트 버튼 */
+html.dot #sheet .cta{border:0;border-radius:0;width:calc(100% - 6px);margin-left:3px;
+  font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;box-shadow:var(--d-box), var(--d-drop-sh);}
+html.dot #sheet .cta:not(.ghost):not(.danger){background:var(--d-acc);color:var(--d-on-acc);}
+html.dot #sheet .cta.ghost{background:var(--d-surface);color:var(--d-t1);}
+html.dot #sheet .cta:active{transform:translate(3px,3px);filter:none;box-shadow:var(--d-box);}
+/* 시트 안의 입력 칸 · 고르기 칩 */
+html.dot #sheet .fld label{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;letter-spacing:0;color:var(--d-acc);-webkit-font-smoothing:none;}
+html.dot #sheet .fld :is(input[type=text], input[type=date], input[type=time], textarea, select){border:0;border-radius:0;
+  background:var(--d-surface);margin:2px;width:calc(100% - 4px);box-shadow:var(--d-box2);}
+html.dot #sheet .fld :is(input, textarea, select):focus{box-shadow:0 -2px 0 0 var(--d-acc), 0 2px 0 0 var(--d-acc), -2px 0 0 0 var(--d-acc), 2px 0 0 0 var(--d-acc);}
+html.dot #sheet .pick{border:0;border-radius:0;margin:2px;box-shadow:var(--d-box2);}
+html.dot #sheet .pick .box{border-radius:0;}
+html.dot #sheet .pick.on{background:var(--d-warn-bg);color:var(--d-t1);}
+html.dot #sheet .seg{border:0;border-radius:0;margin:2px;box-shadow:var(--d-box2);}
+html.dot #sheet .seg button{border-radius:0;}
+html.dot #sheet .seg button.on{background:var(--d-t1);color:var(--d-bg);}
+html.dot #sheet :is(.okbox, .warnbox){border-radius:0;}
 
 /* ── 탭바 ───────────────────────────────── */
 /* 선 아이콘 대신 도트 아이콘. 탭 이름은 10.5px 라 시스템 글꼴 그대로 */
