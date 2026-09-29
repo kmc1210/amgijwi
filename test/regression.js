@@ -1597,6 +1597,62 @@ const LEGACY = {
     eq("일정 화면에서도 도트 글꼴은 16px 이상이다", a.small, []);
   }
 
+  // ── 6-10f. 설정 · 편집 화면 · PIN 잠금 · 확인 창 (도트 화면만) ────────
+  {
+    const setLook = await page.evaluate(async () => {
+      const seen = el => !!el && el.getClientRects().length > 0;
+      const rad = s => { const el = document.querySelector(s); return el ? getComputedStyle(el).borderTopLeftRadius : "없음"; };
+      const smallNeo = root => {
+        const out = [];
+        document.querySelectorAll(root + " *").forEach(el => {
+          if (!seen(el) || ![...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim())) return;
+          const c = getComputedStyle(el);
+          if (c.fontFamily.indexOf("NeoDGM") >= 0 && parseFloat(c.fontSize) < 16) out.push(root + " " + (el.className || el.tagName) + " " + c.fontSize);
+        });
+        return out;
+      };
+      const backup = JSON.stringify(data);
+      const run = () => {
+        const r = { small: [] };
+        go("set"); r.card = rad("#s-set .setcard"); r.theme = rad("#s-set .theme-b"); r.small = r.small.concat(smallNeo("#s-set"));
+        openEditor(liveDrinks()[0].id); r.input = rad("#s-edit .fld input[type=text]"); r.del = rad("#s-edit .del"); r.small = r.small.concat(smallNeo("#s-edit"));
+        openSubEditor(null, "edit"); r.small = r.small.concat(smallNeo("#s-sub"));
+        openImport(); r.mono = rad("#ocrBox"); r.small = r.small.concat(smallNeo("#s-import"));
+        { const bx = document.querySelector("#ocrBox").getBoundingClientRect(), pb = document.querySelector("#pasteBtn").getBoundingClientRect();
+          r.ocrGap = Math.round(pb.top - bx.bottom); }
+        // 글 칸과 바로 아래 버튼 사이 틈(외곽선끼리 붙으면 한 덩어리로 보인다)
+        go("set");
+        const box = document.querySelector("#impBox").getBoundingClientRect(), btn = document.querySelector("#impText").getBoundingClientRect();
+        r.monoGap = Math.round(btn.top - box.bottom);
+        const fileBtn = document.querySelector("#impFile").getBoundingClientRect();
+        r.fileGap = Math.round(box.top - fileBtn.bottom);
+        go("home"); openLock("set"); r.key = rad("#lockKeys button"); r.small = r.small.concat(smallNeo("#lock"));
+        $("#lock").classList.remove("on");
+        confirmBox("확인", "지울까요?", "삭제", () => {}); r.dlg = rad("#dlg .box"); r.small = r.small.concat(smallNeo("#dlg"));
+        $("#dlg").classList.remove("on");
+        go("home");
+        return r;
+      };
+      const r = { web: run() };
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot");
+      await new Promise(res => setTimeout(res, 350));
+      r.app = run();
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot");
+      data = JSON.parse(backup); persist(); go("home");
+      return r;
+    });
+    const w = setLook.web, a = setLook.app;
+    const keys = ["card", "theme", "input", "del", "mono", "key", "dlg"];
+    ok("웹의 설정 · 편집 · 잠금 · 확인 창은 둥근 모서리 그대로다", keys.every(k => w[k] !== "0px" && w[k] !== "없음"), keys.map(k => k + ":" + w[k]).join(" "));
+    eq("앱의 설정 · 편집 · 잠금 · 확인 창은 네모다", keys.map(k => a[k]), keys.map(() => "0px"));
+    eq("설정 · 편집 · 잠금 · 확인 창에서도 도트 글꼴은 16px 이상이다", a.small, []);
+    // 보이는 틈 = 간격 − 글 칸 외곽선 2 − 버튼 외곽선 3
+    ok("백업 글 칸과 복원 버튼 사이가 넉넉하다(외곽선을 빼고도 8px 이상)", a.monoGap - 5 >= 8, String(a.monoGap));
+    // 버튼의 외곽선(3px)은 그림자(아래로 6px) 안에 들어간다. 보이는 틈 = 간격 − 그림자 6 − 글 칸 외곽선 2
+    ok("가져오기 글 칸과 붙여넣기 버튼 사이도 넉넉하다(외곽선을 빼고도 8px 이상)", a.ocrGap - 5 >= 8, String(a.ocrGap));
+    ok("파일 선택 버튼과 글 칸 사이도 넉넉하다(그림자 · 외곽선을 빼고도 8px 이상)", a.fileGap - 8 >= 8, String(a.fileGap));
+  }
+
   await browser.close();
 
   console.log("");

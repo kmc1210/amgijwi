@@ -3,8 +3,8 @@
    이 파일의 모든 규칙은 html.dot 아래에 있어 웹(amgijwi.com)은 지금 모습 그대로다.
    웹을 내리면 style.css 의 옛 모습만 걷어내면 된다.
 
-   지금은 홈(카페 전표 목록 포함) · 학습 · 결과 · 레시피(목록 · 보관함) · 일정 · 공용 시트와 탭바까지.
-   나머지 화면은 화면마다 차례로 옮긴다.
+   홈(카페 전표 목록 포함) · 학습 · 결과 · 레시피(목록 · 보관함) · 일정 · 설정 · 편집 화면 · 공용 시트 ·
+   PIN 잠금 · 확인 창 · 토스트 · 탭바. 앱의 모든 화면이 여기서 도트가 된다.
 
    글꼴 규칙: Neo둥근모는 16px 이상에서만 쓴다(또렷한 건 16·32px).
    16px 격자 글꼴을 줄이면 "체"의 ㅊ 꼭지처럼 한 칸짜리 획이 사라진다.
@@ -407,6 +407,70 @@ html.dot #s-cal .evrow.done .nm,
 html.dot #s-cal .evrow.done .nt,
 html.dot #s-cal .evrow.done .dd{color:var(--d-t2);}
 html.dot #s-cal .calempty{color:var(--d-t2);}
+
+/* ── 설정 · 편집 화면(레시피 · 부재료 · 사진에서 가져오기) ──────── */
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import){background:var(--d-bg);color:var(--d-t1);}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .appbar h1{font-family:"NeoDGM",monospace;font-weight:400;font-size:22px;letter-spacing:0;-webkit-font-smoothing:none;}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .appbar p{color:var(--d-t2);}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .icon-btn{border:0;border-radius:0;background:var(--d-surface);color:var(--d-t1);margin:2px;box-shadow:var(--d-box2);}
+/* 설정 카드 */
+html.dot #s-set .setcard{border:0;border-radius:0;background:var(--d-surface);margin:3px 3px 17px;box-shadow:var(--d-box), var(--d-drop-sh);}
+html.dot #s-set .setcard h4{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #s-set .setcard p{color:var(--d-t2);}
+/* 카드 안 버튼끼리 · 버튼과 글 칸 사이. 원래 9px 인데 도트 그림자가 6px 를 차지해 붙어 보였다 */
+html.dot #s-set .setcard .cta:not(:last-child){margin-bottom:16px;}
+/* 테마 · 소리 고르기 */
+html.dot #s-set .theme-b{border:0;border-radius:0;background:var(--d-surface);color:var(--d-t1);margin:2px;box-shadow:var(--d-box2);}
+html.dot #s-set .theme-b.on{background:var(--d-warn-bg);color:var(--d-t1);
+  box-shadow:0 -2px 0 0 var(--d-acc), 0 2px 0 0 var(--d-acc), -2px 0 0 0 var(--d-acc), 2px 0 0 0 var(--d-acc);}
+html.dot #s-set .sw i{border-radius:0;}
+/* 버튼 */
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .cta{border:0;border-radius:0;width:calc(100% - 6px);margin-left:3px;
+  font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;box-shadow:var(--d-box), var(--d-drop-sh);}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .cta:not(.ghost):not(.danger){background:var(--d-acc);color:var(--d-on-acc);}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .cta.ghost{background:var(--d-surface);color:var(--d-t1);}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .cta:active{transform:translate(3px,3px);filter:none;box-shadow:var(--d-box);}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .linkbtn{color:var(--d-acc);}
+/* 입력 칸 · 고르기 칩 */
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .fld label{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;letter-spacing:0;color:var(--d-acc);-webkit-font-smoothing:none;}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .fld :is(input[type=text], input[type=date], input[type=time], textarea, select),
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .dyn-row input,
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .mono{border:0;border-radius:0;background:var(--d-surface);margin:2px;box-shadow:var(--d-box2);}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .fld :is(input[type=text], input[type=date], input[type=time], textarea, select),
+/* 글 칸 아래는 원래 9px 여백이 있었다. 도트 외곽선(글 칸 2px + 버튼 3px)과 버튼 그림자 몫까지 더해 16px */
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .mono{width:calc(100% - 4px);margin-bottom:16px;}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) :is(.fld input, .fld textarea, .fld select, .dyn-row input, .mono):focus{
+  box-shadow:0 -2px 0 0 var(--d-acc), 0 2px 0 0 var(--d-acc), -2px 0 0 0 var(--d-acc), 2px 0 0 0 var(--d-acc);}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .pick{border:0;border-radius:0;margin:2px;box-shadow:var(--d-box2);}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .pick .box{border-radius:0;}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .pick.on{background:var(--d-warn-bg);color:var(--d-t1);}
+/* 재료 · 순서를 줄 단위로 고치는 칸 */
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) :is(.del, .ord button){border:0;border-radius:0;background:var(--d-bg);box-shadow:var(--d-box2);}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .ord{gap:5px;padding:2px;}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .addrow{border-radius:0;border:2px dashed var(--d-acc);background:transparent;color:var(--d-acc);}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) :is(.row, .subrow, .prevcard){border:0;border-radius:0;background:var(--d-surface);margin-left:3px;margin-right:3px;
+  box-shadow:var(--d-box), var(--d-drop-sh);}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .prevcard h4{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .subblk{border-radius:0;}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) :is(.banner, .warnbox){border-radius:0;}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .tipbox{border-radius:0;border:2px dashed var(--d-dot);background:transparent;}
+html.dot :is(#s-set, #s-edit, #s-sub, #s-import) .guide li:before{border-radius:0;}
+
+/* ── 화면 전체에 겹치는 것: PIN 잠금 · 확인 창 · 알림 토스트 ──── */
+html.dot #lock{background:var(--d-bg);color:var(--d-t1);}
+html.dot #lock .lockbox h2{font-family:"NeoDGM",monospace;font-weight:400;font-size:22px;letter-spacing:0;-webkit-font-smoothing:none;}
+html.dot #lock .lockbox p{color:var(--d-t2);}
+html.dot #lock .dots i{border-radius:0;}
+html.dot #lock .keys button:not(.blank){border:0;border-radius:0;background:var(--d-surface);margin:3px;
+  font-family:"NeoDGM",monospace;font-weight:400;font-size:22px;-webkit-font-smoothing:none;box-shadow:var(--d-box), var(--d-drop-sh);}
+html.dot #lock .keys button:not(.blank):active{transform:translate(3px,3px);box-shadow:var(--d-box);background:var(--d-warn-bg);}
+html.dot #dlg .box{border-radius:0;background:var(--d-surface);color:var(--d-t1);box-shadow:var(--d-box), 6px 6px 0 0 rgba(0,0,0,.25);}
+html.dot #dlg h4{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #dlg p{color:var(--d-t2);}
+html.dot #dlg .btns{gap:14px;padding:0 3px 3px;}
+html.dot #dlg .btns button{border:0;border-radius:0;font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;box-shadow:var(--d-box);}
+html.dot #dlg .no{background:var(--d-surface);color:var(--d-t1);}
+html.dot .toast{border-radius:0;box-shadow:var(--d-box2);}
 
 /* ── 탭바 ───────────────────────────────── */
 /* 선 아이콘 대신 도트 아이콘. 탭 이름은 10.5px 라 시스템 글꼴 그대로 */
