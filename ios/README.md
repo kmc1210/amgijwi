@@ -46,6 +46,7 @@
 | `amgijwiAlarm` | `AlarmBridge.swift` | 일정 알림 권한 묻기 · 로컬 알림 예약(최대 64개) |
 | `amgijwiShare` | `ShareBridge.swift` | 백업 JSON 을 임시 파일로 만들어 공유 시트 띄우기. 웹뷰는 `<a download>` 를 받지 못한다 |
 | `amgijwiHaptic` | `HapticBridge.swift` | 진동. 웹이 `light` · `soft` · `selection` · `success` · `warning` · `error` 중 하나를 넘긴다 |
+| `amgijwiStore` | `StoreBridge.swift` | 앱 쪽 사본. 저장할 때마다 `Application Support/amgijwi/data-copy.json` 에 통째로 쓰고, 켤 때 `window.__amgijwiNativeCopy` 로 넣어 준다. 웹뷰 저장소가 비었을 때만 웹이 이걸로 되살린다 |
 
 ### 웹 페이지처럼 보이는 순간을 막는다
 
@@ -136,13 +137,10 @@ xcrun devicectl device install app --device <기기 id> /tmp/amgijwi-dd/Build/Pr
 `.github/workflows/ios.yml` 은 `CODE_SIGNING_ALLOWED=NO` 로 빌드만 확인하므로 그대로 둔다.
 
 ## 아직 안 한 것
-- **네이티브 쪽 복사본.** iOS 가 오래 안 쓴 앱의 웹 저장소를 정리할 가능성이 있다.
-  레시피를 앱의 저장 공간에도 같이 복사해 두면 그런 경우에도 복구된다.
-  웹뷰와 앱 사이에 다리를 놓아야 하므로 `www/` 코드도 조금 손댄다.
 - **데이터 이사 안내.** 사파리의 `amgijwi.com` 저장소와 앱 웹뷰의 저장소는 전혀 다른 공간이다.
   앱을 깔아도 기존 레시피가 따라오지 않는다. 지금은 사용자가 적어 앱에 안내 화면을 만들지 않고
   말로 전한다. 옮기는 건 이미 있는 백업 내보내기·복원으로 된다. 사용자가 늘면 그때 다시 본다.
 - **WeatherKit 연결.** 웹 쪽 `window.__amgijwiWeather` 자리는 이미 만들어져 있다.
   값을 넣어 주는 네이티브 코드만 붙이면 된다. 위치 권한 · 애플 날씨 표기가 따라온다.
 
-서명 · 테스트플라이트 배포, 일정 알림, 햅틱은 끝났다.
+서명 · 테스트플라이트 배포, 일정 알림, 햅틱, 앱 쪽 사본은 끝났다.
