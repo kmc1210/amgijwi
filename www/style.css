@@ -141,9 +141,11 @@
      높이는 max-height 로 화면에 묶어 어떤 경우에도 잘리지 않는다.
      min(844px, 100dvh) 한 줄로 쓰면 dvh 를 모르는 브라우저에서 선언 전체가 버려져
      위의 100vh 로 돌아가 버린다. vh → dvh 순서라야 양쪽 다 안전하다. */
+  /* 앱(html.dot)은 제외한다. 아이패드에 트랙패드 · 매직 키보드를 붙이면 pointer:fine 이 되어
+     13인치 가로(1376px)에서 앱이 폰 모양 틀 안으로 줄어들었다 */
   @media (min-width:1200px) and (pointer:fine){
-    body{background:var(--frame);display:flex;align-items:center;justify-content:center;}
-    .phone{
+    :root:not(.dot) body{background:var(--frame);display:flex;align-items:center;justify-content:center;}
+    :root:not(.dot) .phone{
       position:relative;top:auto;left:auto;right:auto;bottom:auto;
       width:390px;
       height:844px;
@@ -153,7 +155,7 @@
       box-shadow:0 0 0 10px #16120F,0 0 0 12px #38302A,0 24px 60px rgba(0,0,0,.32);
     }
     /* 상태바가 빠진 자리. 없으면 제목이 둥근 모서리에 바짝 붙는다 */
-    .screen{padding-top:16px;}
+    :root:not(.dot) .screen{padding-top:16px;}
   }
 
   .app{flex:1;display:flex;flex-direction:column;min-height:0;position:relative;overflow:hidden;}
@@ -622,6 +624,9 @@
       margin-left:auto;
       margin-right:auto;
     }
+    /* 글 칸 · 버튼은 줄 안에 앉는 요소라 좌우 auto 로 가운데에 오지 않고, 자리가 남으면 옆으로 나란히 붙는다
+       (사진에서 가져오기 화면의 글 칸과 붙여넣기 버튼). 블록으로 세워 다른 항목과 같이 가운데에 쌓는다 */
+    .scroll > :is(textarea, button, input, select){display:block;}
     .tabs{justify-content:center;}
     .tab{flex:0 1 calc(var(--content-max) / 5);}   /* 홈·학습·레시피·일정·설정 다섯 개 */
     .selactions{justify-content:center;}
