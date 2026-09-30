@@ -1278,6 +1278,20 @@ const LEGACY = {
     ok("처리방침 링크는 새 창을 열지 않는다(웹뷰가 무시함)", !!link && link.target === null);
   }
 
+  // 도움말 · 문의(앱스토어 지원 URL). 처리방침과 같은 규칙
+  {
+    const support = fs.readFileSync(path.resolve(__dirname, "..", "www", "support.html"), "utf8");
+    const privacy = fs.readFileSync(path.resolve(__dirname, "..", "www", "privacy.html"), "utf8");
+    const cspOf = s => (/http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(s) || [])[1];
+    ok("도움말 페이지에 문의 메일이 있다", /href="mailto:skmnzn@gmail\.com/.test(support));
+    ok("도움말 페이지에는 스크립트가 없다", !/<script/i.test(support));
+    eq("도움말 페이지의 CSP 가 앱과 같다", cspOf(support), cspOf(html));
+    ok("처리방침과 도움말이 서로 이어진다", privacy.indexOf('href="support.html"') >= 0 && support.indexOf('href="privacy.html"') >= 0);
+    const sl = await page.evaluate(() => { go("set"); const a = document.querySelector("#supportLink");
+      const r = a ? { href: a.getAttribute("href"), shown: a.offsetParent !== null } : null; go("home"); return r; });
+    ok("설정에 도움말 링크가 전체 주소로 보인다", !!sl && sl.shown && sl.href === "https://amgijwi.com/support.html", JSON.stringify(sl));
+  }
+
   // ── 6-10. 도트 화면 (iOS 앱 전용) ────────────────────────────────
   // 앱에서는 <html> 에 dot 이 붙고 dot.css 가 켜진다. 웹은 지금 모습 그대로여야 한다
   {

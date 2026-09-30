@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- index.html 과 같은 정책. 이 페이지는 스크립트가 없어 더 좁혀도 되지만,
+     배포 뒤 헤더 검사가 사이트 전체에 같은 헤더를 기대하므로 맞춰 둔다 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="color-scheme" content="light dark">
+<title>암기쥐 도움말 · 문의</title>
+<!-- 앱스토어에 적는 지원 URL(https://amgijwi.com/support.html). 처리방침과 같이, 웹(CloudFront)을 내리더라도 남아 있어야 한다 -->
+<style>
+  :root{--bg:#F7F3EE;--card:#FFFFFF;--ink:#241F1A;--ink-2:#5B524A;--muted:#9A8F85;--line:#EAE0D6;--accent:#8A4A20;}
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#14110E;--card:#1E1A16;--ink:#F2EBE3;--ink-2:#C3B7AB;--muted:#8C8076;--line:#312A23;--accent:#EBB783;}
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR",system-ui,sans-serif;
+    line-height:1.7;-webkit-font-smoothing:antialiased;word-break:keep-all;}
+  main{max-width:680px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 40px) 20px calc(env(safe-area-inset-bottom,0px) + 56px);}
+  h1{font-size:26px;line-height:1.3;margin:0 0 6px;}
+  .date{color:var(--muted);font-size:14px;margin:0 0 28px;}
+  .lead{font-size:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:0 0 32px;}
+  h2{font-size:17px;margin:32px 0 8px;}
+  p,li{font-size:15px;color:var(--ink-2);}
+  p{margin:0 0 10px;}
+  ul{margin:0 0 10px;padding-left:20px;}
+  li{margin:4px 0;}
+  b{color:var(--ink);}
+  a{color:var(--accent);}
+  .mail{font-size:17px;font-weight:700;}
+  details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:0 0 10px;}
+  summary{font-size:15.5px;font-weight:700;cursor:pointer;color:var(--ink);}
+  details p,details li{margin-top:8px;}
+</style>
+</head>
+<body>
+<main>
+  <h1>암기쥐 도움말 · 문의</h1>
+  <p class="date">카페 음료 레시피를 카드로 외우는 앱</p>
+
+  <p class="lead"><b>문의</b><br>
+    메일: <a class="mail" href="mailto:skmnzn@gmail.com?subject=%5B%EC%95%94%EA%B8%B0%EC%A5%90%5D%20%EB%AC%B8%EC%9D%98">skmnzn@gmail.com</a><br>
+    쓰시는 기기(아이폰 · 아이패드)와 무엇을 하다가 어떻게 됐는지 적어 주시면 빨리 도와드릴 수 있어요.
+    GitHub 를 쓰신다면 <a href="https://github.com/kmc1210/amgijwi/issues">이슈</a>로 남겨 주셔도 됩니다.</p>
+
+  <h2>자주 묻는 질문</h2>
+
+  <details open>
+    <summary>기기를 바꾸거나 앱을 다시 깔 때 레시피를 옮기려면?</summary>
+    <p>레시피는 이 기기 안에만 저장되고 서버가 없어서, 직접 파일로 옮겨야 합니다.</p>
+    <ul>
+      <li>원래 기기: 설정 → <b>백업 내보내기 → 파일로 내보내기</b> → "파일에 저장"(iCloud Drive 등) 또는 AirDrop</li>
+      <li>새 기기: 설정 → <b>백업 불러오기 → 백업 파일 선택</b></li>
+    </ul>
+    <p>백업 파일을 가끔 새로 만들어 두면 기기를 잃어버려도 되살릴 수 있어요.</p>
+  </details>
+
+  <details>
+    <summary>레시피가 사라졌어요</summary>
+    <p>앱은 저장할 때마다 앱 저장 공간에 사본을 한 벌 더 둡니다. 저장소가 비어 있으면 켤 때 그 사본으로 저절로 되살리고 알려 드려요.
+      앱을 지웠다가 다시 깔았다면 사본도 함께 지워지므로, 만들어 둔 백업 파일로 되살려 주세요.</p>
+  </details>
+
+  <details>
+    <summary>일정 알림이 오지 않아요</summary>
+    <ul>
+      <li>일정을 열어 <b>알림</b>이 켜져 있는지 확인해 주세요</li>
+      <li>아이폰 <b>설정 → 암기쥐 → 알림</b>에서 알림 허용을 켜 주세요</li>
+      <li>집중 모드(방해 금지 등)가 켜져 있으면 알림이 조용히 쌓일 수 있어요</li>
+    </ul>
+  </details>
+
+  <details>
+    <summary>PIN 을 잊어버렸어요</summary>
+    <p>PIN 은 기기 안에서만 확인해서 개발자도 풀어 드릴 수 없습니다. 앱을 지우고 다시 깐 뒤 백업 파일로 되살리면 됩니다.
+      백업 파일에는 PIN 이 들어가지 않아서 잠금 없이 열려요. 백업 파일이 없으면 레시피를 되살릴 방법이 없으니 꼭 만들어 두세요.</p>
+  </details>
+
+  <details>
+    <summary>종이 레시피를 사진에서 가져오려면?</summary>
+    <p>사진 앱에서 레시피 사진을 열고 글자를 길게 눌러 복사한 뒤, 레시피 → + → <b>사진에서 가져오기</b>에 붙여넣으면 재료와 순서로 정리돼요. 암기쥐는 사진을 받거나 보내지 않습니다.</p>
+  </details>
+
+  <details>
+    <summary>웹(amgijwi.com)에서 쓰던 레시피가 앱에 없어요</summary>
+    <p>브라우저와 앱은 저장 공간이 따로라 저절로 옮겨지지 않습니다. 웹에서 백업 파일을 저장한 뒤 앱에서 불러오면 됩니다.</p>
+  </details>
+
+  <h2>개인정보</h2>
+  <p>암기쥐는 개인정보를 수집하지 않습니다. 자세한 내용은 <a href="privacy.html">개인정보 처리방침</a>을 봐 주세요.</p>
+</main>
+</body>
+</html>
