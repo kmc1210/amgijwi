@@ -2022,6 +2022,79 @@ const LEGACY = {
     ok("진동 설정은 앱에만 보인다", tg.hapticCard === true && tg.hapticCardWeb === false);
   }
 
+  // ── 6-10m. 앱 쪽 사본: 저장할 때마다 앱에 한 벌, 웹뷰 저장소가 비면 되살림 ─────────
+  {
+    const iosSrc = f => fs.readFileSync(path.resolve(__dirname, "..", "ios", f), "utf8");
+    const sb = iosSrc("Sources/StoreBridge.swift"), vc = iosSrc("Sources/WebAppViewController.swift");
+    ok("앱 껍데기가 사본 통로(amgijwiStore)를 달고, 켤 때 사본을 문서보다 먼저 넣는다",
+       /static let name = "amgijwiStore"/.test(sb) && vc.indexOf("add(store, name: StoreBridge.name)") >= 0
+       && vc.indexOf("StoreBridge.startupScript()") >= 0 && /injectionTime: \.atDocumentStart/.test(sb) && sb.indexOf("__amgijwiNativeCopy") >= 0);
+    ok("사본은 통째로 새로 쓰고(atomic), 레시피 목록이 있는 JSON 만 받는다",
+       sb.indexOf("options: [.atomic]") >= 0 && sb.indexOf('obj["drinks"] is [Any]') >= 0);
+    ok("우리 페이지의 본문 프레임이 보낸 것만 받는다", sb.indexOf("frameInfo.isMainFrame") >= 0 && sb.indexOf("BundleSchemeHandler.scheme") >= 0);
+
+    // 저장할 때 앱으로 넘어가는지 (여러 번 저장해도 한 번, 앱을 내리면 바로)
+    const sv = await page.evaluate(async () => {
+      const r = {}; const sent = [];
+      const w0 = window.webkit;
+      window.webkit = { messageHandlers: { amgijwiStore: { postMessage: m => sent.push(m) } } };
+      window.__amgijwiNative = true;
+      persist(); persist(); persist();
+      r.before = sent.length;
+      await new Promise(res => setTimeout(res, 800));
+      r.after = sent.length;
+      r.op = sent[0] && sent[0].op;
+      try { r.drinks = JSON.parse(sent[0].text).drinks.length === data.drinks.length; } catch (e) { r.drinks = false; }
+      persist(); flushNativeCopy(); r.flushNow = sent.length;
+      delete window.__amgijwiNative;
+      persist(); await new Promise(res => setTimeout(res, 800)); r.web = sent.length;
+      window.webkit = w0;
+      return r;
+    });
+    eq("여러 번 저장해도 잠깐 모았다가 한 번 넘긴다", [sv.before, sv.after, sv.op, sv.drinks], [0, 1, "save", true]);
+    eq("앱을 내릴 때는 기다리지 않고 바로 넘긴다", sv.flushNow, 2);
+    eq("웹은 앱으로 넘기지 않는다", sv.web, 2);
+
+    // 웹뷰 저장소가 빈 채로 켜면 사본으로 되살린다
+    const copyData = await page.evaluate(() => {
+      const d = JSON.parse(JSON.stringify(data));
+      d.drinks = d.drinks.slice(0, 2); d.drinks[0].name = "사본에만 있는 라떼"; d.hints = ["onboard"];
+      return JSON.stringify(d);
+    });
+    const run = async (native, preset) => {
+      const ctx = await browser.newContext();
+      const pg = await ctx.newPage();
+      const errs = []; pg.on("pageerror", e => errs.push(String(e)));
+      await pg.addInitScript(([native, copy]) => { if (native) window.__amgijwiNative = true; window.__amgijwiNativeCopy = copy; }, [native, copyData]);
+      if (preset) { await pg.goto(APP); await pg.evaluate(() => { data.drinks[0].name = "웹뷰에 있는 라떼"; persist(); }); }
+      await pg.goto(APP); await pg.waitForTimeout(1600);
+      const r = await pg.evaluate(() => ({ first: data.drinks[0] && data.drinks[0].name, n: data.drinks.length, restored: restoredFromCopy,
+        toast: $("#toast").textContent, saved: !!localStorage.getItem("brewnote.v1") }));
+      r.errs = errs; await ctx.close(); return r;
+    };
+    const fresh = await run(true, false), kept = await run(true, true), web = await run(false, false);
+    ok("웹뷰 저장소가 비었으면 앱 사본으로 되살리고 알린다",
+       fresh.restored === true && fresh.first === "사본에만 있는 라떼" && fresh.n === 2 && /사본으로 레시피를 되살렸어요/.test(fresh.toast) && fresh.saved, JSON.stringify(fresh));
+    ok("웹뷰에 데이터가 있으면 사본은 쓰지 않는다(웹뷰가 최신)", kept.restored === false && kept.first === "웹뷰에 있는 라떼", JSON.stringify(kept));
+    ok("웹은 사본을 쓰지 않는다", web.restored === false && web.first !== "사본에만 있는 라떼", JSON.stringify(web));
+    eq("되살리는 동안 오류가 없다", fresh.errs.concat(kept.errs, web.errs), []);
+
+    // 전체 삭제 뒤에도 택 표시 규칙 · 진동 설정이 남아 개봉관리가 그려진다
+    const wp = await page.evaluate(async () => {
+      const backup = JSON.stringify(data);
+      const errs = []; const h = e => errs.push(String(e.message || e)); window.addEventListener("error", h);
+      $("#wipeAll").click(); $("#dlgYes").click();
+      const r = { rule: data.tagRule && data.tagRule.mode, hap: "haptic" in data };
+      data.shelf = [{ id:"w5", name:"우유", place:"냉장", dur:"5일", note:"" }];
+      state.listTab = "shelf"; state.shelfOpen.add(5);
+      try { go("list"); r.rows = document.querySelectorAll("#shelfBody .tagrow").length; } catch (e) { r.err = String(e); }
+      window.removeEventListener("error", h); r.errs = errs;
+      data = JSON.parse(backup); persist(); go("home");
+      return r;
+    });
+    ok("전체 삭제 뒤에도 택 표시 규칙이 남아 개봉관리가 그려진다", !!wp.rule && wp.rows === 5 && !wp.err && wp.errs.length === 0, JSON.stringify(wp));
+  }
+
   await browser.close();
 
   console.log("");

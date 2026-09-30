@@ -80,6 +80,40 @@ function haptic(kind){
   try{ w.messageHandlers.amgijwiHaptic.postMessage(kind); }catch(e){}
 }
 
+/* ---------- 앱 쪽 사본 (앱만) ----------
+   iOS 가 오래 안 쓴 앱의 웹뷰 저장소를 비울 수 있다. 그래서 저장할 때마다 앱 저장 공간에도 한 벌 둔다 (StoreBridge.swift).
+   앱은 켤 때 그 사본을 문서가 뜨기 전에 window.__amgijwiNativeCopy 로 넣어 준다.
+   웹뷰 저장소가 비었을 때만 거기서 되살린다. 웹뷰에 데이터가 있으면 그쪽이 늘 최신이라 사본은 쓰지 않는다 */
+let copyT = null, copyText = null;
+function storeBridge(){
+  const w = window.webkit;
+  if(!isNativeApp() || !w || !w.messageHandlers || !w.messageHandlers.amgijwiStore) return null;
+  return w.messageHandlers.amgijwiStore;
+}
+function nativeCopySave(d){
+  if(!storeBridge()) return;
+  copyText = JSON.stringify(d);
+  clearTimeout(copyT);
+  copyT = setTimeout(flushNativeCopy, 600);      // 연달아 저장하면 마지막 것 한 번만 쓴다
+}
+function flushNativeCopy(){
+  clearTimeout(copyT); copyT = null;
+  const br = storeBridge();
+  if(copyText === null || !br) return;
+  const t = copyText; copyText = null;
+  try{ br.postMessage({op:"save", text:t}); }catch(e){}
+}
+/* 앱을 내리거나 닫을 때는 기다리지 않고 바로 쓴다. 마지막 수정이 사본에서 빠지지 않게 */
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden) flushNativeCopy(); });
+window.addEventListener("pagehide", flushNativeCopy);
+function nativeCopyLoad(){
+  if(!isNativeApp() || typeof window.__amgijwiNativeCopy !== "string") return null;
+  try{
+    const d = JSON.parse(window.__amgijwiNativeCopy);
+    return (d && Array.isArray(d.drinks)) ? d : null;
+  }catch(e){ return null; }
+}
+
 /* ---------- 저장소 (localStorage, 실패 시 메모리) ---------- */
 const Store = (()=>{
   let ok = false, mem = null;
@@ -92,6 +126,7 @@ const Store = (()=>{
     },
     save(d){
       mem = d;
+      nativeCopySave(d);            // 웹뷰 저장이 막혀도 앱 사본에는 남는다
       if(ok){ try{ localStorage.setItem(KEY, JSON.stringify(d)); return true; }catch(e){ ok = false; return false; } }
       return false;
     },
@@ -176,6 +211,12 @@ function uid(){
 /* ---------- 상태 ---------- */
 let data = Store.load();
 let freshData = false;
+/* 웹뷰 저장소가 비었는데 앱에 사본이 있으면 그걸로 되살린다(boot.js 가 알려준다) */
+let restoredFromCopy = false;
+if(!data || !Array.isArray(data.drinks)){
+  const copy = nativeCopyLoad();
+  if(copy){ data = copy; restoredFromCopy = true; Store.save(data); }
+}
 if(!data || !Array.isArray(data.drinks)){
   data = {v:1, drinks:seed(), mastered:[], needReview:[]};
   Store.save(data);
