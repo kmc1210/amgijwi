@@ -2095,6 +2095,43 @@ const LEGACY = {
     ok("전체 삭제 뒤에도 택 표시 규칙이 남아 개봉관리가 그려진다", !!wp.rule && wp.rows === 5 && !wp.err && wp.errs.length === 0, JSON.stringify(wp));
   }
 
+  // ── 6-10n. 아이패드: 트랙패드를 붙인 13인치 가로 · 화면 분할 1/3 ─────────────
+  {
+    const before = page.viewportSize();
+    const phoneW = async (native) => page.evaluate(async (native) => {
+      if (native) { window.__amgijwiNative = true; document.documentElement.classList.add("dot"); }
+      await new Promise(res => setTimeout(res, 350));
+      const w = Math.round(document.querySelector(".phone").getBoundingClientRect().width);
+      if (native) { delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); }
+      return w;
+    }, native);
+    await page.setViewportSize({ width: 1376, height: 1032 });   // 이 브라우저는 pointer:fine = 트랙패드를 붙인 아이패드와 같다
+    const appW = await phoneW(true), webW = await phoneW(false);
+    eq("앱은 넓은 화면 · 트랙패드에서도 폰 모양 틀 없이 화면을 다 쓴다", appW, 1376);
+    eq("웹은 넓은 화면에서 예전처럼 폰 모양 틀", webW, 390);
+
+    await page.setViewportSize({ width: 320, height: 1032 });
+    const narrow = await page.evaluate(async () => {
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot");
+      await new Promise(res => setTimeout(res, 350));
+      const backup = JSON.stringify(data);
+      data.shelf = [{ id:"n3", name:"우유", place:"냉장", dur:"3일", note:"" }];
+      state.listTab = "shelf"; state.shelfOpen = new Set([3]); go("list");
+      const tabs = [...document.querySelectorAll("#listSeg button")].map(b => Math.round(b.getBoundingClientRect().height));
+      const W = document.documentElement.clientWidth;
+      const over = [...document.querySelectorAll("#s-list *")].filter(el => { const r = el.getBoundingClientRect(); return r.width && r.right > W + 1; }).length;
+      const x = document.querySelector("#shelfBody .tagrow:not(.today) .tagdates .o");
+      const oneLine = x ? Math.round(x.getBoundingClientRect().height) <= Math.round(parseFloat(getComputedStyle(x).lineHeight) || 21) + 2 : false;
+      data = JSON.parse(backup); persist(); go("home");
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot");
+      return { tabs, over, oneLine, keep: getComputedStyle(document.documentElement).getPropertyValue("x") };
+    });
+    await page.setViewportSize(before);
+    ok("320px 폭에서 레시피 탭 네 칸이 모두 한 줄(높이가 같다)", narrow.tabs.length === 4 && narrow.tabs.every(h => h === narrow.tabs[0]), JSON.stringify(narrow.tabs));
+    eq("320px 폭에서 개봉관리가 화면 밖으로 넘치지 않는다", narrow.over, 0);
+    ok("320px 폭에서도 오늘 폐기가 아닌 택 날짜는 한 줄", narrow.oneLine);
+  }
+
   await browser.close();
 
   console.log("");

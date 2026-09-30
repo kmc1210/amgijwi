@@ -634,3 +634,12 @@ html.dot #s-set .minibtn{border:0;border-radius:0;background:var(--d-surface);co
 html.dot #s-set .minibtn.warn{color:var(--d-late);}
 html.dot #s-set .minibtn:disabled{opacity:.4;}
 html.dot #s-set .minibtn:not(:disabled):active{transform:translate(2px,2px);}
+
+/* 아주 좁은 폭(아이패드 화면 분할 1/3 · 아이폰 SE 1세대, 320px 안팎)
+   탭 "개봉관리" 가 "개봉관 / 리" 로, 택 날짜가 "(수) 개 / 봉" 으로 낱말 가운데서 접혔다 */
+html.dot #s-list .seg button{white-space:nowrap;}
+html.dot :is(#s-list, #sheet) .tagdates :is(.o, .x){word-break:keep-all;}
+@media (max-width:360px){
+  html.dot #s-list .seg{padding-left:2px;padding-right:2px;gap:2px;}
+  html.dot #s-list .seg button{padding-left:2px;padding-right:2px;letter-spacing:-1px;}
+}
