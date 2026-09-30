@@ -473,7 +473,7 @@ html.dot #dlg p{color:var(--d-t2);}
 html.dot #dlg .btns{gap:14px;padding:0 3px 3px;}
 html.dot #dlg .btns button{border:0;border-radius:0;font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;box-shadow:var(--d-box);}
 html.dot #dlg .no{background:var(--d-surface);color:var(--d-t1);}
-html.dot .toast{border-radius:0;box-shadow:var(--d-box2);}
+html.dot .toast{border-radius:0;box-shadow:var(--d-box2);word-break:keep-all;}   /* "레시 / 피를" 처럼 낱말 가운데서 접히지 않게 */
 
 /* ── 태블릿 ─────────────────────────────── */
 /* 넓은 화면에서는 style.css 가 화면 안 부품을 최대 폭 · 좌우 auto 로 가운데 모은다(태블릿 최대 폭).

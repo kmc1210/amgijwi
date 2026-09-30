@@ -270,7 +270,7 @@ function renderStorageCard(){
   const rows = [];
   /* PC 는 홈 화면 앱이라는 선택지가 없으니 이 줄을 빼고 저장 보호와 백업만 보여준다 */
   if(app)
-    rows.push(["ok", "앱으로 실행 중", "레시피가 앱 안에 남습니다. 앱을 지우지 않는 한 사라지지 않아요."]);
+    rows.push(["ok", "앱으로 실행 중", "레시피가 앱 안에 남습니다. 저장할 때마다 앱 저장 공간에 사본도 한 벌 둬서, 앱을 지우지 않는 한 사라지지 않아요."]);
   else if(isStandalone())
     rows.push(["ok", "홈 화면 앱으로 실행 중", "저장 데이터가 지워질 위험이 가장 낮은 상태예요."]);
   else if(os !== "desktop")
@@ -454,6 +454,7 @@ $("#wipeAll").addEventListener("click", ()=>{
     /* 지우는 건 레시피와 학습 기록이다. 테마·소리 같은 취향과 안내를 본 기록은 그대로 둔다.
        sound 가 빠져 있어 전체 삭제 때마다 소리가 조용히 꺼지던 것도 여기서 바로잡는다 */
     data = {v:1, mode:data.mode, theme:data.theme, sound:data.sound, wx:data.wx, listSort:data.listSort, enCase:data.enCase, pin:data.pin,
+      haptic:data.haptic, tagRule:data.tagRule,      /* 빠지면 개봉관리가 규칙 없이 그려지다 멈춘다 */
       visit:data.visit, hints:data.hints || [], cats:data.cats,
       shelf:[], memos:[], subs:[], drinks:[], mastered:[], needReview:[], events:[]};
     Store.clear(); persist(); renderSettings(); toast("모두 삭제했어요"); go("home");

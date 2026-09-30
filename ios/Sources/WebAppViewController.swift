@@ -10,6 +10,7 @@ final class WebAppViewController: UIViewController {
     private let alarms = AlarmBridge()
     private let share = ShareBridge()
     private let haptics = HapticBridge()
+    private let store = StoreBridge()
 
     init() {
         handler = BundleSchemeHandler()
@@ -39,6 +40,12 @@ final class WebAppViewController: UIViewController {
                                 injectionTime: .atDocumentStart,
                                 forMainFrameOnly: true)
         config.userContentController.addUserScript(flag)
+
+        /// 앱 쪽 사본. 웹뷰 저장소가 비었을 때 되살릴 수 있게 켤 때 넣어 두고, 저장할 때마다 받아 둔다 (StoreBridge.swift).
+        if let copy = StoreBridge.startupScript() {
+            config.userContentController.addUserScript(copy)
+        }
+        config.userContentController.add(store, name: StoreBridge.name)
 
         /// 일정 알림 통로. 무엇을 언제 보낼지는 웹이 정하고 여기서는 예약만 한다 (AlarmBridge.swift).
         config.userContentController.add(alarms, name: AlarmBridge.name)
