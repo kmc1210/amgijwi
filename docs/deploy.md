@@ -1,9 +1,13 @@
 # 배포
 
-웹(`www/`)을 S3 · CloudFront 에 올리는 방법입니다. iOS 앱 빌드와 TestFlight 업로드는 [ios/README.md](../ios/README.md) 에 있습니다.
+amgijwi.com 을 S3 · CloudFront 에 올리는 방법입니다. iOS 앱 빌드와 TestFlight 업로드는 [ios/README.md](../ios/README.md) 에 있습니다.
 
-> 웹(amgijwi.com)은 앱이 자리를 잡으면 내릴 예정입니다. 그때도 **`privacy.html` 은 남겨야 합니다**
-> (App Store Connect 에 적은 개인정보 처리방침 주소). 웹을 내릴 때 이 문서를 "처리방침만 올리는 배포" 로 고칩니다.
+> 웹 앱은 2026년 10월에 닫았습니다. 사이트에는 아래만 올립니다(`deploy.yml` 의 "올릴 파일 모으기").
+> - `site/index.html` · `site/rescue.js` — 안내 첫 화면, 그 브라우저에 남은 예전 레시피를 백업 파일로 꺼내기
+> - `www/privacy.html` · `www/support.html` — App Store Connect 에 적은 처리방침 · 지원 URL. **내리면 안 됩니다**
+> - `www/apple-touch-icon.png` · `www/fonts/` — 첫 화면 아이콘과 글꼴
+>
+> `--delete` 로 올리므로 예전 웹 앱 파일은 버킷에서 지워지고, 배포 확인 단계가 남아 있지 않은지 봅니다.
 
 ## 올리기
 
@@ -11,9 +15,9 @@
 GitHub Actions → Deploy → Run workflow
 ```
 
-`www/` 를 S3 에 올리고 CloudFront 캐시를 비운 뒤, 배포된 파일이 저장소와 같은지와
-보안 헤더를 확인합니다(`.github/workflows/deploy.yml`).
-저장소 변수 `AUTO_DEPLOY` 가 `true` 면 `www/` 변경이 main 에 머지될 때 자동으로 배포합니다.
+위 파일을 `dist/` 에 모아 S3 에 올리고 CloudFront 캐시를 비운 뒤, 배포된 파일이 저장소와 같은지 ·
+예전 웹 앱 파일이 지워졌는지 · 보안 헤더를 확인합니다(`.github/workflows/deploy.yml`).
+저장소 변수 `AUTO_DEPLOY` 가 `true` 면 `site/` · 처리방침 · 도움말이 바뀌어 main 에 머지될 때 자동으로 배포합니다.
 
 AWS 키는 저장소에 없고 OIDC 로 IAM 역할을 받습니다. 역할은 main 브랜치만 허용합니다.
 
