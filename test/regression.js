@@ -1283,7 +1283,7 @@ const LEGACY = {
     const support = fs.readFileSync(path.resolve(__dirname, "..", "www", "support.html"), "utf8");
     const privacy = fs.readFileSync(path.resolve(__dirname, "..", "www", "privacy.html"), "utf8");
     const cspOf = s => (/http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(s) || [])[1];
-    ok("도움말 페이지에 문의 메일이 있다", /href="mailto:skmnzn@gmail\.com/.test(support));
+    ok("도움말 페이지에 문의 메일이 있다", /href="mailto:skmnzn110719@gmail\.com/.test(support));
     ok("도움말 페이지에는 스크립트가 없다", !/<script/i.test(support));
     eq("도움말 페이지의 CSP 가 앱과 같다", cspOf(support), cspOf(html));
     ok("처리방침과 도움말이 서로 이어진다", privacy.indexOf('href="support.html"') >= 0 && support.indexOf('href="privacy.html"') >= 0);
