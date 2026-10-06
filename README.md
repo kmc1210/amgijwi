@@ -20,8 +20,8 @@
 ## 지금 상태
 
 - **iOS 앱** — TestFlight 로 베타 테스트 중입니다. 앱은 도트 화면(Neo둥근모 글꼴)으로 보입니다.
-- **웹** — [amgijwi.com](https://amgijwi.com) 은 테스트 페이지입니다. 같은 코드를 예전 모습 그대로 보여 주며, 앱이 자리를 잡으면 내립니다.
-  [개인정보 처리방침](https://amgijwi.com/privacy.html) 은 그 뒤에도 남깁니다.
+- **웹** — 2026년 10월에 닫았습니다. [amgijwi.com](https://amgijwi.com) 에는 안내 첫 화면(예전에 그 브라우저에서 쓰던 레시피를 백업 파일로 꺼내는 칸 포함),
+  [도움말 · 문의](https://amgijwi.com/support.html), [개인정보 처리방침](https://amgijwi.com/privacy.html) 만 남아 있습니다.
 
 > GitHub Pages 로 서빙하던 시절의 주소(`kmc1210.github.io/brewnote/`, `/amgijwi/`)는
 > 2026-09-22 자로 내렸습니다.
@@ -76,6 +76,7 @@ www/                   앱 본체. iOS 앱 번들에 그대로 들어가고, 웹
 ios/                   iOS 껍데기 (WKWebView). 자세한 건 ios/README.md
   project.yml          xcodegen 설정. .xcodeproj 는 저장소에 넣지 않습니다
   Sources/             웹뷰 · 번들 스킴 처리기 · 알림 · 공유 시트 · 진동 통로
+site/                  amgijwi.com 에 올리는 첫 화면(index.html)과 예전 레시피 꺼내기(rescue.js)
 docs/
   screenshots/         README 스크린샷
   deploy.md            웹 배포(S3 · CloudFront) · AWS OIDC

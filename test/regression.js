@@ -1292,6 +1292,49 @@ const LEGACY = {
     ok("설정에 도움말 링크가 전체 주소로 보인다", !!sl && sl.shown && sl.href === "https://amgijwi.com/support.html", JSON.stringify(sl));
   }
 
+  // amgijwi.com 첫 화면(site/). 웹 앱은 닫았고, 예전 레시피는 여기서 백업 파일로 꺼낸다
+  {
+    const root = path.resolve(__dirname, "..");
+    const site = fs.readFileSync(path.join(root, "site", "index.html"), "utf8");
+    const deploy = fs.readFileSync(path.join(root, ".github", "workflows", "deploy.yml"), "utf8");
+    const cspOf = s => (/http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(s) || [])[1];
+    eq("첫 화면의 CSP 가 앱과 같다(배포 뒤 헤더 검사가 첫 화면 meta 와 비교)", cspOf(site), cspOf(html));
+    ok("첫 화면은 바깥에서 불러오는 것이 없다", !/(src|href)="(https?:)?\/\//.test(site.replace(/<a [^>]*>/g, "")));
+    // 첫 화면이 부르는 파일이 모두 배포 목록에 있다(없으면 사이트에서 깨진다)
+    const refs = (site.match(/(?:src|href)="([^"#:]+)"/g) || []).map(t => /"([^"]+)"/.exec(t)[1]).concat(["fonts/neodgm.woff2"]);
+    const shipped = { "index.html":"site/index.html", "rescue.js":"site/rescue.js", "privacy.html":"www/privacy.html", "support.html":"www/support.html",
+                      "apple-touch-icon.png":"www/apple-touch-icon.png", "fonts/neodgm.woff2":"www/fonts/neodgm.woff2" };
+    eq("첫 화면이 부르는 파일이 모두 배포된다", refs.filter(r => !shipped[r] || deploy.indexOf(shipped[r]) < 0 || !fs.existsSync(path.join(root, shipped[r]))), []);
+    ok("배포는 dist/ 만 올리고 www/ 를 통째로 올리지 않는다", /aws s3 sync dist\//.test(deploy) && !/aws s3 sync www\//.test(deploy));
+    ok("처리방침 · 도움말은 계속 배포된다(앱스토어 주소)", deploy.indexOf("www/privacy.html") >= 0 && deploy.indexOf("www/support.html") >= 0);
+
+    const SITE = "file://" + path.join(root, "site", "index.html");
+    const old = await page.evaluate(() => { const d = JSON.parse(JSON.stringify(data)); d.pin = "secret-hash"; d.drinks = d.drinks.slice(0, 3); return JSON.stringify(d); });
+    const look = async (seed) => {
+      const ctx = await browser.newContext(); const pg = await ctx.newPage();
+      const errs = []; pg.on("pageerror", e => errs.push(String(e)));
+      await pg.addInitScript(v => { if (v) localStorage.setItem("brewnote.v1", v); else localStorage.removeItem("brewnote.v1"); }, seed);
+      await pg.goto(SITE); await pg.waitForTimeout(300);
+      const r = await pg.evaluate(() => ({ shown: !document.getElementById("rescue").hidden, msg: document.getElementById("rescueMsg").textContent }));
+      if (r.shown) { await pg.click("#rescueText"); r.text = await pg.evaluate(() => document.getElementById("rescueBox").value); }
+      r.errs = errs; await ctx.close(); return r;
+    };
+    const none = await look(null), some = await look(old);
+    ok("남은 레시피가 없으면 꺼내기 칸을 숨긴다", none.shown === false && none.errs.length === 0);
+    ok("남은 레시피가 있으면 개수를 알리고 꺼낼 수 있다", some.shown && /레시피 3개/.test(some.msg) && some.errs.length === 0, some.msg);
+    let bk = null; try { bk = JSON.parse(some.text); } catch (e) {}
+    ok("꺼낸 파일은 앱 백업과 같은 모양이고 PIN 은 빠진다", !!bk && bk.app === "brewnote" && bk.data.drinks.length === 3 && !("pin" in bk.data));
+    // 앱에서 그대로 불러와진다
+    const restored = await page.evaluate(async (t) => {
+      const backup = JSON.stringify(data);
+      applyBackup(t); $("#dlgYes").click();
+      const n = data.drinks.length, pin = data.pin;
+      data = JSON.parse(backup); persist(); go("home");
+      return { n, pinKept: pin === JSON.parse(backup).pin };
+    }, some.text);
+    ok("꺼낸 파일을 앱의 백업 불러오기로 가져올 수 있다", restored.n === 3, JSON.stringify(restored));
+  }
+
   // ── 6-10. 도트 화면 (iOS 앱 전용) ────────────────────────────────
   // 앱에서는 <html> 에 dot 이 붙고 dot.css 가 켜진다. 웹은 지금 모습 그대로여야 한다
   {
