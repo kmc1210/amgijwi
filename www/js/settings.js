@@ -213,9 +213,6 @@ document.querySelectorAll("#soundBtns .theme-b").forEach(b=>{
 
 /* 진동은 기본으로 켠다. 끈 사람만 data.haptic = false 로 남긴다(백업을 따라간다) */
 function applyHaptic(){
-  /* 진동 장치가 없는 기기(아이패드)는 눌러도 아무 느낌이 없어 고장처럼 보인다. 칸을 숨긴다 */
-  const card = $("#hapticCard");
-  if(card && window.__amgijwiHaptics === false) card.style.display = "none";
   document.querySelectorAll("#hapticBtns .theme-b").forEach(b=>{
     b.classList.toggle("on", b.dataset.haptic === (data.haptic === false ? "off" : "on"));
   });
@@ -530,8 +527,14 @@ $("#openGuide").addEventListener("click", ()=>openGuide());
 const FEEDBACK_TO = "skmnzn110719@gmail.com";
 function feedbackHref(){
   const i = window.__amgijwiInfo || {};
-  const body = "쥐돌이에게 하고 싶은 말을 적어 주세요.\n\n\n\n---\n" +
-    ["암기쥐 " + (i.app || ""), i.device || "", i.os || ""].filter(Boolean).join(" · ");
+  const tail = [i.app ? "암기쥐 " + i.app : "", i.device || "", i.os || ""].filter(Boolean).join(" · ");
+  const body = "쥐돌이에게 하고 싶은 말을 적어 주세요.\n\n\n\n" + (tail ? "---\n" + tail : "");
   return "mailto:" + FEEDBACK_TO + "?subject=" + encodeURIComponent("[암기쥐] 건의") + "&body=" + encodeURIComponent(body);
 }
-$("#feedbackBtn").setAttribute("href", feedbackHref());
+/* 누르는 순간 주소를 만든다. 앱 정보가 늦게 들어와도 빠지지 않는다 */
+$("#feedbackBtn").addEventListener("click", ()=>{ $("#feedbackBtn").setAttribute("href", feedbackHref()); });
+/* 메일 앱을 열 수 없을 때(메일 앱 · 계정 없음) 앱이 부른다. 주소를 보여 주고 복사해 둔다 */
+function mailFailedFromApp(){
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(FEEDBACK_TO).catch(()=>{});
+  toast("메일 앱을 열 수 없어요. " + FEEDBACK_TO + " 로 보내 주세요(주소를 복사했어요)");
+}

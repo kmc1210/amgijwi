@@ -99,12 +99,30 @@ final class WebAppViewController: UIViewController {
     /// window.__amgijwiHaptics: 진동을 낼 수 있는 기기인지. 아니면 설정의 진동 칸을 숨긴다.
     /// window.__amgijwiInfo: 건의 메일 본문에 붙이는 앱 버전 · 기기 · iOS 버전. 메일은 사용자가 직접 보낸다.
     private static func deviceScript() -> String {
-        let haptics = CHHapticEngine.capabilitiesForHardware().supportsHaptics
+        var haptics = CHHapticEngine.capabilitiesForHardware().supportsHaptics
+        #if targetEnvironment(simulator)
+        /// 시뮬레이터는 늘 "진동 없음" 이라, 아이폰 시뮬레이터에서도 진동 칸이 사라져 실기기와 달라진다
+        haptics = UIDevice.current.userInterfaceIdiom == .phone
+        #endif
         let b = Bundle.main.infoDictionary ?? [:]
         let ver = (b["CFBundleShortVersionString"] as? String ?? "?") + " (" + (b["CFBundleVersion"] as? String ?? "?") + ")"
-        let info: [String: String] = ["app": ver, "device": UIDevice.current.model, "os": "iOS " + UIDevice.current.systemVersion]
+        let info: [String: String] = ["app": ver, "device": UIDevice.current.model + " (" + machineName() + ")", "os": "iOS " + UIDevice.current.systemVersion]
         let json = (try? JSONSerialization.data(withJSONObject: info)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+        /// 진동이 안 되는 기기는 문서가 그려지기 전에 표시를 붙여 CSS 가 진동 칸을 숨긴다(dot.css html.dot.nohaptic)
         return " window.__amgijwiHaptics = \(haptics ? "true" : "false"); window.__amgijwiInfo = \(json);"
+             + (haptics ? "" : " document.documentElement.classList.add('nohaptic');")
+    }
+
+    /// "iPhone17,3" 같은 기종 이름. UIDevice.model 은 "iPhone" · "iPad" 뿐이라 화면 크기를 알 수 없다.
+    private static func machineName() -> String {
+        #if targetEnvironment(simulator)
+        if let m = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] { return m }
+        #endif
+        var u = utsname()
+        uname(&u)
+        return withUnsafePointer(to: &u.machine) {
+            $0.withMemoryRebound(to: CChar.self, capacity: 1) { String(cString: $0) }
+        }
     }
 
     /// ambient 를 쓰면 무음 스위치를 따르고, 듣고 있던 음악도 끊지 않는다.
@@ -150,7 +168,11 @@ extension WebAppViewController: WKNavigationDelegate {
             return
         }
         if url.scheme == "http" || url.scheme == "https" || url.scheme == "mailto" {
-            UIApplication.shared.open(url)
+            /// 메일 앱이 없거나 메일 계정이 없으면 열리지 않는다. 그때 버튼이 아무 반응 없어 보이지 않게 웹에 알린다
+            UIApplication.shared.open(url, options: [:]) { [weak webView] ok in
+                guard !ok, url.scheme == "mailto" else { return }
+                webView?.evaluateJavaScript("typeof mailFailedFromApp === 'function' && mailFailedFromApp()", completionHandler: nil)
+            }
         }
         decisionHandler(.cancel)
     }
