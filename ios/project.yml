@@ -8,6 +8,8 @@ name: Amgijwi
 
 options:
   bundleIdPrefix: com.amgijwi
+  # 앱은 한국어로만 되어 있다. 기본값(en)이면 앱스토어 정보 칸에 "언어: 영어" 로 나왔다
+  developmentLanguage: ko
   deploymentTarget:
     iOS: "15.0"
   createIntermediateGroups: true
@@ -34,8 +36,8 @@ targets:
         DEVELOPMENT_TEAM: KC5GYLLW34
         CODE_SIGN_STYLE: Automatic
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        MARKETING_VERSION: "1.0"
-        CURRENT_PROJECT_VERSION: "6"
+        MARKETING_VERSION: "1.0.1"
+        CURRENT_PROJECT_VERSION: "7"
         TARGETED_DEVICE_FAMILY: "1,2"     # 아이폰과 아이패드. 태블릿 최대 폭 작업을 이미 해뒀다
         SWIFT_VERSION: "5.0"
         ENABLE_USER_SCRIPT_SANDBOXING: YES
@@ -46,6 +48,8 @@ targets:
         CFBundleDisplayName: 암기쥐
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleLocalizations:
+          - ko
 
         # 이게 있어야 전체 화면으로 뜬다. 바탕은 기본 테마(크림) 색으로 칠해
         # 첫 화면이 그려지기 전에 흰 화면이 번쩍이지 않게 한다. 색은 Assets.xcassets/LaunchBackground.

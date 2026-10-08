@@ -1,6 +1,7 @@
 import UIKit
 import WebKit
 import AVFoundation
+import CoreHaptics
 
 /// 화면 전체를 덮는 웹뷰 하나가 앱의 전부다.
 final class WebAppViewController: UIViewController {
@@ -36,7 +37,9 @@ final class WebAppViewController: UIViewController {
         /// 웹 앱이 "홈 화면에 추가하세요" 를 앱 안에서 띄우지 않도록 알려준다.
         /// 웹뷰에서는 display-mode: standalone 도 navigator.standalone 도 잡히지 않는다.
         /// 같은 때에 도트 화면(www/dot.css) 표시도 붙인다. 문서가 그려지기 전이라 웹 모습이 잠깐 비치지 않는다.
-        let flag = WKUserScript(source: "window.__amgijwiNative = true; document.documentElement.classList.add('dot');",
+        /// 진동이 되는 기기인지(아이패드는 진동 장치가 없다)와, 건의 메일에 붙일 앱 · 기기 정보도 같이 알린다.
+        let flag = WKUserScript(source: "window.__amgijwiNative = true; document.documentElement.classList.add('dot');"
+                                    + WebAppViewController.deviceScript(),
                                 injectionTime: .atDocumentStart,
                                 forMainFrameOnly: true)
         config.userContentController.addUserScript(flag)
@@ -91,6 +94,17 @@ final class WebAppViewController: UIViewController {
             return
         }
         webView.load(URLRequest(url: BundleSchemeHandler.startURL))
+    }
+
+    /// window.__amgijwiHaptics: 진동을 낼 수 있는 기기인지. 아니면 설정의 진동 칸을 숨긴다.
+    /// window.__amgijwiInfo: 건의 메일 본문에 붙이는 앱 버전 · 기기 · iOS 버전. 메일은 사용자가 직접 보낸다.
+    private static func deviceScript() -> String {
+        let haptics = CHHapticEngine.capabilitiesForHardware().supportsHaptics
+        let b = Bundle.main.infoDictionary ?? [:]
+        let ver = (b["CFBundleShortVersionString"] as? String ?? "?") + " (" + (b["CFBundleVersion"] as? String ?? "?") + ")"
+        let info: [String: String] = ["app": ver, "device": UIDevice.current.model, "os": "iOS " + UIDevice.current.systemVersion]
+        let json = (try? JSONSerialization.data(withJSONObject: info)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+        return " window.__amgijwiHaptics = \(haptics ? "true" : "false"); window.__amgijwiInfo = \(json);"
     }
 
     /// ambient 를 쓰면 무음 스위치를 따르고, 듣고 있던 음악도 끊지 않는다.

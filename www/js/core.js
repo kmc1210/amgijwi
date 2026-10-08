@@ -74,7 +74,7 @@ function isNativeApp(){ return window.__amgijwiNative === true; }
    스크롤 · 글쓰기 · 일반 버튼에는 넣지 않는다. 설정에서 끌 수 있다(data.haptic === false).
    light 톡 · soft 뭉툭 · selection 딸깍 · success 따닥 · warning 두 번 · error 부르르 (HapticBridge.swift) */
 function haptic(kind){
-  if(!isNativeApp() || (typeof data !== "undefined" && data.haptic === false)) return;
+  if(!isNativeApp() || window.__amgijwiHaptics === false || (typeof data !== "undefined" && data.haptic === false)) return;
   const w = window.webkit;
   if(!w || !w.messageHandlers || !w.messageHandlers.amgijwiHaptic) return;
   try{ w.messageHandlers.amgijwiHaptic.postMessage(kind); }catch(e){}

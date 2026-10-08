@@ -213,6 +213,9 @@ document.querySelectorAll("#soundBtns .theme-b").forEach(b=>{
 
 /* 진동은 기본으로 켠다. 끈 사람만 data.haptic = false 로 남긴다(백업을 따라간다) */
 function applyHaptic(){
+  /* 진동 장치가 없는 기기(아이패드)는 눌러도 아무 느낌이 없어 고장처럼 보인다. 칸을 숨긴다 */
+  const card = $("#hapticCard");
+  if(card && window.__amgijwiHaptics === false) card.style.display = "none";
   document.querySelectorAll("#hapticBtns .theme-b").forEach(b=>{
     b.classList.toggle("on", b.dataset.haptic === (data.haptic === false ? "off" : "on"));
   });
@@ -522,3 +525,13 @@ function openGuideSheet(){
 }
 /* 앱은 움직이는 도트 가이드(guide.js), 웹은 이 글 시트 */
 $("#openGuide").addEventListener("click", ()=>openGuide());
+
+/* 쥐돌이에게 건의하기 — 받는 사람 · 제목 · 앱 정보를 채운 메일 주소. 메일은 사용자가 직접 보낸다(앱은 보내지 않는다) */
+const FEEDBACK_TO = "skmnzn110719@gmail.com";
+function feedbackHref(){
+  const i = window.__amgijwiInfo || {};
+  const body = "쥐돌이에게 하고 싶은 말을 적어 주세요.\n\n\n\n---\n" +
+    ["암기쥐 " + (i.app || ""), i.device || "", i.os || ""].filter(Boolean).join(" · ");
+  return "mailto:" + FEEDBACK_TO + "?subject=" + encodeURIComponent("[암기쥐] 건의") + "&body=" + encodeURIComponent(body);
+}
+$("#feedbackBtn").setAttribute("href", feedbackHref());
