@@ -2242,6 +2242,8 @@ const LEGACY = {
       // 정리: 엉뚱한 값 · 안 가진 옷은 입을 수 없다
       const c0 = cleanCloset({ cheese:-3, own:["beret","nope"], wear:{ head:"beret", face:"glasses", body:"mug" } });
       r.clean = [c0.cheese, c0.own.join(","), JSON.stringify(c0.wear)];
+      r.items = CLOSET_ITEMS.filter(i => !i.rows.every(row => row.length === 28 && row.split("").every(ch => ch === "." || MOUSE_PAL[ch]))).map(i => i.id);
+      r.ids = new Set(CLOSET_ITEMS.map(i => i.id)).size === CLOSET_ITEMS.length && CLOSET_ITEMS.length === 14;
       // 그리기 규칙
       data.closet = cleanCloset({ cheese:0, own:["beret","glasses","apron","mug"], wear:{ head:"beret", face:"glasses", body:"apron", hand:"mug" } });
       window.__amgijwiNative = true; document.documentElement.classList.add("dot");
@@ -2323,6 +2325,8 @@ const LEGACY = {
       return r;
     });
     eq("옷장 정리: 음수 치즈는 0, 없는 아이템 · 안 가진 옷은 뺀다", r.clean, [0, "beret", '{"head":"beret"}']);
+    eq("아이템 그림은 모두 28칸 너비이고 색이 정해져 있다", r.items, []);
+    ok("아이템 14개, 이름이 겹치지 않는다", r.ids);
     ok("머그를 들면 허리띠가 옆구리를 돌고, 머그 · 발은 앞치마 앞에 있다", r.beltSides && r.mugInFront && r.beret);
     ok("앞치마만 입으면 허리띠가 발 뒤로 지나간다", r.pawsFront);
     ok("치즈를 먹는 동안: 치즈는 앞치마에 가리지 않고, 머그는 내려놓는다", r.eatKeepsCheese && r.eatNoMug);
