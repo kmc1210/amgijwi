@@ -650,7 +650,8 @@ html.dot.nohaptic #hapticCard{display:none !important;}
 
 /* ── 쥐돌이 옷장 (closet.js) ─────────────────────────
    치즈 칩 · 결과 화면 치즈 줄 · 설정 옷장 줄 · 옷장 화면. 앱(도트)에서만 보인다 */
-html.dot #s-home .mwrap{display:flex;flex-direction:column;align-items:center;gap:6px;}
+/* 치즈 칩이 쥐돌이(52px)보다 넓어져도(세 자리 수) 인사말을 덮지 않게 칸이 칩만큼 넓어진다 */
+html.dot #s-home .mwrap{flex:0 0 auto;min-width:52px;display:flex;flex-direction:column;align-items:center;gap:6px;}
 html.dot .cchip{display:inline-flex;align-items:center;gap:5px;border:0;background:var(--d-surface);color:var(--d-t1);padding:3px 7px 2px;margin:2px;
   font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;box-shadow:var(--d-box2);}
 html.dot .cchip .ci, html.dot .cgain .ci, html.dot #s-closet .ci{display:inline-block;width:16px;height:16px;image-rendering:pixelated;}

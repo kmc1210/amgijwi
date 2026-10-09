@@ -2304,6 +2304,18 @@ const LEGACY = {
       const old = JSON.parse(backupJSON()); delete old.data.closet;
       applyBackup(JSON.stringify(old)); $("#dlgYes").click(); r.oldKeeps = data.closet.cheese;
       $("#wipeAll").click(); $("#dlgYes").click(); r.wipeKeeps = data.closet.cheese;
+      // 리뷰 반영: 빈 바퀴 · 두 번 누르기 · 오늘 받은 몫 · 연속 보너스와 첫 안내
+      data.closet = cleanCloset({ cheese:3 }); closetResult(0); r.emptyLine = seen($("#resCheese"));
+      data.closet = cleanCloset({ cheese:40 }); openCloset("home");
+      tapClosetItem("apron"); tapClosetItem("apron"); r.dbl = data.closet.wear.body;
+      const today = ymd(new Date());
+      data.closet = cleanCloset({ cheese:9, roundDay:today, roundCount:10, streakDay:today });
+      r.keepToday = restoreCloset({ cheese:2, roundDay:"2020-01-01", roundCount:0, streakDay:"" });
+      r.keepToday = [r.keepToday.cheese, r.keepToday.roundCount, r.keepToday.streakDay === today];
+      r.wornSame = mouseSVGWorn("day") === mouseSVGWorn("day");
+      data.closet.wear = {}; const bare = mouseSVGWorn("day"); data.closet.wear = { head:"beret" }; r.wornChanges = mouseSVGWorn("day") !== bare;
+      go("home"); data.hints = data.hints.filter(h => h !== "closet"); data.closet.cheese = 5; closetHome("7일 연속이츄! 치즈 +5 받았츄");
+      r.streakHint = $("#mbubble").textContent;
       // 웹
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
       go("home"); r.webChip = seen($("#cheeseChip")); r.webEarn = earnRoundCheese({ total:3 });
@@ -2335,6 +2347,11 @@ const LEGACY = {
     eq("치즈 · 옷은 백업을 따라간다", r.restored, [7, "ribbon"]);
     eq("옷장 없는 예전 백업을 되살려도 치즈를 지킨다", r.oldKeeps, 7);
     eq("전체 삭제는 레시피만 지우고 치즈는 남긴다", r.wipeKeeps, 7);
+    eq("카드가 없는 빈 바퀴면 결과 화면 치즈 줄을 숨긴다", r.emptyLine, false);
+    eq("사자마자 두 번 눌려도 벗겨지지 않는다", r.dbl, "apron");
+    eq("예전 백업을 되살려도 오늘 받은 몫은 다시 받지 않는다", r.keepToday, [2, 10, true]);
+    ok("입은 그림은 같은 옷이면 다시 쓰고, 옷이 바뀌면 새로 그린다", r.wornSame && r.wornChanges);
+    ok("연속 보너스로 처음 치즈가 생기면 보너스 말과 옷장 안내를 한 말풍선에", /7일 연속/.test(r.streakHint) && /꾸밀 수 있츄/.test(r.streakHint), r.streakHint);
     ok("웹에는 옷장 입구가 없고 치즈도 쌓이지 않는다", r.webChip === false && r.webEarn === 0);
   }
 

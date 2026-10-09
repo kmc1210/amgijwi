@@ -86,10 +86,10 @@ data.closet = cleanCloset(data.closet);
    머그(손)는 팔을 가운데로 모으는 칸까지 갖고 있어 먼저 그린다.
    앞치마(몸)는 쥐돌이 몸 색 칸(w · c)에만 칠한다. 그래서 발 · 머그 · 치즈 · 커피잔은 앞치마 앞에 그대로 남고,
    허리띠는 발 뒤로 지나간다(머그를 들면 옆구리를 돌아 보인다).
-   mode: stand 서 있기 · eat 치즈 먹기 · sip 커피 마시기 · wx 날씨 옷 */
+   mode: stand 서 있기 · eat 치즈 먹기 · sip 커피 마시기 · wx 날씨 옷. wear 를 주지 않으면 지금 입은 옷 */
 const CLOSET_BODY_CELLS = "wc";
-function dressRows(rows, mode){
-  const w = data.closet.wear;
+function dressRows(rows, mode, wear){
+  const w = wear || data.closet.wear;
   const g = rows.map(r=>r.split(""));
   ["hand","body","face","head"].forEach(slot=>{
     const it = closetItem(w[slot]);
@@ -108,23 +108,26 @@ function dressRows(rows, mode){
   });
   return g.map(r=>r.join(""));
 }
-/* 입은 모습. 웹이나 자는 밤(이불)은 그대로 */
+/* 입은 모습. 웹이나 자는 밤(이불)은 그대로.
+   먹기 · 마시기 · 깜빡임은 0.4초마다 같은 그림을 다시 부르니 표정 · 배 · 입은 옷이 같으면 지난 그림을 쓴다 */
+const wornCache = {};
+let wornCacheN = 0;
 function mouseSVGWorn(mood, puff){
   if(!isDot() || mood === "night") return mouseSVG(mood, puff);
+  const key = mood + (puff ? "+" : "-") + JSON.stringify(data.closet.wear);
+  if(wornCache[key]) return wornCache[key];
   const mode = mood.indexOf("eat") === 0 ? "eat" : (mood.indexOf("sip") === 0 ? "sip" : "stand");
-  return rowsSVG(dressRows(mouseRows(mood, puff), mode), false);
+  if(++wornCacheN > 80){ Object.keys(wornCache).forEach(k=>delete wornCache[k]); wornCacheN = 1; }
+  return (wornCache[key] = rowsSVG(dressRows(mouseRows(mood, puff), mode), false));
 }
 function weatherSVGWorn(wx){
   return rowsSVG(isDot() ? dressRows(WEATHER[wx], "wx") : WEATHER[wx], false);
 }
 /* 아이템 하나만 입힌 미리보기(옷장 칸 그림) */
 function itemPreviewSVG(id){
-  const save = data.closet.wear;
-  const it = closetItem(id);
-  data.closet.wear = {}; if(it) data.closet.wear[it.slot] = id;
-  const svg = rowsSVG(dressRows(mouseRows("day"), "stand"), false);
-  data.closet.wear = save;
-  return svg;
+  const it = closetItem(id), wear = {};
+  if(it) wear[it.slot] = id;
+  return rowsSVG(dressRows(mouseRows("day"), "stand", wear), false);
 }
 
 /* ---------- 치즈 ---------- */
@@ -153,17 +156,28 @@ function earnStreakCheese(){
   persist();
   return true;
 }
+/* 백업을 되살릴 때의 옷장. 치즈 · 옷은 백업을 따르되, 오늘 이미 받은 몫(한 바퀴 개수 · 연속 보너스)은
+   지금 기록을 남겨 예전 백업을 되살려 같은 날 또 받는 일이 없게 한다.
+   백업 파일을 손으로 고쳐 치즈를 늘리는 건 막지 않는다(통신 없이 이 기기 안에서만 쓰는 꾸미기라서) */
+function restoreCloset(bk){
+  if(!bk) return data.closet;
+  const c = cleanCloset(bk), now = data.closet, today = ymd(new Date());
+  if(now.roundDay === today && (c.roundDay !== today || c.roundCount < now.roundCount)){ c.roundDay = today; c.roundCount = now.roundCount; }
+  if(now.streakDay === today) c.streakDay = today;
+  return c;
+}
 
 /* ---------- 입구 ---------- */
 let closetFrom = "home";
 function openCloset(from){ closetFrom = from || "home"; go("closet"); }
-/* 홈: 쥐돌이 아래 치즈 칩. 처음 치즈가 생긴 뒤 한 번만 말풍선으로 알려준다 */
-function closetHome(){
+/* 홈: 쥐돌이 아래 치즈 칩. 처음 치즈가 생긴 뒤 한 번만 말풍선으로 알려준다.
+   lead 는 그 말풍선 앞에 붙일 말(연속 접속 보너스로 처음 치즈가 생긴 날) */
+function closetHome(lead){
   const n = $("#cheeseN"); if(n) n.textContent = data.closet.cheese;
   if(!isDot()) return;
   if(data.closet.cheese > 0 && !hintSeen("closet")){
     markHint("closet");
-    sayBubble("치즈를 모아 쥐돌이를 꾸밀 수 있츄! 치즈를 눌러 보츄");
+    sayBubble((lead ? lead + " " : "") + "치즈를 모아 쥐돌이를 꾸밀 수 있츄! 치즈를 눌러 보츄");
   }
 }
 /* 결과 화면: 받은 치즈와 옷장 버튼(앱만) */
@@ -171,7 +185,9 @@ function closetResult(gain){
   const line = $("#resCheese"), btn = $("#closetBtn");
   if(!line || !btn) return;
   const on = isDot();
-  line.style.display = on ? "" : "none"; btn.style.display = on ? "" : "none";
+  /* 못 받은 까닭이 하루 몫을 다 받아서일 때만 그렇게 말한다(빈 바퀴면 줄을 숨긴다) */
+  const capped = data.closet.roundDay === ymd(new Date()) && data.closet.roundCount >= CHEESE_ROUND_DAY_MAX;
+  line.style.display = on && (gain || capped) ? "" : "none"; btn.style.display = on ? "" : "none";
   if(!on) return;
   line.innerHTML = `<span class="ci">${cheeseSVG()}</span><span>${gain ? "치즈 +" + gain : "오늘 치즈는 다 받았어요"}</span><small>지금 ${data.closet.cheese}개</small>`;
 }
@@ -184,7 +200,7 @@ function closetSettings(){
 }
 
 /* ---------- 옷장 화면 ---------- */
-let closetSlot = "head", closetBlinkT = null;
+let closetSlot = "head", closetBlinkT = null, closetBought = {id:"", t:0};
 function closetSay(t){ const el = $("#cSay"); if(el) el.textContent = t; }
 function renderCloset(){
   const c = data.closet;
@@ -217,9 +233,11 @@ function tapClosetItem(id){
       return;
     }
     c.cheese -= it.price; c.own.push(id); c.wear[it.slot] = id;
+    closetBought = {id:id, t:Date.now()};
     msg.textContent = `${it.name}을(를) 샀어요`;
     closetSay("고맙츄!"); sfx("chu"); haptic("success");
   } else if(c.wear[it.slot] === id){
+    if(closetBought.id === id && Date.now() - closetBought.t < 800) return;   // 사자마자 두 번 눌려 바로 벗겨지지 않게
     delete c.wear[it.slot];
     msg.textContent = `${it.name} 벗었어요`; closetSay("시원하츄"); haptic("light");
   } else {

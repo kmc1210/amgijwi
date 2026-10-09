@@ -393,7 +393,7 @@ function applyBackup(text){
       wx:d.wx || data.wx,                 /* 날씨 옷도 취향이라 백업을 따라간다 */
       haptic:typeof d.haptic === "boolean" ? d.haptic : data.haptic,
       /* 치즈 · 옷은 백업을 따라간다. 예전 백업(옷장 없음)이면 지금 것을 둔다 */
-      closet:d.closet ? cleanCloset(d.closet) : data.closet,
+      closet:d.closet ? restoreCloset(d.closet) : data.closet,
       /* 택 색은 매장 규칙이라 백업을 따라간다. 예전 백업(규칙 없음)이면 지금 것을 둔다 */
       tagRule:d.tagRule ? cleanTagRule(d.tagRule, "num") : data.tagRule,
       listSort:d.listSort || data.listSort,
@@ -457,7 +457,8 @@ $("#wipeAll").addEventListener("click", ()=>{
     /* 지우는 건 레시피와 학습 기록이다. 테마·소리 같은 취향과 안내를 본 기록은 그대로 둔다.
        sound 가 빠져 있어 전체 삭제 때마다 소리가 조용히 꺼지던 것도 여기서 바로잡는다 */
     data = {v:1, mode:data.mode, theme:data.theme, sound:data.sound, wx:data.wx, listSort:data.listSort, enCase:data.enCase, pin:data.pin,
-      haptic:data.haptic, tagRule:data.tagRule, closet:data.closet,   /* 치즈 · 옷은 레시피가 아니라 남긴다 */      /* 빠지면 개봉관리가 규칙 없이 그려지다 멈춘다 */
+      haptic:data.haptic, tagRule:data.tagRule,      /* 빠지면 개봉관리가 규칙 없이 그려지다 멈춘다 */
+      closet:data.closet,                            /* 치즈 · 옷은 레시피가 아니라 남긴다 */
       visit:data.visit, hints:data.hints || [], cats:data.cats,
       shelf:[], memos:[], subs:[], drinks:[], mastered:[], needReview:[], events:[]};
     Store.clear(); persist(); renderSettings(); toast("모두 삭제했어요"); go("home");
