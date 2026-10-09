@@ -349,6 +349,7 @@ function finish(){
   $("#resCheer").textContent = rate === 1 ? "이 기세로 내일도 한 번 더!"
     : (rate >= 0.7 ? "잘하고 있어요. 조금만 더 하면 돼요!" : "오늘 본 것만으로도 남아요. 내일 또 봐요!");
   go("result");
+  closetResult(earnRoundCheese(s));   // 한 바퀴 +1 치즈(앱만, closet.js)
   startEat();
   sfx("done"); haptic("success");
   if(s.again > 0) setTimeout(startCaw, 900);   // 마무리 소리가 지나간 뒤에 끼어든다
@@ -362,10 +363,10 @@ function startEat(){
   const el = $("#resMascot"); if(!el) return;
   stopEat();
   const still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if(still){ el.innerHTML = mouseSVG("eat1"); return; }
+  if(still){ el.innerHTML = mouseSVGWorn("eat1"); return; }
   let i = 0;
-  el.innerHTML = mouseSVG(EAT_SEQ[0]);
-  eatT = setInterval(()=>{ i = (i+1) % EAT_SEQ.length; el.innerHTML = mouseSVG(EAT_SEQ[i]); }, 380);
+  el.innerHTML = mouseSVGWorn(EAT_SEQ[0]);
+  eatT = setInterval(()=>{ i = (i+1) % EAT_SEQ.length; el.innerHTML = mouseSVGWorn(EAT_SEQ[i]); }, 380);
 }
 function stopEat(){ if(eatT){ clearInterval(eatT); eatT = null; } }
 

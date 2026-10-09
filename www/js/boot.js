@@ -91,6 +91,8 @@ alarmPost({op:"status"});
 /* 옮기는 김에 이름이 겹쳤던 부재료는 나눠 두었다. 조용히 바꾸면 놀라니까 한 번 알려준다 */
 if(_lift.split) setTimeout(()=>toast(`배합이 다른 같은 이름 부재료 ${_lift.split}개를 따로 나눴어요`), 900);
 /* 웹뷰 저장소가 비어 있어 앱에 보관해 둔 사본으로 되살렸다. 조용히 넘어가면 무슨 일인지 모르니 알린다 */
+/* 7일 · 14일 … 연속 접속한 날 첫 방문이면 치즈 +5 (closet.js) */
+if(earnStreakCheese()){ closetHome(); setTimeout(()=>sayBubble(VISIT.info.streak + "일 연속이츄! 치즈 +5 받았츄"), 1100); }
 if(restoredFromCopy) setTimeout(()=>toast("앱에 보관해 둔 사본으로 레시피를 되살렸어요"), 1300);
 if(data.pin) openLock("enter");
 /* 앱을 처음 설치해 처음 열었으면 다섯 장짜리 가이드를 한 번 보여준다(웹은 띄우지 않는다) */

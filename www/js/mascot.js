@@ -242,7 +242,7 @@ function emptyMouseMood(){
 function emptyMouse(k){
   const s = k || 2;
   return `<div class="mz" style="width:${28*s}px;height:${40*s}px">`
-       + mouseSVG(emptyMouseMood(), false) + `</div>`;
+       + mouseSVGWorn(emptyMouseMood(), false) + `</div>`;
 }
 
 /* 빈 화면 쥐돌이도 눈을 깜빡인다. 눈만 바뀌므로 몸은 그대로다.
@@ -266,7 +266,7 @@ function scheduleEmptyBlink(){
     if(emptyBlinkOk()){
       const els = emptyMice();
       if(els.length){
-        const shut = mouseSVG("blink", false), open = mouseSVG(emptyMouseMood(), false);
+        const shut = mouseSVGWorn("blink", false), open = mouseSVGWorn(emptyMouseMood(), false);
         els.forEach(el => el.innerHTML = shut);
         setTimeout(()=>{ emptyMice().forEach(el => el.innerHTML = open); }, 140);
       }
@@ -291,8 +291,8 @@ function drawMascot(){
   /* 날씨 옷은 밤에는 입히지 않는다. 자고 있는데 우비를 입고 있으면 이상하다.
      옷을 입은 동안은 깜빡이지 않는다. 깜빡임 자세에는 옷이 없어서 한 칸 벗었다 입는 꼴이 된다 */
   const wx = currentMood() === "night" ? null : wxNow();
-  el.innerHTML = wx ? rowsSVG(WEATHER[wx], false)
-                    : mouseSVG(mascot.blink ? "blink" : currentMood(), mascot.puff);
+  el.innerHTML = wx ? weatherSVGWorn(wx)                          // 날씨 옷 위에는 안경만(closet.js)
+                    : mouseSVGWorn(mascot.blink ? "blink" : currentMood(), mascot.puff);
 }
 
 /* 아침에 커피 한 잔 — 한 바퀴만 돌고 원래 모습으로 */
@@ -310,13 +310,13 @@ function playSip(){
   clearTimeout(blinkTimer);
   sipping = true;
   let i = 0;
-  el.innerHTML = mouseSVG(SIP_SEQ[0]);
+  el.innerHTML = mouseSVGWorn(SIP_SEQ[0]);
   sipT = setInterval(()=>{
     i++;
     if(i >= SIP_SEQ.length || !mascotAwake()){
       stopSip(); drawMascot(); scheduleBlink(); return;
     }
-    el.innerHTML = mouseSVG(SIP_SEQ[i]);
+    el.innerHTML = mouseSVGWorn(SIP_SEQ[i]);
   }, 420);
 }
 function mascotAwake(){

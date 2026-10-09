@@ -22,9 +22,9 @@
      두 벌이면 교집합이 적용되니 고칠 때는 반드시 둘 다 고친다. 어긋나면 test/headers.js 가 실패한다. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>암기쥐 · 카페 음료 레시피 외우기</title>
-<link rel="stylesheet" href="style.css?v=52">
+<link rel="stylesheet" href="style.css?v=53">
 <!-- iOS 앱에서만 쓰는 도트 화면. 모든 규칙이 html.dot 아래에 있어 웹에는 아무 영향이 없다 -->
-<link rel="stylesheet" href="dot.css?v=52">
+<link rel="stylesheet" href="dot.css?v=53">
 </head>
 <body>
 <div class="phone">
@@ -35,6 +35,8 @@
         <div class="gtext"><h1 id="greetT">오늘도 한 잔 외워볼까요?</h1><p id="greetP">암기쥐 · 카페 음료 레시피 외우기</p></div>
         <div class="mwrap">
           <button class="mascot" id="mascot" aria-label="응원 한마디"></button>
+          <!-- 쥐돌이 옷장 입구(앱만). 치즈 수를 보여주고, 누르면 옷장이 열린다 (closet.js) -->
+          <button class="cchip" id="cheeseChip" data-env="app" aria-label="쥐돌이 옷장"><span class="ci"></span><span id="cheeseN">0</span></button>
         </div>
       </div>
       <div class="bubblerow"><div class="bubble" id="mbubble"></div></div>
@@ -108,12 +110,14 @@
         <h2 id="resTitle">세션 완료!</h2>
         <p id="resMsg"></p>
         <p id="resCheer" style="margin-top:6px;color:var(--accent-ink);font-weight:700"></p>
+        <div class="cgain" id="resCheese" style="display:none"></div>
         <div class="score">
           <div><b id="resOk">0</b><span id="resOkL">한 번에 맞춤</span></div>
           <div><b id="resAgain">0</b><span id="resAgainL">다시 본 카드</span></div>
           <div><b id="resTotal">0</b><span id="resTotalL">전체 카드</span></div>
         </div>
         <button class="cta" style="max-width:300px" id="againBtn">한 번 더 학습</button>
+        <button class="cta ghost" style="max-width:300px;display:none" id="closetBtn">쥐돌이 옷장 ›</button>
         <button style="margin-top:12px;font-size:14.5px;font-weight:600;color:var(--muted);padding:10px" id="homeBtn">홈으로</button>
       </div>
     </section>
@@ -235,6 +239,20 @@
     </section>
 
     <!-- IMPORT FROM PHOTO -->
+    <!-- 쥐돌이 옷장 (1.1 · 앱 전용, closet.js) -->
+    <section class="screen" id="s-closet">
+      <div class="appbar"><div><h1>쥐돌이 옷장</h1><p id="closetSub"></p></div>
+        <span class="cchip" id="cCheese"></span>
+        <button class="icon-btn" id="closetClose" style="margin-bottom:4px" aria-label="닫기">✕</button></div>
+      <div class="scroll notabs">
+        <div class="cstage"><div class="say" id="cSay">어때츄?</div><div class="m" id="cMouse"></div><div class="floor"></div></div>
+        <div class="cearn"><b>치즈 모으기</b><p>한 바퀴 끝내면 <b>+1</b>(하루 10개까지) · 7일 연속 접속 <b>+5</b></p></div>
+        <div class="ctabs" id="cTabs"></div>
+        <div class="cgrid" id="cGrid"></div>
+        <div class="cmsg" id="cMsg"></div>
+      </div>
+    </section>
+
     <section class="screen" id="s-import">
       <div class="appbar"><div><h1>사진에서 가져오기</h1><p>사진 속 글자를 복사해 붙여넣으면 레시피로 바꿔요</p></div>
         <button class="icon-btn" id="impClose" style="margin-bottom:4px">✕</button></div>
@@ -288,6 +306,8 @@
     <section class="screen" id="s-set">
       <div class="appbar"><div><h1>설정</h1><p>저장과 백업</p></div></div>
       <div class="scroll">
+        <!-- 쥐돌이 옷장(앱만). closet.js 가 지금 입은 모습과 치즈 수를 채운다 -->
+        <div class="setcard" data-env="app" id="closetCard"></div>
         <!-- 튜토리얼을 첫 실행에 세우지 않는 대신, 언제든 찾아올 수 있게 맨 위에 둔다 -->
         <div class="setcard">
           <h4>사용법</h4>
@@ -460,17 +480,18 @@
 
 <!-- 한 파일이던 app.js 를 구역별로 나눴다. 전역을 그대로 쓰는 고전 script 라 순서가 중요하다.
      core 가 데이터와 헬퍼를 만들고, boot 가 마지막에 첫 화면을 그린다. -->
-<script src="js/core.js?v=52"></script>
-<script src="js/sound.js?v=52"></script>
-<script src="js/mascot.js?v=52"></script>
-<script src="js/shell.js?v=52"></script>
-<script src="js/home.js?v=52"></script>
-<script src="js/cal.js?v=52"></script>
-<script src="js/study.js?v=52"></script>
-<script src="js/list.js?v=52"></script>
-<script src="js/editor.js?v=52"></script>
-<script src="js/settings.js?v=52"></script>
-<script src="js/guide.js?v=52"></script>
-<script src="js/boot.js?v=52"></script>
+<script src="js/core.js?v=53"></script>
+<script src="js/sound.js?v=53"></script>
+<script src="js/mascot.js?v=53"></script>
+<script src="js/shell.js?v=53"></script>
+<script src="js/home.js?v=53"></script>
+<script src="js/cal.js?v=53"></script>
+<script src="js/study.js?v=53"></script>
+<script src="js/list.js?v=53"></script>
+<script src="js/editor.js?v=53"></script>
+<script src="js/settings.js?v=53"></script>
+<script src="js/guide.js?v=53"></script>
+<script src="js/closet.js?v=53"></script>
+<script src="js/boot.js?v=53"></script>
 </body>
 </html>
