@@ -10,7 +10,7 @@ import UserNotifications
 ///   ask     권한을 물어 달라 (사용자가 일정 알림을 처음 켤 때만 온다)
 ///   sync    걸어 둔 것을 모두 지우고 items 로 다시 건다
 ///           item 에 yearly 가 있으면 해마다 그 월 · 일 · 시각에 되풀이한다(생일 알림 — www/js/birthday.js)
-///           item 에 image 가 있으면 번들의 그림을 알림에 붙인다("cake" = birthday-cake.png)
+///           item 에 image 가 있으면 번들의 그림을 알림에 붙인다("cake" = birthday-cake.jpg)
 /// 앱 → 웹: alarmStatusFromApp("granted" | "denied" | "unknown")
 final class AlarmBridge: NSObject {
 
@@ -107,13 +107,14 @@ final class AlarmBridge: NSObject {
 
     /// 알림에 붙일 그림. 웹은 이름만 보내고, 붙일 수 있는 그림은 번들에 든 것으로 정해져 있다.
     /// iOS 는 붙인 파일을 알림 저장소로 옮겨 가므로 번들 파일을 임시 폴더에 복사해 넘긴다.
+    /// 그림은 JPEG 로 둔다. PNG 는 Xcode 가 빌드하면서 애플 전용 꼴(CgBI)로 바꿔, 알림 화면이 그리지 못한다.
     private static let images = ["cake": "birthday-cake"]
 
     private static func attachment(_ name: String) -> UNNotificationAttachment? {
         guard let file = images[name],
-              let source = Bundle.main.url(forResource: file, withExtension: "png") else { return nil }
+              let source = Bundle.main.url(forResource: file, withExtension: "jpg") else { return nil }
         let copy = FileManager.default.temporaryDirectory
-            .appendingPathComponent(file + "-" + UUID().uuidString + ".png")
+            .appendingPathComponent(file + "-" + UUID().uuidString + ".jpg")
         do {
             try FileManager.default.copyItem(at: source, to: copy)
             return try UNNotificationAttachment(identifier: name, url: copy)
