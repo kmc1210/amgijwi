@@ -2,6 +2,8 @@
 
 카페 음료 레시피를 카드로 외우는 iOS 앱. 쥐돌이가 옆에서 같이 외워 줍니다. Claude로 만들었습니다.
 
+**[App Store 에서 받기](https://apps.apple.com/kr/app/id6817266810)** · 아이폰 · 아이패드 · 무료
+
 <table>
   <tr>
     <td align="center"><img src="docs/screenshots/home.png" width="240" alt="홈: 쥐돌이 인사, 외운 비율, 다가오는 일정, 오늘 폐기"><br><sub>홈</sub></td>
@@ -19,7 +21,8 @@
 
 ## 지금 상태
 
-- **iOS 앱** — TestFlight 로 베타 테스트 중입니다. 앱은 도트 화면(Neo둥근모 글꼴)으로 보입니다.
+- **iOS 앱** — 2026년 10월 [App Store](https://apps.apple.com/kr/app/id6817266810) 에 1.0 을 냈습니다(한국, 무료, 아이폰 · 아이패드).
+  앱은 도트 화면(Neo둥근모 글꼴)으로 보입니다. 새 버전은 TestFlight 로 먼저 써 본 뒤 올립니다.
 - **웹** — 2026년 10월에 닫았습니다. [amgijwi.com](https://amgijwi.com) 에는 안내 첫 화면(예전에 그 브라우저에서 쓰던 레시피를 백업 파일로 꺼내는 칸 포함),
   [도움말 · 문의](https://amgijwi.com/support.html), [개인정보 처리방침](https://amgijwi.com/privacy.html) 만 남아 있습니다.
 
@@ -45,20 +48,21 @@
 
 - 레시피와 학습 기록은 **기기 안에만** 저장됩니다. 서버로 나가는 통신이 없습니다.
   CSP 의 `connect-src 'none'` 으로 웹뷰 · 브라우저가 이걸 강제합니다.
-- 그래서 앱을 지우거나(웹은 브라우저 데이터를 지우거나) 기기를 바꾸면 사라집니다. **백업 파일을 만들어 두세요.**
-- 웹은 주소가 바뀌면 브라우저가 다른 사이트로 인식해 기존 데이터가 보이지 않습니다. 옮기기 전에 백업 필수.
+- 그래서 앱을 지우거나 기기를 바꾸면 사라집니다. **백업 파일을 만들어 두세요.**
+- 예전 웹 버전에서 쓰던 레시피는 그 브라우저로 [amgijwi.com](https://amgijwi.com) 을 열면 백업 파일로 꺼낼 수 있습니다. 앱의 백업 불러오기로 가져옵니다.
 - PIN 잠금은 훔쳐보기 방지용이지 암호화가 아닙니다.
 - 소리는 음원 파일 없이 앱이 직접 만듭니다. 그래서 용량이 늘지 않고 CSP 도 그대로입니다.
 
 ## 구성
 
 ```
-www/                   앱 본체. iOS 앱 번들에 그대로 들어가고, 웹은 이 폴더를 S3 에 올립니다
+www/                   앱 본체. iOS 앱 번들에 그대로 들어갑니다. 사이트에는 처리방침 · 도움말 · 아이콘 · 글꼴만 올립니다
   index.html           마크업
   style.css            스타일 (웹 모습)
   dot.css              도트 화면. 모든 규칙이 html.dot 아래라 앱에서만 켜집니다
   fonts/               Neo둥근모 (OFL, 라이선스 파일 동봉)
   privacy.html         개인정보 처리방침
+  support.html         도움말 · 문의 (App Store 지원 URL)
   js/                  앱 로직. 번들러 없이 이 순서대로 불러옵니다
     core.js            저장소 · 샘플 데이터 · 상태 · 부재료 공용 목록 · 진동
     sound.js           효과음 · 배경음 (전부 코드로 합성)
@@ -75,24 +79,24 @@ www/                   앱 본체. iOS 앱 번들에 그대로 들어가고, 웹
   apple-touch-icon.png
 ios/                   iOS 껍데기 (WKWebView). 자세한 건 ios/README.md
   project.yml          xcodegen 설정. .xcodeproj 는 저장소에 넣지 않습니다
-  Sources/             웹뷰 · 번들 스킴 처리기 · 알림 · 공유 시트 · 진동 통로
+  Sources/             웹뷰 · 번들 스킴 처리기 · 알림 · 공유 시트 · 진동 · 앱 쪽 사본 통로
 site/                  amgijwi.com 에 올리는 첫 화면(index.html)과 예전 레시피 꺼내기(rescue.js)
 docs/
   screenshots/         README 스크린샷
-  deploy.md            웹 배포(S3 · CloudFront) · AWS OIDC
+  deploy.md            사이트 배포(S3 · CloudFront) · AWS OIDC
 test/
   regression.js        실제 브라우저로 돌리는 회귀 테스트
   headers.js           배포된 사이트의 보안 헤더 검사
 index.html             옛 단일 파일 (아래 참고)
 ```
 
-### 앱과 웹이 같은 코드를 쓰는 방법
+### 앱이 웹 코드를 띄우는 방법
 
 iOS 앱은 `www/` 를 번들에 담아 `amgijwi://app/index.html` 로 띄웁니다.
 웹뷰가 뜰 때 `window.__amgijwiNative = true` 를 심고 `<html class="dot">` 을 붙여
-도트 화면 · 카페 말투 · 첫 실행 가이드 · 진동 같은 앱 전용 모습을 켭니다. 웹에서는 이 표시가 없어 예전 모습 그대로입니다.
-알림 · 백업 내보내기 · 진동은 웹이 `window.webkit.messageHandlers` 로 앱에 부탁하고 앱이 iOS 기능으로 처리합니다
-(`AlarmBridge` · `ShareBridge` · `HapticBridge`). 빌드 · 서명 · TestFlight 업로드는 [ios/README.md](ios/README.md) 에 있습니다.
+도트 화면 · 카페 말투 · 첫 실행 가이드 · 진동 같은 앱 전용 모습을 켭니다. 이 표시 없이 브라우저로 열면 예전 웹 모습 그대로입니다(테스트 · 개발용).
+알림 · 백업 내보내기 · 진동 · 레시피 사본 보관은 웹이 `window.webkit.messageHandlers` 로 앱에 부탁하고 앱이 iOS 기능으로 처리합니다
+(`AlarmBridge` · `ShareBridge` · `HapticBridge` · `StoreBridge`). 빌드 · 서명 · TestFlight 업로드는 [ios/README.md](ios/README.md) 에 있습니다.
 
 ### 스크립트 로드 순서
 
@@ -129,4 +133,4 @@ PR 을 올리면 GitHub Actions 가 같은 테스트(`ci.yml`)와 iOS 빌드(`io
 앱을 눈으로 보려면 `www/` 를 아무 정적 서버로 열면 됩니다(예: `python3 -m http.server -d www`).
 번들러도 트랜스파일러도 없어서 따로 빌드할 것이 없습니다.
 
-배포(S3 · CloudFront, 보안 헤더 확인, AWS OIDC 설정)는 [docs/deploy.md](docs/deploy.md) 에 있습니다.
+사이트 배포(S3 · CloudFront, 보안 헤더 확인, AWS OIDC 설정)는 [docs/deploy.md](docs/deploy.md) 에 있습니다.
