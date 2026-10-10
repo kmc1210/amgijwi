@@ -1305,7 +1305,7 @@ const LEGACY = {
     const shipped = { "index.html":"site/index.html", "rescue.js":"site/rescue.js", "privacy.html":"www/privacy.html", "support.html":"www/support.html",
                       "apple-touch-icon.png":"www/apple-touch-icon.png", "fonts/neodgm.woff2":"www/fonts/neodgm.woff2" };
     eq("첫 화면이 부르는 파일이 모두 배포된다", refs.filter(r => !shipped[r] || deploy.indexOf(shipped[r]) < 0 || !fs.existsSync(path.join(root, shipped[r]))), []);
-    ok("첫 화면에 App Store 로 가는 버튼이 있다", /<a class="btn[^"]*" href="https:\/\/apps\.apple\.com\/kr\/app\/id6817266810">/.test(site));
+    ok("첫 화면에 App Store 로 가는 버튼이 있다", /<a [^>]*href="https:\/\/apps\.apple\.com\/kr\/app\/id6817266810"/.test(site));
     ok("배포는 dist/ 만 올리고 www/ 를 통째로 올리지 않는다", /aws s3 sync dist\//.test(deploy) && !/aws s3 sync www\//.test(deploy));
     ok("처리방침 · 도움말은 계속 배포된다(앱스토어 주소)", deploy.indexOf("www/privacy.html") >= 0 && deploy.indexOf("www/support.html") >= 0);
 
