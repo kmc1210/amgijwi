@@ -2190,6 +2190,50 @@ const LEGACY = {
     ok("320px 폭에서도 오늘 폐기가 아닌 택 날짜는 한 줄", narrow.oneLine);
   }
 
+  // ── 6-10o. 1.0.1: 앱 언어 · 진동 안 되는 기기 · 쥐돌이에게 건의하기 ─────────────
+  {
+    const root = path.resolve(__dirname, "..");
+    const yml = fs.readFileSync(path.join(root, "ios", "project.yml"), "utf8");
+    const vc = fs.readFileSync(path.join(root, "ios", "Sources", "WebAppViewController.swift"), "utf8");
+    ok("앱 언어가 한국어다(앱스토어 '언어' 칸은 번들의 ko.lproj 로 정해진다)",
+       /developmentLanguage: ko/.test(yml) && /CFBundleLocalizations:\s*\n\s*- ko/.test(yml) && /- path: Resources/.test(yml)
+       && fs.existsSync(path.join(root, "ios", "Resources", "ko.lproj", "InfoPlist.strings")));
+    ok("앱이 진동 가능 여부(없으면 nohaptic) · 기종까지 담은 정보를 알린다",
+       vc.indexOf("supportsHaptics") >= 0 && vc.indexOf("classList.add('nohaptic')") >= 0 && vc.indexOf("__amgijwiInfo") >= 0 && vc.indexOf("machineName()") >= 0);
+    ok("메일 앱을 못 열면 웹에 알린다", vc.indexOf("mailFailedFromApp") >= 0);
+    const privacy = fs.readFileSync(path.join(root, "www", "privacy.html"), "utf8");
+    ok("처리방침에 건의 메일(앱 · 기기 정보가 채워짐)을 적었다", privacy.indexOf("쥐돌이에게 건의하기") >= 0);
+    const r = await page.evaluate(async () => {
+      const r = {};
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      await new Promise(res => setTimeout(res, 350));
+      const shown = () => { const c = $("#hapticCard"); return !!c && c.getClientRects().length > 0; };
+      go("set"); r.phone = shown();
+      document.documentElement.classList.add("nohaptic"); applyEnvText(); go("set"); r.pad = shown();
+      document.documentElement.classList.remove("nohaptic");
+      // 앱 정보는 누르는 순간 붙는다
+      window.__amgijwiInfo = { app:"1.0.1 (7)", device:"iPad (iPad16,3)", os:"iOS 26.0" };
+      const btn = $("#feedbackBtn");
+      btn.addEventListener("click", e => e.preventDefault(), { once:true });
+      btn.click(); r.href = btn.getAttribute("href");
+      delete window.__amgijwiInfo; r.bare = decodeURIComponent(feedbackHref());
+      r.btn = btn.getClientRects().length > 0;
+      mailFailedFromApp(); r.toast = $("#toast").textContent;
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      go("set"); r.webBtn = btn.getClientRects().length > 0;
+      go("home");
+      return r;
+    });
+    ok("진동 되는 기기: 진동 칸이 보인다", r.phone === true);
+    ok("진동 안 되는 기기(아이패드): 진동 칸을 숨기고, 앱 전용 칸을 다시 그려도 숨긴 채다", r.pad === false);
+    ok("건의 메일은 받는 사람 · 제목 · 앱 정보를 채워 연다(누르는 순간)",
+       r.href.indexOf("mailto:skmnzn110719@gmail.com?subject=") === 0 && decodeURIComponent(r.href).indexOf("[암기쥐] 건의") >= 0
+       && decodeURIComponent(r.href).indexOf("암기쥐 1.0.1 (7) · iPad (iPad16,3) · iOS 26.0") >= 0, r.href);
+    ok("앱 정보가 없으면 본문 끝 줄을 아예 빼다", r.bare.indexOf("---") < 0 && r.bare.indexOf("암기쥐 ") < 0, r.bare);
+    ok("메일 앱을 못 열면 주소를 알려 준다", /skmnzn110719@gmail\.com/.test(r.toast), r.toast);
+    ok("건의하기는 앱에만 보인다", r.btn === true && r.webBtn === false);
+  }
+
   await browser.close();
 
   console.log("");

@@ -522,3 +522,19 @@ function openGuideSheet(){
 }
 /* 앱은 움직이는 도트 가이드(guide.js), 웹은 이 글 시트 */
 $("#openGuide").addEventListener("click", ()=>openGuide());
+
+/* 쥐돌이에게 건의하기 — 받는 사람 · 제목 · 앱 정보를 채운 메일 주소. 메일은 사용자가 직접 보낸다(앱은 보내지 않는다) */
+const FEEDBACK_TO = "skmnzn110719@gmail.com";
+function feedbackHref(){
+  const i = window.__amgijwiInfo || {};
+  const tail = [i.app ? "암기쥐 " + i.app : "", i.device || "", i.os || ""].filter(Boolean).join(" · ");
+  const body = "쥐돌이에게 하고 싶은 말을 적어 주세요.\n\n\n\n" + (tail ? "---\n" + tail : "");
+  return "mailto:" + FEEDBACK_TO + "?subject=" + encodeURIComponent("[암기쥐] 건의") + "&body=" + encodeURIComponent(body);
+}
+/* 누르는 순간 주소를 만든다. 앱 정보가 늦게 들어와도 빠지지 않는다 */
+$("#feedbackBtn").addEventListener("click", ()=>{ $("#feedbackBtn").setAttribute("href", feedbackHref()); });
+/* 메일 앱을 열 수 없을 때(메일 앱 · 계정 없음) 앱이 부른다. 주소를 보여 주고 복사해 둔다 */
+function mailFailedFromApp(){
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(FEEDBACK_TO).catch(()=>{});
+  toast("메일 앱을 열 수 없어요. " + FEEDBACK_TO + " 로 보내 주세요(주소를 복사했어요)");
+}
