@@ -643,3 +643,7 @@ html.dot :is(#s-list, #sheet) .tagdates :is(.o, .x){word-break:keep-all;}
   html.dot #s-list .seg{padding-left:2px;padding-right:2px;gap:2px;}
   html.dot #s-list .seg button{padding-left:2px;padding-right:2px;letter-spacing:-1px;}
 }
+
+/* 진동 장치가 없는 기기(아이패드). 앱이 문서가 그려지기 전에 <html> 에 nohaptic 을 붙인다(WebAppViewController.deviceScript).
+   applyEnvText 가 앱 전용 칸을 다시 보이게 해도 CSS 라 덮어쓰이지 않는다 */
+html.dot.nohaptic #hapticCard{display:none !important;}

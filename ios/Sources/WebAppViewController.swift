@@ -1,6 +1,7 @@
 import UIKit
 import WebKit
 import AVFoundation
+import CoreHaptics
 
 /// 화면 전체를 덮는 웹뷰 하나가 앱의 전부다.
 final class WebAppViewController: UIViewController {
@@ -36,7 +37,9 @@ final class WebAppViewController: UIViewController {
         /// 웹 앱이 "홈 화면에 추가하세요" 를 앱 안에서 띄우지 않도록 알려준다.
         /// 웹뷰에서는 display-mode: standalone 도 navigator.standalone 도 잡히지 않는다.
         /// 같은 때에 도트 화면(www/dot.css) 표시도 붙인다. 문서가 그려지기 전이라 웹 모습이 잠깐 비치지 않는다.
-        let flag = WKUserScript(source: "window.__amgijwiNative = true; document.documentElement.classList.add('dot');",
+        /// 진동이 되는 기기인지(아이패드는 진동 장치가 없다)와, 건의 메일에 붙일 앱 · 기기 정보도 같이 알린다.
+        let flag = WKUserScript(source: "window.__amgijwiNative = true; document.documentElement.classList.add('dot');"
+                                    + WebAppViewController.deviceScript(),
                                 injectionTime: .atDocumentStart,
                                 forMainFrameOnly: true)
         config.userContentController.addUserScript(flag)
@@ -93,6 +96,35 @@ final class WebAppViewController: UIViewController {
         webView.load(URLRequest(url: BundleSchemeHandler.startURL))
     }
 
+    /// window.__amgijwiHaptics: 진동을 낼 수 있는 기기인지. 아니면 설정의 진동 칸을 숨긴다.
+    /// window.__amgijwiInfo: 건의 메일 본문에 붙이는 앱 버전 · 기기 · iOS 버전. 메일은 사용자가 직접 보낸다.
+    private static func deviceScript() -> String {
+        var haptics = CHHapticEngine.capabilitiesForHardware().supportsHaptics
+        #if targetEnvironment(simulator)
+        /// 시뮬레이터는 늘 "진동 없음" 이라, 아이폰 시뮬레이터에서도 진동 칸이 사라져 실기기와 달라진다
+        haptics = UIDevice.current.userInterfaceIdiom == .phone
+        #endif
+        let b = Bundle.main.infoDictionary ?? [:]
+        let ver = (b["CFBundleShortVersionString"] as? String ?? "?") + " (" + (b["CFBundleVersion"] as? String ?? "?") + ")"
+        let info: [String: String] = ["app": ver, "device": UIDevice.current.model + " (" + machineName() + ")", "os": "iOS " + UIDevice.current.systemVersion]
+        let json = (try? JSONSerialization.data(withJSONObject: info)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+        /// 진동이 안 되는 기기는 문서가 그려지기 전에 표시를 붙여 CSS 가 진동 칸을 숨긴다(dot.css html.dot.nohaptic)
+        return " window.__amgijwiHaptics = \(haptics ? "true" : "false"); window.__amgijwiInfo = \(json);"
+             + (haptics ? "" : " document.documentElement.classList.add('nohaptic');")
+    }
+
+    /// "iPhone17,3" 같은 기종 이름. UIDevice.model 은 "iPhone" · "iPad" 뿐이라 화면 크기를 알 수 없다.
+    private static func machineName() -> String {
+        #if targetEnvironment(simulator)
+        if let m = ProcessInfo.processInfo.environment["SIMULATOR_MODEL_IDENTIFIER"] { return m }
+        #endif
+        var u = utsname()
+        uname(&u)
+        return withUnsafePointer(to: &u.machine) {
+            $0.withMemoryRebound(to: CChar.self, capacity: 1) { String(cString: $0) }
+        }
+    }
+
     /// ambient 를 쓰면 무음 스위치를 따르고, 듣고 있던 음악도 끊지 않는다.
     /// 공부하면서 켜두는 앱이라 남의 소리를 뺏지 않는 편이 맞다.
     private func configureAudioSession() {
@@ -136,7 +168,11 @@ extension WebAppViewController: WKNavigationDelegate {
             return
         }
         if url.scheme == "http" || url.scheme == "https" || url.scheme == "mailto" {
-            UIApplication.shared.open(url)
+            /// 메일 앱이 없거나 메일 계정이 없으면 열리지 않는다. 그때 버튼이 아무 반응 없어 보이지 않게 웹에 알린다
+            UIApplication.shared.open(url, options: [:]) { [weak webView] ok in
+                guard !ok, url.scheme == "mailto" else { return }
+                webView?.evaluateJavaScript("typeof mailFailedFromApp === 'function' && mailFailedFromApp()", completionHandler: nil)
+            }
         }
         decisionHandler(.cancel)
     }
