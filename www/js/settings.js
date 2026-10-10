@@ -71,7 +71,10 @@ function openLock(mode){
   drawDots(); drawKeys();
   $("#lock").classList.add("on");
 }
-function closeLock(){ $("#lock").classList.remove("on"); lock.buf = ""; }
+function closeLock(){
+  $("#lock").classList.remove("on"); lock.buf = "";
+  bdayHome();                   // 잠금에 가려 미뤄 둔 생일 폭죽이 있으면 지금 터트린다 (birthday.js)
+}
 $("#lockCancel").addEventListener("click", closeLock);
 
 function renderPinCard(){
@@ -238,6 +241,7 @@ document.querySelectorAll("#wxBtns .theme-b").forEach(b=>{
 
 function renderSettings(){
   closetSettings();             // 맨 위 쥐돌이 옷장 줄 (closet.js)
+  bdaySettings();               // 내 생일 (birthday.js)
   applyTheme();
   applyWx();
   applySound(); applyHaptic();
@@ -394,6 +398,7 @@ function applyBackup(text){
       haptic:typeof d.haptic === "boolean" ? d.haptic : data.haptic,
       /* 치즈 · 옷은 백업을 따라간다. 예전 백업(옷장 없음)이면 지금 것을 둔다 */
       closet:d.closet ? restoreCloset(d.closet) : data.closet,
+      bday:restoreBday(d.bday),           /* 생일도 백업을 따라간다. 올해 받은 선물 기록은 남긴다 */
       /* 택 색은 매장 규칙이라 백업을 따라간다. 예전 백업(규칙 없음)이면 지금 것을 둔다 */
       tagRule:d.tagRule ? cleanTagRule(d.tagRule, "num") : data.tagRule,
       listSort:d.listSort || data.listSort,
@@ -458,7 +463,7 @@ $("#wipeAll").addEventListener("click", ()=>{
        sound 가 빠져 있어 전체 삭제 때마다 소리가 조용히 꺼지던 것도 여기서 바로잡는다 */
     data = {v:1, mode:data.mode, theme:data.theme, sound:data.sound, wx:data.wx, listSort:data.listSort, enCase:data.enCase, pin:data.pin,
       haptic:data.haptic, tagRule:data.tagRule,      /* 빠지면 개봉관리가 규칙 없이 그려지다 멈춘다 */
-      closet:data.closet,                            /* 치즈 · 옷은 레시피가 아니라 남긴다 */
+      closet:data.closet, bday:data.bday,            /* 치즈 · 옷 · 생일은 레시피가 아니라 남긴다 */
       visit:data.visit, hints:data.hints || [], cats:data.cats,
       shelf:[], memos:[], subs:[], drinks:[], mastered:[], needReview:[], events:[]};
     Store.clear(); persist(); renderSettings(); toast("모두 삭제했어요"); go("home");

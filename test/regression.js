@@ -1725,7 +1725,7 @@ const LEGACY = {
         const sc = document.querySelector("#s-" + screen + " .scroll").getBoundingClientRect(), el = document.querySelector(sel).getBoundingClientRect();
         return Math.round(Math.abs((el.left + el.right) / 2 - (sc.left + sc.right) / 2));
       };
-      const r = { hero: off("home", "#s-home .hero"), seg: off("list", "#listSeg"), card: off("set", "#s-set .setcard:not(#closetCard)") };
+      const r = { hero: off("home", "#s-home .hero"), seg: off("list", "#listSeg"), card: off("set", "#s-set .setcard:not(#closetCard):not(#bdayCard)") };
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot");
       go("home");
       return r;
@@ -2358,6 +2358,107 @@ const LEGACY = {
     ok("입은 그림은 같은 옷이면 다시 쓰고, 옷이 바뀌면 새로 그린다", r.wornSame && r.wornChanges);
     ok("연속 보너스로 처음 치즈가 생기면 보너스 말과 옷장 안내를 한 말풍선에", /7일 연속/.test(r.streakHint) && /꾸밀 수 있츄/.test(r.streakHint), r.streakHint);
     ok("웹에는 옷장 입구가 없고 치즈도 쌓이지 않는다", r.webChip === false && r.webEarn === 0);
+  }
+
+  // ── 6-10q. 1.1 생일 축하 ───────────────────────────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const backup = JSON.stringify(data);
+      const seen = el => !!el && el.getClientRects().length > 0;
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      const now = new Date(), M = now.getMonth() + 1, D = now.getDate(), Y = String(now.getFullYear());
+      // 정리
+      r.clean = [cleanBday({ m:13, d:1 }).m, cleanBday({ m:2, d:30 }).d, cleanBday({ m:2, d:29 }).d, cleanBday({ m:4, d:5, at:"25:00" }).at, cleanBday({ m:4, d:5, alarm:false }).alarm];
+      // 생일이 아닌 날
+      data.closet = cleanCloset({ cheese:0, own:["beret"], wear:{ head:"beret" } });
+      data.bday = cleanBday({ m:M === 1 ? 2 : 1, d:1 });
+      r.notToday = [bdayIsToday(), bdayHat(), bdayGreeting(now), earnBdayCheese(now)];
+      // 2월 29일생: 윤년이 아니면 2월 28일에 축하
+      data.bday = cleanBday({ m:2, d:29 });
+      r.leap = [bdayIsToday(new Date(2027, 1, 28)), bdayIsToday(new Date(2028, 1, 28)), bdayIsToday(new Date(2028, 1, 29))];
+      r.leapAlarm = bdayAlarmItem(new Date(2027, 0, 1, 12, 0));
+      // 알림
+      data.bday = cleanBday({ m:10, d:24, at:"08:30" });
+      const a1 = bdayAlarmItem(new Date(2026, 9, 10, 12, 0)), a2 = bdayAlarmItem(new Date(2026, 9, 24, 9, 0));
+      r.alarm = [a1.at, a1.yearly, a1.image, a1.title, a2.at];
+      const evBk = data.events; data.events = [];
+      r.plan = alarmPlan(new Date(2026, 9, 10, 12, 0));
+      data.bday.alarm = false; r.planOff = alarmPlan(new Date(2026, 9, 10, 12, 0)).length;
+      data.events = evBk;
+      // 생일날
+      data.bday = cleanBday({ m:M, d:D });
+      r.today = [bdayIsToday(), bdayHat()];
+      r.hatRows = dressRows(mouseRows("day"), "stand")[1][13] === "R";          // 고깔모자(안 샀어도, 베레모를 쓰고 있어도)
+      r.wearKept = data.closet.wear.head;                                        // 고른 옷은 그대로 둔다
+      r.closetOwn = dressRows(mouseRows("day"), "stand", data.closet.wear)[3][12] === "2";   // 옷장 화면은 고른 베레모
+      go("home"); stopBdayParty(); data.bday.party = ""; data.bday.gift = ""; data.closet.cheese = 0;
+      renderHome();
+      r.greet = [$("#greetT").textContent, $("#mbubble").textContent, data.closet.cheese, data.bday.gift === Y];
+      r.fx = !!$("#bdayFx"); r.party = data.bday.party === ymd(now);
+      renderHome(); r.once = data.closet.cheese;
+      stopBdayParty(); r.fxGone = !$("#bdayFx");
+      // 날짜를 바꿔 가며 또 받지 못한다
+      data.bday.gift = Y; data.bday.m = M; data.bday.d = D; r.again = earnBdayCheese(now);
+      // 잠금에 가려 있으면 폭죽을 미룬다
+      data.bday.party = ""; $("#lock").classList.add("on"); renderHome(); r.held = [!$("#bdayFx"), data.bday.party];
+      closeLock(); r.afterLock = !!$("#bdayFx"); stopBdayParty();
+      // 설정
+      data.bday = cleanBday({}); go("set");
+      r.card = [seen($("#bdayCard")), !!$("#bdM"), !$("#bdAlarmBtns")];
+      const posts = []; const realPost = window.alarmPost; alarmPerm = "unknown";
+      $("#bdM").value = "10"; $("#bdM").dispatchEvent(new Event("change"));
+      r.half = bdaySet();
+      $("#bdD").value = "24"; $("#bdD").dispatchEvent(new Event("change"));
+      r.picked = [data.bday.m, data.bday.d, !!$("#bdAlarmBtns"), $("#bdAt") && $("#bdAt").value];
+      $("#bdAt").value = "07:15"; $("#bdAt").dispatchEvent(new Event("change")); r.at = data.bday.at;
+      document.querySelector('#bdAlarmBtns [data-on="0"]').click(); r.off = [data.bday.alarm, !$("#bdAt")];
+      document.querySelector('#bdAlarmBtns [data-on="1"]').click();
+      alarmStatusFromApp("denied"); r.denied = /알림이 꺼져 있어요/.test($("#bdayCard").textContent); alarmStatusFromApp("unknown");
+      $("#bdM").value = "2"; $("#bdM").dispatchEvent(new Event("change")); r.febDays = $("#bdD").options.length - 1;
+      await new Promise(res => setTimeout(res, 300));
+      r.small = [...document.querySelectorAll("#bdayCard *")].filter(el => seen(el) && [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()))
+        .map(el => getComputedStyle(el)).filter(c => c.fontFamily.indexOf("NeoDGM") >= 0 && parseFloat(c.fontSize) < 16).map(c => c.fontSize);
+      $("#bdClear").click(); r.cleared = [bdaySet(), !$("#bdAlarmBtns")];
+      // 백업 · 전체 삭제
+      data.bday = cleanBday({ m:3, d:9, gift:"2025" });
+      const bk = JSON.parse(backupJSON()); data.bday = cleanBday({ m:5, d:5, gift:Y });
+      applyBackup(JSON.stringify(bk)); $("#dlgYes").click(); r.restored = [data.bday.m, data.bday.d, data.bday.gift === Y];
+      const old = JSON.parse(backupJSON()); delete old.data.bday;
+      applyBackup(JSON.stringify(old)); $("#dlgYes").click(); r.oldKeeps = data.bday.m;
+      $("#wipeAll").click(); $("#dlgYes").click(); r.wipeKeeps = data.bday.m;
+      // 웹
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      data.bday = cleanBday({ m:M, d:D }); go("set");
+      r.web = [bdayIsToday(), bdayAlarmItem(now), seen($("#bdayCard"))];
+      data = JSON.parse(backup); data.closet = cleanCloset(data.closet); data.bday = cleanBday(data.bday); persist(); go("home");
+      return r;
+    });
+    eq("생일 정리: 없는 달 · 날은 버리고, 2월은 29일까지, 시각 · 알림은 기본값", r.clean, [0, 0, 29, "09:00", false]);
+    eq("생일이 아닌 날은 아무 일도 없다", r.notToday, [false, "", null, false]);
+    eq("2월 29일생은 윤년이 아니면 2월 28일에 축하한다", r.leap, [true, false, true]);
+    ok("2월 29일생 알림은 되풀이하지 않고 다음 한 번만 건다", r.leapAlarm.yearly === false && r.leapAlarm.at === "2027-02-28T09:00", JSON.stringify(r.leapAlarm));
+    eq("생일 알림: 다음 생일 · 해마다 · 케이크 그림, 지난 시각이면 다음 해", r.alarm, ["2026-10-24T08:30", true, "cake", "생일 축하해츄!", "2027-10-24T08:30"]);
+    ok("생일 알림은 일정 알림 목록 맨 앞에 실린다", r.plan.length === 1 && r.plan[0].id === "bday" && r.plan[0].yearly === true && r.planOff === 0, JSON.stringify(r.plan));
+    eq("생일날: 오늘이고 고깔모자", r.today, [true, "partyhat"]);
+    ok("고깔모자는 안 샀어도 씌우고, 고른 옷은 그대로 둔다(옷장 화면은 고른 옷)", r.hatRows && r.wearKept === "beret" && r.closetOwn);
+    ok("생일날 홈: 인사말 · 말풍선 · 치즈 +10", r.greet[0] === "생일 축하해요!" && /치즈 10개/.test(r.greet[1]) && r.greet[2] === 10 && r.greet[3], JSON.stringify(r.greet));
+    ok("폭죽은 그날 한 번 터지고 스스로 치울 수 있다", r.fx && r.party && r.fxGone);
+    eq("홈을 다시 그려도 선물은 한 번", r.once, 10);
+    eq("올해 선물을 받았으면 날짜를 바꿔도 또 받지 못한다", r.again, false);
+    ok("잠금에 가려 있으면 폭죽을 미뤘다가 풀리면 터트린다", r.held[0] && r.held[1] === "" && r.afterLock);
+    eq("설정에 내 생일 칸(알려 주기 전엔 알림 칸 없음)", r.card, [true, true, true]);
+    ok("월만 고르면 아직 생일이 아니고, 일까지 고르면 저장되고 알림 칸이 나온다", r.half === false && r.picked[0] === 10 && r.picked[1] === 24 && r.picked[2] && r.picked[3] === "09:00", JSON.stringify(r.picked));
+    eq("알림 시각을 고칠 수 있다", r.at, "07:15");
+    eq("알림을 끄면 시각 칸이 사라진다", r.off, [false, true]);
+    ok("알림 권한이 꺼져 있으면 켜는 곳을 알려준다", r.denied);
+    eq("2월을 고르면 29일까지", r.febDays, 29);
+    eq("생일 칸의 도트 글꼴도 16px 이상", r.small, []);
+    eq("생일 지우기", r.cleared, [false, true]);
+    eq("생일은 백업을 따라가되 올해 받은 선물 기록은 남는다", r.restored, [3, 9, true]);
+    eq("생일 없는 예전 백업을 되살려도 생일을 지킨다", r.oldKeeps, 3);
+    eq("전체 삭제는 생일을 남긴다", r.wipeKeeps, 3);
+    eq("웹에는 생일 기능이 없다", r.web, [false, null, false]);
   }
 
   await browser.close();

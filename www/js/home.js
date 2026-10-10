@@ -5,6 +5,7 @@
 function renderHome(){
   renderGreeting();
   closetHome();                 // 쥐돌이 아래 치즈 칩 (closet.js)
+  bdayHome();                   // 생일이면 선물과 폭죽 (birthday.js)
   /* 칩 이름은 그림 + 글자다. 그림이 SVG 라 통째로 esc 하면 안 되고, 글자만 esc 한다 */
   const items = [["all","전체"]].concat(data.cats.map(c=>[c.id, catMark(c.emo) + " " + esc(c.label)]));
   $("#chips").innerHTML = items.map(([k,l])=>{

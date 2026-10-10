@@ -9,6 +9,8 @@ import UserNotifications
 ///   status  권한 상태를 알려 달라
 ///   ask     권한을 물어 달라 (사용자가 일정 알림을 처음 켤 때만 온다)
 ///   sync    걸어 둔 것을 모두 지우고 items 로 다시 건다
+///           item 에 yearly 가 있으면 해마다 그 월 · 일 · 시각에 되풀이한다(생일 알림 — www/js/birthday.js)
+///           item 에 image 가 있으면 번들의 그림을 알림에 붙인다("cake" = birthday-cake.png)
 /// 앱 → 웹: alarmStatusFromApp("granted" | "denied" | "unknown")
 final class AlarmBridge: NSObject {
 
@@ -83,9 +85,34 @@ final class AlarmBridge: NSObject {
             content.body = item["body"] as? String ?? ""
             content.sound = .default
 
-            let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
-            let trigger = UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)
+            if let image = item["image"] as? String, let attachment = AlarmBridge.attachment(image) {
+                content.attachments = [attachment]
+            }
+
+            /// 해마다 오는 알림은 연도를 빼고 건다. 앱을 한 해 넘게 열지 않아도 다음 해에 또 온다.
+            let yearly = item["yearly"] as? Bool ?? false
+            let fields: Set<Calendar.Component> = yearly ? [.month, .day, .hour, .minute]
+                                                         : [.year, .month, .day, .hour, .minute]
+            let parts = Calendar.current.dateComponents(fields, from: date)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: parts, repeats: yearly)
             center.add(UNNotificationRequest(identifier: "ev-" + id, content: content, trigger: trigger))
+        }
+    }
+
+    /// 알림에 붙일 그림. 웹은 이름만 보내고, 붙일 수 있는 그림은 번들에 든 것으로 정해져 있다.
+    /// iOS 는 붙인 파일을 알림 저장소로 옮겨 가므로 번들 파일을 임시 폴더에 복사해 넘긴다.
+    private static let images = ["cake": "birthday-cake"]
+
+    private static func attachment(_ name: String) -> UNNotificationAttachment? {
+        guard let file = images[name],
+              let source = Bundle.main.url(forResource: file, withExtension: "png") else { return nil }
+        let copy = FileManager.default.temporaryDirectory
+            .appendingPathComponent(file + "-" + UUID().uuidString + ".png")
+        do {
+            try FileManager.default.copyItem(at: source, to: copy)
+            return try UNNotificationAttachment(identifier: name, url: copy)
+        } catch {
+            return nil
         }
     }
 }

@@ -478,6 +478,8 @@ function renderGreeting(){
   let title = base;
   if(v.kind === "first") title = "처음 오셨네요!";
   else if(v.kind === "back" && v.gap >= 2) title = v.gap + "일 만이에요!";
+  const bd = bdayGreeting(now);             // 생일이면 인사말과 말풍선이 축하로 바뀐다 (birthday.js)
+  if(bd) title = bd.title;
 
   const dateTxt = (now.getMonth()+1) + "월 " + now.getDate() + "일 " + DOW[now.getDay()] + "요일";
   // 날짜는 윗줄, 앱 소개는 아랫줄로 나눈다 (한 줄에 담으면 어중간하게 접힌다)
@@ -489,7 +491,8 @@ function renderGreeting(){
   $("#greetP").innerHTML = esc(line1) + "<br>" + esc(line2);
 
   const c = cheerOf(now, v.streak, v);
-  $("#mbubble").innerHTML = `${c.ico} ${esc(sentenceLines(c.msg))}`;
+  if(bd) $("#mbubble").textContent = sentenceLines(bd.msg);
+  else $("#mbubble").innerHTML = `${c.ico} ${esc(sentenceLines(c.msg))}`;
   drawMascot();
   scheduleBlink();
 
