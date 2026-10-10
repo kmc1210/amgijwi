@@ -67,7 +67,7 @@ function openLock(mode){
   $("#lockTitle").textContent = mode === "enter" ? "PIN을 입력하세요" : "PIN을 정해주세요";
   $("#lockSub").textContent   = mode === "enter" ? "이 기기에서만 확인합니다" : "네 자리 숫자를 입력해 주세요";
   $("#lockCancel").style.display = mode === "enter" ? "none" : "block";
-  $("#lockMascot").innerHTML = mouseSVG(typeof currentMood === "function" ? currentMood() : "day");
+  $("#lockMascot").innerHTML = mouseSVGWorn(typeof currentMood === "function" ? currentMood() : "day");
   drawDots(); drawKeys();
   $("#lock").classList.add("on");
 }
@@ -237,6 +237,7 @@ document.querySelectorAll("#wxBtns .theme-b").forEach(b=>{
 });
 
 function renderSettings(){
+  closetSettings();             // 맨 위 쥐돌이 옷장 줄 (closet.js)
   applyTheme();
   applyWx();
   applySound(); applyHaptic();
@@ -391,6 +392,8 @@ function applyBackup(text){
       events:Array.isArray(d.events) ? d.events : [],
       wx:d.wx || data.wx,                 /* 날씨 옷도 취향이라 백업을 따라간다 */
       haptic:typeof d.haptic === "boolean" ? d.haptic : data.haptic,
+      /* 치즈 · 옷은 백업을 따라간다. 예전 백업(옷장 없음)이면 지금 것을 둔다 */
+      closet:d.closet ? restoreCloset(d.closet) : data.closet,
       /* 택 색은 매장 규칙이라 백업을 따라간다. 예전 백업(규칙 없음)이면 지금 것을 둔다 */
       tagRule:d.tagRule ? cleanTagRule(d.tagRule, "num") : data.tagRule,
       listSort:d.listSort || data.listSort,
@@ -455,6 +458,7 @@ $("#wipeAll").addEventListener("click", ()=>{
        sound 가 빠져 있어 전체 삭제 때마다 소리가 조용히 꺼지던 것도 여기서 바로잡는다 */
     data = {v:1, mode:data.mode, theme:data.theme, sound:data.sound, wx:data.wx, listSort:data.listSort, enCase:data.enCase, pin:data.pin,
       haptic:data.haptic, tagRule:data.tagRule,      /* 빠지면 개봉관리가 규칙 없이 그려지다 멈춘다 */
+      closet:data.closet,                            /* 치즈 · 옷은 레시피가 아니라 남긴다 */
       visit:data.visit, hints:data.hints || [], cats:data.cats,
       shelf:[], memos:[], subs:[], drinks:[], mastered:[], needReview:[], events:[]};
     Store.clear(); persist(); renderSettings(); toast("모두 삭제했어요"); go("home");

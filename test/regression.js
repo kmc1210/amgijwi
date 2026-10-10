@@ -1724,7 +1724,7 @@ const LEGACY = {
         const sc = document.querySelector("#s-" + screen + " .scroll").getBoundingClientRect(), el = document.querySelector(sel).getBoundingClientRect();
         return Math.round(Math.abs((el.left + el.right) / 2 - (sc.left + sc.right) / 2));
       };
-      const r = { hero: off("home", "#s-home .hero"), seg: off("list", "#listSeg"), card: off("set", "#s-set .setcard") };
+      const r = { hero: off("home", "#s-home .hero"), seg: off("list", "#listSeg"), card: off("set", "#s-set .setcard:not(#closetCard)") };
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot");
       go("home");
       return r;
@@ -2231,6 +2231,132 @@ const LEGACY = {
     ok("앱 정보가 없으면 본문 끝 줄을 아예 빼다", r.bare.indexOf("---") < 0 && r.bare.indexOf("암기쥐 ") < 0, r.bare);
     ok("메일 앱을 못 열면 주소를 알려 준다", /skmnzn110719@gmail\.com/.test(r.toast), r.toast);
     ok("건의하기는 앱에만 보인다", r.btn === true && r.webBtn === false);
+  }
+
+  // ── 6-10p. 1.1 쥐돌이 옷장 ─────────────────────────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const backup = JSON.stringify(data), hintsBk = JSON.stringify(data.hints);
+      const cell = (rows, y, x) => rows[y][x];
+      // 정리: 엉뚱한 값 · 안 가진 옷은 입을 수 없다
+      const c0 = cleanCloset({ cheese:-3, own:["beret","nope"], wear:{ head:"beret", face:"glasses", body:"mug" } });
+      r.clean = [c0.cheese, c0.own.join(","), JSON.stringify(c0.wear)];
+      r.items = CLOSET_ITEMS.filter(i => !i.rows.every(row => row.length === 28 && row.split("").every(ch => ch === "." || MOUSE_PAL[ch]))).map(i => i.id);
+      r.ids = new Set(CLOSET_ITEMS.map(i => i.id)).size === CLOSET_ITEMS.length && CLOSET_ITEMS.length === 13;
+      // 그리기 규칙
+      data.closet = cleanCloset({ cheese:0, own:["beret","glasses","apron","mug"], wear:{ head:"beret", face:"glasses", body:"apron", hand:"mug" } });
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot");
+      const stand = dressRows(mouseRows("day"), "stand");
+      r.beltSides = cell(stand, 28, 1) === "5" && cell(stand, 28, 25) === "5";          // 머그를 들면 허리띠가 옆구리를 돈다
+      r.mugInFront = cell(stand, 28, 10) === "O" && cell(stand, 28, 7) === "p";         // 머그 · 발이 앞치마 앞
+      r.beret = cell(stand, 3, 12) === "2";
+      data.closet.wear = { body:"apron" };
+      const alone = dressRows(mouseRows("day"), "stand");
+      r.pawsFront = cell(alone, 28, 3) === "p" && cell(alone, 28, 4) === "p" && cell(alone, 28, 2) === "5" && cell(alone, 28, 5) === "5";  // 띠가 발 뒤로
+      data.closet.wear = { body:"apron", hand:"mug", face:"glasses", head:"beret" };
+      const eat = dressRows(mouseRows("eat1"), "eat"), raw = mouseRows("eat1");
+      r.eatKeepsCheese = raw.every((row, y) => row.split("").every((ch, x) => "Yyj".indexOf(ch) < 0 || eat[y][x] === ch));
+      r.eatNoMug = eat.join("").indexOf("U") < 0;
+      const sip = dressRows(mouseRows("sip3"), "sip"), sraw = mouseRows("sip3");
+      r.sipKeepsCup = sraw.every((row, y) => row.split("").every((ch, x) => "gGn".indexOf(ch) < 0 || sip[y][x] === ch));
+      const wx = dressRows(WEATHER.rain, "wx");
+      r.wxFaceOnly = wx.join("").indexOf("Z") >= 0 && wx.join("").indexOf("2") < 0 && wx.join("").indexOf("4") < 0;
+      r.night = mouseSVGWorn("night") === mouseSVG("night");
+      // 치즈 모으기
+      data.closet = cleanCloset({});
+      const st = { total:3, ok:3, again:0 };
+      let got = 0; for (let i = 0; i < 12; i++) got += earnRoundCheese(st);
+      r.roundCap = [got, data.closet.cheese];
+      r.emptyRound = earnRoundCheese({ total:0 });
+      const visit0 = VISIT;
+      VISIT = { info:{ kind:"next", streak:14 }, now:new Date() };
+      r.streak = [earnStreakCheese(), earnStreakCheese(), data.closet.cheese];
+      VISIT = { info:{ kind:"next", streak:6 }, now:new Date() }; data.closet.streakDay = "";
+      r.noStreak = earnStreakCheese();
+      VISIT = visit0;
+      // 사기 · 착용 · 벗기
+      data.closet = cleanCloset({ cheese:12 });
+      openCloset("home");
+      tapClosetItem("beret"); r.short = [data.closet.cheese, data.closet.own.length, $("#cMsg").textContent];
+      data.closet.cheese = 35;
+      tapClosetItem("beret"); r.bought = [data.closet.cheese, data.closet.wear.head];
+      tapClosetItem("ribbon"); r.ribbonShort = data.closet.wear.head;            // 15 남음 → 리본(10) 사면 머리를 바꿔 입는다
+      r.afterRibbon = [data.closet.cheese, data.closet.wear.head];
+      tapClosetItem("beret"); r.swap = data.closet.wear.head;                   // 가진 베레모로 바꿔 입기
+      tapClosetItem("beret"); r.off = data.closet.wear.head || null;            // 다시 누르면 벗기
+      r.tabs = document.querySelectorAll("#cTabs button").length;
+      r.labels = [...document.querySelectorAll("#cGrid .pr")].map(e => e.textContent.trim());
+      const seen = el => !!el && el.getClientRects().length > 0;
+      await new Promise(res => setTimeout(res, 350));
+      r.small = [...document.querySelectorAll("#s-closet *")].filter(el => seen(el) && [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()))
+        .map(el => getComputedStyle(el)).filter(c => c.fontFamily.indexOf("NeoDGM") >= 0 && parseFloat(c.fontSize) < 16).map(c => c.fontSize);
+      $("#closetClose").click(); r.back = document.querySelector(".screen.active").id;
+      // 입구
+      applyEnvText(); go("home"); r.chip = [seen($("#cheeseChip")), $("#cheeseN").textContent];
+      data.hints = data.hints.filter(h => h !== "closet"); data.closet.cheese = 3; closetHome();
+      r.hint = $("#mbubble").textContent; closetHome(); r.hintOnce = data.hints.filter(h => h === "closet").length;
+      go("set"); r.setRow = seen($("#closetRowBtn")) && /치즈 3개/.test($("#closetCard").textContent);
+      startSession(liveDrinks().slice(0, 2)); state.stat = { ok:2, again:0, total:2 }; data.closet.roundDay = ""; data.closet.roundCount = 0; finish(); stopEat();
+      r.result = [seen($("#resCheese")), /치즈 \+1/.test($("#resCheese").textContent), seen($("#closetBtn"))];
+      // 백업 · 전체 삭제
+      data.closet = cleanCloset({ cheese:7, own:["ribbon"], wear:{ head:"ribbon" } });
+      const bk = JSON.parse(backupJSON()); data.closet = cleanCloset({});
+      applyBackup(JSON.stringify(bk)); $("#dlgYes").click(); r.restored = [data.closet.cheese, data.closet.wear.head];
+      const old = JSON.parse(backupJSON()); delete old.data.closet;
+      applyBackup(JSON.stringify(old)); $("#dlgYes").click(); r.oldKeeps = data.closet.cheese;
+      $("#wipeAll").click(); $("#dlgYes").click(); r.wipeKeeps = data.closet.cheese;
+      // 리뷰 반영: 빈 바퀴 · 두 번 누르기 · 오늘 받은 몫 · 연속 보너스와 첫 안내
+      data.closet = cleanCloset({ cheese:3 }); closetResult(0); r.emptyLine = seen($("#resCheese"));
+      data.closet = cleanCloset({ cheese:40 }); openCloset("home");
+      tapClosetItem("apron"); tapClosetItem("apron"); r.dbl = data.closet.wear.body;
+      const today = ymd(new Date());
+      data.closet = cleanCloset({ cheese:9, roundDay:today, roundCount:10, streakDay:today });
+      r.keepToday = restoreCloset({ cheese:2, roundDay:"2020-01-01", roundCount:0, streakDay:"" });
+      r.keepToday = [r.keepToday.cheese, r.keepToday.roundCount, r.keepToday.streakDay === today];
+      r.wornSame = mouseSVGWorn("day") === mouseSVGWorn("day");
+      data.closet.wear = {}; const bare = mouseSVGWorn("day"); data.closet.wear = { head:"beret" }; r.wornChanges = mouseSVGWorn("day") !== bare;
+      go("home"); data.hints = data.hints.filter(h => h !== "closet"); data.closet.cheese = 5; closetHome("7일 연속이츄! 치즈 +5 받았츄");
+      r.streakHint = $("#mbubble").textContent;
+      // 웹
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      go("home"); r.webChip = seen($("#cheeseChip")); r.webEarn = earnRoundCheese({ total:3 });
+      data = JSON.parse(backup); data.closet = cleanCloset(data.closet); persist(); go("home");
+      return r;
+    });
+    eq("옷장 정리: 음수 치즈는 0, 없는 아이템 · 안 가진 옷은 뺀다", r.clean, [0, "beret", '{"head":"beret"}']);
+    eq("아이템 그림은 모두 28칸 너비이고 색이 정해져 있다", r.items, []);
+    ok("아이템 13개, 이름이 겹치지 않는다", r.ids);
+    ok("머그를 들면 허리띠가 옆구리를 돌고, 머그 · 발은 앞치마 앞에 있다", r.beltSides && r.mugInFront && r.beret);
+    ok("앞치마만 입으면 허리띠가 발 뒤로 지나간다", r.pawsFront);
+    ok("치즈를 먹는 동안: 치즈는 앞치마에 가리지 않고, 머그는 내려놓는다", r.eatKeepsCheese && r.eatNoMug);
+    ok("커피를 마시는 동안 커피잔은 앞치마에 가리지 않는다", r.sipKeepsCup);
+    ok("날씨 옷 위에는 안경만, 자는 밤은 그대로", r.wxFaceOnly && r.night);
+    eq("한 바퀴 +1, 하루 10개까지", r.roundCap, [10, 10]);
+    eq("카드가 없는 바퀴는 치즈가 없다", r.emptyRound, 0);
+    eq("7 · 14일 연속이면 그날 한 번 +5", r.streak, [true, false, 15]);
+    eq("연속 6일은 보너스 없음", r.noStreak, false);
+    ok("치즈가 모자라면 사지 않고 몇 개 모자란지 알려준다", r.short[0] === 12 && r.short[1] === 0 && /8개 모자라요/.test(r.short[2]), JSON.stringify(r.short));
+    eq("사면 치즈가 줄고 바로 입는다", r.bought, [15, "beret"]);
+    eq("같은 칸의 다른 아이템을 사면 바꿔 입는다", r.afterRibbon, [5, "ribbon"]);
+    ok("가진 것은 눌러서 바꿔 입고, 다시 누르면 벗는다", r.swap === "beret" && r.off === null);
+    eq("칸은 머리 · 얼굴 · 몸 · 손 네 개(배경 없음)", r.tabs, 4);
+    eq("라벨은 보유중 · 착용중", r.labels.filter(t => /보유중|착용중/.test(t)).sort(), ["보유중", "보유중"]);
+    eq("옷장 화면의 도트 글꼴도 16px 이상", r.small, []);
+    eq("닫으면 들어온 곳(홈)으로", r.back, "s-home");
+    ok("홈 쥐돌이 아래 치즈 칩이 보이고 수가 맞다", r.chip[0] === true);
+    ok("처음 치즈가 생기면 한 번만 옷장을 알려준다", /꾸밀 수 있츄/.test(r.hint) && r.hintOnce === 1, r.hint);
+    ok("설정 맨 위에 옷장 줄과 치즈 수", r.setRow);
+    eq("결과 화면: 치즈 +1 줄과 옷장 버튼", r.result, [true, true, true]);
+    eq("치즈 · 옷은 백업을 따라간다", r.restored, [7, "ribbon"]);
+    eq("옷장 없는 예전 백업을 되살려도 치즈를 지킨다", r.oldKeeps, 7);
+    eq("전체 삭제는 레시피만 지우고 치즈는 남긴다", r.wipeKeeps, 7);
+    eq("카드가 없는 빈 바퀴면 결과 화면 치즈 줄을 숨긴다", r.emptyLine, false);
+    eq("사자마자 두 번 눌려도 벗겨지지 않는다", r.dbl, "apron");
+    eq("예전 백업을 되살려도 오늘 받은 몫은 다시 받지 않는다", r.keepToday, [2, 10, true]);
+    ok("입은 그림은 같은 옷이면 다시 쓰고, 옷이 바뀌면 새로 그린다", r.wornSame && r.wornChanges);
+    ok("연속 보너스로 처음 치즈가 생기면 보너스 말과 옷장 안내를 한 말풍선에", /7일 연속/.test(r.streakHint) && /꾸밀 수 있츄/.test(r.streakHint), r.streakHint);
+    ok("웹에는 옷장 입구가 없고 치즈도 쌓이지 않는다", r.webChip === false && r.webEarn === 0);
   }
 
   await browser.close();
