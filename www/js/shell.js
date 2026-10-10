@@ -30,6 +30,7 @@ function go(name){
   if(name==="arch") renderArch();
   if(name==="cal") renderCal();
   if(name==="set") renderSettings();
+  if(name==="closet") renderCloset();
 }
 document.querySelectorAll(".tab").forEach(t=>{
   t.addEventListener("click", ()=>{
