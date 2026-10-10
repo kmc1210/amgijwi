@@ -155,7 +155,7 @@ data.closet = cleanCloset(data.closet);
    mode: stand 서 있기 · eat 치즈 먹기 · sip 커피 마시기 · wx 날씨 옷. wear 를 주지 않으면 지금 입은 옷 */
 const CLOSET_BODY_CELLS = "wc";
 function dressRows(rows, mode, wear){
-  const w = wear || data.closet.wear;
+  const w = wear || wornNow();
   const g = rows.map(r=>r.split(""));
   ["hand","body","face","head"].forEach(slot=>{
     const it = closetItem(w[slot]);
@@ -174,17 +174,23 @@ function dressRows(rows, mode, wear){
   });
   return g.map(r=>r.join(""));
 }
-/* 입은 모습. 웹이나 자는 밤(이불)은 그대로.
+/* 지금 보여줄 옷. 생일 하루는 머리에 고깔모자를 씌운다(가진 것 · 입은 것은 그대로 둔다 — birthday.js) */
+function wornNow(){
+  const hat = bdayHat();
+  return hat ? Object.assign({}, data.closet.wear, {head:hat}) : data.closet.wear;
+}
+/* 입은 모습. 웹이나 자는 밤(이불)은 그대로. wear 를 주면 그 옷으로(옷장 화면은 생일에도 고른 옷을 보여준다).
    먹기 · 마시기 · 깜빡임은 0.4초마다 같은 그림을 다시 부르니 표정 · 배 · 입은 옷이 같으면 지난 그림을 쓴다 */
 const wornCache = {};
 let wornCacheN = 0;
-function mouseSVGWorn(mood, puff){
+function mouseSVGWorn(mood, puff, wear){
   if(!isDot() || mood === "night") return mouseSVG(mood, puff);
-  const key = mood + (puff ? "+" : "-") + JSON.stringify(data.closet.wear);
+  wear = wear || wornNow();
+  const key = mood + (puff ? "+" : "-") + JSON.stringify(wear);
   if(wornCache[key]) return wornCache[key];
   const mode = mood.indexOf("eat") === 0 ? "eat" : (mood.indexOf("sip") === 0 ? "sip" : "stand");
   if(++wornCacheN > 80){ Object.keys(wornCache).forEach(k=>delete wornCache[k]); wornCacheN = 1; }
-  return (wornCache[key] = rowsSVG(dressRows(mouseRows(mood, puff), mode), false));
+  return (wornCache[key] = rowsSVG(dressRows(mouseRows(mood, puff), mode, wear), false));
 }
 function weatherSVGWorn(wx){
   return rowsSVG(isDot() ? dressRows(WEATHER[wx], "wx") : WEATHER[wx], false);
@@ -260,7 +266,7 @@ function closetResult(gain){
 /* 설정: 맨 위 옷장 줄 */
 function closetSettings(){
   const card = $("#closetCard"); if(!card) return;
-  card.innerHTML = `<button type="button" class="closetrow" id="closetRowBtn"><span class="cm">${mouseSVGWorn("day")}</span>
+  card.innerHTML = `<button type="button" class="closetrow" id="closetRowBtn"><span class="cm">${mouseSVGWorn("day", false, data.closet.wear)}</span>
     <span class="tx"><b>쥐돌이 옷장</b><span>치즈로 쥐돌이를 꾸며요 · 치즈 ${data.closet.cheese}개</span></span><span class="ar">›</span></button>`;
   $("#closetRowBtn").addEventListener("click", ()=>openCloset("set"));
 }
@@ -272,7 +278,7 @@ function renderCloset(){
   const c = data.closet;
   $("#closetSub").textContent = "치즈 " + c.cheese + "개 · 한 바퀴 외우면 +1";
   $("#cCheese").innerHTML = `<span class="ci">${cheeseSVG()}</span><span>${c.cheese}</span>`;
-  $("#cMouse").innerHTML = mouseSVGWorn("day");
+  $("#cMouse").innerHTML = mouseSVGWorn("day", false, c.wear);
   $("#cTabs").innerHTML = CLOSET_SLOTS.map(([s, name])=>`<button type="button" data-s="${s}" class="${s === closetSlot ? "on" : ""}">${name}</button>`).join("");
   $("#cGrid").innerHTML = CLOSET_ITEMS.filter(i=>i.slot === closetSlot).map(i=>{
     const own = c.own.indexOf(i.id) >= 0, wear = c.wear[i.slot] === i.id;
@@ -321,8 +327,8 @@ function scheduleClosetBlink(){
   closetBlinkT = setTimeout(()=>{
     const m = $("#cMouse");
     if(!m || !$("#s-closet").classList.contains("active")) return;
-    m.innerHTML = mouseSVGWorn("blink");
-    setTimeout(()=>{ if($("#s-closet").classList.contains("active")) m.innerHTML = mouseSVGWorn("day"); scheduleClosetBlink(); }, 160);
+    m.innerHTML = mouseSVGWorn("blink", false, data.closet.wear);
+    setTimeout(()=>{ if($("#s-closet").classList.contains("active")) m.innerHTML = mouseSVGWorn("day", false, data.closet.wear); scheduleClosetBlink(); }, 160);
   }, 2400 + Math.random() * 1800);
 }
 $("#closetClose").addEventListener("click", ()=>go(closetFrom === "result" ? "home" : closetFrom));

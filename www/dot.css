@@ -701,3 +701,14 @@ html.dot #s-closet .citem .nm{font-size:13px;font-weight:700;text-align:center;w
 html.dot #s-closet .citem .pr{display:inline-flex;align-items:center;gap:4px;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;color:var(--d-acc);}
 html.dot #s-closet .citem.own .pr{color:var(--d-t1);}
 html.dot #s-closet .cmsg{min-height:22px;margin:16px 3px 0;font-size:13px;color:var(--d-t2);text-align:center;}
+
+/* ── 생일 축하 (1.1 · birthday.js) ── */
+/* 폭죽은 화면 맨 위에 얹되 누르는 것을 막지 않는다 */
+html.dot #bdayFx{position:fixed;left:0;top:0;width:100%;height:100%;z-index:900;pointer-events:none;image-rendering:pixelated;}
+html.dot #bdayCard .bdrow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 0;}
+html.dot #bdayCard .bdrow select{width:100%;min-height:46px;font-size:16px;text-align:center;text-align-last:center;}
+html.dot #bdayCard .bdlabel{margin:14px 0 8px;}
+html.dot #bdayCard .bdtime{margin:14px 0 0;}
+html.dot #bdayCard .alarmnote{margin-top:12px;}
+html.dot #bdayCard .bdclear{display:block;margin:14px 0 0 auto;border:0;background:none;padding:6px 2px;font:inherit;font-size:14px;color:var(--d-t2);text-decoration:underline;}
+html.dot #bdayCard .bdtime label{font:inherit;color:inherit;letter-spacing:0;display:block;margin-bottom:8px;}
