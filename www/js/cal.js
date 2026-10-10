@@ -106,7 +106,7 @@ function alarmPlan(now){
   const out = list.slice(0, ALARM_MAX).map(x=>({id:x.id, at:x.at, title:x.title, body:x.body}));
   /* 생일 알림은 일정에 밀리지 않게 맨 앞에 둔다. 해마다 되풀이하고 케이크 그림을 붙인다 (birthday.js) */
   const bd = bdayAlarmItem(now);
-  if(bd) out.unshift({id:bd.id, at:bd.at, title:bd.title, body:bd.body, yearly:bd.yearly, image:bd.image});
+  if(bd) out.unshift(bd);
   return out.slice(0, ALARM_MAX);
 }
 /* 일정이 바뀔 때마다 부른다. 앱은 걸어 둔 것을 모두 지우고 이 목록으로 다시 건다 */

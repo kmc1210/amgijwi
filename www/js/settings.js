@@ -398,7 +398,7 @@ function applyBackup(text){
       haptic:typeof d.haptic === "boolean" ? d.haptic : data.haptic,
       /* 치즈 · 옷은 백업을 따라간다. 예전 백업(옷장 없음)이면 지금 것을 둔다 */
       closet:d.closet ? restoreCloset(d.closet) : data.closet,
-      bday:restoreBday(d.bday),           /* 생일도 백업을 따라간다. 올해 받은 선물 기록은 남긴다 */
+      bday:restoreBday(d.bday),           /* 생일도 백업을 따라간다 */
       /* 택 색은 매장 규칙이라 백업을 따라간다. 예전 백업(규칙 없음)이면 지금 것을 둔다 */
       tagRule:d.tagRule ? cleanTagRule(d.tagRule, "num") : data.tagRule,
       listSort:d.listSort || data.listSort,

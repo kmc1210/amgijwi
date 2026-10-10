@@ -54,14 +54,14 @@ function bdayAlarmItem(now){
     if(at > now) break;
   }
   return {id:"bday", at: ymd(at) + "T" + data.bday.at, title:"생일 축하해츄!", body:"쥐돌이가 선물을 준비했츄",
-          yearly: !(data.bday.m === 2 && data.bday.d === 29), image:"cake", when: at.getTime()};
+          yearly: !(data.bday.m === 2 && data.bday.d === 29), image:"cake"};
 }
 
 /* ---------- 홈 ---------- */
 /* 인사말과 말풍선(mascot.js renderGreeting 이 묻는다). 생일이 아니면 null */
 function bdayGreeting(now){
   if(!bdayIsToday(now)) return null;
-  return {title:"생일 축하해요!", msg:"생일 축하해츄! 오늘은 쥐돌이가 고깔모자도 썼츄"};
+  return {title:"생일 축하해요!", msg:"생일 축하해츄! 오늘 하루 좋은 일만 있으라츄"};
 }
 /* 선물은 한 해에 한 번. 생일을 오늘로 바꿔 가며 거듭 받지 못한다 */
 function earnBdayCheese(now){
@@ -72,19 +72,28 @@ function earnBdayCheese(now){
   persist();
   return true;
 }
-/* 홈을 그릴 때마다 부른다(home.js). 생일이면 선물을 주고, 그날 처음이면 폭죽을 터트린다.
-   잠금 화면이나 가이드에 가려 있으면 미뤘다가 다음에 홈을 그릴 때 터트린다 */
+/* 홈을 그릴 때마다 부른다(home.js — 치즈 칩을 그리는 closetHome 보다 먼저). 생일이면 선물을 주고 폭죽을 건다.
+   이 치즈가 처음 생긴 치즈면 옷장 안내 말풍선에 붙여서 말한다(따로 말하면 한 번뿐인 안내를 덮어 버린다) */
 function bdayHome(){
   const now = new Date();
   if(!bdayIsToday(now)) return;
   if(earnBdayCheese(now)){
-    const n = $("#cheeseN"); if(n) n.textContent = data.closet.cheese;
-    sayBubble("생일 축하해츄! 선물로 치즈 " + BDAY_CHEESE + "개 가져왔츄");
+    const said = "생일 축하해츄! 선물로 치즈 " + BDAY_CHEESE + "개 가져왔츄";
+    if(hintSeen("closet")) sayBubble(said); else closetHome(said);
   }
-  const today = ymd(now);
-  if(data.bday.party === today || bdayHidden()) return;
-  data.bday.party = today; persist();
-  playBdayParty();
+  bdayPartySoon();
+}
+/* 폭죽은 그날 한 번. 앱을 켤 때는 홈을 그린 바로 뒤에 잠금 화면이나 가이드가 덮으므로 한 박자 쉬고 본다.
+   가려 있으면 터트리지 않고 남겨 뒀다가, 잠금을 풀거나 가이드를 닫고 홈이 다시 그려질 때 터트린다 */
+let bdayPartyT = null;
+function bdayPartySoon(){
+  clearTimeout(bdayPartyT);
+  bdayPartyT = setTimeout(()=>{
+    const today = ymd(new Date());
+    if(!bdayIsToday() || data.bday.party === today || bdayHidden()) return;
+    data.bday.party = today; persist();
+    playBdayParty();
+  }, 250);
 }
 function bdayHidden(){
   const home = $("#s-home"), lock = $("#lock"), guide = $("#onboard");
@@ -158,6 +167,10 @@ function bdaySave(){
   syncAlarms();                 // 생일 · 시각 · 켜고 끔이 바뀌면 알림을 다시 건다 (cal.js)
   drawMascot();                 // 오늘이 생일이 됐거나 아니게 됐으면 모자가 바뀐다
 }
+/* 알림을 켠 채 처음 알려 주거나 알림을 켤 때 권한을 묻는다(일정 알림을 처음 켤 때와 같다) */
+function bdayAskPerm(){
+  if(data.bday.alarm && alarmPerm === "unknown") alarmPost({op:"ask"});
+}
 function bdaySettings(){
   const card = $("#bdayCard"); if(!card) return;
   const b = data.bday, set = bdaySet();
@@ -193,10 +206,8 @@ function bdaySettings(){
     const had = bdaySet();
     data.bday.m = m; data.bday.d = d;
     if(m && d){
-      /* 처음 알려 줄 때 알림 권한을 묻는다(일정 알림을 처음 켤 때와 같다) */
-      if(!had && data.bday.alarm && alarmPerm === "unknown") alarmPost({op:"ask"});
-      bdaySave(); haptic("selection");
-      if(bdayIsToday()) renderHome();          // 오늘이 생일이면 홈으로 갔을 때 바로 축하한다
+      if(!had) bdayAskPerm();
+      bdaySave(); haptic("selection");         // 오늘이 생일이면 홈으로 갔을 때 축하한다
     } else if(had){
       /* 월이나 일을 비우면 생일을 지운 것. 받은 선물 · 폭죽 기록은 남긴다 */
       bdaySave();
@@ -207,22 +218,18 @@ function bdaySettings(){
   $("#bdD").addEventListener("change", pick);
   document.querySelectorAll("#bdAlarmBtns .theme-b").forEach(btn=>btn.addEventListener("click", ()=>{
     data.bday.alarm = btn.dataset.on === "1";
-    if(data.bday.alarm && alarmPerm === "unknown") alarmPost({op:"ask"});
+    bdayAskPerm();
     bdaySave(); haptic("light"); bdaySettings();
   }));
   const at = $("#bdAt");
-  if(at) at.addEventListener("change", ()=>{ data.bday.at = at.value; bdaySave(); bdaySettings(); });
+  /* 시각을 고르는 동안에는 칸을 다시 그리지 않는다(다시 그리면 iOS 시각 바퀴가 닫힌다) */
+  if(at) at.addEventListener("change", ()=>{ if(at.value){ data.bday.at = at.value; bdaySave(); } });
   const clear = $("#bdClear");
   if(clear) clear.addEventListener("click", ()=>{
     data.bday.m = 0; data.bday.d = 0;
     bdaySave(); bdaySettings(); toast("생일을 지웠어요");
   });
 }
-/* 백업을 되살릴 때. 생일은 백업을 따르되, 올해 선물을 이미 받았으면 그 기록은 남긴다 */
-function restoreBday(bk){
-  if(!bk) return data.bday;
-  const b = cleanBday(bk), now = data.bday;
-  if(now.gift > b.gift) b.gift = now.gift;
-  if(now.party > b.party) b.party = now.party;
-  return b;
-}
+/* 백업을 되살릴 때. 생일도 선물 받은 기록도 백업 그대로 따른다 — 치즈가 백업 때 수로 돌아가므로
+   선물 기록만 지금 것으로 남기면 그 해 선물을 잃는다. 생일이 없던 예전 백업이면 지금 것을 둔다 */
+function restoreBday(bk){ return bk ? cleanBday(bk) : data.bday; }

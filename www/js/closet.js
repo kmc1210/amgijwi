@@ -266,7 +266,7 @@ function closetResult(gain){
 /* 설정: 맨 위 옷장 줄 */
 function closetSettings(){
   const card = $("#closetCard"); if(!card) return;
-  card.innerHTML = `<button type="button" class="closetrow" id="closetRowBtn"><span class="cm">${mouseSVGWorn("day")}</span>
+  card.innerHTML = `<button type="button" class="closetrow" id="closetRowBtn"><span class="cm">${mouseSVGWorn("day", false, data.closet.wear)}</span>
     <span class="tx"><b>쥐돌이 옷장</b><span>치즈로 쥐돌이를 꾸며요 · 치즈 ${data.closet.cheese}개</span></span><span class="ar">›</span></button>`;
   $("#closetRowBtn").addEventListener("click", ()=>openCloset("set"));
 }

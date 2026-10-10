@@ -73,6 +73,11 @@ final class AlarmBridge: NSObject {
         parser.timeZone = .current
         parser.dateFormat = "yyyy-MM-dd'T'HH:mm"
 
+        /// 웹이 보낸 날짜는 양력이다. 기기 달력이 음력 · 불기여도 양력 월 · 일로 건다
+        /// (해마다 되풀이하는 알림이 다른 날로 밀리지 않게).
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = .current
+
         center.removeAllPendingNotificationRequests()
         let now = Date()
         for item in items.prefix(AlarmBridge.limit) {
@@ -93,7 +98,8 @@ final class AlarmBridge: NSObject {
             let yearly = item["yearly"] as? Bool ?? false
             let fields: Set<Calendar.Component> = yearly ? [.month, .day, .hour, .minute]
                                                          : [.year, .month, .day, .hour, .minute]
-            let parts = Calendar.current.dateComponents(fields, from: date)
+            var parts = gregorian.dateComponents(fields, from: date)
+            parts.calendar = gregorian
             let trigger = UNCalendarNotificationTrigger(dateMatching: parts, repeats: yearly)
             center.add(UNNotificationRequest(identifier: "ev-" + id, content: content, trigger: trigger))
         }
@@ -112,6 +118,7 @@ final class AlarmBridge: NSObject {
             try FileManager.default.copyItem(at: source, to: copy)
             return try UNNotificationAttachment(identifier: name, url: copy)
         } catch {
+            try? FileManager.default.removeItem(at: copy)
             return nil
         }
     }

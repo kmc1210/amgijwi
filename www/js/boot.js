@@ -95,7 +95,8 @@ if(_lift.split) setTimeout(()=>toast(`배합이 다른 같은 이름 부재료 $
 if(earnStreakCheese()){
   const said = VISIT.info.streak + "일 연속이츄! 치즈 +5 받았츄";
   const n = $("#cheeseN"); if(n) n.textContent = data.closet.cheese;
-  setTimeout(()=>{ if(hintSeen("closet")) sayBubble(said); else closetHome(said); }, 1100);
+  /* 생일날은 생일 축하 말풍선을 그대로 둔다(연속 접속 치즈는 그대로 받는다) */
+  if(!bdayIsToday()) setTimeout(()=>{ if(hintSeen("closet")) sayBubble(said); else closetHome(said); }, 1100);
 }
 /* 웹뷰 저장소가 비어 있어 앱에 보관해 둔 사본으로 되살렸다. 조용히 넘어가면 무슨 일인지 모르니 알린다 */
 if(restoredFromCopy) setTimeout(()=>toast("앱에 보관해 둔 사본으로 레시피를 되살렸어요"), 1300);
