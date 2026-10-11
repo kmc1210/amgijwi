@@ -75,6 +75,7 @@ www/                   앱 본체. iOS 앱 번들에 그대로 들어갑니다. 
     editor.js          사진 글자 분석 · 레시피/부재료 편집기
     settings.js        설정 · 백업 · PIN · 테마 · 소리 · 사용법
     guide.js           첫 실행 가이드 (앱만)
+    closet.js          쥐돌이 옷장 · 치즈 (앱만)
     boot.js            저장 안정성 · 기기별 안내 · 시작
   apple-touch-icon.png
 ios/                   iOS 껍데기 (WKWebView). 자세한 건 ios/README.md

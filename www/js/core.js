@@ -504,14 +504,18 @@ const WEATHER = {
 };
 
 /* 도트 맵을 가로로 이어붙여 SVG rect 로 (같은 색은 한 덩어리로 묶어 가볍게) */
-function mouseSVG(mood, puff){
+/* 쥐돌이 한 장의 행 배열. 옷장 아이템을 덧입힐 때(closet.js)도 이 행에서 시작한다 */
+function mouseRows(mood, puff){
   let rows = MOUSE[mood] || MOUSE.day;
   if(mood !== "night" && mood.indexOf("eat") !== 0 && mood.indexOf("sip") !== 0){
     rows = rows.slice();
     const belly = puff ? BELLY.puff : BELLY.normal; // 서 있을 땐 배만 한 겹 부푼다
     for(let i=0;i<belly.length;i++) rows[BELLY.y0+i] = belly[i];
   }
-  return rowsSVG(rows, false);
+  return rows;
+}
+function mouseSVG(mood, puff){
+  return rowsSVG(mouseRows(mood, puff), false);
 }
 /* 도트 행 배열 → SVG. flip 이면 좌우 반전(달리는 방향 바꿀 때) */
 function rowsSVG(rows, flip){

@@ -647,3 +647,57 @@ html.dot :is(#s-list, #sheet) .tagdates :is(.o, .x){word-break:keep-all;}
 /* 진동 장치가 없는 기기(아이패드). 앱이 문서가 그려지기 전에 <html> 에 nohaptic 을 붙인다(WebAppViewController.deviceScript).
    applyEnvText 가 앱 전용 칸을 다시 보이게 해도 CSS 라 덮어쓰이지 않는다 */
 html.dot.nohaptic #hapticCard{display:none !important;}
+
+/* ── 쥐돌이 옷장 (closet.js) ─────────────────────────
+   치즈 칩 · 결과 화면 치즈 줄 · 설정 옷장 줄 · 옷장 화면. 앱(도트)에서만 보인다 */
+/* 치즈 칩이 쥐돌이(52px)보다 넓어져도(세 자리 수) 인사말을 덮지 않게 칸이 칩만큼 넓어진다 */
+html.dot #s-home .mwrap{flex:0 0 auto;min-width:52px;display:flex;flex-direction:column;align-items:center;gap:6px;}
+html.dot .cchip{display:inline-flex;align-items:center;gap:5px;border:0;background:var(--d-surface);color:var(--d-t1);padding:3px 7px 2px;margin:2px;
+  font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;box-shadow:var(--d-box2);}
+html.dot .cchip .ci, html.dot .cgain .ci, html.dot #s-closet .ci{display:inline-block;width:16px;height:16px;image-rendering:pixelated;}
+html.dot :is(.cchip, .cgain, #s-closet) .ci svg{width:100%;height:100%;display:block;}
+html.dot #s-home .cchip:active{transform:translate(2px,2px);box-shadow:none;}
+html.dot .cgain{display:flex;align-items:center;justify-content:center;gap:8px;margin:2px auto 16px;
+  font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;color:var(--d-t1);}
+html.dot .cgain small{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px;color:var(--d-t2);}
+html.dot #closetBtn{margin-top:12px;}
+html.dot #closetCard{padding:0;}
+html.dot .closetrow{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;color:var(--d-t1);padding:14px 16px;text-align:left;}
+html.dot .closetrow .cm{width:42px;height:60px;flex:0 0 auto;image-rendering:pixelated;}
+html.dot .closetrow .cm svg{width:100%;height:100%;display:block;}
+html.dot .closetrow .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+html.dot .closetrow .tx b{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot .closetrow .tx span{font-size:13px;color:var(--d-t2);}
+html.dot .closetrow .ar{font-size:18px;color:var(--d-t2);}
+html.dot #s-closet{background:var(--d-bg);color:var(--d-t1);}
+html.dot #s-closet .appbar h1{font-family:"NeoDGM",monospace;font-weight:400;font-size:22px;letter-spacing:0;-webkit-font-smoothing:none;}
+html.dot #s-closet .appbar p{color:var(--d-t2);}
+html.dot #s-closet .appbar .cchip{align-self:flex-end;margin-bottom:8px;}
+html.dot #s-closet .icon-btn{border:0;border-radius:0;background:var(--d-surface);color:var(--d-t1);margin:2px;box-shadow:var(--d-box2);}
+html.dot #s-closet .cstage{position:relative;height:250px;display:flex;align-items:flex-end;justify-content:center;margin:3px 3px 18px;padding-bottom:14px;
+  background:var(--d-surface);box-shadow:var(--d-box), var(--d-drop-sh);}
+html.dot #s-closet .cstage .m{width:140px;height:200px;image-rendering:pixelated;position:relative;z-index:1;}
+html.dot #s-closet .cstage .m svg{width:100%;height:100%;display:block;}
+html.dot #s-closet .cstage .floor{position:absolute;left:0;right:0;bottom:0;height:14px;background:var(--d-hero);}
+html.dot #s-closet .cstage .say{position:absolute;top:14px;right:14px;z-index:2;background:var(--d-bg);padding:5px 9px;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;box-shadow:var(--d-box2);}
+html.dot #s-closet .cearn{background:var(--d-surface);padding:12px 14px;margin:3px 3px 18px;box-shadow:var(--d-box);}
+html.dot #s-closet .cearn > b{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #s-closet .cearn p{margin:4px 0 0;font-size:13.5px;color:var(--d-t2);}
+html.dot #s-closet .cearn p b{color:var(--d-t1);}
+html.dot #s-closet .ctabs{display:flex;gap:8px;margin:3px 3px 16px;}
+html.dot #s-closet .ctabs button{flex:1;padding:8px 0;border:0;background:var(--d-surface);color:var(--d-t2);
+  font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;box-shadow:var(--d-box2);}
+html.dot #s-closet .ctabs button.on{background:var(--d-t1);color:var(--d-bg);}
+html.dot #s-closet .cgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:3px;}
+html.dot #s-closet .citem{min-width:0;border:0;background:var(--d-surface);color:var(--d-t1);padding:8px 6px 9px;display:flex;flex-direction:column;align-items:center;gap:4px;
+  box-shadow:var(--d-box), var(--d-drop-sh);}
+html.dot #s-closet .citem.wear{background:var(--d-warn-bg);}
+html.dot #s-closet .citem:active{transform:translate(3px,3px);box-shadow:var(--d-box);}
+/* 카드가 좁아지면 미리보기도 같이 줄어든다(고정 폭이면 카드 밖으로 삐져나온다) */
+html.dot #s-closet .citem .th{width:100%;max-width:70px;height:56px;overflow:hidden;display:flex;justify-content:center;image-rendering:pixelated;}
+html.dot #s-closet .citem .th > span{display:block;flex:0 0 auto;}
+html.dot #s-closet .citem .th svg{width:70px;height:100px;display:block;}
+html.dot #s-closet .citem .nm{font-size:13px;font-weight:700;text-align:center;word-break:keep-all;}
+html.dot #s-closet .citem .pr{display:inline-flex;align-items:center;gap:4px;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;color:var(--d-acc);}
+html.dot #s-closet .citem.own .pr{color:var(--d-t1);}
+html.dot #s-closet .cmsg{min-height:22px;margin:16px 3px 0;font-size:13px;color:var(--d-t2);text-align:center;}
