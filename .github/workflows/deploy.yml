@@ -2,6 +2,7 @@
 #
 # 웹 앱은 닫았다(2026-10). 앱은 www/ 를 iOS 번들에 담아 쓰고, 사이트에는 아래만 올린다.
 #   site/index.html · site/rescue.js   첫 화면 안내 + 이 브라우저에 남은 예전 레시피 꺼내기
+#   site/app-ads.txt                   광고 판매자 확인(AdMob 게시자 ID. 비밀 값이 아니다)
 #   www/privacy.html · www/support.html 앱스토어에 적은 처리방침 · 지원 URL. 앱 설정에서도 이 주소로 연다
 #   www/apple-touch-icon.png · www/fonts/  첫 화면 아이콘과 글꼴
 # --delete 로 올리므로 예전 웹 앱 파일(js/ · style.css 등)은 버킷에서 지워진다.
@@ -99,10 +100,12 @@ jobs:
         run: |
           rm -rf dist && mkdir -p dist/fonts
           cp site/index.html site/rescue.js dist/
+          # 광고(AdMob)가 "이 앱의 광고 자리는 이 계정이 판다"를 확인하러 읽는 파일. 사이트 맨 위에 있어야 한다
+          cp site/app-ads.txt dist/
           cp www/privacy.html www/support.html www/apple-touch-icon.png dist/
           cp www/fonts/neodgm.woff2 www/fonts/neodgm-LICENSE.txt dist/fonts/
           # --delete 로 올리기 때문에 dist/ 가 비어 있으면 버킷이 통째로 비워진다
-          for f in dist/index.html dist/rescue.js dist/privacy.html dist/support.html; do
+          for f in dist/index.html dist/rescue.js dist/privacy.html dist/support.html dist/app-ads.txt; do
             test -s "$f" || { echo "::error::빈 파일 $f"; exit 1; }
           done
           find dist -type f | sort
