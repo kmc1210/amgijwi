@@ -2513,6 +2513,14 @@ const LEGACY = {
       const n = posts.length;
       r.cap = [data.closet.cheese, adLeft(), $("#adBtn").disabled, /내일 또 받아요/.test($("#adBtn").textContent)];
       watchAd(); r.capNoPost = posts.length === n;
+      // 광고가 뜨면 기다리는 시간을 더 재지 않고(긴 광고), 그 뒤 결과는 그대로 받는다
+      data.closet.adDay = "2020-01-01"; data.closet.cheese = 0; renderCloset();
+      $("#adBtn").click(); adResultFromApp("showing"); r.showing = [$("#adBtn").disabled, data.closet.cheese];
+      r.hold = [bgmHold, bgmAllowed()];
+      adResultFromApp("rewarded"); r.afterShowing = [data.closet.cheese, bgmHold]; closeThanks();
+      // 고맙다 창을 닫자마자 다시 떠도 바로 사라지지 않는다
+      showThanks(); closeThanks(); showThanks(); await wait(420); r.reopen = $("#thx").hidden; closeThanks(); await wait(400);
+      data.closet.adDay = ymd(new Date()); data.closet.adCount = 3;
       // 날이 바뀌면 다시 3번
       data.closet.adDay = "2020-01-01"; r.nextDay = adLeft();
       // 답이 오지 않으면 실패로 풀린다
@@ -2549,6 +2557,10 @@ const LEGACY = {
     ok("고맙다 창은 눌러서 닫는다", r.closedThx);
     eq("하루 3번까지(치즈 15), 다 보면 버튼이 잠긴다", r.cap, [15, 0, true, true]);
     ok("3번을 다 보면 앱에 더 부탁하지 않는다", r.capNoPost);
+    eq("광고가 뜬 뒤에는 답을 기다리고 버튼은 잠긴 채", r.showing, [true, 0]);
+    ok("광고가 뜨는 동안 배경음을 다시 켜지 않는다", r.hold[0] === true && r.hold[1] === false);
+    eq("광고가 뜬 뒤 끝까지 보면 치즈를 받고 배경음 잠금이 풀린다", r.afterShowing, [5, false]);
+    eq("고맙다 창을 닫자마자 다시 띄워도 바로 사라지지 않는다", r.reopen, false);
     eq("날이 바뀌면 다시 3번", r.nextDay, 3);
     ok("답이 없으면 실패로 풀어 주는 시간이 있다", r.waitMs >= 10000 && r.waitMs <= 60000);
     ok("기쁜 얼굴은 눈과 볼만 바꾸고 입은 그대로, 까마귀 자세 목록은 그대로", r.happy[0] && r.happy[1] && r.happy[2] <= 7 && r.happy[3] && r.happy[4] === "idle,caw", JSON.stringify(r.happy));

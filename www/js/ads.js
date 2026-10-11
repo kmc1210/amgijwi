@@ -6,7 +6,9 @@
    누르지 않으면 광고 SDK 는 깨어나지 않는다. 광고는 화면에 저절로 뜨지 않는다 */
 
 const AD_CHEESE = 5, AD_DAY_MAX = 3;
-const AD_WAIT_MS = 25000;         // 이만큼 기다려도 답이 없으면 실패로 친다(통신이 느릴 때 버튼이 묶이지 않게)
+/* 광고를 불러오는 데 이만큼 기다려도 뜨지 않으면 그만둔다(통신이 느릴 때 버튼이 묶이지 않게).
+   광고가 뜬 뒤에는 재지 않는다 — 광고는 30초가 넘기도 하고, 광고를 눌러 App Store 에 다녀오기도 한다 */
+const AD_WAIT_MS = 25000;
 
 /* 앱이 심어 두는 통로. 이름은 AdBridge.swift 의 name 과 같아야 한다 */
 function adBridge(){
@@ -21,7 +23,7 @@ function adLeft(){
   return Math.max(0, AD_DAY_MAX - (c.adDay === ymd(new Date()) ? c.adCount : 0));
 }
 
-let adBusy = false, adWaitT = null, adBgm = false;
+let adBusy = false, adWaitT = null;
 /* 옷장의 광고 버튼. renderCloset 이 그릴 때마다 부른다 */
 function adButton(){
   const box = $("#cAd"); if(!box) return;
@@ -37,23 +39,26 @@ function watchAd(){
   if(!b || adBusy || adLeft() < 1) return;
   adBusy = true;
   /* 광고 소리와 겹치지 않게 배경음을 잠깐 끈다. 끝나면 다시 켠다 */
-  adBgm = bgmPlaying(); if(adBgm) bgmStop();
+  bgmHold = true; bgmStop();
   haptic("light");
   $("#cMsg").textContent = "";
   adButton();
   clearTimeout(adWaitT);
-  adWaitT = setTimeout(()=>adResultFromApp("failed"), AD_WAIT_MS);
+  /* 기다리다 그만두면 앱에도 알린다. 알리지 않으면 뒤늦게 불러온 광고가 느닷없이 뜬다 */
+  adWaitT = setTimeout(()=>{ b.postMessage({op:"cancel"}); adResultFromApp("failed"); }, AD_WAIT_MS);
   b.postMessage({op:"show"});
 }
-/* 앱이 결과를 알려줄 때 부른다. 이 이름은 AdBridge.swift 에도 적혀 있다.
-   rewarded 끝까지 봤다 · closed 중간에 닫았다 · failed 광고가 없거나 불러오지 못했다 */
+/* 앱이 알려줄 때 부른다. 이 이름은 AdBridge.swift 에도 적혀 있다.
+   showing 광고가 떴다(아직 끝난 게 아니다) · rewarded 끝까지 봤다 · closed 중간에 닫았다 · failed 광고가 없거나 불러오지 못했다 */
 function adResultFromApp(result){
   if(!adBusy) return;               // 부탁한 적이 없거나 이미 끝난 일이다(두 번 받지 않는다)
+  if(result === "showing"){ clearTimeout(adWaitT); return; }
   adBusy = false;
   clearTimeout(adWaitT);
-  if(adBgm){ adBgm = false; armBgm(); }
+  bgmHold = false; armBgm();
   const msg = $("#cMsg");
-  if(result === "rewarded" && adLeft() > 0){
+  /* 끝까지 봤으면 준다. 하루 몫은 누를 때 이미 확인했다 */
+  if(result === "rewarded"){
     const c = data.closet, today = ymd(new Date());
     if(c.adDay !== today){ c.adDay = today; c.adCount = 0; }
     c.adCount += 1; c.cheese += AD_CHEESE;
@@ -103,17 +108,17 @@ function happyMouseSVG(){
   return rowsSVG(dressRows(rows, "stand"), false);
 }
 
-let thxT = null, thxCrowT = null;
+let thxT = null, thxCrowT = null, thxOutT = null;
 function closeThanks(){
   const t = $("#thx");
   if(!t || t.hidden) return;
-  clearTimeout(thxT); clearInterval(thxCrowT);
+  clearTimeout(thxT); clearInterval(thxCrowT); clearTimeout(thxOutT);
   t.classList.add("out");
-  setTimeout(()=>{ t.hidden = true; t.classList.remove("out"); }, 360);
+  thxOutT = setTimeout(()=>{ t.hidden = true; t.classList.remove("out"); }, 360);
 }
 function showThanks(){
   const t = $("#thx"); if(!t) return;
-  clearTimeout(thxT); clearInterval(thxCrowT);
+  clearTimeout(thxT); clearInterval(thxCrowT); clearTimeout(thxOutT);
   $("#thxMouse").innerHTML = happyMouseSVG();
   /* 치즈 조각 8개: 자리 · 출발 · 높이를 조금씩 다르게 */
   let bits = "";

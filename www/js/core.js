@@ -477,7 +477,7 @@ const MOUSE_PAL = {o:"#C4AE98", w:"#FCF7F1", c:"#EBDDCD", p:"#F5BEAC", d:"#DF9B8
    auto 는 앱이 알려준 날씨를 먼저 보고, 없으면 달로 어림한다.
    iOS 앱이 WeatherKit 으로 받아 window.__amgijwiWeather 에 넣어줄 자리다.
    웹에는 그 값이 없으니 계절 어림으로만 돈다. 웹이 직접 날씨를 받아오면
-   connect-src 'none' 과 "서버로 전송되는 정보가 없어요" 를 깨야 한다 */
+   connect-src 'none' 과 "레시피는 어디로도 보내지 않아요" 를 깨야 한다 */
 function wxFromApp(){
   const v = window.__amgijwiWeather;
   return (v === "rain" || v === "snow" || v === "clear") ? v : null;

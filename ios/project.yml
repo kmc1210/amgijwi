@@ -66,6 +66,8 @@ targets:
         # 여기 ID 들은 비밀 값이 아니다. 앱 안에 그대로 들어가고 광고 요청마다 드러난다.
         # 광고를 끄려면 AmgijwiAdsEnabled 를 false 로 두거나 AmgijwiRewardedUnit 을 비운다(옷장에 광고 버튼이 사라진다).
         # 개발 빌드(Debug)는 광고 단위가 무엇이든 구글의 시험용 광고만 띄운다.
+        # 지금은 한국에만 낸다. 유럽(EEA · 영국 · 스위스)에 내려면 그 전에 동의 창(UMP)을 넣어야 한다 —
+        # 맞춤형이 아닌 광고도 그곳에서는 동의를 받아야 한다.
         GADApplicationIdentifier: ca-app-pub-2291689741399813~2296012267
         AmgijwiAdsEnabled: true
         AmgijwiRewardedUnit: ca-app-pub-2291689741399813/9658487809
