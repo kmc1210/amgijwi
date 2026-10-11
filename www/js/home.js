@@ -54,7 +54,7 @@ function renderHome(){
            ${INSTALL[deviceOS()].why}
            ${INSTALL[deviceOS()].how}</div></div>`
       : (visits <= 5
-        ? `<div class="banner ok"><span>${icon("lock")}</span><div><b>이 기기 안에만 저장됩니다.</b><br>서버로 전송되는 정보가 없어요.</div></div>`
+        ? `<div class="banner ok"><span>${icon("lock")}</span><div><b>이 기기 안에만 저장됩니다.</b><br>레시피는 어디로도 보내지 않아요.</div></div>`
         : ""));
 
   renderToday();

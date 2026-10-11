@@ -11,6 +11,7 @@ final class WebAppViewController: UIViewController {
     private let alarms = AlarmBridge()
     private let share = ShareBridge()
     private let haptics = HapticBridge()
+    private let ads = AdBridge()
     private let store = StoreBridge()
 
     init() {
@@ -59,9 +60,13 @@ final class WebAppViewController: UIViewController {
         /// 진동 통로. 웹이 느낌 이름만 넘긴다 (HapticBridge.swift).
         config.userContentController.add(haptics, name: HapticBridge.name)
 
+        /// 보상형 광고 통로. 옷장에서 광고 버튼을 누를 때만 쓴다 (AdBridge.swift).
+        config.userContentController.add(ads, name: AdBridge.name)
+
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
         alarms.attach(webView)
+        ads.attach(webView, host: self)
         share.attach(webView, host: self)
 
         /// 안전 영역까지 페이지가 직접 그린다. index.html 의 viewport-fit=cover 와 짝이다.
@@ -109,7 +114,9 @@ final class WebAppViewController: UIViewController {
         let info: [String: String] = ["app": ver, "device": UIDevice.current.model + " (" + machineName() + ")", "os": "iOS " + UIDevice.current.systemVersion]
         let json = (try? JSONSerialization.data(withJSONObject: info)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
         /// 진동이 안 되는 기기는 문서가 그려지기 전에 표시를 붙여 CSS 가 진동 칸을 숨긴다(dot.css html.dot.nohaptic)
+        /// 광고가 켜진 빌드인지도 알린다. 꺼져 있으면 웹은 광고 버튼을 그리지 않는다(ads.js).
         return " window.__amgijwiHaptics = \(haptics ? "true" : "false"); window.__amgijwiInfo = \(json);"
+             + " window.__amgijwiAds = \(AdBridge.enabled ? "true" : "false");"
              + (haptics ? "" : " document.documentElement.classList.add('nohaptic');")
     }
 

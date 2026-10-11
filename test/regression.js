@@ -2472,6 +2472,91 @@ const LEGACY = {
     eq("웹에는 생일 기능이 없다", r.web, [false, null, false]);
   }
 
+  // ── 6-10r. 1.1 광고 보고 치즈 받기 ─────────────────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const backup = JSON.stringify(data);
+      const seen = el => !!el && el.getClientRects().length > 0;
+      const wait = ms => new Promise(res => setTimeout(res, ms));
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      data.closet = cleanCloset({ cheese:0 }); data.bday = cleanBday({});
+      // 광고가 꺼진 빌드: 통로가 없거나 앱이 켰다고 알리지 않으면 버튼이 없다
+      const posts = [];
+      const realWk = window.webkit;
+      window.webkit = { messageHandlers: Object.assign({}, realWk && realWk.messageHandlers, { amgijwiAd: { postMessage: m => posts.push(m) } }) };
+      window.__amgijwiAds = false; openCloset("home");
+      r.off = [adsOn(), !!$("#adBtn"), seen($("#cAd"))];
+      window.__amgijwiAds = true; renderCloset();
+      r.on = [adsOn(), seen($("#adBtn")), /광고 보고 치즈 \+5/.test($("#adBtn").textContent), /오늘 3번/.test($("#adBtn").textContent)];
+      // 누르면 앱에 부탁하고, 답이 올 때까지 다시 누를 수 없다
+      $("#adBtn").click(); r.asked = [JSON.stringify(posts), $("#adBtn").disabled, /불러오는 중/.test($("#adBtn").textContent)];
+      watchAd(); r.noDouble = posts.length;
+      // 중간에 닫으면 보상 없음
+      adResultFromApp("closed"); r.closed = [data.closet.cheese, data.closet.adCount, $("#cMsg").textContent, $("#thx").hidden, $("#adBtn").disabled];
+      // 광고가 없으면 알려준다
+      $("#adBtn").click(); adResultFromApp("failed"); r.failed = [data.closet.cheese, $("#cMsg").textContent];
+      // 부탁하지 않은 결과는 받지 않는다(치즈를 그냥 얻지 못한다)
+      adResultFromApp("rewarded"); r.unasked = data.closet.cheese;
+      // 끝까지 보면 +5 와 고맙다 창
+      $("#adBtn").click(); adResultFromApp("rewarded");
+      r.rewarded = [data.closet.cheese, data.closet.adCount, data.closet.adDay === ymd(new Date()), $("#thx").hidden, $("#cCheese").textContent.trim(), /오늘 2번/.test($("#adBtn").textContent)];
+      r.thx = [$("#thxMouse").innerHTML.indexOf("<svg") === 0, $("#thxCrow").innerHTML.indexOf("<svg") === 0, $("#thxBits").children.length, $("#thxGain").textContent, $("#cSay").textContent];
+      adResultFromApp("rewarded"); r.once = data.closet.cheese;      // 같은 결과를 두 번 받아도 한 번만
+      await wait(350);
+      r.small = [...document.querySelectorAll("#thx *, #cAd *")].filter(el => seen(el) && [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()))
+        .map(el => getComputedStyle(el)).filter(c => c.fontFamily.indexOf("NeoDGM") >= 0 && parseFloat(c.fontSize) < 16).map(c => c.fontSize);
+      $("#thx").click(); await wait(420); r.closedThx = $("#thx").hidden;
+      // 하루 3번까지
+      $("#adBtn").click(); adResultFromApp("rewarded"); closeThanks();
+      $("#adBtn").click(); adResultFromApp("rewarded"); closeThanks();
+      const n = posts.length;
+      r.cap = [data.closet.cheese, adLeft(), $("#adBtn").disabled, /내일 또 받아요/.test($("#adBtn").textContent)];
+      watchAd(); r.capNoPost = posts.length === n;
+      // 날이 바뀌면 다시 3번
+      data.closet.adDay = "2020-01-01"; r.nextDay = adLeft();
+      // 답이 오지 않으면 실패로 풀린다
+      r.waitMs = AD_WAIT_MS;
+      // 기쁜 얼굴: 쥐돌이는 눈 줄만, 입은 그대로(명암)
+      const day = mouseRows("day"); const happy = mouseRows("day"); MOUSE_HAPPY.rows.forEach((row, i) => { happy[MOUSE_HAPPY.y0 + i] = row; });
+      r.happy = [MOUSE_HAPPY.rows.every(x => x.length === 28) && CROW_HAPPY.rows.every(x => x.length === 28), happy[15] === day[15], happy.filter((x, i) => x !== day[i]).length,
+                 CROW_HAPPY.rows.join("").split("").every(ch => ch === "." || CROW_PAL[ch]), Object.keys(CROW).join(",")];
+      // 설정의 데이터 상태 문구도 광고가 켜지면 바뀐다
+      go("set"); r.note = /광고를 볼 때만 광고 회사와 통신/.test($("#s-set").textContent);
+      // 백업을 되살려도 오늘 본 횟수는 남는다
+      const today = ymd(new Date());
+      data.closet = cleanCloset({ cheese:9, adDay:today, adCount:3 });
+      const kept = restoreCloset({ cheese:2, adDay:"", adCount:0 }); r.restore = [kept.cheese, kept.adCount, kept.adDay === today];
+      // 웹에는 없다
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      r.web = [adsOn(), adBridge()];
+      go("set"); r.webNote = /서버로 나가는 통신은 없습니다/.test($("#s-set").textContent);
+      window.webkit = realWk; delete window.__amgijwiAds;
+      data = JSON.parse(backup); data.closet = cleanCloset(data.closet); data.bday = cleanBday(data.bday); persist(); go("home");
+      return r;
+    });
+    eq("광고가 꺼진 빌드에는 광고 버튼이 없다", r.off, [false, false, false]);
+    eq("광고가 켜진 앱: 옷장에 광고 버튼(치즈 +5 · 오늘 3번)", r.on, [true, true, true, true]);
+    eq("누르면 앱에 show 를 부탁하고 답을 기다린다", r.asked, ['[{"op":"show"}]', true, true]);
+    eq("기다리는 동안 또 부탁하지 않는다", r.noDouble, 1);
+    ok("중간에 닫으면 치즈도 횟수도 그대로이고 까닭을 알려준다", r.closed[0] === 0 && r.closed[1] === 0 && /끝까지 봐야/.test(r.closed[2]) && r.closed[3] === true && r.closed[4] === false, JSON.stringify(r.closed));
+    ok("광고가 없으면 알려준다", r.failed[0] === 0 && /볼 수 있는 광고가 없어요/.test(r.failed[1]));
+    eq("부탁하지 않은 결과로는 치즈를 받지 못한다", r.unasked, 0);
+    eq("끝까지 보면 치즈 +5, 횟수 +1, 고맙다 창", r.rewarded, [5, 1, true, false, "5", true]);
+    eq("고맙다 창: 쥐돌이 · 까룩이 · 치즈 조각 8개 · 치즈 +5 · 고맙츄", r.thx, [true, true, 8, "치즈 +5", "고맙츄!"]);
+    eq("같은 결과를 두 번 받아도 한 번만 준다", r.once, 5);
+    eq("광고 버튼 · 고맙다 창의 도트 글꼴도 16px 이상", r.small, []);
+    ok("고맙다 창은 눌러서 닫는다", r.closedThx);
+    eq("하루 3번까지(치즈 15), 다 보면 버튼이 잠긴다", r.cap, [15, 0, true, true]);
+    ok("3번을 다 보면 앱에 더 부탁하지 않는다", r.capNoPost);
+    eq("날이 바뀌면 다시 3번", r.nextDay, 3);
+    ok("답이 없으면 실패로 풀어 주는 시간이 있다", r.waitMs >= 10000 && r.waitMs <= 60000);
+    ok("기쁜 얼굴은 눈과 볼만 바꾸고 입은 그대로, 까마귀 자세 목록은 그대로", r.happy[0] && r.happy[1] && r.happy[2] <= 7 && r.happy[3] && r.happy[4] === "idle,caw", JSON.stringify(r.happy));
+    ok("광고가 켜지면 데이터 상태 문구가 광고 통신을 알린다", r.note);
+    eq("백업을 되살려도 오늘 본 광고 횟수는 남는다", r.restore, [2, 3, true]);
+    ok("웹에는 광고가 없고 문구도 그대로", r.web[0] === false && r.web[1] === null && r.webNote);
+  }
+
   await browser.close();
 
   console.log("");

@@ -141,7 +141,10 @@ function cleanCloset(c){
     own: own, wear: wear,
     roundDay: typeof c.roundDay === "string" ? c.roundDay : "",
     roundCount: Math.max(0, Math.floor(Number(c.roundCount) || 0)),
-    streakDay: typeof c.streakDay === "string" ? c.streakDay : ""
+    streakDay: typeof c.streakDay === "string" ? c.streakDay : "",
+    /* 광고를 본 날과 그날 본 횟수(하루 3번까지 — ads.js) */
+    adDay: typeof c.adDay === "string" ? c.adDay : "",
+    adCount: Math.max(0, Math.floor(Number(c.adCount) || 0))
   };
 }
 function closetItem(id){ return CLOSET_ITEMS.filter(i=>i.id === id)[0] || null; }
@@ -236,6 +239,7 @@ function restoreCloset(bk){
   const c = cleanCloset(bk), now = data.closet, today = ymd(new Date());
   if(now.roundDay === today && (c.roundDay !== today || c.roundCount < now.roundCount)){ c.roundDay = today; c.roundCount = now.roundCount; }
   if(now.streakDay === today) c.streakDay = today;
+  if(now.adDay === today && (c.adDay !== today || c.adCount < now.adCount)){ c.adDay = today; c.adCount = now.adCount; }
   return c;
 }
 
@@ -293,6 +297,7 @@ function renderCloset(){
     closetSlot = b.dataset.s; renderCloset();
   }));
   document.querySelectorAll("#cGrid .citem").forEach(b=>b.addEventListener("click", ()=>tapClosetItem(b.dataset.i)));
+  adButton();                   // 광고 보고 치즈 받기 (ads.js)
   scheduleClosetBlink();
 }
 function tapClosetItem(id){
