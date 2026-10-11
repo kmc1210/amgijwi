@@ -1307,6 +1307,8 @@ const LEGACY = {
     eq("첫 화면이 부르는 파일이 모두 배포된다", refs.filter(r => !shipped[r] || deploy.indexOf(shipped[r]) < 0 || !fs.existsSync(path.join(root, shipped[r]))), []);
     ok("첫 화면에 App Store 로 가는 버튼이 있다", /<a [^>]*href="https:\/\/apps\.apple\.com\/kr\/app\/id6817266810"/.test(site));
     ok("배포는 dist/ 만 올리고 www/ 를 통째로 올리지 않는다", /aws s3 sync dist\//.test(deploy) && !/aws s3 sync www\//.test(deploy));
+    const ads = fs.readFileSync(path.join(root, "site", "app-ads.txt"), "utf8");
+    ok("app-ads.txt 는 한 줄짜리 AdMob 판매자 표시이고 배포된다", /^google\.com, pub-\d{16}, DIRECT, f08c47fec0942fa0\n$/.test(ads) && deploy.indexOf("site/app-ads.txt") >= 0);
     ok("처리방침 · 도움말은 계속 배포된다(앱스토어 주소)", deploy.indexOf("www/privacy.html") >= 0 && deploy.indexOf("www/support.html") >= 0);
 
     const SITE = "file://" + path.join(root, "site", "index.html");
