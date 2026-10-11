@@ -9,6 +9,8 @@ import UserNotifications
 ///   status  권한 상태를 알려 달라
 ///   ask     권한을 물어 달라 (사용자가 일정 알림을 처음 켤 때만 온다)
 ///   sync    걸어 둔 것을 모두 지우고 items 로 다시 건다
+///           item 에 yearly 가 있으면 해마다 그 월 · 일 · 시각에 되풀이한다(생일 알림 — www/js/birthday.js)
+///           item 에 image 가 있으면 번들의 그림을 알림에 붙인다("cake" = birthday-cake.jpg)
 /// 앱 → 웹: alarmStatusFromApp("granted" | "denied" | "unknown")
 final class AlarmBridge: NSObject {
 
@@ -71,6 +73,11 @@ final class AlarmBridge: NSObject {
         parser.timeZone = .current
         parser.dateFormat = "yyyy-MM-dd'T'HH:mm"
 
+        /// 웹이 보낸 날짜는 양력이다. 기기 달력이 음력 · 불기여도 양력 월 · 일로 건다
+        /// (해마다 되풀이하는 알림이 다른 날로 밀리지 않게).
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = .current
+
         center.removeAllPendingNotificationRequests()
         let now = Date()
         for item in items.prefix(AlarmBridge.limit) {
@@ -83,9 +90,37 @@ final class AlarmBridge: NSObject {
             content.body = item["body"] as? String ?? ""
             content.sound = .default
 
-            let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
-            let trigger = UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)
+            if let image = item["image"] as? String, let attachment = AlarmBridge.attachment(image) {
+                content.attachments = [attachment]
+            }
+
+            /// 해마다 오는 알림은 연도를 빼고 건다. 앱을 한 해 넘게 열지 않아도 다음 해에 또 온다.
+            let yearly = item["yearly"] as? Bool ?? false
+            let fields: Set<Calendar.Component> = yearly ? [.month, .day, .hour, .minute]
+                                                         : [.year, .month, .day, .hour, .minute]
+            var parts = gregorian.dateComponents(fields, from: date)
+            parts.calendar = gregorian
+            let trigger = UNCalendarNotificationTrigger(dateMatching: parts, repeats: yearly)
             center.add(UNNotificationRequest(identifier: "ev-" + id, content: content, trigger: trigger))
+        }
+    }
+
+    /// 알림에 붙일 그림. 웹은 이름만 보내고, 붙일 수 있는 그림은 번들에 든 것으로 정해져 있다.
+    /// iOS 는 붙인 파일을 알림 저장소로 옮겨 가므로 번들 파일을 임시 폴더에 복사해 넘긴다.
+    /// 그림은 JPEG 로 둔다. PNG 는 Xcode 가 빌드하면서 애플 전용 꼴(CgBI)로 바꿔, 알림 화면이 그리지 못한다.
+    private static let images = ["cake": "birthday-cake"]
+
+    private static func attachment(_ name: String) -> UNNotificationAttachment? {
+        guard let file = images[name],
+              let source = Bundle.main.url(forResource: file, withExtension: "jpg") else { return nil }
+        let copy = FileManager.default.temporaryDirectory
+            .appendingPathComponent(file + "-" + UUID().uuidString + ".jpg")
+        do {
+            try FileManager.default.copyItem(at: source, to: copy)
+            return try UNNotificationAttachment(identifier: name, url: copy)
+        } catch {
+            try? FileManager.default.removeItem(at: copy)
+            return nil
         }
     }
 }
