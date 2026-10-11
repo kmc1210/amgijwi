@@ -10,7 +10,9 @@
 let actx = null, master = null, wetBus = null, lowpass = null;
 
 function soundOn(){ return data.sound === "sfx" || data.sound === "all"; }
-function bgmAllowed(){ return data.sound === "all"; }
+/* bgmHold: 광고가 뜨는 동안에는 화면을 눌러도 배경음을 다시 켜지 않는다(광고 소리와 겹친다 — ads.js) */
+let bgmHold = false;
+function bgmAllowed(){ return data.sound === "all" && !bgmHold; }
 function audioReady(){ return actx !== null; }      // 테스트와 디버깅용
 
 function audio(){

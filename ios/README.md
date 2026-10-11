@@ -46,7 +46,19 @@
 | `amgijwiAlarm` | `AlarmBridge.swift` | 일정 알림 권한 묻기 · 로컬 알림 예약(최대 64개) |
 | `amgijwiShare` | `ShareBridge.swift` | 백업 JSON 을 임시 파일로 만들어 공유 시트 띄우기. 웹뷰는 `<a download>` 를 받지 못한다 |
 | `amgijwiHaptic` | `HapticBridge.swift` | 진동. 웹이 `light` · `soft` · `selection` · `success` · `warning` · `error` 중 하나를 넘긴다 |
+| `amgijwiAd` | `AdBridge.swift` | 보상형 광고 불러와 띄우기. 웹에는 `showing` · `rewarded` · `closed` · `failed` 만 알려준다 |
 | `amgijwiStore` | `StoreBridge.swift` | 앱 쪽 사본. 저장할 때마다 `Application Support/amgijwi/data-copy.json` 에 통째로 쓰고, 켤 때 `window.__amgijwiNativeCopy` 로 넣어 준다. 웹뷰 저장소가 비었을 때만 웹이 이걸로 되살린다 |
+
+### 광고는 앱이 띄운다
+
+옷장의 "광고 보고 치즈 받기"는 웹이 `amgijwiAd` 통로로 부탁하고 `AdBridge` 가 보상형 광고(Google Mobile Ads)를 띄운다.
+웹뷰는 여전히 바깥과 통신하지 않는다. 바깥 라이브러리는 이 광고 SDK 하나이고 Swift Package 로 버전을 고정해 받는다(`project.yml` 의 `packages`).
+
+- 광고 SDK 는 앱을 켤 때가 아니라 광고 버튼을 처음 누를 때 깨운다.
+- 맞춤형이 아닌 광고(`npa=1`) · 전체 이용가 광고만 청하고, 추적 허용 창(ATT)은 띄우지 않는다.
+- 개발 빌드(Debug)는 늘 구글의 시험용 광고 단위를 쓴다. 진짜 광고는 출시 빌드(TestFlight · App Store)에서만 나온다.
+- `project.yml` 의 `AmgijwiAdsEnabled` 를 `false` 로 두거나 `AmgijwiRewardedUnit` 을 비우면 광고 버튼이 사라진다.
+- 한국 밖, 특히 유럽에 내려면 동의 창(UMP)을 먼저 넣어야 한다.
 
 ### 웹 페이지처럼 보이는 순간을 막는다
 

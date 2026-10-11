@@ -2,7 +2,8 @@
    한 바퀴 외우면 치즈가 모이고, 그 치즈로 아이템을 사서 쥐돌이에게 입힌다.
    아이템은 쥐돌이 28×40 그림 위에 같은 칸으로 덧그리는 행(rows)이다. y 는 시작 행.
    배경은 넣지 않는다(쥐돌이만 액자에 넣으면 화면과 따로 논다). 화면 분위기는 테마가 맡는다.
-   치즈 · 가진 것 · 입은 것은 data.closet 에 두어 레시피와 같이 기기 안에 남고 백업을 따라간다. 통신은 없다 */
+   치즈 · 가진 것 · 입은 것은 data.closet 에 두어 레시피와 같이 기기 안에 남고 백업을 따라간다.
+   옷장 자체는 통신하지 않는다. "광고 보고 치즈 받기" 버튼만 앱에 광고를 부탁한다(ads.js) */
 
 /* 아이템 색. 쥐돌이 팔레트(MOUSE_PAL)와 글자가 겹치지 않는다 */
 const CLOSET_PAL = {"1": "#6B2F2A", "2": "#A8423A", "3": "#C9605A", "P": "#F08AA0", "Q": "#B8455F", "Z": "#3A2C22", "4": "#8A5A3C", "5": "#5E3A24", "6": "#A87452", "7": "#C7BDB1", "O": "#4A423A", "U": "#FCF7F1", "X": "#78543A",
@@ -141,7 +142,10 @@ function cleanCloset(c){
     own: own, wear: wear,
     roundDay: typeof c.roundDay === "string" ? c.roundDay : "",
     roundCount: Math.max(0, Math.floor(Number(c.roundCount) || 0)),
-    streakDay: typeof c.streakDay === "string" ? c.streakDay : ""
+    streakDay: typeof c.streakDay === "string" ? c.streakDay : "",
+    /* 광고를 본 날과 그날 본 횟수(하루 3번까지 — ads.js) */
+    adDay: typeof c.adDay === "string" ? c.adDay : "",
+    adCount: Math.max(0, Math.floor(Number(c.adCount) || 0))
   };
 }
 function closetItem(id){ return CLOSET_ITEMS.filter(i=>i.id === id)[0] || null; }
@@ -236,6 +240,7 @@ function restoreCloset(bk){
   const c = cleanCloset(bk), now = data.closet, today = ymd(new Date());
   if(now.roundDay === today && (c.roundDay !== today || c.roundCount < now.roundCount)){ c.roundDay = today; c.roundCount = now.roundCount; }
   if(now.streakDay === today) c.streakDay = today;
+  if(now.adDay === today && (c.adDay !== today || c.adCount < now.adCount)){ c.adDay = today; c.adCount = now.adCount; }
   return c;
 }
 
@@ -293,6 +298,7 @@ function renderCloset(){
     closetSlot = b.dataset.s; renderCloset();
   }));
   document.querySelectorAll("#cGrid .citem").forEach(b=>b.addEventListener("click", ()=>tapClosetItem(b.dataset.i)));
+  adButton();                   // 광고 보고 치즈 받기 (ads.js)
   scheduleClosetBlink();
 }
 function tapClosetItem(id){

@@ -712,3 +712,66 @@ html.dot #bdayCard .bdtime{margin:14px 0 0;}
 html.dot #bdayCard .alarmnote{margin-top:12px;}
 html.dot #bdayCard .bdclear{display:block;margin:14px 0 0 auto;border:0;background:none;padding:6px 2px;font:inherit;font-size:14px;color:var(--d-t2);text-decoration:underline;}
 html.dot #bdayCard .bdtime label{font:inherit;color:inherit;letter-spacing:0;display:block;margin-bottom:8px;}
+
+/* ── 광고 보고 치즈 받기 · 고맙다 창 (1.1 · ads.js) ── */
+html.dot #s-closet #cAd:empty{display:none;}
+html.dot #s-closet .adbtn{display:flex;align-items:center;gap:8px;width:calc(100% - 6px);margin:12px 3px 2px;border:0;padding:11px 12px;
+  background:var(--d-warn-bg);color:var(--d-t1);font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;text-align:left;box-shadow:var(--d-box2);}
+html.dot #s-closet .adbtn .left{margin-left:auto;font-family:inherit;font-size:16px;color:var(--d-t2);}
+html.dot #s-closet .adbtn:active{transform:translate(2px,2px);}
+html.dot #s-closet .adbtn:disabled{background:var(--d-surface);color:var(--d-t2);}
+html.dot .thx{position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(36,31,26,.35);}
+html.dot .thx[hidden]{display:none;}
+html.dot .thx.out{animation:thxfade .35s steps(3) forwards;}
+@keyframes thxfade{to{opacity:0}}
+html.dot .thx .card{position:relative;overflow:hidden;border:0;border-radius:0;margin:0;background:#FCF7F1;color:#241F1A;padding:18px 16px 12px;width:min(300px,88%);text-align:center;animation:thxpop .3s steps(3);
+  box-shadow:0 -3px 0 0 #4A423A,0 3px 0 0 #4A423A,-3px 0 0 0 #4A423A,3px 0 0 0 #4A423A,3px 6px 0 0 rgba(0,0,0,.25),6px 3px 0 0 rgba(0,0,0,.25);}
+@keyframes thxpop{from{transform:scale(.8);opacity:0}to{transform:none;opacity:1}}
+@keyframes thxbubin{from{opacity:0}to{opacity:1}}
+/* 무대: 두 캐릭터가 엇갈려 폴짝(--d), 말풍선은 뛰면서 위로, 발밑 그림자는 뜰 때 작아진다 */
+html.dot .thx .tstage{position:relative;display:flex;align-items:flex-end;justify-content:center;gap:46px;height:142px;}
+html.dot .thx .who{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;}
+/* 도트 한 칸 = 2px(홈 쥐돌이와 같은 크기). 까룩이는 결과 화면처럼 쥐돌이의 3/4 */
+html.dot .thx .who .spr{width:56px;height:80px;image-rendering:pixelated;transform-origin:50% 100%;animation:thxjump .9s var(--d) 3 both;}
+html.dot .thx .who.crow .spr{width:42px;height:60px;}
+html.dot .thx .who .spr svg{width:100%;height:100%;display:block;}
+html.dot .thx .bub{position:absolute;top:-30px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#FCF7F1;color:#241F1A;padding:2px 7px;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;
+  box-shadow:0 -2px 0 0 #4A423A,0 2px 0 0 #4A423A,-2px 0 0 0 #4A423A,2px 0 0 0 #4A423A;animation:thxbubin .25s steps(3) var(--d) both, thxbubjump .9s var(--d) 3 both;}
+html.dot .thx .who.crow .bub{top:-36px;}
+html.dot .thx .sh{position:absolute;bottom:-6px;width:36px;height:6px;border-radius:50%;background:rgba(90,65,50,.25);animation:thxshadow .9s var(--d) 3 both;}
+/* 뛰기: 웅크렸다(납작) → 늘어나며 도약 → 꼭대기에서 멈칫 → 빨라지며 내려와 착지에서 납작 → 제자리 */
+@keyframes thxjump{
+  0%  {transform:translateY(0) scale(1,1);animation-timing-function:ease-out}
+  12% {transform:translateY(0) scale(1.1,.88);animation-timing-function:ease-out}
+  24% {transform:translateY(-7px) scale(.93,1.09);animation-timing-function:ease-out}
+  42% {transform:translateY(-18px) scale(1,1);animation-timing-function:ease-in}
+  50% {transform:translateY(-17px) scale(1,1);animation-timing-function:ease-in}
+  66% {transform:translateY(-4px) scale(.95,1.06);animation-timing-function:ease-out}
+  72% {transform:translateY(0) scale(1.12,.86);animation-timing-function:ease-out}
+  84% {transform:translateY(0) scale(.98,1.03);animation-timing-function:ease-out}
+  100%{transform:translateY(0) scale(1,1)}
+}
+@keyframes thxbubjump{
+  0%,12%{transform:translateX(-50%) translateY(0);animation-timing-function:ease-out}
+  42%,50%{transform:translateX(-50%) translateY(-18px);animation-timing-function:ease-in}
+  72%,100%{transform:translateX(-50%) translateY(0)}
+}
+@keyframes thxshadow{
+  0%,12%{transform:scale(1.08);opacity:1}
+  42%,50%{transform:scale(.6);opacity:.45}
+  72%{transform:scale(1.12);opacity:1}
+  100%{transform:scale(1);opacity:1}
+}
+/* 치즈 조각이 캐릭터 뒤에서 위로 튀어 오른다(--d 늦게 출발, --rise 높이) */
+html.dot .thx .bits{position:absolute;inset:0;pointer-events:none;z-index:0;}
+html.dot .thx .bits i{position:absolute;bottom:0;width:16px;height:16px;image-rendering:pixelated;opacity:0;animation:thxrise 1.1s steps(6) var(--d) forwards;}
+html.dot .thx .bits i svg{width:100%;height:100%;display:block;}
+@keyframes thxrise{0%{opacity:0;transform:translateY(0)}15%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translateY(calc(-1 * var(--rise)))}}
+html.dot .thx .line{margin:10px 0 0;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;color:#241F1A;}
+html.dot .thx .line em{font-style:normal;color:#A65E2E;}
+html.dot .thx .close{display:block;margin-top:6px;font-size:12px;color:#7A6D62;}
+@media (prefers-reduced-motion: reduce){
+  html.dot .thx .who .spr, html.dot .thx .sh, html.dot .thx .bits i{animation:none;}
+  html.dot .thx .bub{animation:thxbubin .25s steps(3) both;}
+  html.dot .thx .bits{display:none;}
+}

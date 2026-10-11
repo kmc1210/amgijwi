@@ -41,6 +41,7 @@
 | **일정** | 신메뉴 출시 같은 날을 달력에 걸어 두면 홈에 전표로 뜹니다. 기간 일정은 막대로 이어 그립니다. 앱에서는 그날 알림도 옵니다 |
 | **쥐돌이** | 시간 · 상황에 맞춰 말을 걸고, 오늘 폐기가 있으면 비상등을 달고 뛰어다닙니다. 한 바퀴를 끝내면 치즈를 먹습니다 |
 | **쥐돌이 옷장** | 한 바퀴 외울 때마다 치즈가 모이고(하루 10개까지, 7일 연속 접속 +5), 그 치즈로 모자 · 안경 · 앞치마 · 머그컵 같은 아이템을 사서 쥐돌이에게 입힙니다 |
+| **광고 보고 치즈 받기** | 옷장에서 버튼을 누르면 보상형 광고(AdMob)를 하나 보고 치즈 +5 를 받습니다. 하루 3번까지. 누르지 않으면 광고는 뜨지 않고 광고 SDK 도 깨어나지 않습니다. 맞춤형이 아닌 광고만 청하고 추적 허용 창은 띄우지 않습니다 |
 | **생일 축하** | 생일(월 · 일)을 알려 두면 그날 알림이 오고, 홈에서 폭죽이 터지고 쥐돌이가 고깔모자를 쓰고 치즈를 선물합니다 |
 | **소리 · 진동** | 효과음과 배경음은 기본 꺼짐, 설정에서 켭니다. 앱은 카드 뒤집기 · 외웠어요 등에 짧은 진동이 있고 끌 수 있습니다 |
 | **백업** | JSON 파일 하나로 내보내기 / 불러오기. 앱은 iOS 공유 시트로 "파일에 저장" · AirDrop 등으로 보냅니다 |
@@ -48,7 +49,7 @@
 
 ## 알아둘 점
 
-- 레시피와 학습 기록은 **기기 안에만** 저장됩니다. 서버로 나가는 통신이 없습니다.
+- 레시피와 학습 기록은 **기기 안에만** 저장됩니다. 앱 화면(웹뷰)에는 서버로 나가는 통신이 없습니다.
   CSP 의 `connect-src 'none'` 으로 웹뷰 · 브라우저가 이걸 강제합니다.
 - 그래서 앱을 지우거나 기기를 바꾸면 사라집니다. **백업 파일을 만들어 두세요.**
 - 예전 웹 버전에서 쓰던 레시피는 그 브라우저로 [amgijwi.com](https://amgijwi.com) 을 열면 백업 파일로 꺼낼 수 있습니다. 앱의 백업 불러오기로 가져옵니다.
@@ -79,11 +80,12 @@ www/                   앱 본체. iOS 앱 번들에 그대로 들어갑니다. 
     guide.js           첫 실행 가이드 (앱만)
     closet.js          쥐돌이 옷장 · 치즈 (앱만)
     birthday.js        생일 축하 · 생일 알림 · 폭죽 (앱만)
+    ads.js             광고 보고 치즈 받기 · 고맙다 창 (광고가 켜진 앱만)
     boot.js            저장 안정성 · 기기별 안내 · 시작
   apple-touch-icon.png
 ios/                   iOS 껍데기 (WKWebView). 자세한 건 ios/README.md
   project.yml          xcodegen 설정. .xcodeproj 는 저장소에 넣지 않습니다
-  Sources/             웹뷰 · 번들 스킴 처리기 · 알림 · 공유 시트 · 진동 · 앱 쪽 사본 통로
+  Sources/             웹뷰 · 번들 스킴 처리기 · 알림 · 공유 시트 · 진동 · 앱 쪽 사본 · 광고 통로
 site/                  amgijwi.com 에 올리는 첫 화면(index.html)과 예전 레시피 꺼내기(rescue.js), 광고 판매자 확인(app-ads.txt)
 docs/
   screenshots/         README 스크린샷
@@ -100,7 +102,8 @@ iOS 앱은 `www/` 를 번들에 담아 `amgijwi://app/index.html` 로 띄웁니�
 웹뷰가 뜰 때 `window.__amgijwiNative = true` 를 심고 `<html class="dot">` 을 붙여
 도트 화면 · 카페 말투 · 첫 실행 가이드 · 진동 같은 앱 전용 모습을 켭니다. 이 표시 없이 브라우저로 열면 예전 웹 모습 그대로입니다(테스트 · 개발용).
 알림 · 백업 내보내기 · 진동 · 레시피 사본 보관은 웹이 `window.webkit.messageHandlers` 로 앱에 부탁하고 앱이 iOS 기능으로 처리합니다
-(`AlarmBridge` · `ShareBridge` · `HapticBridge` · `StoreBridge`). 빌드 · 서명 · TestFlight 업로드는 [ios/README.md](ios/README.md) 에 있습니다.
+(`AlarmBridge` · `ShareBridge` · `HapticBridge` · `StoreBridge`). 보상형 광고도 같은 방식으로 앱(`AdBridge`)이 띄우고 결과만 웹에 알려줍니다.
+바깥 라이브러리는 광고 SDK(Google Mobile Ads, Swift Package) 하나뿐이고, `ios/project.yml` 의 `AmgijwiAdsEnabled` 를 끄면 광고 버튼이 사라집니다. 빌드 · 서명 · TestFlight 업로드는 [ios/README.md](ios/README.md) 에 있습니다.
 
 ### 스크립트 로드 순서
 
