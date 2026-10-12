@@ -292,10 +292,11 @@ function drawMascot(){
   if(sipping) return;                       // 커피 마시는 중엔 건드리지 않는다
   /* 날씨 옷은 밤에는 입히지 않는다. 자고 있는데 우비를 입고 있으면 이상하다.
      옷을 입은 동안은 깜빡이지 않는다. 깜빡임 자세에는 옷이 없어서 한 칸 벗었다 입는 꼴이 된다 */
-  const wx = currentMood() === "night" ? null : wxNow();
-  el.innerHTML = wx ? weatherSVGWorn(wx)                          // 날씨 옷 위에는 안경만(closet.js)
-                    : (mascot.happy && currentMood() !== "night") ? happyMouseSVG()
-                    : mouseSVGWorn(mascot.blink ? "blink" : currentMood(), mascot.puff);
+  const mood = currentMood(), night = mood === "night";
+  const wx = night ? null : wxNow();
+  if(wx) el.innerHTML = weatherSVGWorn(wx);                       // 날씨 옷 위에는 안경만(closet.js)
+  else if(mascot.happy && !night) el.innerHTML = happyMouseSVG(mood);   // 생일 폭죽이 터지는 동안
+  else el.innerHTML = mouseSVGWorn(mascot.blink ? "blink" : mood, mascot.puff);
 }
 
 /* 아침에 커피 한 잔 — 한 바퀴만 돌고 원래 모습으로 */
@@ -309,6 +310,7 @@ function playSip(){
   const el = $("#mascot");
   if(!el || reduceMotion()) return;
   if(currentMood() !== "morning") return;
+  if(mascot.happy) return;                  // 생일 폭죽이 터지는 동안에는 마시지 않는다(기쁜 얼굴을 덮어 버린다)
   stopSip();
   clearTimeout(blinkTimer);
   sipping = true;

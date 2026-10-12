@@ -2586,13 +2586,21 @@ const LEGACY = {
       const now = new Date(); data.bday = cleanBday({ m:now.getMonth() + 1, d:now.getDate(), gift:String(now.getFullYear()) });
       go("home"); await wait(330);
       const night = currentMood() === "night", wx = night ? null : wxNow();
-      r.partyFace = [mascot.happy, night || !!wx || $("#mascot").innerHTML === N(happyMouseSVG())];
+      r.partyFace = [mascot.happy, night || !!wx || $("#mascot").innerHTML === N(happyMouseSVG(currentMood()))];
       stopBdayParty();
-      r.afterParty = [mascot.happy, night || !!wx || $("#mascot").innerHTML !== N(happyMouseSVG())];
+      r.afterParty = [mascot.happy, night || !!wx || $("#mascot").innerHTML !== N(happyMouseSVG(currentMood()))];
+      // 아침에는 반짝이가 남고, 얼굴 아이템은 벗는다(웃는 눈이 가려지지 않게)
+      data.closet = cleanCloset({ own:["sunglasses","beret"], wear:{ face:"sunglasses", head:"beret" } });
+      const withFace = happyMouseSVG("day"); data.closet.wear = { head:"beret" };
+      r.noFace = [withFace === happyMouseSVG("day"), happyMouseSVG("morning") !== happyMouseSVG("day"), happyMouseSVG("day") === happyMouseSVG("day")];
+      data.closet = cleanCloset({});
       // 전부 외운 바퀴는 기쁜 얼굴로 끝나고, 다시 볼 게 있으면 평소대로
       data.bday = cleanBday({});
-      const frames = async perfect => { startEat(perfect); const seen = new Set(); const t0 = Date.now(); while (Date.now() - t0 < 380 * 19) { seen.add($("#resMascot").innerHTML === N(happyMouseSVG())); await wait(60); } stopEat(); return seen.has(true); };
-      go("result"); r.eat = [await frames(true), await frames(false)];
+      r.eatSeq = [eatFrames(true).slice(-1)[0], eatFrames(true).length === EAT_SEQ.length, eatFrames(false) === EAT_SEQ, EAT_SEQ.indexOf("happy")];
+      go("result"); startEat(true);
+      const t0 = Date.now(); while (Date.now() - t0 < 380 * 17 && $("#resMascot").innerHTML !== N(happyMouseSVG())) await wait(60);
+      await wait(900);                                  // 끝난 뒤에도 기쁜 얼굴에 머문다(되감지 않는다)
+      r.eat = [$("#resMascot").innerHTML === N(happyMouseSVG()), eatT === null];
       // 고맙다 창: 다섯 번 뛴다
       const spr = getComputedStyle(document.querySelector("#thx .spr"));
       r.hops = spr.animationIterationCount;
@@ -2604,7 +2612,9 @@ const LEGACY = {
     eq("아침 쥐돌이는 정면을 보고(눈은 낮과 같다) 반짝이로 낮과 구분된다", r.morning, [true, true, true]);
     eq("생일 폭죽이 터지는 동안 홈 쥐돌이는 기쁜 얼굴", r.partyFace, [true, true]);
     eq("폭죽이 끝나면 평소 표정으로 돌아온다", r.afterParty, [false, true]);
-    eq("전부 외운 바퀴만 치즈를 먹고 기쁜 얼굴로 끝난다", r.eat, [true, false]);
+    eq("기쁜 얼굴은 얼굴 아이템을 벗고, 아침엔 반짝이가 남고, 같은 그림은 다시 쓴다", r.noFace, [true, true, true]);
+    eq("전부 외운 바퀴만 마지막 그림이 기쁜 얼굴이다", r.eatSeq, ["happy", true, true, -1]);
+    eq("전부 외운 바퀴는 치즈를 다 먹고 기쁜 얼굴에서 멈춘다", r.eat, [true, true]);
     eq("고맙다 창에서 다섯 번 뛴다", r.hops, "5");
     ok("웹에서도 기쁜 얼굴을 그릴 수 있다(옷 없이)", r.webHappy);
   }

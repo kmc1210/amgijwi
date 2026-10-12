@@ -207,10 +207,19 @@ const MOUSE_HAPPY = {y0:8, rows:[
   "..owcppwwwwwwwwwwwwwwppcwo..",
   "...ocwdwwwwwwwwwwwwwwdwco...",
   "...owcwwwwwwwnnwwwwwwwcwo..."]};
-function happyMouseSVG(){
-  const rows = mouseRows("day");
+/* base: 바탕이 되는 서 있는 그림(홈은 지금 시간대 — 아침의 귀 옆 반짝이가 그대로 남는다). 없으면 낮.
+   얼굴 아이템(안경 · 선글라스)은 벗긴다. 쓰고 있으면 웃는 눈이 가려 평소 얼굴과 구분이 안 된다.
+   치즈 먹기 끝이나 깜빡임 때 거듭 부르니 mouseSVGWorn 처럼 지난 그림을 다시 쓴다 */
+const happyCache = {};
+function happyMouseSVG(base){
+  base = (base === "morning" || base === "evening") ? base : "day";
+  const wear = Object.assign({}, isDot() ? wornNow() : {});
+  delete wear.face;
+  const key = base + JSON.stringify(wear);
+  if(happyCache[key]) return happyCache[key];
+  const rows = mouseRows(base);
   MOUSE_HAPPY.rows.forEach((r, i)=>{ rows[MOUSE_HAPPY.y0 + i] = r; });
-  return rowsSVG(isDot() ? dressRows(rows, "stand") : rows, false);
+  return (happyCache[key] = rowsSVG(isDot() ? dressRows(rows, "stand", wear) : rows, false));
 }
 function weatherSVGWorn(wx){
   return rowsSVG(isDot() ? dressRows(WEATHER[wx], "wx") : WEATHER[wx], false);
