@@ -86,7 +86,7 @@ www/                   앱 본체. iOS 앱 번들에 그대로 들어갑니다. 
 ios/                   iOS 껍데기 (WKWebView). 자세한 건 ios/README.md
   project.yml          xcodegen 설정. .xcodeproj 는 저장소에 넣지 않습니다
   Sources/             웹뷰 · 번들 스킴 처리기 · 알림 · 공유 시트 · 진동 · 앱 쪽 사본 · 광고 통로
-site/                  amgijwi.com 에 올리는 첫 화면(index.html)과 예전 레시피 꺼내기(rescue.js), 광고 판매자 확인(app-ads.txt)
+site/                  amgijwi.com 에 올리는 첫 화면(index.html)과 예전 레시피 꺼내기(rescue.js), 광고 판매자 확인(app-ads.txt), 검색 엔진용(og.png · robots.txt · sitemap.xml)
 docs/
   screenshots/         README 스크린샷
   deploy.md            사이트 배포(S3 · CloudFront) · AWS OIDC
