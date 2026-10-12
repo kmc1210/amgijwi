@@ -2819,7 +2819,15 @@ const LEGACY = {
       data.events = [{ id:"w1", title:"지난 일", date:day(-3), note:"", remind:3, done:false }, { id:"w2", title:"가을 신메뉴 출시", date:day(3), note:"", remind:3, done:false },
                      { id:"w3", title:"끝낸 일", date:day(1), note:"", remind:3, done:true }];
       const s = widgetSummary();
-      r.nums = [s.v, s.total === live.length, s.done, s.cheese, s.last === (data.visit && data.visit.last), s.studied, s.killDay === today, typeof s.kill];
+      r.nums = [s.v, s.total === live.length, s.done, s.cheese, s.last === (data.visit && data.visit.last), s.studied, s.kill === discardCount(), typeof s.kill];
+      // 앞으로 시작할 일정이 진행 중인 것보다 먼저, 숫자는 늘 0 이상의 정수
+      data.events = [{ id:"w4", title:"긴 행사", date:day(-20), end:day(20), note:"", remind:3, done:false }, { id:"w5", title:"내일 일정", date:day(1), note:"", remind:3, done:false }, { id:"w6", title:"날짜 없음", date:"", note:"", remind:3, done:false }];
+      r.order = widgetSummary().events.map(e => e.t).join(",");
+      const ch = data.closet.cheese; data.closet.cheese = undefined; r.safeInt = widgetSummary().cheese; data.closet.cheese = ch;
+      data.events = [{ id:"w2", title:"가을 신메뉴 출시", date:day(3), note:"", remind:3, done:false }];
+      // 위젯 쪽에서 무슨 일이 나도 사본 저장은 막지 않는다
+      const realSummary = widgetSummary; widgetSummary = () => { throw new Error("x"); };
+      let threw = false; try { flushNativeCopy(); } catch (e) { threw = true; } widgetSummary = realSummary; r.guarded = !threw;
       r.events = s.events.map(e => e.t + "|" + (e.d === day(3)));
       r.faces = Object.keys(s.faces).join(",");
       r.shape = Object.keys(s.faces).every(k => s.faces[k].length === 40 && s.faces[k].every(row => row.length === 28));
@@ -2841,6 +2849,9 @@ const LEGACY = {
     });
     eq("위젯 요약: 레시피 수 · 외운 수 · 치즈 · 마지막 방문 · 외운 날 · 오늘 폐기", r.nums, [1, true, 4, 27, true, "2026-10-11", true, "number"]);
     eq("끝나지 않은 앞날의 일정만 넘긴다", r.events, ["가을 신메뉴 출시|true"]);
+    eq("앞으로 시작할 일정이 오래 진행 중인 것보다 먼저, 날짜 없는 것은 뺀다", r.order, "내일 일정,긴 행사");
+    eq("치즈 수가 틀어져 있어도 0 이상의 정수로 넘긴다", r.safeInt, 0);
+    ok("위젯 요약을 만들다 실패해도 사본 저장은 이어진다", r.guarded);
     eq("쥐돌이 그림 다섯 장(평소 · 기쁨 · 삐침 · 시무룩 · 풀이 죽음)", r.faces, "normal,happy,sulk,sad,down");
     ok("그림은 40줄 × 28칸이고 쓰인 글자마다 색이 있다", r.shape && r.pal);
     eq("입은 옷 그대로 그리되, 얼굴이 바뀐 그림은 안경을 벗긴다", r.worn, ["2", true, "2", true]);

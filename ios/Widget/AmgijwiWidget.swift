@@ -12,23 +12,41 @@ private let group = "group.com.amgijwi.app"     // WidgetBridge.group 과 같아
 private let key = "summary"
 
 /// 앱이 넘긴 요약. 모양은 www/js/widget.js 의 widgetSummary 와 같다.
-struct Summary: Codable {
-    var total: Int
-    var done: Int
-    var streak: Int
-    var cheese: Int
-    var last: String        // 마지막으로 앱을 연 날 "YYYY-MM-DD"
-    var studied: String     // 마지막으로 한 바퀴 돈 날
-    var faces: [String: [String]]
-    var pal: [String: String]
-    var kill: Int?          // 오늘 폐기할 개수(killDay 인 날에만 맞는 값)
-    var killDay: String?
-    var events: [Event]?    // 끝나지 않은 일정, 가까운 것부터
+struct Summary: Decodable {
+    var total = 0
+    var done = 0
+    var streak = 0
+    var cheese = 0
+    var last = ""           // 마지막으로 앱을 연 날 "YYYY-MM-DD"
+    var studied = ""        // 마지막으로 한 바퀴 돈 날
+    var kill = 0            // 오늘 폐기를 챙길 재료 수
+    var events: [Event] = []    // 끝나지 않은 일정
+    var faces: [String: [String]] = [:]
+    var pal: [String: String] = [:]
 
-    struct Event: Codable {
+    struct Event: Decodable {
         var t: String       // 제목
         var d: String       // 시작하는 날
         var e: String       // 끝나는 날(하루짜리면 d 와 같다)
+    }
+
+    enum Keys: String, CodingKey { case total, done, streak, cheese, last, studied, kill, events, faces, pal }
+
+    init() {}
+
+    /// 칸 하나가 빠지거나 모양이 달라도 나머지는 살린다. 통째로 못 읽으면 위젯이 빈 화면이 된다.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: Keys.self)
+        total = (try? c.decode(Int.self, forKey: .total)) ?? 0
+        done = (try? c.decode(Int.self, forKey: .done)) ?? 0
+        streak = (try? c.decode(Int.self, forKey: .streak)) ?? 0
+        cheese = (try? c.decode(Int.self, forKey: .cheese)) ?? 0
+        last = (try? c.decode(String.self, forKey: .last)) ?? ""
+        studied = (try? c.decode(String.self, forKey: .studied)) ?? ""
+        kill = (try? c.decode(Int.self, forKey: .kill)) ?? 0
+        events = (try? c.decode([Event].self, forKey: .events)) ?? []
+        faces = (try? c.decode([String: [String]].self, forKey: .faces)) ?? [:]
+        pal = (try? c.decode([String: String].self, forKey: .pal)) ?? [:]
     }
 
     static func load() -> Summary? {
@@ -36,6 +54,54 @@ struct Summary: Codable {
               let data = text.data(using: .utf8) else { return nil }
         return try? JSONDecoder().decode(Summary.self, from: data)
     }
+}
+
+/// 앱을 아직 한 번도 열지 않아 요약이 없을 때(위젯 고르는 화면의 미리보기 포함) 그릴 기본 쥐돌이.
+/// www/js/core.js 의 MOUSE.day 와 같은 그림이다. 앱을 열면 옷 입은 그림으로 바뀐다.
+enum Fallback {
+    static let pal: [String: String] = ["o": "#C4AE98", "p": "#F5BEAC", "w": "#FCF7F1", "c": "#EBDDCD", "h": "#FFFFFF", "k": "#261F1C", "n": "#78543A", "d": "#DF9B88"]
+    static let rows: [String] = [
+        ".........o........o.........",
+        "........opo......opo........",
+        ".......opppo....opppo.......",
+        ".......oppppo..oppppo.......",
+        "......opppppoooopppppo......",
+        "......oppppwcwwcwppppo......",
+        "......oppcwwwwwwwwcppo......",
+        "......owcwwwwwwwwwwcwo......",
+        "......ocwwwwwwwwwwwwco......",
+        "....oowcwooowwwwooowcwoo....",
+        "...ocwwwohhhowwohhhowwwco...",
+        "....owcwohkhowwohkhowcwo....",
+        "...ocwwwohkhowwohkhowwwco...",
+        "..owcwwwohhhowwohhhowwwcwo..",
+        "...ocwwwwooowwwwooowwwwco...",
+        "...owcwwwwwwwnnwwwwwwwcwo...",
+        "..occwwwwwwwwnnwwwwwwwwcco..",
+        "..owcwwwwwwwwwwwwwwwwwwcwo..",
+        "..ocwwwwwwwwwwwwwwwwwwwwco..",
+        "..owccwwwwwwwwwwwwwwwwccwo..",
+        "...occccwwwwccccwwwwcccco...",
+        "...owccccccccccccccccccwo...",
+        "..ocwwwwccccwwwwccccwwwwco..",
+        "..owcwwwwwwwwwwwwwwwwwwcwo..",
+        ".oocwwwwwwwwwwwwwwwwwwwwcoo.",
+        "owcwwwwwwwwwwwwwwwwwwwwwwcwo",
+        ".ocwwwwwwwwwwwwwwwwwwwwwwco.",
+        ".owppcwwwwwwwwwwwwwwwwcppwo.",
+        "ocwppcwwwwwwwwwwwwwwwwcppwco",
+        ".owppcwwwwwwwwwwwwwwwwcppwo.",
+        ".ocddcwwwwwwwwwwwwwwwwcddco.",
+        ".owcwwwwwwwwwwwwwwwwwwwwcwo.",
+        "..ocwwwwwwwwwwwwwwwwwwwwco..",
+        "...occwwwwwwwwwwwwwwwwcco...",
+        "..occcwwwwwwwwwwwwwwwwccco..",
+        "...ooccwwwwwwwwwwwwwwccoo...",
+        "....ooccwwwwwwwwwwwwccoo....",
+        "..oopppppcwwwwwwwwcpppppoo..",
+        ".oddpppppccccccccccpppppddo.",
+        "..ooooooooooccccoooooooooo.."
+    ]
 }
 
 /// 그 날짜에 위젯이 보여줄 것.
@@ -71,14 +137,14 @@ extension MouseEntry {
 
     var look: Look {
         guard let s = summary else {
-            return Look(face: "normal", title: "암기쥐를\n열어 주세요", big: nil, note: "")
+            return Look(face: "normal", title: "앱을\n열어 주츄", big: nil, note: "")
         }
         let n = daysAway
         let left = max(0, s.total - s.done)
         if s.studied == dayFormat.string(from: date) {
             /// 작은 위젯은 쥐돌이 옆 자리가 좁다. 한 가지만 적는다(연속 접속이 있으면 그것, 없으면 치즈).
             return Look(face: "happy", title: "오늘\n외웠츄!", big: nil,
-                        note: s.streak >= 2 ? "\(s.streak)일 연속" : "치즈 \(s.cheese)")
+                        note: streak >= 2 ? "\(streak)일 연속" : "치즈 \(s.cheese)")
         }
         if n >= 7 { return Look(face: "down", title: "보고\n싶츄…", big: nil, note: "\(n)일째") }
         if n >= 5 { return Look(face: "sad", title: "\(n)일째\n기다렸츄", big: nil, note: "") }
@@ -88,24 +154,38 @@ extension MouseEntry {
         return Look(face: "normal", title: "오늘 외울", big: "\(left)잔", note: "치즈 \(s.cheese)")
     }
 
-    /// 오늘 폐기할 것이 있으면 한 줄. 앱이 센 날(killDay)에만 보여준다 — 다음 날에는 맞지 않는 수다.
+    /// 폐기를 챙길 재료가 있으면 한 줄. 기한을 건 재료는 날마다 폐기일이 돌아와서 날짜와 상관없이 같은 수다.
     var killLine: String? {
-        guard let s = summary, let n = s.kill, n > 0, s.killDay == dayFormat.string(from: date) else { return nil }
-        return "오늘 폐기 \(n)개"
+        guard let s = summary, s.kill > 0 else { return nil }
+        return "오늘 폐기 \(s.kill)개"
+    }
+
+    /// 연속 접속은 이틀 넘게 안 오면 끊긴다. 끊긴 날의 위젯에는 적지 않는다.
+    var streak: Int {
+        guard let s = summary, daysAway < 2 else { return 0 }
+        return s.streak
     }
 
     /// 가장 가까운 일정 한 줄: "D-3 신메뉴 출시" · "오늘 신메뉴 출시" · "진행 중 가을 행사".
+    /// 앞으로 시작할 것 중 가장 가까운 것이 먼저다. 없으면 진행 중인 것.
     var eventLine: String? {
-        guard let s = summary, let list = s.events else { return nil }
+        guard let s = summary else { return nil }
         let cal = Calendar(identifier: .gregorian)
         let today = cal.startOfDay(for: date)
-        for ev in list {
+        var soon: (Int, String)? = nil
+        var ongoing: String? = nil
+        for ev in s.events {
             guard let start = dayFormat.date(from: ev.d), let end = dayFormat.date(from: ev.e) else { continue }
             if cal.startOfDay(for: end) < today { continue }        // 이 위젯이 그려지는 날에는 이미 끝났다
             let left = cal.dateComponents([.day], from: today, to: cal.startOfDay(for: start)).day ?? 0
-            let head = left > 0 ? "D-\(left)" : (ev.d == ev.e ? "오늘" : "진행 중")
-            return head + " " + ev.t
+            if left >= 0 {
+                if soon == nil || left < soon!.0 { soon = (left, ev.t) }
+            } else if ongoing == nil {
+                ongoing = ev.t
+            }
         }
+        if let soon = soon { return (soon.0 == 0 ? "오늘" : "D-\(soon.0)") + " " + soon.1 }
+        if let ongoing = ongoing { return "진행 중 " + ongoing }
         return nil
     }
 
@@ -187,66 +267,87 @@ private enum Ink {
     static let alert = Color(hex: "#B5453C")!
 }
 
-/// 요약이 아직 없을 때(앱을 한 번도 안 열었을 때) 그릴 기본 쥐돌이는 없다. 글만 보여준다.
 struct MouseWidgetView: View {
     @Environment(\.widgetFamily) private var family
     let entry: MouseEntry
 
     var body: some View {
         let look = entry.look
-        let rows = entry.summary?.faces[look.face] ?? entry.summary?.faces["normal"] ?? []
-        let pal = entry.summary?.pal ?? [:]
+        let rows = entry.summary?.faces[look.face] ?? entry.summary?.faces["normal"] ?? Fallback.rows
+        let pal = (entry.summary?.pal.isEmpty ?? true) ? Fallback.pal : entry.summary!.pal
         let medium = family == .systemMedium
-        ZStack(alignment: .bottomTrailing) {
-            /// 글은 왼쪽 위에서부터, 쥐돌이는 오른쪽 아래에 서 있다. 겹쳐 두어야 좁은 위젯에서도 글이 한 줄에 들어간다.
-            VStack(alignment: .leading, spacing: 3) {
-                Text(look.title)
-                    .font(.system(size: 17, weight: .heavy, design: .rounded))
-                    .foregroundColor(Ink.text)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let big = look.big {
-                    Text(big)
-                        .font(.system(size: 30, weight: .heavy, design: .rounded))
-                        .foregroundColor(Ink.text)
-                        .lineLimit(1)
-                }
-                if medium, entry.summary != nil {
-                    ProgressBar(value: entry.progress)
-                        .frame(width: 150, height: 10)
-                        .padding(.top, 3)
-                    Text("외운 잔 \(Int((entry.progress * 100).rounded()))%"
-                         + ((entry.summary?.streak ?? 0) >= 2 ? " · \(entry.summary!.streak)일 연속" : ""))
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundColor(Ink.muted)
-                }
-                Spacer(minLength: 0)
-                /// 중간 크기에는 오늘 챙길 것 두 줄: 폐기할 재료와 가장 가까운 일정
-                if medium {
-                    if let kill = entry.killLine {
-                        Text(kill)
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .foregroundColor(Ink.alert)
+        /// 쥐돌이는 도트 한 칸이 정수 배(작은 위젯 2 · 중간 3)가 되는 크기로 둔다.
+        let mouse = medium ? CGSize(width: 84, height: 120) : CGSize(width: 56, height: 80)
+        GeometryReader { geo in
+            /// 쥐돌이 옆에 글이 들어갈 수 있는 폭. 이보다 넓은 글은 줄여서 쥐돌이를 덮지 않게 한다.
+            let beside = max(40, geo.size.width - mouse.width - 6)
+            ZStack(alignment: .bottomTrailing) {
+                VStack(alignment: .leading, spacing: 3) {
+                    if medium, let big = look.big {
+                        /// 중간 크기는 "오늘 외울 9잔"을 한 줄에. 아래에 챙길 것 두 줄이 더 들어가야 한다.
+                        (Text(look.title + " ").font(.system(size: 17, weight: .heavy, design: .rounded))
+                         + Text(big).font(.system(size: 26, weight: .heavy, design: .rounded)))
+                            .foregroundColor(Ink.text)
                             .lineLimit(1)
+                            .minimumScaleFactor(0.6)
+                            .frame(maxWidth: beside, alignment: .leading)
+                    } else {
+                        Text(look.title)
+                            .font(.system(size: 17, weight: .heavy, design: .rounded))
+                            .foregroundColor(Ink.text)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.7)
+                            /// 작은 위젯에서 제목 두 줄은 쥐돌이 머리 위에 있어 폭을 다 쓴다. 중간 크기는 쥐돌이 옆이다.
+                            .frame(maxWidth: medium ? beside : .infinity, alignment: .leading)
+                        if let big = look.big {
+                            Text(big)
+                                .font(.system(size: 30, weight: .heavy, design: .rounded))
+                                .foregroundColor(Ink.text)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
+                                .frame(maxWidth: beside, alignment: .leading)
+                        }
                     }
-                    if let ev = entry.eventLine {
-                        Text(ev)
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .foregroundColor(Ink.accent)
+                    if medium, entry.summary != nil {
+                        ProgressBar(value: entry.progress)
+                            .frame(width: min(150, beside), height: 10)
+                            .padding(.top, 3)
+                        Text("외운 잔 \(Int((entry.progress * 100).rounded()))%"
+                             + (entry.streak >= 2 ? " · \(entry.streak)일 연속" : " · 치즈 \(entry.summary?.cheese ?? 0)"))
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundColor(Ink.muted)
                             .lineLimit(1)
-                            .frame(maxWidth: 200, alignment: .leading)
+                            .frame(maxWidth: beside, alignment: .leading)
+                    }
+                    Spacer(minLength: 0)
+                    if medium {
+                        /// 중간 크기에는 오늘 챙길 것 두 줄: 폐기할 재료와 가장 가까운 일정
+                        if let kill = entry.killLine {
+                            Text(kill)
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .foregroundColor(Ink.alert)
+                                .lineLimit(1)
+                        }
+                        if let ev = entry.eventLine {
+                            Text(ev)
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .foregroundColor(Ink.accent)
+                                .lineLimit(1)
+                                .frame(maxWidth: beside, alignment: .leading)
+                        }
+                    } else if !look.note.isEmpty {
+                        Text(look.note)
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundColor(Ink.muted)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                            .frame(maxWidth: beside, alignment: .leading)
                     }
                 }
-                if !look.note.isEmpty {
-                    Text(look.note)
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundColor(Ink.muted)
-                        .lineLimit(1)
-                        .frame(maxWidth: medium ? 200 : 58, alignment: .leading)     // 쥐돌이를 덮지 않게
-                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                PixelMouse(rows: rows, pal: pal)
+                    .frame(width: mouse.width, height: mouse.height)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            PixelMouse(rows: rows, pal: pal)
-                .frame(width: medium ? 100 : 78, height: medium ? 128 : 104)
         }
         .padding(medium ? 16 : 14)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
