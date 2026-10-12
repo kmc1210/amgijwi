@@ -353,6 +353,7 @@ function finish(){
   startEat(s.total > 0 && s.again === 0);
   reviewAfterRound(s);                // 전부 외운 바퀴 뒤에 가끔 별점을 청한다(앱만)
   if(s.total > 0) awayRoundDone();    // 기다리던 쥐돌이가 풀린다 (waiting.js)
+  if(s.total > 0){ data.studied = ymd(new Date()); persist(); }   // 오늘 한 바퀴 돌았다 — 위젯이 기쁜 얼굴로 그린다 (widget.js)
   sfx("done"); haptic("success");
   if(s.again > 0) setTimeout(startCaw, 900);   // 마무리 소리가 지나간 뒤에 끼어든다
 }

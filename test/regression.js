@@ -2805,6 +2805,51 @@ const LEGACY = {
     eq("웹에는 기다린 얼굴도 부르는 알림도 없다", r.web, ["", 0, false]);
   }
 
+  // ── 6-10v. 1.2 홈 화면 위젯에 넘길 요약 ───────────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const backup = JSON.stringify(data);
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      const posts = []; const realWk = window.webkit;
+      window.webkit = { messageHandlers: Object.assign({}, realWk && realWk.messageHandlers, { amgijwiWidget: { postMessage: m => posts.push(m) } }) };
+      data.closet = cleanCloset({ cheese:27, own:["beret","glasses"], wear:{ head:"beret", face:"glasses" } }); data.bday = cleanBday({});
+      const live = liveDrinks(); data.mastered = live.slice(0, 4).map(d => d.id); data.studied = "2026-10-11";
+      const today = ymd(new Date()), day = n => { const d = new Date(); d.setDate(d.getDate() + n); return ymd(d); };
+      data.events = [{ id:"w1", title:"지난 일", date:day(-3), note:"", remind:3, done:false }, { id:"w2", title:"가을 신메뉴 출시", date:day(3), note:"", remind:3, done:false },
+                     { id:"w3", title:"끝낸 일", date:day(1), note:"", remind:3, done:true }];
+      const s = widgetSummary();
+      r.nums = [s.v, s.total === live.length, s.done, s.cheese, s.last === (data.visit && data.visit.last), s.studied, s.killDay === today, typeof s.kill];
+      r.events = s.events.map(e => e.t + "|" + (e.d === day(3)));
+      r.faces = Object.keys(s.faces).join(",");
+      r.shape = Object.keys(s.faces).every(k => s.faces[k].length === 40 && s.faces[k].every(row => row.length === 28));
+      r.pal = Object.keys(s.faces).every(k => s.faces[k].join("").split("").every(ch => ch === "." || /^#[0-9A-Fa-f]{6}$/.test(s.pal[ch])));
+      r.worn = [s.faces.normal[3][12], s.faces.normal[8].indexOf("Z") >= 0, s.faces.sulk[3][12], s.faces.sulk.join("").indexOf("Z") < 0];   // 베레모는 모든 얼굴에, 안경은 평소 얼굴에만
+      r.noRecipes = JSON.stringify(s).indexOf(live[0].name) < 0;
+      r.size = JSON.stringify(s).length;
+      // 달라졌을 때만 넘긴다
+      widgetSent = ""; widgetSync(); widgetSync(); r.once = posts.length;
+      data.closet.cheese = 28; widgetSync(); r.changed = posts.length; r.isText = typeof posts[0] === "string" && JSON.parse(posts[1]).cheese === 28;
+      // 한 바퀴 끝내면 오늘 외운 날로 적는다
+      startSession(live.slice(0, 5)); state.stat = { ok:5, again:0, total:5 }; finish(); stopEat(); clearTimeout(reviewT);
+      r.studied = data.studied === today;
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      const n = posts.length; widgetSent = ""; widgetSync(); r.web = [widgetBridge(), posts.length === n];
+      window.webkit = realWk;
+      data = JSON.parse(backup); data.closet = cleanCloset(data.closet); data.bday = cleanBday(data.bday); persist(); go("home");
+      return r;
+    });
+    eq("위젯 요약: 레시피 수 · 외운 수 · 치즈 · 마지막 방문 · 외운 날 · 오늘 폐기", r.nums, [1, true, 4, 27, true, "2026-10-11", true, "number"]);
+    eq("끝나지 않은 앞날의 일정만 넘긴다", r.events, ["가을 신메뉴 출시|true"]);
+    eq("쥐돌이 그림 다섯 장(평소 · 기쁨 · 삐침 · 시무룩 · 풀이 죽음)", r.faces, "normal,happy,sulk,sad,down");
+    ok("그림은 40줄 × 28칸이고 쓰인 글자마다 색이 있다", r.shape && r.pal);
+    eq("입은 옷 그대로 그리되, 얼굴이 바뀐 그림은 안경을 벗긴다", r.worn, ["2", true, "2", true]);
+    ok("레시피 내용은 넘기지 않고, 요약은 64KB 보다 한참 작다", r.noRecipes && r.size < 20000, String(r.size));
+    eq("요약이 달라졌을 때만 앱에 넘긴다", [r.once, r.changed, r.isText], [1, 2, true]);
+    ok("한 바퀴 끝내면 오늘 외운 날로 적는다(위젯이 기쁜 얼굴로)", r.studied);
+    eq("웹에서는 넘기지 않는다", r.web, [null, true]);
+  }
+
   await browser.close();
 
   console.log("");

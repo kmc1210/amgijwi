@@ -98,6 +98,8 @@ function nativeCopySave(d){
 }
 function flushNativeCopy(){
   clearTimeout(copyT); copyT = null;
+  /* 홈 화면 위젯에 넘길 요약도 같은 때에 맞춘다(widget.js — 이 파일보다 뒤에 불러와서 있는지 본다) */
+  if(typeof widgetSync === "function") widgetSync();
   const br = storeBridge();
   if(copyText === null || !br) return;
   const t = copyText; copyText = null;
