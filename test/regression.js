@@ -2619,6 +2619,44 @@ const LEGACY = {
     ok("웹에서도 기쁜 얼굴을 그릴 수 있다(옷 없이)", r.webHappy);
   }
 
+  // ── 6-10t. 별점 요청 ───────────────────────────────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const backup = JSON.stringify(data);
+      const wait = ms => new Promise(res => setTimeout(res, ms));
+      const perfect = { total:3, ok:3, again:0 }, miss = { total:3, ok:2, again:1 };
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      const posts = []; const realWk = window.webkit;
+      window.webkit = { messageHandlers: Object.assign({}, realWk && realWk.messageHandlers, { amgijwiReview: { postMessage: m => posts.push(m) } }) };
+      data.review = { rounds:"x", askedAt:5 }; r.clean = JSON.stringify(reviewState());
+      data.review = { rounds:3, askedAt:"" };
+      r.early = reviewDue(perfect);                                  // 아직 다섯 바퀴가 안 됐다
+      data.review.rounds = 5;
+      r.due = [reviewDue(perfect), reviewDue(miss), reviewDue({ total:0, ok:0, again:0 })];
+      const day = n => { const d = new Date(); d.setDate(d.getDate() - n); return ymd(d); };
+      data.review.askedAt = day(30); r.recent = reviewDue(perfect);
+      data.review.askedAt = day(121); r.later = reviewDue(perfect);
+      // 바퀴를 세고, 때가 되면 조금 뒤에 청한다
+      data.review = { rounds:4, askedAt:"" }; go("result");
+      reviewAfterRound(perfect); r.counted = data.review.rounds; r.notYet = posts.length;
+      r.delay = REVIEW_DELAY_MS; r.link = $("#reviewLink").getAttribute("href");
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      r.web = [reviewBridge(), reviewDue(perfect)]; const before = data.review.rounds; reviewAfterRound(perfect); r.webCount = data.review.rounds === before;
+      clearTimeout(reviewT);
+      window.webkit = realWk;
+      data = JSON.parse(backup); persist(); go("home");
+      return r;
+    });
+    eq("별점 기록 정리", r.clean, '{"rounds":0,"askedAt":""}');
+    eq("다섯 바퀴 전에는 청하지 않는다", r.early, false);
+    eq("전부 외운 바퀴에만 청한다(다시 본 게 있거나 빈 바퀴는 아님)", r.due, [true, false, false]);
+    eq("청한 지 넉 달이 지나야 다시 청한다", [r.recent, r.later], [false, true]);
+    ok("바퀴를 세고, 치즈를 다 먹은 뒤(몇 초 뒤)에 청한다", r.counted === 5 && r.notYet === 0 && r.delay >= 5000);
+    eq("설정에 App Store 리뷰 쓰기 링크", r.link, "https://apps.apple.com/app/id6817266810?action=write-review");
+    ok("웹에서는 별점을 청하지도 세지도 않는다", r.web[0] === null && r.web[1] === false && r.webCount);
+  }
+
   await browser.close();
 
   console.log("");

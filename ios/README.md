@@ -47,6 +47,7 @@
 | `amgijwiShare` | `ShareBridge.swift` | 백업 JSON 을 임시 파일로 만들어 공유 시트 띄우기. 웹뷰는 `<a download>` 를 받지 못한다 |
 | `amgijwiHaptic` | `HapticBridge.swift` | 진동. 웹이 `light` · `soft` · `selection` · `success` · `warning` · `error` 중 하나를 넘긴다 |
 | `amgijwiAd` | `AdBridge.swift` | 보상형 광고 불러와 띄우기. 웹에는 `showing` · `rewarded` · `closed` · `failed` 만 알려준다 |
+| `amgijwiReview` | `ReviewBridge.swift` | 애플의 별점 평가 창을 청하기. 실제로 뜰지는 iOS 가 정한다 |
 | `amgijwiStore` | `StoreBridge.swift` | 앱 쪽 사본. 저장할 때마다 `Application Support/amgijwi/data-copy.json` 에 통째로 쓰고, 켤 때 `window.__amgijwiNativeCopy` 로 넣어 준다. 웹뷰 저장소가 비었을 때만 웹이 이걸로 되살린다 |
 
 ### 광고는 앱이 띄운다

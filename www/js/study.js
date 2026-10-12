@@ -351,9 +351,49 @@ function finish(){
   go("result");
   closetResult(earnRoundCheese(s));   // 한 바퀴 +1 치즈(앱만, closet.js)
   startEat(s.total > 0 && s.again === 0);
+  reviewAfterRound(s);                // 전부 외운 바퀴 뒤에 가끔 별점을 청한다(앱만)
   sfx("done"); haptic("success");
   if(s.again > 0) setTimeout(startCaw, 900);   // 마무리 소리가 지나간 뒤에 끼어든다
 }
+/* ---------- 별점 요청 ----------
+   기분 좋은 순간에만, 드물게 청한다: 전부 한 번에 외운 바퀴이고, 지금까지 다섯 바퀴 넘게 돌았고,
+   마지막으로 청한 지 넉 달이 지났을 때. 쥐돌이가 치즈를 다 먹고 웃은 뒤에 청한다.
+   창을 실제로 보여줄지는 iOS 가 정한다(한 해에 세 번까지 · 이미 평가했으면 안 뜬다). 그래서 뜨지 않아도 청한 날로 적는다.
+   data.review 는 백업에 넣지 않는다 — 기기를 옮기면 처음부터 세도 된다 */
+const REVIEW_MIN_ROUNDS = 5, REVIEW_GAP_DAYS = 120, REVIEW_DELAY_MS = 6500;
+function reviewBridge(){
+  const w = window.webkit;
+  if(!isNativeApp() || !w || !w.messageHandlers || !w.messageHandlers.amgijwiReview) return null;
+  return w.messageHandlers.amgijwiReview;
+}
+function reviewState(){
+  const r = (data.review && typeof data.review === "object") ? data.review : {};
+  data.review = {rounds: Math.max(0, Math.floor(Number(r.rounds) || 0)), askedAt: typeof r.askedAt === "string" ? r.askedAt : ""};
+  return data.review;
+}
+function reviewDue(stat, now){
+  const r = reviewState();
+  if(!reviewBridge() || !stat || stat.total < 1 || stat.again > 0 || r.rounds < REVIEW_MIN_ROUNDS) return false;
+  if(!r.askedAt) return true;
+  const p = r.askedAt.split("-").map(Number), last = new Date(p[0], p[1] - 1, p[2]);
+  return ((now || new Date()) - last) / 86400000 >= REVIEW_GAP_DAYS;
+}
+let reviewT = null;
+function reviewAfterRound(stat){
+  clearTimeout(reviewT);
+  if(!isDot() || !stat || stat.total < 1) return;
+  const r = reviewState();
+  r.rounds += 1; persist();
+  if(!reviewDue(stat)) return;
+  reviewT = setTimeout(()=>{
+    const b = reviewBridge();
+    /* 그사이 결과 화면을 떠났으면 청하지 않는다(다른 일을 하는 중에 끼어들지 않는다) */
+    if(!b || !$("#s-result").classList.contains("active") || !reviewDue(stat)) return;
+    reviewState().askedAt = ymd(new Date()); persist();
+    b.postMessage("ask");
+  }, REVIEW_DELAY_MS);
+}
+
 /* 학습을 마치면 쥐돌이가 치즈를 먹는다.
    치즈는 앞으로만 줄어든다: 큰 치즈를 들고 → 좌 · 우 볼로 씹고 → 작은 치즈도 좌 · 우로 → 부스러기에서 눈 감고 쉬고 → 빈손 한 박자 → 새 치즈.
    되감으면(5→1) 먹은 치즈가 다시 자라 보인다. 입은 명암으로만 두고 씹기는 볼로 보여준다 */
