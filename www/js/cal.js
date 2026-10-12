@@ -107,6 +107,8 @@ function alarmPlan(now){
   /* 생일 알림은 일정에 밀리지 않게 맨 앞에 둔다. 해마다 되풀이하고 케이크 그림을 붙인다 (birthday.js) */
   const bd = bdayAlarmItem(now);
   if(bd) out.unshift(bd);
+  /* 기다리는 알림(켠 사람만). 앱을 열 때마다 다시 걸려 3일 · 7일 안 열었을 때만 온다 (waiting.js) */
+  nudgeAlarmItems(now).reverse().forEach(n=>out.unshift(n));
   return out.slice(0, ALARM_MAX);
 }
 /* 일정이 바뀔 때마다 부른다. 앱은 걸어 둔 것을 모두 지우고 이 목록으로 다시 건다 */
@@ -120,7 +122,7 @@ function alarmStatusFromApp(s){
   alarmPerm = (s === "granted" || s === "denied") ? s : "unknown";
   if(alarmPerm === "granted") syncAlarms();
   if(alarmRedraw && $("#evAlarm")) alarmRedraw();
-  if($("#s-set").classList.contains("active")) bdaySettings();     // 설정의 생일 알림 칸도 권한을 따라 다시 그린다
+  if($("#s-set").classList.contains("active")){ bdaySettings(); nudgeSettings(); }     // 설정의 알림 칸들도 권한을 따라 다시 그린다
 }
 
 /* ---------- 홈 카드 ---------- */

@@ -242,6 +242,7 @@ document.querySelectorAll("#wxBtns .theme-b").forEach(b=>{
 function renderSettings(){
   closetSettings();             // 맨 위 쥐돌이 옷장 줄 (closet.js)
   bdaySettings();               // 내 생일 (birthday.js)
+  nudgeSettings();              // 쥐돌이가 부르는 알림 (waiting.js)
   applyTheme();
   applyWx();
   applySound(); applyHaptic();
@@ -401,6 +402,7 @@ function applyBackup(text){
       closet:d.closet ? restoreCloset(d.closet) : data.closet,
       bday:restoreBday(d.bday),           /* 생일도 백업을 따라간다 */
       review:data.review,                 /* 별점을 청한 기록은 이 기기 것을 둔다 */
+      nudge:(d.nudge && typeof d.nudge.on === "boolean") ? {on:d.nudge.on} : data.nudge,   /* 부르는 알림을 켰는지도 백업을 따라간다 */
       /* 택 색은 매장 규칙이라 백업을 따라간다. 예전 백업(규칙 없음)이면 지금 것을 둔다 */
       tagRule:d.tagRule ? cleanTagRule(d.tagRule, "num") : data.tagRule,
       listSort:d.listSort || data.listSort,
@@ -467,9 +469,10 @@ $("#wipeAll").addEventListener("click", ()=>{
       haptic:data.haptic, tagRule:data.tagRule,      /* 빠지면 개봉관리가 규칙 없이 그려지다 멈춘다 */
       closet:data.closet, bday:data.bday,            /* 치즈 · 옷 · 생일은 레시피가 아니라 남긴다 */
       review:data.review,                            /* 별점을 청한 날을 잊으면 넉 달 간격이 깨진다 */
+      nudge:data.nudge,                              /* 알림을 켜고 끈 것은 취향이라 남긴다 */
       visit:data.visit, hints:data.hints || [], cats:data.cats,
       shelf:[], memos:[], subs:[], drinks:[], mastered:[], needReview:[], events:[]};
-    Store.clear(); persist(); renderSettings(); toast("모두 삭제했어요"); go("home");
+    Store.clear(); persist(); syncAlarms(); renderSettings(); toast("모두 삭제했어요"); go("home");   // 지운 일정의 알림도 걷는다
   });
 });
 

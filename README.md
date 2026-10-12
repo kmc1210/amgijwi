@@ -81,6 +81,7 @@ www/                   앱 본체. iOS 앱 번들에 그대로 들어갑니다. 
     closet.js          쥐돌이 옷장 · 치즈 (앱만)
     birthday.js        생일 축하 · 생일 알림 · 폭죽 (앱만)
     ads.js             광고 보고 치즈 받기 · 고맙다 창 (광고가 켜진 앱만)
+    waiting.js         며칠 만에 열면 기다린 얼굴 · 쥐돌이가 부르는 알림 (앱만)
     boot.js            저장 안정성 · 기기별 안내 · 시작
   apple-touch-icon.png
 ios/                   iOS 껍데기 (WKWebView). 자세한 건 ios/README.md
