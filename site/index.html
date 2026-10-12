@@ -6,7 +6,23 @@
 <!-- 앱(www/index.html)과 같은 정책. 배포 뒤 헤더 검사가 첫 화면의 meta 와 응답 헤더 CSP 가 같은지 본다 -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="color-scheme" content="light dark">
-<title>암기쥐</title>
+<title>암기쥐 — 카페 음료 레시피를 카드로 외우는 앱 (아이폰 · 아이패드)</title>
+<!-- 검색 결과와 링크 미리보기에 쓰이는 설명. 브랜드 이름 · 실제 메뉴명은 넣지 않는다 -->
+<meta name="description" content="카페 알바 · 바리스타를 위한 레시피 암기 앱. 우리 매장 음료 레시피를 카드로 만들어 뒤집어 가며 외우고, 개봉한 재료의 폐기일과 신메뉴 일정까지 챙겨요. 도트 쥐 쥐돌이가 옆에서 같이 외워 줍니다. 무료, 로그인 없음.">
+<link rel="canonical" href="https://amgijwi.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="암기쥐">
+<meta property="og:title" content="암기쥐 — 카페 음료 레시피를 카드로 외우는 앱">
+<meta property="og:description" content="카페 알바 · 바리스타를 위한 레시피 암기 앱. 우리 매장 레시피를 카드로 외우고 개봉관리 · 일정까지. 아이폰 · 아이패드, 무료.">
+<meta property="og:url" content="https://amgijwi.com/">
+<meta property="og:image" content="https://amgijwi.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="apple-itunes-app" content="app-id=6817266810">
+<!-- 검색 엔진에 "이건 iOS 앱"이라고 알려 주는 데이터 묶음. 실행되는 스크립트가 아니다 -->
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"암기쥐","alternateName":"암기쥐: 카페 음료 레시피 외우기","applicationCategory":"EducationalApplication","operatingSystem":"iOS","inLanguage":"ko","description":"카페 알바 · 바리스타를 위한 레시피 암기 앱. 우리 매장 음료 레시피를 카드로 외우고 개봉관리와 일정까지 챙깁니다.","offers":{"@type":"Offer","price":"0","priceCurrency":"KRW"},"installUrl":"https://apps.apple.com/kr/app/id6817266810","url":"https://amgijwi.com/","image":"https://amgijwi.com/og.png"}</script>
 <!-- amgijwi.com 첫 화면. 웹 앱은 닫고 iOS 앱으로 옮겼다(2026-10 App Store 출시).
      이 사이트에는 이 안내 · 처리방침(privacy.html) · 도움말(support.html)만 올린다(deploy.yml).
      예전에 이 브라우저에서 쓰던 레시피가 남아 있으면 백업 파일로 꺼낼 수 있게 해 둔다(rescue.js) -->
@@ -31,6 +47,9 @@
   .box h2{font-size:16px;margin:0 0 6px;}
   .box p{font-size:15px;color:var(--ink-2);margin:0 0 10px;}
   .box p:last-child{margin-bottom:0;}
+  .box ul{margin:0;padding-left:18px;font-size:15px;color:var(--ink-2);}
+  .box li{margin:0 0 6px;}
+  .box li:last-child{margin-bottom:0;}
   .btn{display:block;width:100%;border:0;font:inherit;font-size:16px;padding:13px 10px;margin:12px 0 0;cursor:pointer;
     background:var(--accent);color:var(--on-accent);
     box-shadow:0 -3px 0 0 var(--line),0 3px 0 0 var(--line),-3px 0 0 0 var(--line),3px 0 0 0 var(--line);}
@@ -53,6 +72,17 @@
     <h2 class="px">App Store 에서 만나요</h2>
     <p>암기쥐는 아이폰 · 아이패드 앱이에요. 무료이고, 레시피는 기기 안에만 저장돼요. 웹 버전은 닫았어요.</p>
     <a class="btn" href="https://apps.apple.com/kr/app/id6817266810">App Store 에서 받기</a>
+  </div>
+
+  <div class="box">
+    <h2 class="px">이런 앱이에요</h2>
+    <ul>
+      <li><b>카드로 외우기</b> — 앞면엔 메뉴 이름, 뒷면엔 재료와 용량 · 제조 순서. 뒤집거나 빈칸을 채우며 외워요.</li>
+      <li><b>우리 매장 레시피</b> — 직접 넣거나, 종이 레시피 사진에서 글자를 복사해 붙여넣으면 정리돼요.</li>
+      <li><b>개봉관리 · 일정</b> — 개봉한 재료의 폐기일과 신메뉴 출시일을 홈에서 알려줘요.</li>
+      <li><b>쥐돌이</b> — 한 바퀴 외울 때마다 치즈가 모이고, 그 치즈로 쥐돌이를 꾸며요.</li>
+      <li><b>기기 안에만 저장</b> — 로그인이 없고, 레시피는 어디로도 보내지 않아요.</li>
+    </ul>
   </div>
 
   <!-- 이 브라우저에 예전 레시피가 남아 있을 때만 rescue.js 가 보여준다 -->

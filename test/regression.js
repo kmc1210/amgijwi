@@ -1299,7 +1299,14 @@ const LEGACY = {
     const deploy = fs.readFileSync(path.join(root, ".github", "workflows", "deploy.yml"), "utf8");
     const cspOf = s => (/http-equiv="Content-Security-Policy" content="([^"]+)"/.exec(s) || [])[1];
     eq("첫 화면의 CSP 가 앱과 같다(배포 뒤 헤더 검사가 첫 화면 meta 와 비교)", cspOf(site), cspOf(html));
-    ok("첫 화면은 바깥에서 불러오는 것이 없다", !/(src|href)="(https?:)?\/\//.test(site.replace(/<a [^>]*>/g, "")));
+    /* 링크(<a>)와 대표 주소 표시(rel=canonical)는 불러오는 것이 아니라 뺀다 */
+    ok("첫 화면은 바깥에서 불러오는 것이 없다", !/(src|href)="(https?:)?\/\//.test(site.replace(/<a [^>]*>/g, "").replace(/<link rel="canonical"[^>]*>/g, "")));
+    ok("첫 화면에 검색 설명 · 미리보기 그림이 있고 브랜드 이름은 없다", /<meta name="description" content="[^"]{60,}"/.test(site) && site.indexOf('og:image" content="https://amgijwi.com/og.png"') >= 0 && !/스타벅스|starbucks/i.test(site));
+    let ld = null; try { ld = JSON.parse((/<script type="application\/ld\+json">([^<]+)<\/script>/.exec(site) || [])[1]); } catch (e) {}
+    ok("앱 정보 묶음(JSON-LD)이 올바른 JSON 이다", !!ld && ld["@type"] === "SoftwareApplication" && ld.installUrl.indexOf("id6817266810") > 0);
+    const seo = ["og.png", "robots.txt", "sitemap.xml"];
+    ok("검색 엔진용 파일이 있고 배포된다", seo.every(f => fs.existsSync(path.join(root, "site", f)) && deploy.indexOf("site/" + f) >= 0 || deploy.indexOf(f) >= 0 && fs.existsSync(path.join(root, "site", f))));
+    ok("sitemap 의 주소는 모두 배포되는 페이지다", (fs.readFileSync(path.join(root, "site", "sitemap.xml"), "utf8").match(/<loc>[^<]+<\/loc>/g) || []).every(l => /^<loc>https:\/\/amgijwi\.com\/(support\.html|privacy\.html)?<\/loc>$/.test(l)));
     // 첫 화면이 부르는 파일이 모두 배포 목록에 있다(없으면 사이트에서 깨진다)
     const refs = (site.match(/(?:src|href)="([^"#:]+)"/g) || []).map(t => /"([^"]+)"/.exec(t)[1]).concat(["fonts/neodgm.woff2"]);
     const shipped = { "index.html":"site/index.html", "rescue.js":"site/rescue.js", "privacy.html":"www/privacy.html", "support.html":"www/support.html",
