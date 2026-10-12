@@ -349,7 +349,7 @@ function finish(){
   $("#resCheer").textContent = rate === 1 ? "이 기세로 내일도 한 번 더!"
     : (rate >= 0.7 ? "잘하고 있어요. 조금만 더 하면 돼요!" : "오늘 본 것만으로도 남아요. 내일 또 봐요!");
   go("result");
-  closetResult(earnRoundCheese(s));   // 한 바퀴 +1 치즈(앱만, closet.js)
+  closetResult(earnRoundCheese(s), s);   // 5장 이상인 한 바퀴 +1 치즈(앱만, closet.js)
   startEat(s.total > 0 && s.again === 0);
   reviewAfterRound(s);                // 전부 외운 바퀴 뒤에 가끔 별점을 청한다(앱만)
   sfx("done"); haptic("success");
@@ -378,7 +378,7 @@ function reviewState(){
 }
 function reviewDue(stat, now){
   const r = reviewState();
-  if(!reviewBridge() || !stat || stat.total < 1 || stat.again > 0 || r.rounds < REVIEW_MIN_ROUNDS) return false;
+  if(!reviewBridge() || !roundCounts(stat) || stat.again > 0 || r.rounds < REVIEW_MIN_ROUNDS) return false;
   if(!r.askedAt) return true;
   const p = r.askedAt.split("-").map(Number), last = new Date(p[0], p[1] - 1, p[2]);
   const days = ((now || new Date()) - last) / 86400000;
@@ -393,7 +393,8 @@ let reviewT = null;
 /* delay: 치즈를 다 먹고 웃은 뒤 한 박자(테스트는 짧게 준다) */
 function reviewAfterRound(stat, delay){
   clearTimeout(reviewT);
-  if(!reviewBridge() || !stat || stat.total < 1) return;
+  /* 치즈와 같은 기준으로 센다(5장 이상인 바퀴만). 한 장짜리 다섯 번으로 "다섯 바퀴"가 채워지지 않게 */
+  if(!reviewBridge() || !roundCounts(stat)) return;
   reviewState().rounds += 1; persist();
   if(!reviewDue(stat)) return;
   const wait = delay === undefined ? eatFrames(true).length * EAT_MS + 1000 : delay;
