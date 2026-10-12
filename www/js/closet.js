@@ -196,6 +196,22 @@ function mouseSVGWorn(mood, puff, wear){
   if(++wornCacheN > 80){ Object.keys(wornCache).forEach(k=>delete wornCache[k]); wornCacheN = 1; }
   return (wornCache[key] = rowsSVG(dressRows(mouseRows(mood, puff), mode, wear), false));
 }
+/* 기쁜 얼굴: 웃으며 감은 눈(∩ ∩)과 발그레한 볼. 입은 원래대로 명암만 둔다. 서 있는 그림의 8~15행을 바꾼다.
+   광고 고맙다 창(ads.js), 생일 폭죽이 터지는 동안의 홈(birthday.js), 전부 외운 한 바퀴의 끝(study.js)에 쓴다 */
+const MOUSE_HAPPY = {y0:8, rows:[
+  "......ocwwwwwwwwwwwwco......",
+  "....oowcwwwwwwwwwwwwcwoo....",
+  "...ocwwwwkkkwwwwkkkwwwwco...",
+  "....owcwkwwwkwwkwwwkwcwo....",
+  "...ocwwwwwwwwwwwwwwwwwwco...",
+  "..owcppwwwwwwwwwwwwwwppcwo..",
+  "...ocwdwwwwwwwwwwwwwwdwco...",
+  "...owcwwwwwwwnnwwwwwwwcwo..."]};
+function happyMouseSVG(){
+  const rows = mouseRows("day");
+  MOUSE_HAPPY.rows.forEach((r, i)=>{ rows[MOUSE_HAPPY.y0 + i] = r; });
+  return rowsSVG(isDot() ? dressRows(rows, "stand") : rows, false);
+}
 function weatherSVGWorn(wx){
   return rowsSVG(isDot() ? dressRows(WEATHER[wx], "wx") : WEATHER[wx], false);
 }

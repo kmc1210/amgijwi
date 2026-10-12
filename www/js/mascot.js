@@ -279,7 +279,8 @@ scheduleEmptyBlink();
 /* 마스코트: 눈 깜빡임만. 몸은 움직이지 않는다.
    배를 부풀리는 숨쉬기도 넣어봤지만, 도트 그림이라 한 칸만 움직여도
    덩어리가 들썩이는 것처럼 보여서 뺐다. */
-const mascot = {blink:false, puff:false};
+/* happy: 생일 폭죽이 터지는 동안 기쁜 얼굴(birthday.js 가 켜고 끈다) */
+const mascot = {blink:false, puff:false, happy:false};
 let blinkTimer = null;
 function currentMood(){ return moodOf(new Date().getHours()); }
 function reduceMotion(){
@@ -293,6 +294,7 @@ function drawMascot(){
      옷을 입은 동안은 깜빡이지 않는다. 깜빡임 자세에는 옷이 없어서 한 칸 벗었다 입는 꼴이 된다 */
   const wx = currentMood() === "night" ? null : wxNow();
   el.innerHTML = wx ? weatherSVGWorn(wx)                          // 날씨 옷 위에는 안경만(closet.js)
+                    : (mascot.happy && currentMood() !== "night") ? happyMouseSVG()
                     : mouseSVGWorn(mascot.blink ? "blink" : currentMood(), mascot.puff);
 }
 

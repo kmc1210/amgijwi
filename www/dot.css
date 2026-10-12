@@ -732,13 +732,13 @@ html.dot .thx .card{position:relative;overflow:hidden;border:0;border-radius:0;m
 html.dot .thx .tstage{position:relative;display:flex;align-items:flex-end;justify-content:center;gap:46px;height:142px;}
 html.dot .thx .who{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;}
 /* 도트 한 칸 = 2px(홈 쥐돌이와 같은 크기). 까룩이는 결과 화면처럼 쥐돌이의 3/4 */
-html.dot .thx .who .spr{width:56px;height:80px;image-rendering:pixelated;transform-origin:50% 100%;animation:thxjump .9s var(--d) 3 both;}
+html.dot .thx .who .spr{width:56px;height:80px;image-rendering:pixelated;transform-origin:50% 100%;animation:thxjump .9s var(--d) 5 both;}
 html.dot .thx .who.crow .spr{width:42px;height:60px;}
 html.dot .thx .who .spr svg{width:100%;height:100%;display:block;}
 html.dot .thx .bub{position:absolute;top:-30px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#FCF7F1;color:#241F1A;padding:2px 7px;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;
-  box-shadow:0 -2px 0 0 #4A423A,0 2px 0 0 #4A423A,-2px 0 0 0 #4A423A,2px 0 0 0 #4A423A;animation:thxbubin .25s steps(3) var(--d) both, thxbubjump .9s var(--d) 3 both;}
+  box-shadow:0 -2px 0 0 #4A423A,0 2px 0 0 #4A423A,-2px 0 0 0 #4A423A,2px 0 0 0 #4A423A;animation:thxbubin .25s steps(3) var(--d) both, thxbubjump .9s var(--d) 5 both;}
 html.dot .thx .who.crow .bub{top:-36px;}
-html.dot .thx .sh{position:absolute;bottom:-6px;width:36px;height:6px;border-radius:50%;background:rgba(90,65,50,.25);animation:thxshadow .9s var(--d) 3 both;}
+html.dot .thx .sh{position:absolute;bottom:-6px;width:36px;height:6px;border-radius:50%;background:rgba(90,65,50,.25);animation:thxshadow .9s var(--d) 5 both;}
 /* 뛰기: 웅크렸다(납작) → 늘어나며 도약 → 꼭대기에서 멈칫 → 빨라지며 내려와 착지에서 납작 → 제자리 */
 @keyframes thxjump{
   0%  {transform:translateY(0) scale(1,1);animation-timing-function:ease-out}
