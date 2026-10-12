@@ -2275,10 +2275,23 @@ const LEGACY = {
       r.night = mouseSVGWorn("night") === mouseSVG("night");
       // 치즈 모으기
       data.closet = cleanCloset({});
-      const st = { total:3, ok:3, again:0 };
+      const st = { total:5, ok:5, again:0 };
       let got = 0; for (let i = 0; i < 12; i++) got += earnRoundCheese(st);
       r.roundCap = [got, data.closet.cheese];
       r.emptyRound = earnRoundCheese({ total:0 });
+      // 5장 이상인 바퀴만 친다. 레시피가 5개보다 적으면 가진 만큼 전부
+      const closetKeep = JSON.stringify(data.closet);
+      data.closet = cleanCloset({});
+      r.need = roundNeed();
+      r.shortRound = [earnRoundCheese({ total:1, ok:1, again:0 }), earnRoundCheese({ total:4, ok:4, again:0 }), earnRoundCheese({ total:5, ok:0, again:5 }), data.closet.cheese];
+      const allDrinks = data.drinks; data.drinks = allDrinks.filter(d => !d.archived).slice(0, 3);
+      r.fewRecipes = [roundNeed(), earnRoundCheese({ total:2, ok:2, again:0 }), earnRoundCheese({ total:3, ok:3, again:0 })];
+      data.drinks = []; r.noRecipes = roundNeed(); data.drinks = allDrinks;
+      // 짧은 바퀴는 결과 화면에서 까닭을 알려준다
+      data.closet = cleanCloset({}); closetResult(0, { total:2, ok:2, again:0 });
+      r.shortSaid = [$("#resCheese").style.display !== "none", $("#resCheese").textContent];
+      closetResult(0, { total:0, ok:0, again:0 }); r.emptyHidden = $("#resCheese").style.display === "none";
+      data.closet = cleanCloset(JSON.parse(closetKeep));
       const visit0 = VISIT;
       VISIT = { info:{ kind:"next", streak:14 }, now:new Date() };
       r.streak = [earnStreakCheese(), earnStreakCheese(), data.closet.cheese];
@@ -2307,7 +2320,7 @@ const LEGACY = {
       data.hints = data.hints.filter(h => h !== "closet"); data.closet.cheese = 3; closetHome();
       r.hint = $("#mbubble").textContent; closetHome(); r.hintOnce = data.hints.filter(h => h === "closet").length;
       go("set"); r.setRow = seen($("#closetRowBtn")) && /치즈 3개/.test($("#closetCard").textContent);
-      startSession(liveDrinks().slice(0, 2)); state.stat = { ok:2, again:0, total:2 }; data.closet.roundDay = ""; data.closet.roundCount = 0; finish(); stopEat();
+      startSession(liveDrinks().slice(0, 5)); state.stat = { ok:5, again:0, total:5 }; data.closet.roundDay = ""; data.closet.roundCount = 0; finish(); stopEat();
       r.result = [seen($("#resCheese")), /치즈 \+1/.test($("#resCheese").textContent), seen($("#closetBtn"))];
       // 백업 · 전체 삭제
       data.closet = cleanCloset({ cheese:7, own:["ribbon"], wear:{ head:"ribbon" } });
@@ -2344,6 +2357,11 @@ const LEGACY = {
     ok("날씨 옷 위에는 안경만, 자는 밤은 그대로", r.wxFaceOnly && r.night);
     eq("한 바퀴 +1, 하루 10개까지", r.roundCap, [10, 10]);
     eq("카드가 없는 바퀴는 치즈가 없다", r.emptyRound, 0);
+    eq("한 바퀴는 5장 이상이어야 치즈를 받는다(전부 다시 봐도 5장이면 받는다)", [r.need, r.shortRound], [5, [0, 0, 1, 1]]);
+    eq("레시피가 5개보다 적으면 가진 만큼 전부 돌면 받는다", r.fewRecipes, [3, 0, 1]);
+    eq("레시피가 없어도 필요한 장수는 1 아래로 내려가지 않는다", r.noRecipes, 1);
+    ok("짧은 바퀴는 결과 화면에서 몇 장이 필요한지 알려준다", r.shortSaid[0] && /5장 이상 외우면 치즈를 받아요/.test(r.shortSaid[1]), JSON.stringify(r.shortSaid));
+    ok("빈 바퀴는 치즈 줄을 숨긴다", r.emptyHidden);
     eq("7 · 14일 연속이면 그날 한 번 +5", r.streak, [true, false, 15]);
     eq("연속 6일은 보너스 없음", r.noStreak, false);
     ok("치즈가 모자라면 사지 않고 몇 개 모자란지 알려준다", r.short[0] === 12 && r.short[1] === 0 && /8개 모자라요/.test(r.short[2]), JSON.stringify(r.short));
@@ -2632,11 +2650,13 @@ const LEGACY = {
       const r = {};
       const backup = JSON.stringify(data);
       const wait = ms => new Promise(res => setTimeout(res, ms));
-      const perfect = { total:3, ok:3, again:0 }, miss = { total:3, ok:2, again:1 };
+      const perfect = { total:5, ok:5, again:0 }, miss = { total:5, ok:4, again:1 };
       window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
       const posts = []; const realWk = window.webkit;
       window.webkit = { messageHandlers: Object.assign({}, realWk && realWk.messageHandlers, { amgijwiReview: { postMessage: m => posts.push(m) } }) };
       data.review = { rounds:"x", askedAt:5 }; r.clean = JSON.stringify(reviewState());
+      data.review = { rounds:9, askedAt:"" }; go("result");
+      r.shortNoAsk = reviewDue({ total:1, ok:1, again:0 }); reviewAfterRound({ total:1, ok:1, again:0 }, 10); r.shortNoCount = data.review.rounds; clearTimeout(reviewT);
       data.review = { rounds:3, askedAt:"" };
       r.early = reviewDue(perfect);                                  // 아직 다섯 바퀴가 안 됐다
       data.review.rounds = 5;
@@ -2670,6 +2690,7 @@ const LEGACY = {
       return r;
     });
     eq("별점 기록 정리", r.clean, '{"rounds":0,"askedAt":""}');
+    eq("한 장짜리 바퀴는 별점 바퀴 수에 세지 않고 청하지도 않는다", [r.shortNoAsk, r.shortNoCount], [false, 9]);
     eq("다섯 바퀴 전에는 청하지 않는다", r.early, false);
     eq("전부 외운 바퀴에만 청한다(다시 본 게 있거나 빈 바퀴는 아님)", r.due, [true, false, false]);
     eq("청한 지 넉 달이 지나야 다시 청한다", [r.recent, r.later], [false, true]);

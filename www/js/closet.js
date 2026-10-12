@@ -124,8 +124,9 @@ const CLOSET_ITEMS = [
       ".ocwww.ddcO666666Ocdd.wwwco.",
       "..........OOOOOOOO.........."]}
 ];
-/* 치즈: 한 바퀴 +1(하루 10개까지 — 한 장짜리 바퀴를 거듭 돌려 쌓지 못하게), 7일 연속 접속 +5 */
-const CHEESE_ROUND = 1, CHEESE_ROUND_DAY_MAX = 10, CHEESE_STREAK = 5;
+/* 치즈: 한 바퀴 +1(하루 10개까지), 7일 연속 접속 +5.
+   한 바퀴는 5장 이상이어야 친다 — 한 장짜리 바퀴를 열 번 넘겨 몇 초 만에 하루치를 받던 구멍을 막는다 */
+const CHEESE_ROUND = 1, CHEESE_ROUND_DAY_MAX = 10, CHEESE_STREAK = 5, CHEESE_ROUND_MIN = 5;
 
 function cleanCloset(c){
   c = (c && typeof c === "object") ? c : {};
@@ -238,9 +239,13 @@ function cheeseSVG(){
   CHEESE_ROWS.forEach((r, y)=>{ for(let x = 0; x < r.length; x++) if(r[x] !== ".") o += `<rect x="${x}" y="${y + 1}" width="1" height="1" fill="${MOUSE_PAL[r[x]]}"/>`; });
   return `<svg viewBox="0 0 8 8" shape-rendering="crispEdges" aria-hidden="true">${o}</svg>`;
 }
-/* 한 바퀴를 끝내면 +1. 하루 10개까지. 받은 개수(0 · 1)를 돌려준다 */
+/* 치즈를 받으려면 한 바퀴에 몇 장이 필요한가. 보통 5장, 레시피가 그보다 적으면 가진 만큼 전부 */
+function roundNeed(){ return Math.max(1, Math.min(CHEESE_ROUND_MIN, liveDrinks().length)); }
+/* 한 바퀴로 치는가(치즈 · 별점 요청의 바퀴 수가 같은 기준을 쓴다) */
+function roundCounts(stat){ return !!stat && stat.total >= roundNeed(); }
+/* 5장 이상인 한 바퀴를 끝내면 +1. 하루 10개까지. 받은 개수(0 · 1)를 돌려준다 */
 function earnRoundCheese(stat){
-  if(!isDot() || !stat || stat.total < 1) return 0;
+  if(!isDot() || !roundCounts(stat)) return 0;
   const c = data.closet, today = ymd(new Date());
   if(c.roundDay !== today){ c.roundDay = today; c.roundCount = 0; }
   if(c.roundCount >= CHEESE_ROUND_DAY_MAX) return 0;
@@ -283,15 +288,19 @@ function closetHome(lead){
   }
 }
 /* 결과 화면: 받은 치즈와 옷장 버튼(앱만) */
-function closetResult(gain){
+function closetResult(gain, stat){
   const line = $("#resCheese"), btn = $("#closetBtn");
   if(!line || !btn) return;
   const on = isDot();
-  /* 못 받은 까닭이 하루 몫을 다 받아서일 때만 그렇게 말한다(빈 바퀴면 줄을 숨긴다) */
+  /* 못 받았으면 까닭을 말한다: 하루 몫을 다 받았거나, 바퀴가 너무 짧았거나. 빈 바퀴면 줄을 숨긴다 */
   const capped = data.closet.roundDay === ymd(new Date()) && data.closet.roundCount >= CHEESE_ROUND_DAY_MAX;
-  line.style.display = on && (gain || capped) ? "" : "none"; btn.style.display = on ? "" : "none";
+  const short = !!stat && stat.total >= 1 && !roundCounts(stat);
+  const said = gain ? "치즈 +" + gain
+             : capped ? "오늘 치즈는 다 받았어요"
+             : short ? roundNeed() + "장 이상 외우면 치즈를 받아요" : "";
+  line.style.display = on && said ? "" : "none"; btn.style.display = on ? "" : "none";
   if(!on) return;
-  line.innerHTML = `<span class="ci">${cheeseSVG()}</span><span>${gain ? "치즈 +" + gain : "오늘 치즈는 다 받았어요"}</span><small>지금 ${data.closet.cheese}개</small>`;
+  line.innerHTML = `<span class="ci">${cheeseSVG()}</span><span>${said}</span><small>지금 ${data.closet.cheese}개</small>`;
 }
 /* 설정: 맨 위 옷장 줄 */
 function closetSettings(){
@@ -307,6 +316,7 @@ function closetSay(t){ const el = $("#cSay"); if(el) el.textContent = t; }
 function renderCloset(){
   const c = data.closet;
   $("#closetSub").textContent = "치즈 " + c.cheese + "개 · 한 바퀴 외우면 +1";
+  const need = $("#cNeed"); if(need) need.textContent = roundNeed() + "장 이상";
   $("#cCheese").innerHTML = `<span class="ci">${cheeseSVG()}</span><span>${c.cheese}</span>`;
   $("#cMouse").innerHTML = mouseSVGWorn("day", false, c.wear);
   $("#cTabs").innerHTML = CLOSET_SLOTS.map(([s, name])=>`<button type="button" data-s="${s}" class="${s === closetSlot ? "on" : ""}">${name}</button>`).join("");
