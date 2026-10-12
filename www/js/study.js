@@ -351,9 +351,60 @@ function finish(){
   go("result");
   closetResult(earnRoundCheese(s));   // 한 바퀴 +1 치즈(앱만, closet.js)
   startEat(s.total > 0 && s.again === 0);
+  reviewAfterRound(s);                // 전부 외운 바퀴 뒤에 가끔 별점을 청한다(앱만)
   sfx("done"); haptic("success");
   if(s.again > 0) setTimeout(startCaw, 900);   // 마무리 소리가 지나간 뒤에 끼어든다
 }
+/* ---------- 별점 요청 ----------
+   기분 좋은 순간에만, 드물게 청한다: 전부 한 번에 외운 바퀴이고, 지금까지 다섯 바퀴 넘게 돌았고,
+   마지막으로 청한 지 넉 달이 지났을 때. 쥐돌이가 치즈를 다 먹고 웃은 뒤에 청한다.
+   창을 실제로 보여줄지는 iOS 가 정한다(한 해에 세 번까지 · 이미 평가했으면 안 뜬다). 그래서 뜨지 않아도 청한 날로 적는다.
+   data.review 는 백업 파일에 실려 나가지만 되살릴 때는 이 기기의 기록을 그대로 둔다(전체 삭제도 마찬가지) —
+   청한 날을 잊으면 넉 달 간격이 깨진다 */
+const REVIEW_MIN_ROUNDS = 5, REVIEW_GAP_DAYS = 120;
+const EAT_MS = 380;               // 치즈 먹기 한 장의 길이
+function reviewBridge(){
+  const w = window.webkit;
+  if(!isDot() || !isNativeApp() || !w || !w.messageHandlers || !w.messageHandlers.amgijwiReview) return null;
+  return w.messageHandlers.amgijwiReview;
+}
+/* 모양이 틀어진 기록은 제자리에서 바로잡는다(돌려준 것을 고치면 data.review 가 고쳐진다) */
+function reviewState(){
+  if(!data.review || typeof data.review !== "object") data.review = {};
+  const r = data.review;
+  r.rounds = Math.max(0, Math.floor(Number(r.rounds) || 0));
+  r.askedAt = /^\d{4}-\d{2}-\d{2}$/.test(r.askedAt) ? r.askedAt : "";
+  return r;
+}
+function reviewDue(stat, now){
+  const r = reviewState();
+  if(!reviewBridge() || !stat || stat.total < 1 || stat.again > 0 || r.rounds < REVIEW_MIN_ROUNDS) return false;
+  if(!r.askedAt) return true;
+  const p = r.askedAt.split("-").map(Number), last = new Date(p[0], p[1] - 1, p[2]);
+  const days = ((now || new Date()) - last) / 86400000;
+  return days >= REVIEW_GAP_DAYS || days < 0;       // 기기 시계가 앞서 있던 날짜가 적혔으면 막지 않는다
+}
+/* 지금 끼어들어도 되는 때인가: 결과 화면을 그대로 보고 있고, 그 위에 뜬 창이 없다 */
+function reviewQuiet(){
+  return !document.hidden && $("#s-result").classList.contains("active")
+      && !document.querySelector("#sheet.on, #dlg.on, #lock.on");
+}
+let reviewT = null;
+/* delay: 치즈를 다 먹고 웃은 뒤 한 박자(테스트는 짧게 준다) */
+function reviewAfterRound(stat, delay){
+  clearTimeout(reviewT);
+  if(!reviewBridge() || !stat || stat.total < 1) return;
+  reviewState().rounds += 1; persist();
+  if(!reviewDue(stat)) return;
+  const wait = delay === undefined ? eatFrames(true).length * EAT_MS + 1000 : delay;
+  reviewT = setTimeout(()=>{
+    const b = reviewBridge();
+    if(!b || !reviewQuiet() || !reviewDue(stat)) return;
+    b.postMessage("ask");
+    reviewState().askedAt = ymd(new Date()); persist();
+  }, wait);
+}
+
 /* 학습을 마치면 쥐돌이가 치즈를 먹는다.
    치즈는 앞으로만 줄어든다: 큰 치즈를 들고 → 좌 · 우 볼로 씹고 → 작은 치즈도 좌 · 우로 → 부스러기에서 눈 감고 쉬고 → 빈손 한 박자 → 새 치즈.
    되감으면(5→1) 먹은 치즈가 다시 자라 보인다. 입은 명암으로만 두고 씹기는 볼로 보여준다 */
@@ -375,7 +426,7 @@ function startEat(perfect){
     i++;
     if(perfect && i >= seq.length - 1){ draw("happy"); stopEat(); return; }
     draw(seq[i % seq.length]);
-  }, 380);
+  }, EAT_MS);
 }
 function stopEat(){ if(eatT){ clearInterval(eatT); eatT = null; } }
 

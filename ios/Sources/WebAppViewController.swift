@@ -12,6 +12,7 @@ final class WebAppViewController: UIViewController {
     private let share = ShareBridge()
     private let haptics = HapticBridge()
     private let ads = AdBridge()
+    private let review = ReviewBridge()
     private let store = StoreBridge()
 
     init() {
@@ -63,10 +64,14 @@ final class WebAppViewController: UIViewController {
         /// 보상형 광고 통로. 옷장에서 광고 버튼을 누를 때만 쓴다 (AdBridge.swift).
         config.userContentController.add(ads, name: AdBridge.name)
 
+        /// 별점 요청 통로. 전부 외운 바퀴 뒤에 가끔 애플의 평가 창을 청한다 (ReviewBridge.swift).
+        config.userContentController.add(review, name: ReviewBridge.name)
+
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
         alarms.attach(webView)
         ads.attach(webView, host: self)
+        review.attach(host: self)
         share.attach(webView, host: self)
 
         /// 안전 영역까지 페이지가 직접 그린다. index.html 의 viewport-fit=cover 와 짝이다.
