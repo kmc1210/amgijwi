@@ -76,19 +76,9 @@ function adResultFromApp(result){
 
 /* ---------- 고맙다 창 ----------
    광고를 끝까지 보면 쥐돌이와 까룩이가 기쁜 얼굴로 엇갈려 폴짝 뛰며 고맙다고 한다.
-   3.6초 뒤 저절로 닫히고, 눌러도 닫힌다 */
+   6초 뒤 저절로 닫히고, 눌러도 닫힌다 */
 
-/* 기쁜 얼굴: 웃으며 감은 눈(∩ ∩)과 발그레한 볼. 입은 원래대로 명암만 둔다.
-   쥐돌이는 서 있는 그림의 8~15행을, 까룩이는 11~16행을 바꾼다 */
-const MOUSE_HAPPY = {y0:8, rows:[
-  "......ocwwwwwwwwwwwwco......",
-  "....oowcwwwwwwwwwwwwcwoo....",
-  "...ocwwwwkkkwwwwkkkwwwwco...",
-  "....owcwkwwwkwwkwwwkwcwo....",
-  "...ocwwwwwwwwwwwwwwwwwwco...",
-  "..owcppwwwwwwwwwwwwwwppcwo..",
-  "...ocwdwwwwwwwwwwwwwwdwco...",
-  "...owcwwwwwwwnnwwwwwwwcwo..."]};
+/* 까룩이의 기쁜 얼굴: 웃으며 감은 눈(∩ ∩)과 발그레한 볼. 11~16행을 바꾼다. 쥐돌이 쪽은 closet.js 의 MOUSE_HAPPY */
 const CROW_HAPPY = {y0:11, rows:[
   "...obssbbbbbbbbbbbbbbssbo...",
   "...osssbhhhbbbbbhhhbbssso...",
@@ -101,11 +91,6 @@ function happyCrowSVG(pose){
   const rows = CROW[pose].slice();
   CROW_HAPPY.rows.forEach((r, i)=>{ rows[CROW_HAPPY.y0 + i] = r; });
   return crowSVG(rows);
-}
-function happyMouseSVG(){
-  const rows = mouseRows("day");
-  MOUSE_HAPPY.rows.forEach((r, i)=>{ rows[MOUSE_HAPPY.y0 + i] = r; });
-  return rowsSVG(dressRows(rows, "stand"), false);
 }
 
 let thxT = null, thxCrowT = null, thxOutT = null;
@@ -135,6 +120,6 @@ function showThanks(){
   sfx("chu"); haptic("success");
   t.classList.remove("out");
   t.hidden = false;
-  thxT = setTimeout(closeThanks, 3600);
+  thxT = setTimeout(closeThanks, 6000);       // 다섯 번 뛰고 조금 뒤. 3.6초는 놓치기 쉬웠다
 }
 $("#thx").addEventListener("click", closeThanks);

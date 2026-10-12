@@ -2571,6 +2571,54 @@ const LEGACY = {
     ok("웹에는 광고가 없고 문구도 그대로", r.web[0] === false && r.web[1] === null && r.webNote);
   }
 
+  // ── 6-10s. 1.1.1 표정: 아침 눈동자 · 기쁜 얼굴 쓰임 · 고맙다 창 6초 ──
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const backup = JSON.stringify(data);
+      const wait = ms => new Promise(res => setTimeout(res, ms));
+      const N = h => { const d = document.createElement("div"); d.innerHTML = h; return d.innerHTML; };
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      data.closet = cleanCloset({ cheese:0 }); data.hints = data.hints.filter(h => h !== "closet").concat(["closet"]);
+      // 아침: 눈은 낮과 같고(정면), 귀 옆 반짝이는 그대로라 낮과 다른 그림이다
+      r.morning = [[10,11,12,13].every(y => MOUSE.morning[y] === MOUSE.day[y]), MOUSE.morning.join("") !== MOUSE.day.join(""), MOUSE.morning.every(x => x.length === 28)];
+      // 생일 폭죽이 터지는 동안만 기쁜 얼굴
+      const now = new Date(); data.bday = cleanBday({ m:now.getMonth() + 1, d:now.getDate(), gift:String(now.getFullYear()) });
+      go("home"); await wait(330);
+      const night = currentMood() === "night", wx = night ? null : wxNow();
+      r.partyFace = [mascot.happy, night || !!wx || $("#mascot").innerHTML === N(happyMouseSVG(currentMood()))];
+      stopBdayParty();
+      r.afterParty = [mascot.happy, night || !!wx || $("#mascot").innerHTML !== N(happyMouseSVG(currentMood()))];
+      // 아침에는 반짝이가 남고, 얼굴 아이템은 벗는다(웃는 눈이 가려지지 않게)
+      data.closet = cleanCloset({ own:["sunglasses","beret"], wear:{ face:"sunglasses", head:"beret" } });
+      const withFace = happyMouseSVG("day"); data.closet.wear = { head:"beret" };
+      r.noFace = [withFace === happyMouseSVG("day"), happyMouseSVG("morning") !== happyMouseSVG("day"), happyMouseSVG("day") === happyMouseSVG("day")];
+      data.closet = cleanCloset({});
+      // 전부 외운 바퀴는 기쁜 얼굴로 끝나고, 다시 볼 게 있으면 평소대로
+      data.bday = cleanBday({});
+      r.eatSeq = [eatFrames(true).slice(-1)[0], eatFrames(true).length === EAT_SEQ.length, eatFrames(false) === EAT_SEQ, EAT_SEQ.indexOf("happy")];
+      go("result"); startEat(true);
+      const t0 = Date.now(); while (Date.now() - t0 < 380 * 17 && $("#resMascot").innerHTML !== N(happyMouseSVG())) await wait(60);
+      await wait(900);                                  // 끝난 뒤에도 기쁜 얼굴에 머문다(되감지 않는다)
+      r.eat = [$("#resMascot").innerHTML === N(happyMouseSVG()), eatT === null];
+      // 고맙다 창: 다섯 번 뛴다
+      const spr = getComputedStyle(document.querySelector("#thx .spr"));
+      r.hops = spr.animationIterationCount;
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      r.webHappy = happyMouseSVG().indexOf("<svg") === 0;
+      data = JSON.parse(backup); data.closet = cleanCloset(data.closet); data.bday = cleanBday(data.bday); persist(); go("home");
+      return r;
+    });
+    eq("아침 쥐돌이는 정면을 보고(눈은 낮과 같다) 반짝이로 낮과 구분된다", r.morning, [true, true, true]);
+    eq("생일 폭죽이 터지는 동안 홈 쥐돌이는 기쁜 얼굴", r.partyFace, [true, true]);
+    eq("폭죽이 끝나면 평소 표정으로 돌아온다", r.afterParty, [false, true]);
+    eq("기쁜 얼굴은 얼굴 아이템을 벗고, 아침엔 반짝이가 남고, 같은 그림은 다시 쓴다", r.noFace, [true, true, true]);
+    eq("전부 외운 바퀴만 마지막 그림이 기쁜 얼굴이다", r.eatSeq, ["happy", true, true, -1]);
+    eq("전부 외운 바퀴는 치즈를 다 먹고 기쁜 얼굴에서 멈춘다", r.eat, [true, true]);
+    eq("고맙다 창에서 다섯 번 뛴다", r.hops, "5");
+    ok("웹에서도 기쁜 얼굴을 그릴 수 있다(옷 없이)", r.webHappy);
+  }
+
   await browser.close();
 
   console.log("");

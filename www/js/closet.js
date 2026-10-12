@@ -196,6 +196,31 @@ function mouseSVGWorn(mood, puff, wear){
   if(++wornCacheN > 80){ Object.keys(wornCache).forEach(k=>delete wornCache[k]); wornCacheN = 1; }
   return (wornCache[key] = rowsSVG(dressRows(mouseRows(mood, puff), mode, wear), false));
 }
+/* 기쁜 얼굴: 웃으며 감은 눈(∩ ∩)과 발그레한 볼. 입은 원래대로 명암만 둔다. 서 있는 그림의 8~15행을 바꾼다.
+   광고 고맙다 창(ads.js), 생일 폭죽이 터지는 동안의 홈(birthday.js), 전부 외운 한 바퀴의 끝(study.js)에 쓴다 */
+const MOUSE_HAPPY = {y0:8, rows:[
+  "......ocwwwwwwwwwwwwco......",
+  "....oowcwwwwwwwwwwwwcwoo....",
+  "...ocwwwwkkkwwwwkkkwwwwco...",
+  "....owcwkwwwkwwkwwwkwcwo....",
+  "...ocwwwwwwwwwwwwwwwwwwco...",
+  "..owcppwwwwwwwwwwwwwwppcwo..",
+  "...ocwdwwwwwwwwwwwwwwdwco...",
+  "...owcwwwwwwwnnwwwwwwwcwo..."]};
+/* base: 바탕이 되는 서 있는 그림(홈은 지금 시간대 — 아침의 귀 옆 반짝이가 그대로 남는다). 없으면 낮.
+   얼굴 아이템(안경 · 선글라스)은 벗긴다. 쓰고 있으면 웃는 눈이 가려 평소 얼굴과 구분이 안 된다.
+   치즈 먹기 끝이나 깜빡임 때 거듭 부르니 mouseSVGWorn 처럼 지난 그림을 다시 쓴다 */
+const happyCache = {};
+function happyMouseSVG(base){
+  base = (base === "morning" || base === "evening") ? base : "day";
+  const wear = Object.assign({}, isDot() ? wornNow() : {});
+  delete wear.face;
+  const key = base + JSON.stringify(wear);
+  if(happyCache[key]) return happyCache[key];
+  const rows = mouseRows(base);
+  MOUSE_HAPPY.rows.forEach((r, i)=>{ rows[MOUSE_HAPPY.y0 + i] = r; });
+  return (happyCache[key] = rowsSVG(isDot() ? dressRows(rows, "stand", wear) : rows, false));
+}
 function weatherSVGWorn(wx){
   return rowsSVG(isDot() ? dressRows(WEATHER[wx], "wx") : WEATHER[wx], false);
 }

@@ -109,6 +109,7 @@ let bdayRaf = 0;
 function stopBdayParty(){
   cancelAnimationFrame(bdayRaf); bdayRaf = 0;
   const old = $("#bdayFx"); if(old) old.remove();
+  if(mascot.happy){ mascot.happy = false; drawMascot(); }      // 폭죽이 끝나면 평소 표정으로
 }
 function playBdayParty(){
   stopBdayParty();
@@ -119,6 +120,7 @@ function playBdayParty(){
   const W = Math.round(window.innerWidth / 2), H = Math.round(window.innerHeight / 2);
   cv.width = W; cv.height = H;
   document.body.appendChild(cv);
+  mascot.happy = true; drawMascot();                            // 폭죽이 터지는 동안은 기쁜 얼굴
   const c = cv.getContext("2d");
   let parts = [], f = 0;
   const burst = (x, y, col)=>{

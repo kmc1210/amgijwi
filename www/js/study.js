@@ -350,7 +350,7 @@ function finish(){
     : (rate >= 0.7 ? "잘하고 있어요. 조금만 더 하면 돼요!" : "오늘 본 것만으로도 남아요. 내일 또 봐요!");
   go("result");
   closetResult(earnRoundCheese(s));   // 한 바퀴 +1 치즈(앱만, closet.js)
-  startEat();
+  startEat(s.total > 0 && s.again === 0);
   sfx("done"); haptic("success");
   if(s.again > 0) setTimeout(startCaw, 900);   // 마무리 소리가 지나간 뒤에 끼어든다
 }
@@ -359,14 +359,23 @@ function finish(){
    되감으면(5→1) 먹은 치즈가 다시 자라 보인다. 입은 명암으로만 두고 씹기는 볼로 보여준다 */
 const EAT_SEQ = ["eat1","eat1","eat2","eat3","eat2","eat3","eat4","eat4b","eat4","eat4b","eat5","eat5","eat5","eat5","day"];
 let eatT = null;
-function startEat(){
+/* perfect: 전부 한 번에 외운 바퀴. 치즈를 한 번 다 먹고 기쁜 얼굴로 끝난다(되풀이하지 않는다).
+   다시 볼 게 있던 바퀴는 지금처럼 먹기를 되풀이한다 */
+function eatFrames(perfect){ return perfect ? EAT_SEQ.slice(0, -1).concat(["happy"]) : EAT_SEQ; }
+function startEat(perfect){
   const el = $("#resMascot"); if(!el) return;
   stopEat();
+  const seq = eatFrames(perfect);
+  const draw = k=>{ el.innerHTML = k === "happy" ? happyMouseSVG() : mouseSVGWorn(k); };
   const still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if(still){ el.innerHTML = mouseSVGWorn("eat1"); return; }
+  if(still){ draw("eat1"); return; }
   let i = 0;
-  el.innerHTML = mouseSVGWorn(EAT_SEQ[0]);
-  eatT = setInterval(()=>{ i = (i+1) % EAT_SEQ.length; el.innerHTML = mouseSVGWorn(EAT_SEQ[i]); }, 380);
+  draw(seq[0]);
+  eatT = setInterval(()=>{
+    i++;
+    if(perfect && i >= seq.length - 1){ draw("happy"); stopEat(); return; }
+    draw(seq[i % seq.length]);
+  }, 380);
 }
 function stopEat(){ if(eatT){ clearInterval(eatT); eatT = null; } }
 
