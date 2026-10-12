@@ -48,6 +48,7 @@
 | `amgijwiHaptic` | `HapticBridge.swift` | 진동. 웹이 `light` · `soft` · `selection` · `success` · `warning` · `error` 중 하나를 넘긴다 |
 | `amgijwiAd` | `AdBridge.swift` | 보상형 광고 불러와 띄우기. 웹에는 `showing` · `rewarded` · `closed` · `failed` 만 알려준다 |
 | `amgijwiReview` | `ReviewBridge.swift` | 애플의 별점 평가 창을 청하기. 실제로 뜰지는 iOS 가 정한다 |
+| `amgijwiWidget` | `WidgetBridge.swift` | 홈 화면 위젯에 넘길 요약을 App Group(`group.com.amgijwi.app`)에 적고 위젯을 다시 그리게 한다 |
 | `amgijwiStore` | `StoreBridge.swift` | 앱 쪽 사본. 저장할 때마다 `Application Support/amgijwi/data-copy.json` 에 통째로 쓰고, 켤 때 `window.__amgijwiNativeCopy` 로 넣어 준다. 웹뷰 저장소가 비었을 때만 웹이 이걸로 되살린다 |
 
 ### 광고는 앱이 띄운다
@@ -60,6 +61,17 @@
 - 개발 빌드(Debug)는 늘 구글의 시험용 광고 단위를 쓴다. 진짜 광고는 출시 빌드(TestFlight · App Store)에서만 나온다.
 - `project.yml` 의 `AmgijwiAdsEnabled` 를 `false` 로 두거나 `AmgijwiRewardedUnit` 을 비우면 광고 버튼이 사라진다.
 - 한국 밖, 특히 유럽에 내려면 동의 창(UMP)을 먼저 넣어야 한다.
+
+### 홈 화면 위젯
+
+`Widget/AmgijwiWidget.swift` 가 위젯 확장(WidgetKit · SwiftUI)이다. 작은 크기와 중간 크기를 낸다.
+
+- 위젯은 앱의 저장소(웹뷰)를 읽지 못한다. 웹(`www/js/widget.js`)이 위젯에 그릴 것만 추려 `amgijwiWidget` 통로로 넘기면
+  `WidgetBridge` 가 App Group 의 `UserDefaults` 에 적는다. 위젯은 그것만 읽는다.
+- 쥐돌이 그림도 요약에 들어 있다(28×40 글자 행과 색). 그래서 옷장에서 입힌 옷 그대로 그려지고, 그림을 Swift 쪽에 따로 두지 않는다.
+- 며칠째인지 · 어떤 얼굴인지는 위젯이 그리는 날짜로 센다. 자정마다 한 장씩 여드레 치를 미리 만들어 두어, 앱을 열지 않아도 얼굴이 바뀐다.
+- App Group(`group.com.amgijwi.app`)과 위젯의 번들 ID(`com.amgijwi.app.widget`)는 애플 개발자 계정에 등록돼 있어야 서명된다.
+  자동 서명(`-allowProvisioningUpdates`)이 만들어 준다. 버전 번호는 앱과 위젯이 같아야 해서 `project.yml` 맨 위 `settings` 한 곳에 둔다.
 
 ### 웹 페이지처럼 보이는 순간을 막는다
 

@@ -82,11 +82,13 @@ www/                   앱 본체. iOS 앱 번들에 그대로 들어갑니다. 
     birthday.js        생일 축하 · 생일 알림 · 폭죽 (앱만)
     ads.js             광고 보고 치즈 받기 · 고맙다 창 (광고가 켜진 앱만)
     waiting.js         며칠 만에 열면 기다린 얼굴 · 쥐돌이가 부르는 알림 (앱만)
+    widget.js          홈 화면 위젯에 넘길 요약 (앱만)
     boot.js            저장 안정성 · 기기별 안내 · 시작
   apple-touch-icon.png
 ios/                   iOS 껍데기 (WKWebView). 자세한 건 ios/README.md
   project.yml          xcodegen 설정. .xcodeproj 는 저장소에 넣지 않습니다
-  Sources/             웹뷰 · 번들 스킴 처리기 · 알림 · 공유 시트 · 진동 · 앱 쪽 사본 · 광고 통로
+  Sources/             웹뷰 · 번들 스킴 처리기 · 알림 · 공유 시트 · 진동 · 앱 쪽 사본 · 광고 · 위젯 통로
+  Widget/              홈 화면 위젯(WidgetKit). 쥐돌이와 오늘 외울 잔 수, 며칠 안 오면 얼굴이 바뀐다
 site/                  amgijwi.com 에 올리는 첫 화면(index.html)과 예전 레시피 꺼내기(rescue.js), 광고 판매자 확인(app-ads.txt), 검색 엔진용(og.png · robots.txt · sitemap.xml)
 docs/
   screenshots/         README 스크린샷

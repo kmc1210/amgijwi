@@ -13,6 +13,7 @@ final class WebAppViewController: UIViewController {
     private let haptics = HapticBridge()
     private let ads = AdBridge()
     private let review = ReviewBridge()
+    private let widget = WidgetBridge()
     private let store = StoreBridge()
 
     init() {
@@ -66,6 +67,9 @@ final class WebAppViewController: UIViewController {
 
         /// 별점 요청 통로. 전부 외운 바퀴 뒤에 가끔 애플의 평가 창을 청한다 (ReviewBridge.swift).
         config.userContentController.add(review, name: ReviewBridge.name)
+
+        /// 홈 화면 위젯에 넘길 요약 통로. 받은 것을 위젯과 같이 쓰는 칸에 적는다 (WidgetBridge.swift).
+        config.userContentController.add(widget, name: WidgetBridge.name)
 
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self

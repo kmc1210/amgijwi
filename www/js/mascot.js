@@ -435,8 +435,7 @@ function situationCheer(now, streak, v){
   const rev   = live.filter(d=>has(data.needReview, d.id)).length;
   const hour  = now.getHours();
 
-  let kill = 0;
-  try{ kill = tagGroups().reduce((n,g)=>n+g.items.length, 0); }catch(e){}
+  const kill = discardCount();
 
   /* ── 급한 말 ── */
   if(total === 0)

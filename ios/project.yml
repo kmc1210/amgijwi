@@ -20,6 +20,12 @@ packages:
     url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
     exactVersion: 13.11.0
 
+# 버전은 앱과 위젯이 같아야 한다(다르면 App Store 가 받지 않는다). 그래서 여기 한 곳에 둔다
+settings:
+  base:
+    MARKETING_VERSION: "1.1.1"
+    CURRENT_PROJECT_VERSION: "11"
+
 targets:
   Amgijwi:
     type: application
@@ -38,6 +44,15 @@ targets:
 
     dependencies:
       - package: GoogleMobileAds
+      # 홈 화면 위젯. 앱 안에 같이 실려 나간다
+      - target: AmgijwiWidget
+
+    # 앱과 위젯이 같이 쓰는 칸(App Group). 앱이 위젯에 넘길 요약을 여기에 적는다 — Sources/WidgetBridge.swift
+    entitlements:
+      path: Amgijwi.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.amgijwi.app
 
     settings:
       base:
@@ -47,8 +62,6 @@ targets:
         DEVELOPMENT_TEAM: KC5GYLLW34
         CODE_SIGN_STYLE: Automatic
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        MARKETING_VERSION: "1.1.1"
-        CURRENT_PROJECT_VERSION: "11"
         TARGETED_DEVICE_FAMILY: "1,2"     # 아이폰과 아이패드. 태블릿 최대 폭 작업을 이미 해뒀다
         SWIFT_VERSION: "5.0"
         ENABLE_USER_SCRIPT_SANDBOXING: YES
@@ -151,3 +164,36 @@ targets:
 
         # 암호화를 따로 쓰지 않는다. 심사 때마다 수출 규정을 묻지 않게 미리 밝혀둔다.
         ITSAppUsesNonExemptEncryption: false
+
+  # 홈 화면 위젯(쥐돌이 · 오늘 외울 잔 수). 앱이 App Group 에 적어 둔 요약만 읽는다 — Widget/AmgijwiWidget.swift
+  AmgijwiWidget:
+    type: app-extension
+    platform: iOS
+
+    sources:
+      - path: Widget
+
+    entitlements:
+      path: Widget/AmgijwiWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.amgijwi.app
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.amgijwi.app.widget
+        DEVELOPMENT_TEAM: KC5GYLLW34
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.0"
+        ENABLE_USER_SCRIPT_SANDBOXING: YES
+        SKIP_INSTALL: YES
+
+    info:
+      path: Widget/Info.plist
+      properties:
+        CFBundleDisplayName: 암기쥐
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
