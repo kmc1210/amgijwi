@@ -2639,8 +2639,22 @@ const LEGACY = {
       data.review.askedAt = day(121); r.later = reviewDue(perfect);
       // 바퀴를 세고, 때가 되면 조금 뒤에 청한다
       data.review = { rounds:4, askedAt:"" }; go("result");
-      reviewAfterRound(perfect); r.counted = data.review.rounds; r.notYet = posts.length;
-      r.delay = REVIEW_DELAY_MS; r.link = $("#reviewLink").getAttribute("href");
+      reviewAfterRound(perfect, 60); r.counted = data.review.rounds; r.notYet = posts.length;
+      await wait(140); r.asked = [JSON.stringify(posts), data.review.askedAt === ymd(new Date())];
+      // 결과 화면 위에 창이 떠 있거나 화면을 떠났으면 청하지 않는다
+      data.review = { rounds:7, askedAt:"" }; $("#dlg").classList.add("on"); reviewAfterRound(perfect, 30); await wait(100);
+      r.overlay = [posts.length, data.review.askedAt]; $("#dlg").classList.remove("on");
+      reviewAfterRound(perfect, 30); go("home"); await wait(100); r.left = posts.length; go("result");
+      // 모양이 틀어진 날짜 · 앞선 날짜는 막지 않는다
+      data.review = { rounds:9, askedAt:"2026-10" }; r.badDate = reviewDue(perfect);
+      data.review = { rounds:9, askedAt:"2999-01-01" }; r.future = reviewDue(perfect);
+      // 치즈를 다 먹는 시간보다 뒤에 청한다
+      r.afterEat = eatFrames(true).length * EAT_MS;
+      // 전체 삭제 · 백업 되살리기에도 청한 기록은 남는다
+      data.review = { rounds:6, askedAt:"2026-09-01" };
+      const bk = backupJSON(); applyBackup(bk); $("#dlgYes").click(); r.keepRestore = data.review && data.review.askedAt;
+      $("#wipeAll").click(); $("#dlgYes").click(); r.keepWipe = data.review && data.review.askedAt;
+      r.link = $("#reviewLink").getAttribute("href");
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
       r.web = [reviewBridge(), reviewDue(perfect)]; const before = data.review.rounds; reviewAfterRound(perfect); r.webCount = data.review.rounds === before;
       clearTimeout(reviewT);
@@ -2652,7 +2666,13 @@ const LEGACY = {
     eq("다섯 바퀴 전에는 청하지 않는다", r.early, false);
     eq("전부 외운 바퀴에만 청한다(다시 본 게 있거나 빈 바퀴는 아님)", r.due, [true, false, false]);
     eq("청한 지 넉 달이 지나야 다시 청한다", [r.recent, r.later], [false, true]);
-    ok("바퀴를 세고, 치즈를 다 먹은 뒤(몇 초 뒤)에 청한다", r.counted === 5 && r.notYet === 0 && r.delay >= 5000);
+    ok("바퀴를 세고, 바로가 아니라 조금 뒤에 청한다", r.counted === 5 && r.notYet === 0);
+    eq("때가 되면 앱에 ask 를 보내고 청한 날을 적는다", r.asked, ['["ask"]', true]);
+    eq("결과 화면 위에 창이 떠 있으면 청하지 않고 날도 적지 않는다", r.overlay, [1, ""]);
+    eq("결과 화면을 떠났으면 청하지 않는다", r.left, 1);
+    eq("틀어진 날짜 · 앞선 날짜가 적혀 있어도 막히지 않는다", [r.badDate, r.future], [true, true]);
+    ok("치즈를 다 먹는 데 5초쯤 걸린다(그 뒤에 청한다)", r.afterEat >= 5000 && r.afterEat <= 8000);
+    eq("백업을 되살리거나 전체 삭제를 해도 청한 날은 남는다", [r.keepRestore, r.keepWipe], ["2026-09-01", "2026-09-01"]);
     eq("설정에 App Store 리뷰 쓰기 링크", r.link, "https://apps.apple.com/app/id6817266810?action=write-review");
     ok("웹에서는 별점을 청하지도 세지도 않는다", r.web[0] === null && r.web[1] === false && r.webCount);
   }
