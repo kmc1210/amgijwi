@@ -280,8 +280,9 @@ scheduleEmptyBlink();
    배를 부풀리는 숨쉬기도 넣어봤지만, 도트 그림이라 한 칸만 움직여도
    덩어리가 들썩이는 것처럼 보여서 뺐다. */
 /* happy: 기쁜 얼굴(생일 폭죽이 터지는 동안 — birthday.js, 기다리다 풀렸을 때 — waiting.js)
+   cheer: 기다리다 풀려서 잠깐 기쁜 얼굴(waiting.js). happy 와 따로 둔다 — 서로의 끝이 상대를 꺼 버리지 않게
    away: 며칠 만에 열어 기다린 얼굴("sulk" · "sad" · "down", 아니면 "" — waiting.js) */
-const mascot = {blink:false, puff:false, happy:false, away:"", awayGap:0, madeUp:false};
+const mascot = {blink:false, puff:false, happy:false, cheer:false, away:"", awayGap:0, madeUp:false};
 let blinkTimer = null;
 function currentMood(){ return moodOf(new Date().getHours()); }
 function reduceMotion(){
@@ -296,8 +297,9 @@ function drawMascot(){
   const mood = currentMood(), night = mood === "night";
   const wx = night ? null : wxNow();
   if(wx) el.innerHTML = weatherSVGWorn(wx);                       // 날씨 옷 위에는 안경만(closet.js)
-  else if(mascot.happy && !night) el.innerHTML = happyMouseSVG(mood);   // 생일 폭죽이 터지는 동안 · 기다리다 풀렸을 때
-  else if(mascot.away && !night && !mascot.blink) el.innerHTML = faceMouseSVG(mascot.away, mood);   // 며칠 만에 열었을 때
+  else if((mascot.happy || mascot.cheer) && !night) el.innerHTML = happyMouseSVG(mood);   // 생일 폭죽이 터지는 동안 · 기다리다 풀렸을 때
+  /* 기다린 얼굴인 동안은 깜빡이지 않는다. 깜빡임 그림에는 그 얼굴이 없어 평소 얼굴 · 벗겨 둔 안경이 잠깐 비친다 */
+  else if(mascot.away && !night) el.innerHTML = faceMouseSVG(mascot.away, mood);   // 며칠 만에 열었을 때
   else el.innerHTML = mouseSVGWorn(mascot.blink ? "blink" : mood, mascot.puff);
 }
 

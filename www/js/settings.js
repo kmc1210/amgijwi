@@ -472,7 +472,7 @@ $("#wipeAll").addEventListener("click", ()=>{
       nudge:data.nudge,                              /* 알림을 켜고 끈 것은 취향이라 남긴다 */
       visit:data.visit, hints:data.hints || [], cats:data.cats,
       shelf:[], memos:[], subs:[], drinks:[], mastered:[], needReview:[], events:[]};
-    Store.clear(); persist(); renderSettings(); toast("모두 삭제했어요"); go("home");
+    Store.clear(); persist(); syncAlarms(); renderSettings(); toast("모두 삭제했어요"); go("home");   // 지운 일정의 알림도 걷는다
   });
 });
 

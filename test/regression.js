@@ -2728,6 +2728,8 @@ const LEGACY = {
       r.distinct = new Set(Object.keys(MOUSE_FACES).map(k => faceMouseSVG(k, "day"))).size;
       // 며칠 만에 왔느냐에 따라
       r.kind = [0, 1, 2, 3, 4, 5, 6, 7, 30].map(awayKind).join("|");
+      /* 시계 · 날씨에 기대지 않게 낮 · 날씨 옷 없음으로 고정한다 */
+      const realMood = currentMood, realWx = wxNow; currentMood = () => "day"; wxNow = () => null;
       const mid = new Date(); mid.setHours(13, 0, 0, 0);
       const setVisit = (kind, gap) => { VISIT = { info:{ kind, gap, streak:1, count:9 }, now:mid }; initAway(); };
       setVisit("back", 3); r.back3 = [mascot.away, awayGreeting()];
@@ -2736,13 +2738,21 @@ const LEGACY = {
       setVisit("back", 2); r.back2 = mascot.away;
       // 홈: 기다린 얼굴과 말풍선(밤 · 날씨 옷이면 그림은 그대로)
       setVisit("back", 5); go("home");
-      const night = currentMood() === "night", wx = night ? null : wxNow();
-      r.home = [night || !!wx || $("#mascot").innerHTML === N(faceMouseSVG("sad", currentMood())), /5일이나 기다렸츄/.test($("#mbubble").textContent)];
+      r.home = [$("#mascot").innerHTML === N(faceMouseSVG("sad", "day")), /5일이나 기다렸츄/.test($("#mbubble").textContent)];
+      // 기다린 얼굴인 동안은 깜빡여도 그 얼굴 그대로(안경을 쓰고 있어도 벗은 채)
+      data.closet = cleanCloset({ own:["glasses"], wear:{ face:"glasses" } });
+      mascot.blink = true; drawMascot(); r.blinkKeeps = $("#mascot").innerHTML === N(faceMouseSVG("sad", "day")); mascot.blink = false; drawMascot();
+      data.closet = cleanCloset({});
       // 한 바퀴 외우면 풀리고, 홈에 돌아오면 잠깐 기쁜 얼굴로 반긴다
       awayRoundDone(); r.done = [mascot.away, mascot.madeUp];
-      go("home"); r.cheer = [mascot.happy, /풀렸츄/.test($("#mbubble").textContent), mascot.madeUp];
-      clearTimeout(awayCheerT); mascot.happy = false; drawMascot();
+      go("set"); renderHome(); r.hiddenKeeps = mascot.madeUp;      // 홈이 안 보일 때 다시 그려도 써 버리지 않는다
+      go("home"); r.cheer = [mascot.cheer, mascot.happy, /풀렸츄/.test($("#mbubble").textContent), mascot.madeUp, $("#mascot").innerHTML === N(happyMouseSVG("day"))];
+      clearTimeout(awayCheerT); mascot.cheer = false; drawMascot();
       go("home"); r.onceOnly = /풀렸츄/.test($("#mbubble").textContent);
+      // 날이 바뀐 뒤 앱으로 돌아오면 다시 본다
+      const y = new Date(); y.setDate(y.getDate() - 4); data.visit.last = ymd(y); VISIT = { info:{ kind:"same", gap:0, streak:1, count:9 }, now:y };
+      document.dispatchEvent(new Event("visibilitychange")); r.resumed = [mascot.away, ymd(VISIT.now) === ymd(new Date())];
+      mascot.away = ""; mascot.awayGap = 0;
       // 부르는 알림: 기본은 꺼짐
       delete data.nudge; r.off = [nudgeOn(), nudgeAlarmItems(new Date(2026, 9, 12, 10, 0)).length];
       data.nudge = { on:true };
@@ -2765,7 +2775,8 @@ const LEGACY = {
       // 웹
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
       setVisit("back", 9); go("set"); r.web = [mascot.away, nudgeAlarmItems(new Date()).length, seen($("#nudgeCard"))];
-      VISIT = visit0; mascot.away = ""; mascot.awayGap = 0; mascot.madeUp = false; mascot.happy = false;
+      currentMood = realMood; wxNow = realWx;
+      VISIT = visit0; mascot.away = ""; mascot.awayGap = 0; mascot.madeUp = false; mascot.happy = false; mascot.cheer = false;
       data = JSON.parse(backup); data.closet = cleanCloset(data.closet); data.bday = cleanBday(data.bday); persist(); go("home");
       return r;
     });
@@ -2779,7 +2790,10 @@ const LEGACY = {
     eq("어제도 왔거나 이틀 만이면 평소 얼굴", [r.next, r.back2], [["", null], ""]);
     eq("홈 쥐돌이가 기다린 얼굴이고 말풍선도 바뀐다", r.home, [true, true]);
     eq("한 바퀴 외우면 풀린다", r.done, ["", true]);
-    eq("풀린 뒤 홈에 돌아오면 기쁜 얼굴로 한 번 반긴다", [r.cheer, r.onceOnly], [[true, true, false], false]);
+    ok("기다린 얼굴인 동안은 깜빡여도 그 얼굴 그대로다", r.blinkKeeps);
+    ok("홈이 안 보일 때 홈을 다시 그려도 반기는 것을 써 버리지 않는다", r.hiddenKeeps === true);
+    eq("풀린 뒤 홈에 돌아오면 기쁜 얼굴로 한 번 반긴다(생일 쪽 표시와 따로)", [r.cheer, r.onceOnly], [[true, false, true, false, true], false]);
+    eq("날이 바뀐 뒤 앱으로 돌아오면 기다린 얼굴을 다시 건다", r.resumed, ["sulk", true]);
     eq("부르는 알림은 기본이 꺼짐이고, 꺼져 있으면 아무것도 걸지 않는다", r.off, [false, 0]);
     eq("켜면 3일째 · 7일째 저녁 7시에 한 번씩(쥐돌이 얼굴 그림)", r.items, ["nudge-3 2026-10-15T19:00 sulk", "nudge-7 2026-10-19T19:00 down"]);
     eq("일정 알림 목록에 실린다", r.plan, "nudge-3,nudge-7");

@@ -93,12 +93,21 @@ alarmPost({op:"status"});
 if(_lift.split) setTimeout(()=>toast(`배합이 다른 같은 이름 부재료 ${_lift.split}개를 따로 나눴어요`), 900);
 /* 7일 · 14일 … 연속 접속한 날 첫 방문이면 치즈 +5 (closet.js).
    이 치즈가 처음 생긴 치즈면 옷장 안내 말풍선에 붙여서 말한다(따로 말하면 안내를 덮어 버린다) */
-if(earnStreakCheese()){
+function streakGift(){
+  if(!earnStreakCheese()) return;
   const said = VISIT.info.streak + "일 연속이츄! 치즈 +5 받았츄";
   const n = $("#cheeseN"); if(n) n.textContent = data.closet.cheese;
-  /* 생일날은 생일 축하 말풍선을 그대로 둔다(연속 접속 치즈는 그대로 받는다) */
-  if(!bdayIsToday()) setTimeout(()=>{ if(hintSeen("closet")) sayBubble(said); else closetHome(said); }, 1100);
+  /* 생일날은 생일 축하 말풍선을, 기다린 날은 기다렸다는 말풍선을 그대로 둔다(연속 접속 치즈는 그대로 받는다) */
+  if(!bdayIsToday() && !mascot.away) setTimeout(()=>{ if(hintSeen("closet")) sayBubble(said); else closetHome(said); }, 1100);
 }
+streakGift();
+/* 앱은 꺼지지 않고 뒤에서 며칠씩 살아 있기도 하다. 날이 바뀐 뒤 돌아오면 앱을 새로 켠 것처럼
+   접속일 · 연속 접속 · 기다린 얼굴을 다시 본다(부르는 알림을 누르고 들어와도 쥐돌이가 기다린 얼굴로 맞게) */
+document.addEventListener("visibilitychange", ()=>{
+  if(document.hidden || !VISIT || ymd(new Date()) === ymd(VISIT.now)) return;
+  initVisit(); initAway(); streakGift();
+  if($("#s-home").classList.contains("active")) renderHome();
+});
 /* 웹뷰 저장소가 비어 있어 앱에 보관해 둔 사본으로 되살렸다. 조용히 넘어가면 무슨 일인지 모르니 알린다 */
 if(restoredFromCopy) setTimeout(()=>toast("앱에 보관해 둔 사본으로 레시피를 되살렸어요"), 1300);
 if(data.pin) openLock("enter");
