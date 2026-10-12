@@ -279,8 +279,9 @@ scheduleEmptyBlink();
 /* 마스코트: 눈 깜빡임만. 몸은 움직이지 않는다.
    배를 부풀리는 숨쉬기도 넣어봤지만, 도트 그림이라 한 칸만 움직여도
    덩어리가 들썩이는 것처럼 보여서 뺐다. */
-/* happy: 생일 폭죽이 터지는 동안 기쁜 얼굴(birthday.js 가 켜고 끈다) */
-const mascot = {blink:false, puff:false, happy:false};
+/* happy: 기쁜 얼굴(생일 폭죽이 터지는 동안 — birthday.js, 기다리다 풀렸을 때 — waiting.js)
+   away: 며칠 만에 열어 기다린 얼굴("sulk" · "sad" · "down", 아니면 "" — waiting.js) */
+const mascot = {blink:false, puff:false, happy:false, away:"", awayGap:0, madeUp:false};
 let blinkTimer = null;
 function currentMood(){ return moodOf(new Date().getHours()); }
 function reduceMotion(){
@@ -295,7 +296,8 @@ function drawMascot(){
   const mood = currentMood(), night = mood === "night";
   const wx = night ? null : wxNow();
   if(wx) el.innerHTML = weatherSVGWorn(wx);                       // 날씨 옷 위에는 안경만(closet.js)
-  else if(mascot.happy && !night) el.innerHTML = happyMouseSVG(mood);   // 생일 폭죽이 터지는 동안
+  else if(mascot.happy && !night) el.innerHTML = happyMouseSVG(mood);   // 생일 폭죽이 터지는 동안 · 기다리다 풀렸을 때
+  else if(mascot.away && !night && !mascot.blink) el.innerHTML = faceMouseSVG(mascot.away, mood);   // 며칠 만에 열었을 때
   else el.innerHTML = mouseSVGWorn(mascot.blink ? "blink" : mood, mascot.puff);
 }
 
@@ -496,7 +498,9 @@ function renderGreeting(){
   $("#greetP").innerHTML = esc(line1) + "<br>" + esc(line2);
 
   const c = cheerOf(now, v.streak, v);
+  const away = awayGreeting();              // 며칠 만이면 기다렸다는 말 (waiting.js)
   if(bd) $("#mbubble").textContent = sentenceLines(bd.msg);
+  else if(away) $("#mbubble").textContent = sentenceLines(away);
   else $("#mbubble").innerHTML = `${c.ico} ${esc(sentenceLines(c.msg))}`;
   drawMascot();
   scheduleBlink();

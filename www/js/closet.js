@@ -211,20 +211,57 @@ const MOUSE_HAPPY = {y0:8, rows:[
   "..owcppwwwwwwwwwwwwwwppcwo..",
   "...ocwdwwwwwwwwwwwwwwdwco...",
   "...owcwwwwwwwnnwwwwwwwcwo..."]};
-/* base: 바탕이 되는 서 있는 그림(홈은 지금 시간대 — 아침의 귀 옆 반짝이가 그대로 남는다). 없으면 낮.
-   얼굴 아이템(안경 · 선글라스)은 벗긴다. 쓰고 있으면 웃는 눈이 가려 평소 얼굴과 구분이 안 된다.
+/* 기다린 얼굴 세 가지(1.2). 며칠 만에 열었느냐에 따라 홈 쥐돌이가 이 얼굴로 맞는다. 입은 그대로 두고 눈 · 눈썹 · 볼만 바꾼다.
+   sulk 삐침(3일~): 무거운 눈꺼풀에 옆을 흘겨보고 볼이 부푼다
+   sad  시무룩(5일~): 눈꼬리가 처지고 아래를 본다
+   down 풀이 죽음(7일~): 눈썹이 처지고 눈을 내리감았다. 눈꼬리에 눈물 한 방울(V) */
+const MOUSE_FACES = {
+  happy: MOUSE_HAPPY,
+  sulk: {y0:8, rows:[
+  "......ocwwwwwwwwwwwwco......",
+  "....oowcwwwwwwwwwwwwcwoo....",
+  "...ocwwwwwwwwwwwwwwwwwwco...",
+  "....owcwooooowwooooowcwo....",
+  "...ocwwwokhhowwokhhowwwco...",
+  "..owcppwokhhowwokhhowppcwo..",
+  "...ocwdwwooowwwwooowwdwco...",
+  "...owcwwwwwwwnnwwwwwwwcwo..."]},
+  sad: {y0:8, rows:[
+  "......ocwwwwwwwwwwwwco......",
+  "....oowcwwoowwwwoowwcwoo....",
+  "...ocwwwwohhowwohhowwwwco...",
+  "....owcwohhhowwohhhowcwo....",
+  "...ocwwwohkhowwohkhowwwco...",
+  "..owcwwwohkhowwohkhowwwcwo..",
+  "...ocwwwwooowwwwooowwwwco...",
+  "...owcwwwwwwwnnwwwwwwwcwo..."]},
+  down: {y0:8, rows:[
+  "......ocwnnwwwwwwnnwco......",
+  "....oowcnwwwwwwwwwwncwoo....",
+  "...ocwwwwwwwwwwwwwwwwwwco...",
+  "....owcwwwwwwwwwwwwwwcwo....",
+  "...ocwwwkwwwkwwkwwwkwwwco...",
+  "..owcwwwwkkkwwwwkkkwwwwcwo..",
+  "...ocwwwVwwwwwwwwwwwwwwco...",
+  "...owcwwVwwwwnnwwwwwwwcwo..."]}
+};
+/* 얼굴을 바꾼 쥐돌이. kind: happy · sulk · sad · down.
+   base: 바탕이 되는 서 있는 그림(홈은 지금 시간대 — 아침의 귀 옆 반짝이가 그대로 남는다). 없으면 낮.
+   얼굴 아이템(안경 · 선글라스)은 벗긴다. 쓰고 있으면 눈이 가려 평소 얼굴과 구분이 안 된다.
    치즈 먹기 끝이나 깜빡임 때 거듭 부르니 mouseSVGWorn 처럼 지난 그림을 다시 쓴다 */
-const happyCache = {};
-function happyMouseSVG(base){
+const faceCache = {};
+function faceMouseSVG(kind, base){
+  const face = MOUSE_FACES[kind] || MOUSE_FACES.happy;
   base = (base === "morning" || base === "evening") ? base : "day";
   const wear = Object.assign({}, isDot() ? wornNow() : {});
   delete wear.face;
-  const key = base + JSON.stringify(wear);
-  if(happyCache[key]) return happyCache[key];
+  const key = kind + base + JSON.stringify(wear);
+  if(faceCache[key]) return faceCache[key];
   const rows = mouseRows(base);
-  MOUSE_HAPPY.rows.forEach((r, i)=>{ rows[MOUSE_HAPPY.y0 + i] = r; });
-  return (happyCache[key] = rowsSVG(isDot() ? dressRows(rows, "stand", wear) : rows, false));
+  face.rows.forEach((r, i)=>{ rows[face.y0 + i] = r; });
+  return (faceCache[key] = rowsSVG(isDot() ? dressRows(rows, "stand", wear) : rows, false));
 }
+function happyMouseSVG(base){ return faceMouseSVG("happy", base); }
 function weatherSVGWorn(wx){
   return rowsSVG(isDot() ? dressRows(WEATHER[wx], "wx") : WEATHER[wx], false);
 }

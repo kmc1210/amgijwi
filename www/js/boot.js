@@ -84,6 +84,7 @@ applyDeviceText();
 applyEnvText();
 paintIcons();
 initVisit();
+initAway();                       // 며칠 만에 열었으면 기다린 얼굴 (waiting.js)
 renderHome();
 checkPersist();
 /* 앱이면 알림 권한 상태를 물어본다. 허용돼 있으면 답을 받는 대로 일정 알림을 다시 건다 */
