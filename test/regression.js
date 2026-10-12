@@ -2279,16 +2279,19 @@ const LEGACY = {
       let got = 0; for (let i = 0; i < 12; i++) got += earnRoundCheese(st);
       r.roundCap = [got, data.closet.cheese];
       r.emptyRound = earnRoundCheese({ total:0 });
-      // 5장 이상인 바퀴만 친다. 레시피가 5개보다 적으면 가진 만큼 전부
+      // 5장 이상인 바퀴만 +1. 짧은 바퀴는 장수를 모아 5장이 차면 +1
       const closetKeep = JSON.stringify(data.closet);
       data.closet = cleanCloset({});
-      r.need = roundNeed();
-      r.shortRound = [earnRoundCheese({ total:1, ok:1, again:0 }), earnRoundCheese({ total:4, ok:4, again:0 }), earnRoundCheese({ total:5, ok:0, again:5 }), data.closet.cheese];
-      const allDrinks = data.drinks; data.drinks = allDrinks.filter(d => !d.archived).slice(0, 3);
-      r.fewRecipes = [roundNeed(), earnRoundCheese({ total:2, ok:2, again:0 }), earnRoundCheese({ total:3, ok:3, again:0 })];
-      data.drinks = []; r.noRecipes = roundNeed(); data.drinks = allDrinks;
-      // 짧은 바퀴는 결과 화면에서 까닭을 알려준다
-      data.closet = cleanCloset({}); closetResult(0, { total:2, ok:2, again:0 });
+      r.fullRound = [earnRoundCheese({ total:5, ok:0, again:5 }), data.closet.cheese, data.closet.pool];
+      data.closet = cleanCloset({});
+      r.pool = [earnRoundCheese({ total:2, ok:2, again:0 }), data.closet.pool, earnRoundCheese({ total:2, ok:2, again:0 }), data.closet.pool,
+                earnRoundCheese({ total:2, ok:2, again:0 }), data.closet.pool, data.closet.cheese];
+      data.closet = cleanCloset({}); let ones = 0; for (let i = 0; i < 10; i++) ones += earnRoundCheese({ total:1, ok:1, again:0 });
+      r.oneCard = [ones, data.closet.cheese];                       // 한 장짜리 열 번 = 10장 = 치즈 2
+      data.closet = cleanCloset({ roundDay:ymd(new Date()), roundCount:10, pool:3 }); r.cappedPool = [earnRoundCheese({ total:2, ok:2, again:0 }), data.closet.pool];
+      r.poolClean = [cleanCloset({ pool:99 }).pool, cleanCloset({ pool:-3 }).pool, cleanCloset({}).pool];
+      // 짧은 바퀴는 결과 화면에서 모인 장수를 알려준다
+      data.closet = cleanCloset({}); const g = earnRoundCheese({ total:2, ok:2, again:0 }); closetResult(g, { total:2, ok:2, again:0 });
       r.shortSaid = [$("#resCheese").style.display !== "none", $("#resCheese").textContent];
       closetResult(0, { total:0, ok:0, again:0 }); r.emptyHidden = $("#resCheese").style.display === "none";
       data.closet = cleanCloset(JSON.parse(closetKeep));
@@ -2357,10 +2360,12 @@ const LEGACY = {
     ok("날씨 옷 위에는 안경만, 자는 밤은 그대로", r.wxFaceOnly && r.night);
     eq("한 바퀴 +1, 하루 10개까지", r.roundCap, [10, 10]);
     eq("카드가 없는 바퀴는 치즈가 없다", r.emptyRound, 0);
-    eq("한 바퀴는 5장 이상이어야 치즈를 받는다(전부 다시 봐도 5장이면 받는다)", [r.need, r.shortRound], [5, [0, 0, 1, 1]]);
-    eq("레시피가 5개보다 적으면 가진 만큼 전부 돌면 받는다", r.fewRecipes, [3, 0, 1]);
-    eq("레시피가 없어도 필요한 장수는 1 아래로 내려가지 않는다", r.noRecipes, 1);
-    ok("짧은 바퀴는 결과 화면에서 몇 장이 필요한지 알려준다", r.shortSaid[0] && /5장 이상 외우면 치즈를 받아요/.test(r.shortSaid[1]), JSON.stringify(r.shortSaid));
+    eq("5장 이상인 바퀴는 바로 +1(전부 다시 봐도 받는다)", r.fullRound, [1, 1, 0]);
+    eq("짧은 바퀴는 장수를 모아 5장이 차면 +1, 남은 장수는 이어진다", r.pool, [0, 2, 0, 4, 1, 1, 1]);
+    eq("한 장짜리 바퀴 열 번으로는 치즈 2개뿐이다(예전엔 10개)", r.oneCard, [2, 2]);
+    eq("하루 몫을 다 받은 뒤에는 모으지도 않는다", r.cappedPool, [0, 3]);
+    eq("모아 둔 장수는 0~4 로 다듬는다", r.poolClean, [4, 0, 0]);
+    ok("짧은 바퀴는 결과 화면에서 모인 장수를 알려준다", r.shortSaid[0] && /5장이 모이면 치즈 \+1 \(2\/5\)/.test(r.shortSaid[1]), JSON.stringify(r.shortSaid));
     ok("빈 바퀴는 치즈 줄을 숨긴다", r.emptyHidden);
     eq("7 · 14일 연속이면 그날 한 번 +5", r.streak, [true, false, 15]);
     eq("연속 6일은 보너스 없음", r.noStreak, false);
