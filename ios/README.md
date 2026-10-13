@@ -70,6 +70,9 @@
   `WidgetBridge` 가 App Group 의 `UserDefaults` 에 적는다. 위젯은 그것만 읽는다.
 - 쥐돌이 그림도 요약에 들어 있다(28×40 글자 행과 색). 그래서 옷장에서 입힌 옷 그대로 그려지고, 그림을 Swift 쪽에 따로 두지 않는다.
 - 며칠째인지 · 어떤 얼굴인지는 위젯이 그리는 날짜로 센다. 자정마다 한 장씩 여드레 치를 미리 만들어 두어, 앱을 열지 않아도 얼굴이 바뀐다.
+- 큰 위젯(`Widget/RecipeWidget.swift`, iOS 17 부터)은 고른 레시피나 메모를 보여준다. 위젯을 길게 눌러 "위젯 편집"에서
+  레시피 · 메모 중 무엇을 볼지, 어느 레시피인지, 용량을 가릴지 고른다(AppIntents). 레시피를 고르지 않으면 못 외운 메뉴가 날마다 하나씩 나온다.
+  레시피와 메모도 요약에 실려 App Group 에 들어간다. 앱에 PIN 잠금을 걸면 웹이 아예 넘기지 않는다(위젯은 잠금 없이 보인다).
 - App Group(`group.com.amgijwi.app`)과 위젯의 번들 ID(`com.amgijwi.app.widget`)는 애플 개발자 계정에 등록돼 있어야 서명된다.
   자동 서명(`-allowProvisioningUpdates`)이 만들어 준다. 버전 번호는 앱과 위젯이 같아야 해서 `project.yml` 맨 위 `settings` 한 곳에 둔다.
 

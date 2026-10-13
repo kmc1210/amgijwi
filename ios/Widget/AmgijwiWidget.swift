@@ -23,6 +23,30 @@ struct Summary: Decodable {
     var events: [Event] = []    // 끝나지 않은 일정
     var faces: [String: [String]] = [:]
     var pal: [String: String] = [:]
+    /// 큰 위젯에 보여줄 레시피와 메모. 앱에 PIN 잠금을 걸었으면 비어 있고 locked 가 참이다.
+    var locked = false
+    var recipes: [Recipe] = []
+    var memos: [Memo] = []
+
+    struct Recipe: Decodable {
+        var id: String
+        var n: String           // 이름
+        var t: String           // ICE · HOT · ICE/HOT
+        var c: String           // 컵 크기
+        var m: Bool             // 외운 메뉴인가
+        var sets: [IngSet]      // 재료 한 벌(ICE/HOT 을 같이 파는 메뉴는 두 벌)
+        var steps: [String]
+
+        struct IngSet: Decodable {
+            var l: String       // "ICE" · "HOT" · 한 벌이면 ""
+            var ing: [[String]] // [이름, 용량]
+        }
+    }
+
+    struct Memo: Decodable {
+        var t: String
+        var p: Bool             // 고정한 메모인가
+    }
 
     struct Event: Decodable {
         var t: String       // 제목
@@ -30,7 +54,7 @@ struct Summary: Decodable {
         var e: String       // 끝나는 날(하루짜리면 d 와 같다)
     }
 
-    enum Keys: String, CodingKey { case total, done, streak, cheese, last, studied, kill, events, faces, pal }
+    enum Keys: String, CodingKey { case total, done, streak, cheese, last, studied, kill, events, faces, pal, locked, recipes, memos }
 
     init() {}
 
@@ -47,6 +71,9 @@ struct Summary: Decodable {
         events = (try? c.decode([Event].self, forKey: .events)) ?? []
         faces = (try? c.decode([String: [String]].self, forKey: .faces)) ?? [:]
         pal = (try? c.decode([String: String].self, forKey: .pal)) ?? [:]
+        locked = (try? c.decode(Bool.self, forKey: .locked)) ?? false
+        recipes = (try? c.decode([Recipe].self, forKey: .recipes)) ?? []
+        memos = (try? c.decode([Memo].self, forKey: .memos)) ?? []
     }
 
     static func load() -> Summary? {
@@ -117,7 +144,7 @@ struct MouseEntry: TimelineEntry {
     let summary: Summary?
 }
 
-private let dayFormat: DateFormatter = {
+let dayFormat: DateFormatter = {
     let f = DateFormatter()
     f.locale = Locale(identifier: "en_US_POSIX")
     f.calendar = Calendar(identifier: .gregorian)
@@ -257,7 +284,7 @@ extension Color {
 }
 
 /// 앱의 기본 테마 색(크림 바탕 · 짙은 글씨 · 갈색 강조).
-private enum Ink {
+enum Ink {
     static let bg = Color(hex: "#F3E9DC")!
     static let text = Color(hex: "#241F1A")!
     static let muted = Color(hex: "#7A6D62")!
@@ -380,7 +407,6 @@ extension View {
     }
 }
 
-@main
 struct AmgijwiWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "AmgijwiMouse", provider: Provider()) { entry in
@@ -390,6 +416,17 @@ struct AmgijwiWidget: Widget {
         .description("오늘 외울 잔 수와 쥐돌이를 보여줘요. 며칠 안 오면 쥐돌이가 기다려요.")
         .supportedFamilies([.systemSmall, .systemMedium])
         .contentMarginsDisabledIfAvailable()
+    }
+}
+
+/// 위젯 묶음. 쥐돌이 위젯은 모든 버전에, 레시피 위젯(고르는 화면이 있는 큰 위젯)은 iOS 17 부터 낸다.
+@main
+struct AmgijwiWidgets: WidgetBundle {
+    var body: some Widget {
+        AmgijwiWidget()
+        if #available(iOSApplicationExtension 17.0, *) {
+            RecipeWidget()
+        }
     }
 }
 
