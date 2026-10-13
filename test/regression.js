@@ -2858,6 +2858,18 @@ const LEGACY = {
       data.events = [{ id:"w4", title:"긴 행사", date:day(-20), end:day(20), note:"", remind:3, done:false }, { id:"w5", title:"내일 일정", date:day(1), note:"", remind:3, done:false }, { id:"w6", title:"날짜 없음", date:"", note:"", remind:3, done:false }];
       r.order = widgetSummary().events.map(e => e.t).join(",");
       const ch = data.closet.cheese; data.closet.cheese = undefined; r.safeInt = widgetSummary().cheese; data.closet.cheese = ch;
+      // 달력 위젯: 이번 달 첫날부터의 끝나지 않은 일정을 날짜순으로. PIN 잠금이면 일정 제목을 넘기지 않는다
+      const m1 = today.slice(0, 8) + "01", prev = (() => { const d = new Date(); d.setDate(0); return ymd(d); })();
+      data.events = [{ id:"c1", title:"먼 일정", date:day(70), note:"", remind:3, done:false }, { id:"c2", title:"지난달 것", date:prev, note:"", remind:3, done:false },
+                     { id:"c3", title:"걸친 행사", date:prev, end:m1, note:"", remind:3, done:false }, { id:"c4", title:"끝낸 것", date:m1, note:"", remind:3, done:true },
+                     { id:"c5", title:"첫날", date:m1, note:"", remind:3, done:false }, { id:"c6", title:"날짜 없음", date:"", note:"", remind:3, done:false }];
+      const calS = widgetSummary();
+      r.cal = calS.cal.map(e => e.t).join(",");
+      r.calShape = [calS.cal[0].d === prev, calS.cal[0].e === m1, calS.cal[1].d === calS.cal[1].e];
+      const pinC = data.pin; data.pin = "hash"; const calShut = widgetSummary(); data.pin = pinC;
+      r.calLocked = [calShut.locked, calShut.cal.length, calShut.events.length, JSON.stringify(calShut).indexOf("먼 일정") < 0];
+      data.events = Array.from({ length:90 }, (_, i) => ({ id:"m" + i, title:"일정" + i, date:day(i), note:"", remind:3, done:false }));
+      r.calCap = widgetSummary().cal.length;
       data.events = [{ id:"w2", title:"가을 신메뉴 출시", date:day(3), note:"", remind:3, done:false }];
       // 위젯 쪽에서 무슨 일이 나도 사본 저장은 막지 않는다
       const realSummary = widgetSummary; widgetSummary = () => { throw new Error("x"); };
@@ -2902,6 +2914,10 @@ const LEGACY = {
       data = JSON.parse(backup); data.closet = cleanCloset(data.closet); data.bday = cleanBday(data.bday); persist(); go("home");
       return r;
     });
+    eq("달력 위젯: 이번 달 첫날부터의 끝나지 않은 일정을 날짜순으로", r.cal, "걸친 행사,첫날,먼 일정");
+    eq("달력 위젯: 시작하는 날 · 끝나는 날", r.calShape, [true, true, true]);
+    eq("달력 위젯: PIN 잠금이면 일정을 넘기지 않는다", r.calLocked, [true, 0, 0, true]);
+    eq("달력 위젯: 일정은 80개까지", r.calCap, 80);
     eq("위젯 요약: 레시피 수 · 외운 수 · 치즈 · 마지막 방문 · 외운 날 · 오늘 폐기", r.nums, [1, true, 4, 27, true, "2026-10-11", true, "number"]);
     eq("끝나지 않은 앞날의 일정만 넘긴다", r.events, ["가을 신메뉴 출시|true"]);
     eq("앞으로 시작할 일정이 오래 진행 중인 것보다 먼저, 날짜 없는 것은 뺀다", r.order, "내일 일정,긴 행사");

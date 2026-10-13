@@ -3,10 +3,12 @@
    앱(WidgetBridge.swift)이 위젯과 같이 쓰는 칸(App Group)에 적어 두고 위젯을 다시 그리게 한다.
    넘기는 것: 레시피 수 · 외운 수 · 연속 접속 · 치즈 · 마지막으로 온 날 · 마지막으로 한 바퀴 돈 날,
              오늘 폐기를 챙길 재료 수 · 끝나지 않은 일정 여섯 개까지(제목과 날짜 — 중간 크기 위젯이 보여준다),
+             달력 위젯이 그릴 일정(cal — 이번 달 첫날부터의 끝나지 않은 일정),
              그리고 지금 입은 옷 그대로의 쥐돌이 그림 다섯 장(평소 · 기쁨 · 삐침 · 시무룩 · 풀이 죽음)과 색.
    며칠째인지 · 어떤 얼굴인지는 위젯이 그리는 날짜로 스스로 정한다(앱을 열지 않아도 날이 지나면 바뀐다).
    큰 위젯은 고른 레시피나 메모를 보여준다. 그래서 레시피(이름 · 재료와 용량 · 제조 순서)와 메모도 넘긴다.
    다만 앱에 PIN 잠금을 건 사람의 것은 넘기지 않는다 — 위젯은 잠금을 풀지 않아도 홈 화면에서 보인다.
+   일정 제목도 마찬가지다(잠겨 있으면 events · cal 을 비운다).
    기기 밖으로 나가는 것은 없다 */
 
 function widgetBridge(){
@@ -64,6 +66,14 @@ function widgetBoard(){
   const memos = sortedMemos().slice(0, WIDGET_MEMOS).map(m=>({id: String(m.id), t: widgetMemoText(m.text), p: !!m.pin}));
   return {locked: false, recipes: recipes, memos: memos, memoMore: Math.max(0, data.memos.length - memos.length)};
 }
+/* 달력 위젯에 그릴 일정. 끝나지 않은 것 가운데 이번 달 첫날 뒤로 걸치는 것을 날짜순으로.
+   위젯은 달이 바뀌면 다음 달을 스스로 그리므로 앞날 것도 같이 넘긴다 */
+const WIDGET_CAL = 80;
+function widgetCal(today){
+  const from = today.slice(0, 8) + "01";
+  return evSorted(data.events.filter(e=>e && !e.done && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && evEnd(e) >= from))
+    .slice(0, WIDGET_CAL).map(e=>({t: widgetText(e.title, 40), d: e.date, e: evEnd(e)}));
+}
 /* 0 이상의 정수로. 위젯 쪽은 수가 아니면 요약을 통째로 못 읽는다 */
 function widgetInt(v){ return Math.max(0, Math.floor(Number(v) || 0)); }
 function widgetSummary(){
@@ -71,9 +81,9 @@ function widgetSummary(){
   const v = data.visit || {}, today = ymd(new Date());
   /* 끝나지 않은 일정. 앞으로 시작할 것을 가까운 순으로 먼저, 이미 진행 중인 것은 그 뒤에 —
      오래 이어지는 행사가 내일 일정을 가리지 않게. 위젯은 그리는 날짜에 맞춰 다시 고른다 */
-  const events = data.events.filter(e=>e && !e.done && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && evEnd(e) >= today)
+  const events = board.locked ? [] : data.events.filter(e=>e && !e.done && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && evEnd(e) >= today)
     .sort((a, b)=>(a.date < today ? 1 : 0) - (b.date < today ? 1 : 0) || (a.date < b.date ? -1 : (a.date > b.date ? 1 : 0)))
-    .slice(0, 6).map(e=>({t: String(e.title || "").slice(0, 40), d: e.date, e: evEnd(e)}));
+    .slice(0, 6).map(e=>({t: widgetText(e.title, 40), d: e.date, e: evEnd(e)}));
   return {
     v: 1,
     total: live.length,
@@ -84,6 +94,7 @@ function widgetSummary(){
     studied: typeof data.studied === "string" ? data.studied : "",
     kill: widgetInt(discardCount()),  // 개봉관리에 기한을 건 재료 수 = 날마다 폐기일을 챙길 것(홈의 "오늘 버릴 게 N개"와 같은 수)
     events: events,
+    cal: board.locked ? [] : widgetCal(today),
     locked: board.locked, recipes: board.recipes, memos: board.memos, memoMore: board.memoMore,
     faces: art.faces, pal: art.pal
   };

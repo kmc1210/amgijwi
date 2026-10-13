@@ -21,6 +21,10 @@ struct Summary: Decodable {
     var studied = ""        // 마지막으로 한 바퀴 돈 날
     var kill = 0            // 오늘 폐기를 챙길 재료 수
     var events: [Event] = []    // 끝나지 않은 일정
+    /// 달력 위젯이 그릴 일정(이번 달 첫날부터의 끝나지 않은 일정, 날짜순). PIN 잠금을 걸었으면 비어 있다.
+    var cal: [Event] = []
+    /// 요약에 달력 칸이 들어 있는가. 달력 위젯이 생기기 전의 앱이 적어 둔 요약에는 없다.
+    var hasCal = false
     var faces: [String: [String]] = [:]
     var pal: [String: String] = [:]
     /// 큰 위젯에 보여줄 레시피와 메모. 앱에 PIN 잠금을 걸었으면 비어 있고 locked 가 참이다.
@@ -59,7 +63,7 @@ struct Summary: Decodable {
         var e: String       // 끝나는 날(하루짜리면 d 와 같다)
     }
 
-    enum Keys: String, CodingKey { case total, done, streak, cheese, last, studied, kill, events, faces, pal, locked, recipes, memos, memoMore }
+    enum Keys: String, CodingKey { case total, done, streak, cheese, last, studied, kill, events, cal, faces, pal, locked, recipes, memos, memoMore }
 
     init() {}
 
@@ -74,6 +78,8 @@ struct Summary: Decodable {
         studied = (try? c.decode(String.self, forKey: .studied)) ?? ""
         kill = (try? c.decode(Int.self, forKey: .kill)) ?? 0
         events = (try? c.decode([Event].self, forKey: .events)) ?? []
+        hasCal = c.contains(.cal)
+        cal = (try? c.decode([Event].self, forKey: .cal)) ?? []
         faces = (try? c.decode([String: [String]].self, forKey: .faces)) ?? [:]
         pal = (try? c.decode([String: String].self, forKey: .pal)) ?? [:]
         locked = (try? c.decode(Bool.self, forKey: .locked)) ?? false
@@ -299,6 +305,7 @@ enum Ink {
     static let track = Color(hex: "#E4D6C4")!
     static let line = Color(hex: "#4A423A")!
     static let alert = Color(hex: "#B5453C")!
+    static let span = Color(hex: "#4A7FC1")!        // 달력의 기간 일정 막대
 }
 
 struct MouseWidgetView: View {
@@ -426,11 +433,12 @@ struct AmgijwiWidget: Widget {
     }
 }
 
-/// 위젯 묶음. 쥐돌이 위젯은 모든 버전에, 레시피 위젯 · 메모 위젯(고르는 화면이 있다)은 iOS 17 부터 낸다.
+/// 위젯 묶음. 쥐돌이 위젯 · 달력 위젯은 모든 버전에, 레시피 위젯 · 메모 위젯(고르는 화면이 있다)은 iOS 17 부터 낸다.
 @main
 struct AmgijwiWidgets: WidgetBundle {
     var body: some Widget {
         AmgijwiWidget()
+        CalendarWidget()
         if #available(iOSApplicationExtension 17.0, *) {
             RecipeWidget()
             MemoWidget()
