@@ -2318,6 +2318,15 @@ const LEGACY = {
       tapClosetItem("ribbon"); r.tryOverWorn = [data.closet.wear.head, $("#cMouse").innerHTML === NN(mouseSVGWorn("day", false, { head:"ribbon" }))];   // 입은 것은 그대로 두고 무대에서만 바꿔 보인다
       $("#cBuyBtn").click();                                                      // 15 남음 → 리본(10) 사면 머리를 바꿔 입는다
       r.afterRibbon = [data.closet.cheese, data.closet.wear.head];
+      // 입어 보는 중에 입고 있던 같은 칸 아이템을 누르면 벗기지 않고 입어 보기만 끝낸다. 다른 칸의 가진 옷은 같이 입혀 볼 수 있다
+      const keepCloset = JSON.stringify(data.closet);
+      data.closet = cleanCloset({ cheese:5, own:["beret","apron"], wear:{ head:"beret" } }); closetLockUntil = 0; renderCloset();
+      tapClosetItem("ribbon"); closetLockUntil = 0; tapClosetItem("beret"); r.backToWorn = [closetTry, data.closet.wear.head];
+      closetLockUntil = 0; tapClosetItem("ribbon"); closetLockUntil = 0; tapClosetItem("apron"); r.combo = [closetTry, data.closet.wear.body];
+      // 방금 눌러 줄이 밀린 직후의 누름은 받지 않는다
+      closetLockUntil = 0; tapClosetItem("ribbon"); tapClosetItem("ribbon"); const lockedNow = closetLocked();
+      document.querySelector('#cGrid [data-i="beret"]').click(); r.locked = [lockedNow, data.closet.wear.head];
+      closetLockUntil = 0; closetTry = ""; data.closet = cleanCloset(JSON.parse(keepCloset)); renderCloset();
       // 다른 곳에 갔다 오면 입어 보던 것은 잊는다
       data.closet.cheese = 40; tapClosetItem("crown"); go("home"); openCloset("home"); r.forget = closetTry; data.closet.cheese = 5;
       tapClosetItem("beret"); r.swap = data.closet.wear.head;                   // 가진 베레모로 바꿔 입기
@@ -2388,6 +2397,9 @@ const LEGACY = {
     eq("입어 보던 것을 또 누르면 그만 본다", r.tapAgain, "");
     eq("사기를 눌러야 치즈가 줄고 바로 입는다", r.bought, [15, "beret", "", ""]);
     eq("다른 것을 입어 보는 동안에도 입고 있던 옷은 바뀌지 않는다", r.tryOverWorn, ["beret", true]);
+    eq("입어 보는 중에 입고 있던 것을 누르면 벗기지 않고 원래대로", r.backToWorn, ["", "beret"]);
+    eq("다른 칸의 가진 옷은 입어 보는 것과 같이 입혀 볼 수 있다", r.combo, ["ribbon", "apron"]);
+    eq("줄이 밀린 직후의 누름은 받지 않는다", r.locked, [true, "beret"]);
     eq("옷장을 나갔다 오면 입어 보던 것은 잊는다", r.forget, "");
     eq("같은 칸의 다른 아이템을 사면 바꿔 입는다", r.afterRibbon, [5, "ribbon"]);
     ok("가진 것은 눌러서 바꿔 입고, 다시 누르면 벗는다", r.swap === "beret" && r.off === null);

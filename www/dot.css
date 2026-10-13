@@ -788,3 +788,4 @@ html.dot #s-closet .cbuy .buy:disabled{background:var(--d-surface);color:var(--d
 html.dot #s-closet .cbuy .no{background:var(--d-surface);color:var(--d-t1);}
 html.dot #s-closet .cbuy button:active{transform:translate(2px,2px);}
 html.dot #s-closet .citem.try{background:var(--d-warn-bg);box-shadow:0 -3px 0 0 var(--d-acc),0 3px 0 0 var(--d-acc),-3px 0 0 0 var(--d-acc),3px 0 0 0 var(--d-acc);}
+html.dot #s-closet .citem.try:active{box-shadow:0 -3px 0 0 var(--d-acc),0 3px 0 0 var(--d-acc),-3px 0 0 0 var(--d-acc),3px 0 0 0 var(--d-acc);}

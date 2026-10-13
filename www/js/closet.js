@@ -320,7 +320,7 @@ function restoreCloset(bk){
 
 /* ---------- 입구 ---------- */
 let closetFrom = "home";
-function openCloset(from){ closetFrom = from || "home"; closetTry = ""; go("closet"); }
+function openCloset(from){ closetFrom = from || "home"; closetTry = ""; closetSay("어때츄?"); go("closet"); }
 /* 홈: 쥐돌이 아래 치즈 칩. 처음 치즈가 생긴 뒤 한 번만 말풍선으로 알려준다.
    lead 는 그 말풍선 앞에 붙일 말(연속 접속 보너스로 처음 치즈가 생긴 날) */
 function closetHome(lead){
@@ -358,6 +358,11 @@ function closetSettings(){
 /* closetTry: 아직 사지 않은 아이템을 입어 보는 중이면 그 id. 눌렀다고 바로 사지 않는다 —
    먼저 쥐돌이에게 입혀 보여주고, 아래 "사기" 버튼을 눌러야 치즈가 나간다 */
 let closetSlot = "head", closetBlinkT = null, closetTry = "";
+/* 입어 보기를 켜고 끄거나 사면 무대 아래 줄이 생겼다 사라지며 아래 칸들이 밀린다.
+   그 직후의 두 번째 누름이 엉뚱한 것(다른 아이템 · 광고 버튼)에 닿지 않게 잠깐 누름을 받지 않는다 */
+let closetLockUntil = 0;
+function closetLocked(){ return Date.now() < closetLockUntil; }
+function closetLock(){ closetLockUntil = Date.now() + 350; }
 function closetSay(t){ const el = $("#cSay"); if(el) el.textContent = t; }
 /* 옷장 무대의 쥐돌이가 입을 옷: 고른 옷에, 입어 보는 아이템을 그 칸에 얹는다 */
 function closetStageWear(){
@@ -381,10 +386,11 @@ function renderCloset(){
       <span class="nm">${esc(i.name)}</span><span class="pr">${tag}</span></button>`;
   }).join("");
   document.querySelectorAll("#cTabs button").forEach(b=>b.addEventListener("click", ()=>{
+    if(closetLocked()) return;
     if(closetSlot !== b.dataset.s) haptic("selection");
     closetSlot = b.dataset.s; renderCloset();
   }));
-  document.querySelectorAll("#cGrid .citem").forEach(b=>b.addEventListener("click", ()=>tapClosetItem(b.dataset.i)));
+  document.querySelectorAll("#cGrid .citem").forEach(b=>b.addEventListener("click", ()=>{ if(!closetLocked()) tapClosetItem(b.dataset.i); }));
   closetBuyBar();
   adButton();                   // 광고 보고 치즈 받기 (ads.js)
   scheduleClosetBlink();
@@ -400,7 +406,7 @@ function closetBuyBar(){
       <button type="button" class="buy" id="cBuyBtn"${lack > 0 ? " disabled" : ""}><span class="ci">${cheeseSVG()}</span>${it.price} 사기</button>
       <button type="button" class="no" id="cBuyNo">그만 보기</button></div>`;
   $("#cBuyBtn").addEventListener("click", buyClosetItem);
-  $("#cBuyNo").addEventListener("click", ()=>{ closetTry = ""; closetSay("어때츄?"); haptic("light"); renderCloset(); });
+  $("#cBuyNo").addEventListener("click", ()=>{ closetTry = ""; closetLock(); closetSay("어때츄?"); haptic("light"); renderCloset(); });
 }
 /* 아이템을 눌렀다. 가진 것이면 입거나 벗고, 아직 없는 것이면 입어 보기만 한다(사는 것은 buyClosetItem) */
 function tapClosetItem(id){
@@ -411,11 +417,19 @@ function tapClosetItem(id){
     msg.textContent = "";
     closetSay(closetTry ? (c.cheese < it.price ? "치즈가 모자라츄…" : "어울리츄?") : "어때츄?");
     haptic("selection");
+    closetLock();
     renderCloset();
-    if(closetTry) $("#cBuy").scrollIntoView({block:"nearest"});     // 아래쪽 칸을 눌렀어도 입혀 본 모습과 사기 버튼이 보이게
+    /* 아래쪽 칸을 눌렀어도 입혀 본 쥐돌이와 사기 버튼이 같이 보이게 무대 위쪽으로 올린다 */
+    if(closetTry){ const sc = document.querySelector("#s-closet .scroll"); if(sc) sc.scrollTop = 0; }
     return;
   }
-  closetTry = "";
+  /* 가진 아이템을 눌렀다. 같은 칸의 것을 입어 보던 중이면 입어 보기만 끝낸다
+     (입고 있던 것을 눌러 "원래대로"를 하려던 것인데 벗겨 버리면 안 된다). 다른 칸이면 입어 보기는 그대로 둔다 */
+  const trying = closetItem(closetTry);
+  if(trying && trying.slot === it.slot){
+    closetTry = ""; closetLock();
+    if(c.wear[it.slot] === id){ closetSay("어때츄?"); haptic("light"); renderCloset(); return; }
+  }
   if(c.wear[it.slot] === id){
     delete c.wear[it.slot];
     msg.textContent = `${it.name} 벗었어요`; closetSay("시원하츄"); haptic("light");
@@ -433,7 +447,7 @@ function buyClosetItem(){
   if(!it || c.own.indexOf(it.id) >= 0) return;
   if(c.cheese < it.price){ haptic("error"); return; }
   c.cheese -= it.price; c.own.push(it.id); c.wear[it.slot] = it.id;
-  closetTry = "";
+  closetTry = ""; closetLock();
   $("#cMsg").textContent = `${it.name}을(를) 샀어요`;
   closetSay("고맙츄!"); sfx("chu"); haptic("success");
   persist();

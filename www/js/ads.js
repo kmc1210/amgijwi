@@ -36,7 +36,7 @@ function adButton(){
 }
 function watchAd(){
   const b = adBridge();
-  if(!b || adBusy || adLeft() < 1) return;
+  if(!b || adBusy || adLeft() < 1 || closetLocked()) return;      // 사기 직후 밀려 올라온 버튼이 잘못 눌리지 않게
   adBusy = true;
   /* 광고 소리와 겹치지 않게 배경음을 잠깐 끈다. 끝나면 다시 켠다 */
   bgmHold = true; bgmStop();
