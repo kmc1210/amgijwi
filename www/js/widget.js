@@ -33,10 +33,12 @@ function widgetFaces(){
   widgetFaceKey = key; widgetFaceMemo = {faces: faces, pal: pal};
   return widgetFaceMemo;
 }
-/* 큰 위젯에 보여줄 레시피와 메모. 위젯 한 칸에 들어갈 만큼만 추린다(재료 12줄 · 순서 6줄 · 메모 8개).
+/* 큰 위젯에 보여줄 레시피와 메모. 위젯 한 칸에 그릴 수 있는 만큼만 추린다(재료 8줄 · 순서 4줄 · 메모 6개).
+   더 있으면 몇 개 더 있는지(more)만 알려 위젯이 "외 N개"를 바르게 적는다.
    PIN 잠금을 걸었으면 아무것도 넘기지 않고 locked 만 알린다 */
-const WIDGET_RECIPES = 300, WIDGET_MEMOS = 8;
-function widgetText(v, n){ return String(v === undefined || v === null ? "" : v).replace(/\s+/g, " ").trim().slice(0, n); }
+const WIDGET_RECIPES = 300, WIDGET_MEMOS = 6, WIDGET_ING = 8, WIDGET_STEPS = 4;
+/* 글자 단위로 자른다. 코드 단위로 자르면 이모지가 반 토막 나고, 그 반 토막 때문에 위젯이 요약을 통째로 못 읽는다 */
+function widgetText(v, n){ return Array.from(String(v === undefined || v === null ? "" : v).replace(/\s+/g, " ").trim()).slice(0, n).join(""); }
 function widgetBoard(){
   if(data.pin) return {locked: true, recipes: [], memos: []};
   const recipes = liveDrinks().slice(0, WIDGET_RECIPES).map(d=>({
@@ -45,13 +47,13 @@ function widgetBoard(){
     t: widgetText(d.temp, 12),
     c: widgetText((d.cups || []).join(" · "), 30),
     m: has(data.mastered, d.id),      // 외운 메뉴인가(고른 레시피가 없을 때 못 외운 것부터 보여준다)
-    sets: ingSets(d).map(s=>({l: s[0], ing: (s[1] || []).filter(p=>p && (p[0] || p[1])).slice(0, 12).map(p=>[widgetText(p[0], 30), widgetText(p[1], 24)])})),
-    steps: (d.steps || []).filter(Boolean).slice(0, 6).map(x=>widgetText(x, 60))
+    sets: ingSets(d).map(s=>{
+      const all = (s[1] || []).filter(p=>p && (p[0] || p[1]));
+      return {l: s[0], more: Math.max(0, all.length - WIDGET_ING), ing: all.slice(0, WIDGET_ING).map(p=>[widgetText(p[0], 30), widgetText(p[1], 24)])};
+    }),
+    steps: (d.steps || []).filter(Boolean).slice(0, WIDGET_STEPS).map(x=>widgetText(x, 60))
   }));
-  const memos = data.memos.slice().sort((a, b)=>{
-    if(!!a.pin !== !!b.pin) return a.pin ? -1 : 1;                  // 고정 먼저, 그 안에서는 최신순(메모 화면과 같다)
-    return String(b.at || "").localeCompare(String(a.at || ""));
-  }).slice(0, WIDGET_MEMOS).map(m=>({t: widgetText(m.text, 140), p: !!m.pin}));
+  const memos = sortedMemos().slice(0, WIDGET_MEMOS).map(m=>({t: widgetText(m.text, 140), p: !!m.pin}));
   return {locked: false, recipes: recipes, memos: memos};
 }
 /* 0 이상의 정수로. 위젯 쪽은 수가 아니면 요약을 통째로 못 읽는다 */

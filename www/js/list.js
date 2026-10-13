@@ -34,6 +34,13 @@ function tagGroups(){
   });
   return Object.keys(map).map(Number).sort((a,b)=>a-b).map(n=>({days:n, items:map[n]}));
 }
+/* 메모를 보여주는 차례: 고정 먼저, 그 안에서는 최신순. 메모 화면과 위젯이 같이 쓴다 */
+function sortedMemos(){
+  return data.memos.slice().sort((a, b)=>{
+    if(!!a.pin !== !!b.pin) return a.pin ? -1 : 1;
+    return String(b.at || "").localeCompare(String(a.at || ""));
+  });
+}
 /* 오늘 폐기를 챙겨야 하는 재료 수(기한을 건 것 전부 — 날마다 개봉일이 하나씩 폐기일이 된다). 홈 쥐돌이 · 위젯이 같이 쓴다 */
 function discardCount(){
   try{ return tagGroups().reduce((n, g)=>n + g.items.length, 0); }catch(e){ return 0; }
@@ -663,10 +670,7 @@ function fmtMemoAt(at){
 function renderMemoTab(){
   const q = ($("#q").value||"").trim().toLowerCase();
   const box = $("#memoBody");
-  const list = data.memos.slice().sort((a,b)=>{
-    if(!!a.pin !== !!b.pin) return a.pin ? -1 : 1;          // 고정 먼저
-    return String(b.at||"").localeCompare(String(a.at||""));  // 그 안에서는 최신순
-  });
+  const list = sortedMemos();
   const hit = q ? list.filter(m=>textHit(m.text, q)) : list;
   if(!list.length && !q){
     box.innerHTML = `<div class="empty" style="padding-bottom:18px">${emptyMouse(2)}아직 메모가 없어요.<br>인수인계, 공지, 떠오른 아이디어 —<br>오른쪽 위 <b>+</b> 로 적어두세요.</div>`;

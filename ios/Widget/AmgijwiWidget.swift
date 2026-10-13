@@ -25,6 +25,8 @@ struct Summary: Decodable {
     var pal: [String: String] = [:]
     /// 큰 위젯에 보여줄 레시피와 메모. 앱에 PIN 잠금을 걸었으면 비어 있고 locked 가 참이다.
     var locked = false
+    /// 요약에 레시피 칸이 들어 있는가. 1.2 이전의 앱이 적어 둔 요약에는 없다(그때는 "앱을 열어 달라"고 한다).
+    var hasBoard = false
     var recipes: [Recipe] = []
     var memos: [Memo] = []
 
@@ -40,6 +42,7 @@ struct Summary: Decodable {
         struct IngSet: Decodable {
             var l: String       // "ICE" · "HOT" · 한 벌이면 ""
             var ing: [[String]] // [이름, 용량]
+            var more: Int?      // 여기 실리지 않은 재료 수
         }
     }
 
@@ -72,6 +75,7 @@ struct Summary: Decodable {
         faces = (try? c.decode([String: [String]].self, forKey: .faces)) ?? [:]
         pal = (try? c.decode([String: String].self, forKey: .pal)) ?? [:]
         locked = (try? c.decode(Bool.self, forKey: .locked)) ?? false
+        hasBoard = c.contains(.recipes)
         recipes = (try? c.decode([Recipe].self, forKey: .recipes)) ?? []
         memos = (try? c.decode([Memo].self, forKey: .memos)) ?? []
     }

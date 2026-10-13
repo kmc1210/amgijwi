@@ -80,11 +80,16 @@ struct BoardEntry: TimelineEntry {
     var recipe: (Summary.Recipe, picked: Bool)? {
         guard let s = summary, !s.recipes.isEmpty else { return nil }
         if let id = recipeID, let hit = s.recipes.first(where: { $0.id == id }) { return (hit, true) }
-        /// 못 외운 메뉴 가운데서 날짜로 하나를 고른다. 다 외웠으면 전체에서.
-        let pool = s.recipes.filter { !$0.m }
-        let from = pool.isEmpty ? s.recipes : pool
+        /// 날짜로 자리를 하나 정하고, 거기서부터 처음 만나는 못 외운 메뉴를 고른다(다 외웠으면 그 자리의 메뉴).
+        /// 못 외운 것만 모아 세면 하나를 외울 때마다 오늘의 레시피가 바뀐다. 이렇게 하면 그 메뉴를 외웠을 때만 다음 것으로 넘어간다.
+        let all = s.recipes.sorted { $0.id < $1.id }
         let day = Int(Calendar(identifier: .gregorian).startOfDay(for: date).timeIntervalSince1970 / 86400)
-        return (from[((day % from.count) + from.count) % from.count], false)
+        let start = ((day % all.count) + all.count) % all.count
+        for step in 0..<all.count {
+            let r = all[(start + step) % all.count]
+            if !r.m { return (r, false) }
+        }
+        return (all[start], false)
     }
 }
 
@@ -123,7 +128,7 @@ struct BoardView: View {
 
     var body: some View {
         Group {
-            if entry.summary == nil {
+            if entry.summary == nil || (!entry.summary!.hasBoard && !entry.summary!.locked) {
                 note("앱을 열어 주츄", "암기쥐를 한 번 열면 레시피와 메모가 여기에 보여요.")
             } else if entry.summary!.locked {
                 note("잠금을 건 앱이에요", "PIN 잠금을 쓰는 동안에는 레시피와 메모를 위젯에 내보내지 않아요.")
@@ -162,78 +167,83 @@ struct BoardView: View {
         return PixelMouse(rows: rows, pal: pal).frame(width: width, height: height)
     }
 
-    /// 레시피: 이름 · 온도 · 컵, 재료와 용량, 제조 순서. 다 못 들어가면 아래부터 잘린다(위젯은 넘겨 볼 수 없다).
+    /// 레시피: 이름 · 온도 · 컵, 재료와 용량, 제조 순서. 위젯은 넘겨 볼 수 없어서 줄 수를 미리 나눈다.
     private func recipeBoard(_ r: Summary.Recipe, picked: Bool) -> some View {
-        /// 재료가 두 벌(ICE · HOT)이면 줄 수를 나눠 쓴다. 넘치는 줄은 "외 N개"로.
-        let room = r.sets.count > 1 ? 4 : 8
-        return VStack(alignment: .leading, spacing: 0) {
-            label(picked ? (entry.hide ? "고른 레시피 · 용량 가림" : "고른 레시피")
-                         : (entry.hide ? "오늘의 레시피 · 용량 가림" : "오늘의 레시피"))
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(r.n)
-                    .font(.system(size: 22, weight: .heavy, design: .rounded))
-                    .foregroundColor(Ink.text)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                if !r.t.isEmpty {
-                    Text(r.t)
-                        .font(.system(size: 11, weight: .heavy, design: .rounded))
-                        .foregroundColor(Ink.bg)
-                        .padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(Ink.accent)
+        /// 재료가 두 벌(ICE · HOT)이면 세 줄씩, 한 벌이면 일곱 줄까지. 순서는 재료가 적을 때만 넉 줄, 많으면 두 줄, 두 벌이면 적지 않는다.
+        let two = r.sets.count > 1
+        let room = two ? 3 : 7
+        let longest = r.sets.map { $0.ing.count }.max() ?? 0
+        let stepRoom = two ? 0 : (longest <= 5 ? 4 : 2)
+        return ZStack(alignment: .bottomTrailing) {
+            VStack(alignment: .leading, spacing: 0) {
+                label(picked ? (entry.hide ? "고른 레시피 · 용량 가림" : "고른 레시피")
+                             : (entry.hide ? "오늘의 레시피 · 용량 가림" : "오늘의 레시피"))
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(r.n)
+                        .font(.system(size: 22, weight: .heavy, design: .rounded))
+                        .foregroundColor(Ink.text)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                    if !r.t.isEmpty {
+                        Text(r.t)
+                            .font(.system(size: 11, weight: .heavy, design: .rounded))
+                            .foregroundColor(Ink.bg)
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(Ink.accent)
+                    }
+                    Spacer(minLength: 0)
+                    if !r.c.isEmpty { label(r.c) }
                 }
-                Spacer(minLength: 0)
-                if !r.c.isEmpty { label(r.c) }
-            }
-            .padding(.top, 1)
-            ForEach(0..<r.sets.count, id: \.self) { si in
-                let set = r.sets[si]
-                if !set.l.isEmpty { label(set.l).padding(.top, 6) }
-                ForEach(0..<min(set.ing.count, room), id: \.self) { i in
-                    let pair = set.ing[i]
-                    HStack(spacing: 8) {
-                        Text(pair.first ?? "")
-                            .font(.system(size: 14, weight: .medium, design: .rounded))
-                            .foregroundColor(Ink.text)
-                            .lineLimit(1)
-                        Spacer(minLength: 4)
-                        if entry.hide {
-                            Rectangle().fill(Ink.track).frame(width: 54, height: 13)
-                        } else {
-                            Text(pair.count > 1 ? pair[1] : "")
-                                .font(.system(size: 14, weight: .heavy, design: .rounded))
+                .padding(.top, 1)
+                ForEach(0..<r.sets.count, id: \.self) { si in
+                    let set = r.sets[si]
+                    let hidden = max(0, set.ing.count - room) + (set.more ?? 0)
+                    if !set.l.isEmpty { label(set.l + (hidden > 0 ? " · 외 \(hidden)개" : "")).padding(.top, 6) }
+                    ForEach(0..<min(set.ing.count, room), id: \.self) { i in
+                        let pair = set.ing[i]
+                        HStack(spacing: 8) {
+                            Text(pair.first ?? "")
+                                .font(.system(size: 14, weight: .medium, design: .rounded))
                                 .foregroundColor(Ink.text)
+                                .lineLimit(1)
+                            Spacer(minLength: 4)
+                            if entry.hide {
+                                Rectangle().fill(Ink.track).frame(width: 54, height: 13)
+                            } else {
+                                Text(pair.count > 1 ? pair[1] : "")
+                                    .font(.system(size: 14, weight: .heavy, design: .rounded))
+                                    .foregroundColor(Ink.text)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .padding(.vertical, 3)
+                        .overlay(Rectangle().fill(Ink.track).frame(height: 1), alignment: .bottom)
+                    }
+                    if set.l.isEmpty, hidden > 0 { label("외 \(hidden)개").padding(.top, 2) }
+                }
+                /// 용량을 가렸으면 제조 순서도 적지 않는다. 순서 글에 용량이 그대로 들어 있는 일이 많다.
+                if entry.hide {
+                    Text("용량은 앱에서 확인해요")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(Ink.muted)
+                        .padding(.top, 8)
+                } else {
+                    VStack(alignment: .leading, spacing: 2) {
+                        ForEach(0..<min(r.steps.count, stepRoom), id: \.self) { i in
+                            Text("\(i + 1). \(r.steps[i])")
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundColor(Ink.muted)
                                 .lineLimit(1)
                         }
                     }
-                    .padding(.vertical, 3)
-                    .overlay(Rectangle().fill(Ink.track).frame(height: 1), alignment: .bottom)
+                    .padding(.top, 8)
+                    .padding(.trailing, 48)      // 쥐돌이가 서 있는 오른쪽 아래를 비켜 적는다
                 }
-                if set.ing.count > room {
-                    label("외 \(set.ing.count - room)개").padding(.top, 2)
-                }
+                Spacer(minLength: 0)
             }
-            /// 제조 순서는 남는 자리에. 쥐돌이가 서 있는 오른쪽 아래를 비켜 적는다.
-            ZStack(alignment: .bottomTrailing) {
-                VStack(alignment: .leading, spacing: 2) {
-                    /// 용량을 가렸으면 제조 순서도 적지 않는다. 순서 글에 용량이 그대로 들어 있는 일이 많다.
-                    if entry.hide {
-                        Text("누르면 앱에서 답을 확인해요")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundColor(Ink.muted)
-                    }
-                    ForEach(0..<(entry.hide ? 0 : min(r.steps.count, 4)), id: \.self) { i in
-                        Text("\(i + 1). \(r.steps[i])")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundColor(Ink.muted)
-                            .lineLimit(1)
-                    }
-                }
-                .padding(.top, 8)
-                .padding(.trailing, 48)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                mouse(width: 42, height: 60)
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .clipped()
+            mouse(width: 42, height: 60)
         }
     }
 
