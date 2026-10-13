@@ -2867,8 +2867,23 @@ const LEGACY = {
       r.shape = Object.keys(s.faces).every(k => s.faces[k].length === 40 && s.faces[k].every(row => row.length === 28));
       r.pal = Object.keys(s.faces).every(k => s.faces[k].join("").split("").every(ch => ch === "." || /^#[0-9A-Fa-f]{6}$/.test(s.pal[ch])));
       r.worn = [s.faces.normal[3][12], s.faces.normal[8].indexOf("Z") >= 0, s.faces.sulk[3][12], s.faces.sulk.join("").indexOf("Z") < 0];   // 베레모는 모든 얼굴에, 안경은 평소 얼굴에만
-      r.noRecipes = JSON.stringify(s).indexOf(live[0].name) < 0;
-      r.size = JSON.stringify(s).length;
+      // 큰 위젯용 레시피 · 메모. PIN 잠금을 걸면 넘기지 않는다
+      const pin0 = data.pin, memos0 = data.memos; data.pin = "";
+      data.memos = [{ id:"a", text:"옛 메모", at:"2026-10-01T00:00:00Z", pin:false }, { id:"b", text:"고정  메모\n둘째 줄", at:"2026-09-01T00:00:00Z", pin:true }, { id:"c", text:"새 메모", at:"2026-10-05T00:00:00Z", pin:false }];
+      const open = widgetSummary(), d0 = live[0], r0 = open.recipes[0];
+      r.board = [open.locked, open.recipes.length === live.length, r0.id === String(d0.id), r0.n === d0.name, r0.m === true, r0.sets.length >= 1, Array.isArray(r0.sets[0].ing[0]), r0.steps.length <= 6];
+      r.memoOrder = open.memos.map(m => m.t + (m.p ? "*" : "")).join("|");
+      // 이모지를 반 토막 내지 않는다(반 토막이 실리면 위젯이 요약을 통째로 못 읽는다) · 실리지 않은 재료 수를 알린다
+      const emo = "가".repeat(139) + "🐭🐭"; r.cut = [Array.from(widgetText(emo, 140)).length, /[\ud800-\udbff]$/.test(widgetText(emo, 140)), widgetText("a\n b", 9)];
+      const keepIng = d0.ing; d0.ing = Array.from({ length:11 }, (_, i) => ["재료" + i, i + "ml"]);
+      const big = widgetSummary().recipes[0].sets[0]; r.more = [big.ing.length, big.more]; d0.ing = keepIng;
+      r.sameOrder = sortedMemos().map(m => m.text.replace(/\s+/g, " ")).join("|") === "고정 메모 둘째 줄|새 메모|옛 메모";
+      const both = live.filter(d => isBothTemp(d) && hotIng(d).length)[0];
+      r.twoSets = both ? open.recipes.filter(x => x.id === String(both.id))[0].sets.map(x => x.l).join("/") : "ICE/HOT";
+      r.size = JSON.stringify(open).length;
+      data.pin = "hash"; const shut = widgetSummary();
+      r.locked = [shut.locked, shut.recipes.length, shut.memos.length, JSON.stringify(shut).indexOf(d0.name) < 0, JSON.stringify(shut).indexOf("옛 메모") < 0];
+      data.pin = pin0; data.memos = memos0;
       // 달라졌을 때만 넘긴다
       widgetSent = ""; widgetSync(); widgetSync(); r.once = posts.length;
       data.closet.cheese = 28; widgetSync(); r.changed = posts.length; r.isText = typeof posts[0] === "string" && JSON.parse(posts[1]).cheese === 28;
@@ -2889,7 +2904,14 @@ const LEGACY = {
     eq("쥐돌이 그림 다섯 장(평소 · 기쁨 · 삐침 · 시무룩 · 풀이 죽음)", r.faces, "normal,happy,sulk,sad,down");
     ok("그림은 40줄 × 28칸이고 쓰인 글자마다 색이 있다", r.shape && r.pal);
     eq("입은 옷 그대로 그리되, 얼굴이 바뀐 그림은 안경을 벗긴다", r.worn, ["2", true, "2", true]);
-    ok("레시피 내용은 넘기지 않고, 요약은 64KB 보다 한참 작다", r.noRecipes && r.size < 20000, String(r.size));
+    eq("큰 위젯용으로 레시피(이름 · 재료 · 순서 · 외웠는지)를 넘긴다", r.board, [false, true, true, true, true, true, true, true]);
+    eq("메모는 고정한 것 먼저, 그 안에서는 최신순(줄바꿈은 빈칸으로)", r.memoOrder, "고정 메모 둘째 줄*|새 메모|옛 메모");
+    eq("ICE/HOT 을 같이 파는 메뉴는 재료 두 벌", r.twoSets, "ICE/HOT");
+    eq("글자 단위로 잘라 이모지를 반 토막 내지 않는다", r.cut, [140, false, "a b"]);
+    eq("재료는 여덟 줄까지 싣고 나머지 수를 알린다", r.more, [8, 3]);
+    ok("메모 화면과 위젯이 같은 차례를 쓴다", r.sameOrder);
+    eq("PIN 잠금을 걸면 레시피도 메모도 넘기지 않는다", r.locked, [true, 0, 0, true, true]);
+    ok("요약은 앱이 받는 크기(1MB)보다 한참 작다", r.size < 200000, String(r.size));
     eq("요약이 달라졌을 때만 앱에 넘긴다", [r.once, r.changed, r.isText], [1, 2, true]);
     ok("한 바퀴 끝내면 오늘 외운 날로 적는다(위젯이 기쁜 얼굴로)", r.studied);
     eq("웹에서는 넘기지 않는다", r.web, [null, true]);
