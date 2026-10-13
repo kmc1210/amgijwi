@@ -74,6 +74,7 @@ function openLock(mode){
 function closeLock(){
   $("#lock").classList.remove("on"); lock.buf = "";
   bdayHome();                   // 잠금에 가려 미뤄 둔 생일 폭죽이 있으면 지금 터트린다 (birthday.js)
+  if(lock.mode === "enter") openNickAsk();      // PIN 을 쓰는 사람에게는 잠금을 푼 뒤에 이름을 한 번 묻는다 (nick.js)
 }
 $("#lockCancel").addEventListener("click", closeLock);
 
@@ -241,6 +242,7 @@ document.querySelectorAll("#wxBtns .theme-b").forEach(b=>{
 
 function renderSettings(){
   closetSettings();             // 맨 위 쥐돌이 옷장 줄 (closet.js)
+  nickSettings();               // 내 이름 (nick.js)
   bdaySettings();               // 내 생일 (birthday.js)
   nudgeSettings();              // 쥐돌이가 부르는 알림 (waiting.js)
   applyTheme();
@@ -401,6 +403,7 @@ function applyBackup(text){
       /* 치즈 · 옷은 백업을 따라간다. 예전 백업(옷장 없음)이면 지금 것을 둔다 */
       closet:d.closet ? restoreCloset(d.closet) : data.closet,
       bday:restoreBday(d.bday),           /* 생일도 백업을 따라간다 */
+      nick:restoreNick(d.nick),           /* 이름도 백업을 따라간다 */
       review:data.review,                 /* 별점을 청한 기록은 이 기기 것을 둔다 */
       studied:data.studied,               /* 오늘 한 바퀴 돌았는지도 이 기기 것을 둔다(위젯) */
       nudge:(d.nudge && typeof d.nudge.on === "boolean") ? {on:d.nudge.on} : data.nudge,   /* 부르는 알림을 켰는지도 백업을 따라간다 */
@@ -471,6 +474,7 @@ $("#wipeAll").addEventListener("click", ()=>{
       closet:data.closet, bday:data.bday,            /* 치즈 · 옷 · 생일은 레시피가 아니라 남긴다 */
       review:data.review,                            /* 별점을 청한 날을 잊으면 넉 달 간격이 깨진다 */
       nudge:data.nudge,                              /* 알림을 켜고 끈 것은 취향이라 남긴다 */
+      nick:data.nick,                                /* 이름도 남긴다 */
       studied:data.studied,                          /* 오늘 한 바퀴 돌았는지(위젯) */
       visit:data.visit, hints:data.hints || [], cats:data.cats,
       shelf:[], memos:[], subs:[], drinks:[], mastered:[], needReview:[], events:[]};

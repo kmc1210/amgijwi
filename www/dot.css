@@ -789,3 +789,21 @@ html.dot #s-closet .cbuy .no{background:var(--d-surface);color:var(--d-t1);}
 html.dot #s-closet .cbuy button:active{transform:translate(2px,2px);}
 html.dot #s-closet .citem.try{background:var(--d-warn-bg);box-shadow:0 -3px 0 0 var(--d-acc),0 3px 0 0 var(--d-acc),-3px 0 0 0 var(--d-acc),3px 0 0 0 var(--d-acc);}
 html.dot #s-closet .citem.try:active{box-shadow:0 -3px 0 0 var(--d-acc),0 3px 0 0 var(--d-acc),-3px 0 0 0 var(--d-acc),3px 0 0 0 var(--d-acc);}
+/* ── 내 이름 (1.2 · nick.js) ── */
+html.dot #nickCard .nickrow{display:flex;gap:8px;align-items:stretch;margin:12px 0 0;}
+html.dot #nickCard .nickrow input{flex:1 1 auto;min-width:0;width:auto;margin-bottom:2px;font-size:16px;}
+html.dot #nickCard .nickrow .cta{flex:0 0 auto;width:auto;min-height:0;margin:2px 3px 2px 0;padding:0 14px;font-size:16px;line-height:1;white-space:nowrap;}
+html.dot .nickmsg{min-height:20px;margin-top:8px;font-size:13px;color:var(--d-acc);}
+html.dot .nickask{position:absolute;inset:0;z-index:110;display:flex;align-items:center;justify-content:center;background:rgba(36,31,26,.45);}
+html.dot .nickask[hidden]{display:none;}
+html.dot .nickask .card{width:min(320px,88%);background:var(--d-surface);color:var(--d-t1);padding:18px 18px 16px;margin:0;border:0;border-radius:0;text-align:center;box-shadow:var(--d-box);}
+html.dot .nickask .m{width:84px;height:120px;margin:0 auto 6px;image-rendering:pixelated;}
+html.dot .nickask .m svg{width:100%;height:100%;display:block;}
+html.dot .nickask b{display:block;font-family:"NeoDGM",monospace;font-weight:400;font-size:22px;-webkit-font-smoothing:none;}
+html.dot .nickask p{margin:6px 0 12px;font-size:13.5px;color:var(--d-t2);}
+html.dot .nickask input{width:calc(100% - 4px);margin:2px;border:0;border-radius:0;background:var(--d-bg, #F3E9DC);color:var(--d-t1);padding:11px 12px;font-size:16px;text-align:center;box-shadow:var(--d-box2);}
+html.dot .nickask .acts{display:flex;gap:10px;margin-top:10px;}
+html.dot .nickask .acts button{flex:1;border:0;padding:11px 8px;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;box-shadow:var(--d-box2);margin:2px;}
+html.dot .nickask .acts .later{background:var(--d-surface);color:var(--d-t1);}
+html.dot .nickask .acts .save{background:var(--d-acc);color:var(--d-on-acc);}
+html.dot #nickCard .bdclear{display:block;margin:6px 0 0 auto;border:0;background:none;padding:6px 2px;font:inherit;font-size:14px;color:var(--d-t2);text-decoration:underline;}

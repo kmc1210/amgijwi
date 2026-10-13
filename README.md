@@ -83,6 +83,7 @@ www/                   앱 본체. iOS 앱 번들에 그대로 들어갑니다. 
     ads.js             광고 보고 치즈 받기 · 고맙다 창 (광고가 켜진 앱만)
     waiting.js         며칠 만에 열면 기다린 얼굴 · 쥐돌이가 부르는 알림 (앱만)
     widget.js          홈 화면 위젯에 넘길 요약 (앱만)
+    nick.js            내 이름 — 쥐돌이가 부르는 이름, 바꿀 때 치즈 (앱만)
     boot.js            저장 안정성 · 기기별 안내 · 시작
   apple-touch-icon.png
 ios/                   iOS 껍데기 (WKWebView). 자세한 건 ios/README.md

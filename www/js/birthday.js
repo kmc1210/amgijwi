@@ -53,7 +53,7 @@ function bdayAlarmItem(now){
     at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, mi);
     if(at > now) break;
   }
-  return {id:"bday", at: ymd(at) + "T" + data.bday.at, title:"생일 축하해츄!", body:"쥐돌이가 선물을 준비했츄",
+  return {id:"bday", at: ymd(at) + "T" + data.bday.at, title:nickLead("생일 축하해츄!"), body:"쥐돌이가 선물을 준비했츄",
           yearly: !(data.bday.m === 2 && data.bday.d === 29), image:"cake"};
 }
 
@@ -98,7 +98,7 @@ function bdayPartySoon(){
 function bdayHidden(){
   const home = $("#s-home"), lock = $("#lock"), guide = $("#onboard");
   return !home || !home.classList.contains("active")
-      || (lock && lock.classList.contains("on")) || (guide && !guide.hidden);
+      || (lock && lock.classList.contains("on")) || (guide && !guide.hidden) || nickAskOpen();      // 이름 묻는 창(nick.js)에 가려 있어도 미룬다
 }
 
 /* ---------- 폭죽 ---------- */

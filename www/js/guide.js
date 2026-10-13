@@ -89,8 +89,10 @@ function closeGuide(){
   guide = null;
   const box = $("#onboard");
   box.hidden = true; box.innerHTML = "";
+  const first = !hintSeen(GUIDE_HINT);      // 처음 설치해 본 가이드인가(설정에서 다시 본 것이 아니라)
   markHint(GUIDE_HINT);
   go("home");
+  if(first) openNickAsk();                  // 가이드를 다 봤으면 이름을 한 번 묻는다 (nick.js)
 }
 function guideGo(i){
   if(!guide) return;
