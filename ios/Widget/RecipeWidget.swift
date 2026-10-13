@@ -59,13 +59,8 @@ struct BoardIntent: WidgetConfigurationIntent {
     @Parameter(title: "용량 가리기", default: false)
     var hide: Bool
 
-    static var parameterSummary: some ParameterSummary {
-        When(\.$kind, .equalTo, .recipe) {
-            Summary { \.$kind; \.$recipe; \.$hide }
-        } otherwise: {
-            Summary { \.$kind }
-        }
-    }
+    /// 고르는 화면의 줄 배치(parameterSummary)는 따로 정하지 않는다. 기본 배치가 세 가지를 차례로 보여준다.
+    /// 이 파일의 요약 모델 이름이 Summary 라, parameterSummary 안의 Summary { } 와 이름이 겹쳐 Xcode 16 에서는 빌드되지 않는다.
 }
 
 @available(iOS 17.0, *)
