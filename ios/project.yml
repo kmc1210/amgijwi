@@ -23,8 +23,8 @@ packages:
 # 버전은 앱과 위젯이 같아야 한다(다르면 App Store 가 받지 않는다). 그래서 여기 한 곳에 둔다
 settings:
   base:
-    MARKETING_VERSION: "1.1.1"
-    CURRENT_PROJECT_VERSION: "11"
+    MARKETING_VERSION: "1.2"
+    CURRENT_PROJECT_VERSION: "12"
 
 targets:
   Amgijwi:
