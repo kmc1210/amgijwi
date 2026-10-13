@@ -98,7 +98,7 @@ function bdayPartySoon(){
 function bdayHidden(){
   const home = $("#s-home"), lock = $("#lock"), guide = $("#onboard");
   return !home || !home.classList.contains("active")
-      || (lock && lock.classList.contains("on")) || (guide && !guide.hidden);
+      || (lock && lock.classList.contains("on")) || (guide && !guide.hidden) || nickAskOpen();      // 이름 묻는 창(nick.js)에 가려 있어도 미룬다
 }
 
 /* ---------- 폭죽 ---------- */

@@ -54,6 +54,10 @@ const LEGACY = {
   page.on("console", m => { if (m.type() === "error") errors.push(m.text()); });
 
   await page.goto(APP);
+  /* 이름을 묻는 창(nick.js)은 처음 한 번 뜬다. 다른 검사들 위에 떠서 가리지 않게 여기서는 이미 본 것으로 해 둔다.
+     그 창 자체는 "내 이름" 검사에서 따로 연다 */
+  await page.waitForFunction(() => typeof markHint === "function" && typeof data !== "undefined");
+  await page.evaluate(() => { markHint("nick"); });
   await page.waitForTimeout(400);
 
   // ── 1. 로드 자체 ────────────────────────────────────────────────
@@ -2872,15 +2876,19 @@ const LEGACY = {
       data.closet = cleanCloset({ cheese:40 }); data.bday = cleanBday({}); data.hints = data.hints.filter(h => h !== "nick").concat(["closet"]);
       // 다듬기
       r.clean = [cleanNickName("  민철  "), cleanNickName("가나다라마바사아자차"), cleanNickName("a\nb"), cleanNickName(null), cleanNickName("🐭🐭🐭🐭🐭🐭🐭🐭🐭")].map(x => Array.from(x).length + ":" + x.replace(/\n/g, "N")).join("|");
-      r.cleanObj = [JSON.stringify(cleanNick({ name:"", free:true })), JSON.stringify(cleanNick({ name:"쥐", free:true })), JSON.stringify(cleanNick("x"))];
+      r.graphemes = [nickChars("👨‍👩‍👧‍👦🇰🇷").length, cleanNickText("\u200b\u3164 "), cleanNickName("👨‍👩‍👧‍👦👨‍👩‍👧‍👦") === "👨‍👩‍👧‍👦👨‍👩‍👧‍👦"];
+      r.cleanObj = [JSON.stringify(cleanNick({ name:"", free:true })), JSON.stringify(cleanNick({ name:"쥐", free:true })), JSON.stringify(cleanNick("x")), JSON.stringify(cleanNick({ name:"", had:true }))];
       // 처음 등록은 무료 → 한 번은 무료로 고침 → 그다음은 치즈 30
       data.nick = cleanNick({}); r.none = [nickCall(), nickLead("안녕"), nickCost()];
-      r.empty = setNick("   ").why;
+      r.empty = [setNick("   ").why, setNick("\u200b").why, setNick("가나다라마바사아자").why, data.nick.name];
       const a = setNick("민처"); r.first = [a.ok, a.cost, data.nick.name, data.nick.free, data.closet.cheese, nickCall(), nickCost()];
       r.same = setNick("민처").why;
       const b = setNick("민철"); r.fix = [b.ok, b.cost, data.nick.name, data.nick.free, data.closet.cheese, nickCost()];
       const c = setNick("철이"); r.paid = [c.ok, c.cost, data.nick.name, data.closet.cheese];
       data.closet.cheese = 12; const d = setNick("다시"); r.poor = [d.ok, d.why, d.lack, data.nick.name, data.closet.cheese];
+      // 지우기는 무료, 다시 등록은 바꾸는 값
+      data.closet.cheese = 12; clearNick(); r.cleared = [data.nick.name, data.nick.had, nickCost(), nickCall(), setNick("다시").why, data.closet.cheese];
+      data.closet.cheese = 40; r.reReg = [setNick("철이").cost, data.nick.free, data.closet.cheese]; data.closet.cheese = 12;
       // 불러 주는 곳
       const mid = new Date(); mid.setHours(13, 0, 0, 0);
       VISIT = { info:{ kind:"next", gap:1, streak:2, count:5 }, now:mid }; initAway(); go("home");
@@ -2903,14 +2911,20 @@ const LEGACY = {
       $("#nickAskSave").click(); r.askEmpty = [seen($("#nickAsk")), /적어 주세요/.test($("#nickAskMsg").textContent)];
       $("#nickAskIn").value = "쥐순이"; $("#nickAskSave").click(); r.askSaved = [seen($("#nickAsk")), data.nick.name, data.nick.free, /쥐순이님/.test($("#mbubble").textContent)];
       r.again = openNickAsk();
+      // 묻는 창이 떠 있는 동안은 생일 폭죽을 미루고, PIN 을 쓰는 사람은 잠금을 푼 뒤에 묻는다
+      data.nick = cleanNick({}); data.hints = data.hints.filter(h => h !== "nick"); openNickAsk(); r.hides = bdayHidden(); closeNickAsk();
+      data.hints = data.hints.filter(h => h !== "nick"); lock.mode = "enter"; $("#lock").classList.add("on"); closeLock(); r.afterLock = seen($("#nickAsk")); closeNickAsk();
+      data.hints = data.hints.filter(h => h !== "nick"); lock.mode = "new"; closeLock(); r.afterPinSetup = seen($("#nickAsk")); lock.mode = "enter";
+      $("#nickAskIn").value = "가나다라마바사아자"; data.hints = data.hints.filter(h => h !== "nick"); openNickAsk(); $("#nickAskIn").value = "가나다라마바사아자"; $("#nickAskSave").click();
+      r.askLong = [seen($("#nickAsk")), /8자까지/.test($("#nickAskMsg").textContent)]; closeNickAsk();
       data.nick = cleanNick({}); data.hints = data.hints.filter(h => h !== "nick"); openNickAsk(); $("#nickAskLater").click();
       r.later = [seen($("#nickAsk")), data.nick.name, openNickAsk()];
       // 가이드: 처음 본 가이드를 닫을 때만 묻는다
       data.hints = data.hints.filter(h => h !== "nick" && h !== GUIDE_HINT); openGuide(); closeGuide(); r.afterGuide = seen($("#nickAsk")); closeNickAsk();
       data.hints = data.hints.filter(h => h !== "nick"); openGuide(); closeGuide(); r.afterReplay = seen($("#nickAsk")); closeNickAsk();
       // 백업 · 전체 삭제
-      data.nick = cleanNick({ name:"백업이", free:false });
-      const bk = backupJSON(); data.nick = cleanNick({ name:"지금이" }); applyBackup(bk); $("#dlgYes").click(); r.restored = data.nick.name;
+      data.nick = cleanNick({ name:"백업이", free:true });
+      const bk = backupJSON(); data.nick = cleanNick({ name:"지금이" }); applyBackup(bk); $("#dlgYes").click(); r.restored = data.nick.name; r.noFreeBack = data.nick.free;
       const old = JSON.parse(backupJSON()); delete old.data.nick; applyBackup(JSON.stringify(old)); $("#dlgYes").click(); r.oldKeeps = data.nick.name;
       $("#wipeAll").click(); $("#dlgYes").click(); r.wipeKeeps = data.nick.name;
       // 웹
@@ -2922,14 +2936,16 @@ const LEGACY = {
       return r;
     });
     eq("이름 다듬기: 공백을 떼고 8자까지, 줄바꿈은 빈칸으로, 이모지도 한 글자", r.clean, "2:민철|8:가나다라마바사아|3:a b|0:|8:🐭🐭🐭🐭🐭🐭🐭🐭");
-    eq("이름이 없으면 무료 고침도 없다", r.cleanObj, ['{"name":"","free":false}', '{"name":"쥐","free":true}', '{"name":"","free":false}']);
+    eq("가족 이모지 · 국기도 한 글자로 세고, 보이지 않는 글자는 걷는다", r.graphemes, [2, "", true]);
+    eq("이름이 없으면 무료 고침도 없고, 등록한 적이 있는지는 남는다", r.cleanObj, ['{"name":"","free":false,"had":false}', '{"name":"쥐","free":true,"had":true}', '{"name":"","free":false,"had":false}', '{"name":"","free":false,"had":true}']);
     eq("이름이 없으면 그대로 부른다", r.none, ["", "안녕", 0]);
-    eq("빈 이름은 받지 않는다", r.empty, "empty");
+    eq("빈 이름 · 보이지 않는 글자뿐인 이름 · 8자가 넘는 이름은 받지 않는다(자르지 않는다)", r.empty, ["empty", "empty", "long", ""]);
     eq("처음 등록은 무료이고, 무료 고침이 한 번 생긴다", r.first, [true, 0, "민처", true, 40, "민처님", 0]);
     eq("같은 이름으로는 바꾸지 않는다", r.same, "same");
     eq("한 번은 무료로 고친다(그다음부터 치즈 30)", r.fix, [true, 0, "민철", false, 40, 30]);
     eq("그다음부터는 바꿀 때 치즈 30개", r.paid, [true, 30, "철이", 10]);
     eq("치즈가 모자라면 바꾸지 않고 몇 개 모자란지 알려준다", r.poor, [false, "cheese", 18, "철이", 12]);
+    eq("이름 지우기는 무료이고, 지운 뒤 다시 등록은 치즈 30개", [r.cleared, r.reReg], [["", true, 30, "", "cheese", 12], [30, false, 10]]);
     ok("홈 인사말이 이름을 부른다", r.greet);
     eq("기다렸다는 말 · 생일 알림 · 부르는 알림도 이름을 부른다", [r.away, r.bdayAlarm, r.nudge], ["철이님, 흥… 3일 만이츄. 기다렸츄", "철이님, 생일 축하해츄!", "철이님, 3일째 기다렸츄…"]);
     eq("설정에 내 이름 칸(지금 이름과 바꾸는 값)", r.card, [true, "철이", true]);
@@ -2940,9 +2956,13 @@ const LEGACY = {
     eq("묻는 창: 빈 이름은 받지 않는다", r.askEmpty, [true, true]);
     eq("묻는 창에서 등록하면 닫히고 쥐돌이가 이름을 부른다", r.askSaved, [false, "쥐순이", true, true]);
     eq("이미 이름이 있으면 다시 묻지 않는다", r.again, false);
+    ok("묻는 창이 떠 있는 동안은 생일 폭죽을 미룬다", r.hides === true);
+    eq("PIN 을 쓰면 잠금을 푼 뒤에 묻고, PIN 을 새로 정하는 중에는 묻지 않는다", [r.afterLock, r.afterPinSetup], [true, false]);
+    eq("묻는 창에서 긴 이름은 까닭을 알려준다", r.askLong, [true, true]);
     eq("나중에를 눌러도 다시 묻지 않는다", r.later, [false, "", false]);
     eq("처음 본 가이드를 닫을 때만 묻고, 설정에서 다시 본 가이드 뒤에는 묻지 않는다", [r.afterGuide, r.afterReplay], [true, false]);
     eq("이름은 백업을 따라가고, 이름 없는 예전 백업 · 전체 삭제에도 남는다", [r.restored, r.oldKeeps, r.wipeKeeps], ["백업이", "백업이", "백업이"]);
+    eq("무료 고침은 백업으로 되살아나지 않는다", r.noFreeBack, false);
     eq("웹에는 이름 기능이 없다", r.web, ["app", false, false]);
   }
 

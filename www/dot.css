@@ -793,3 +793,4 @@ html.dot .nickask .acts{display:flex;gap:10px;margin-top:10px;}
 html.dot .nickask .acts button{flex:1;border:0;padding:11px 8px;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;box-shadow:var(--d-box2);margin:2px;}
 html.dot .nickask .acts .later{background:var(--d-surface);color:var(--d-t1);}
 html.dot .nickask .acts .save{background:var(--d-acc);color:var(--d-on-acc);}
+html.dot #nickCard .bdclear{display:block;margin:6px 0 0 auto;border:0;background:none;padding:6px 2px;font:inherit;font-size:14px;color:var(--d-t2);text-decoration:underline;}
