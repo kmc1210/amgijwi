@@ -776,6 +776,19 @@ html.dot .thx .close{display:block;margin-top:6px;font-size:12px;color:#7A6D62;}
   html.dot .thx .bits{display:none;}
 }
 
+/* ── 옷장: 입어 보기와 사기 (closet.js closetBuyBar) ── */
+html.dot #s-closet #cBuy:empty{display:none;}
+html.dot #s-closet .cbuy{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--d-warn-bg);color:var(--d-t1);padding:10px 12px;margin:3px 3px 18px;box-shadow:var(--d-box);}
+html.dot #s-closet .cbuy .who{flex:1 1 100%;min-width:0;display:flex;flex-direction:row;align-items:baseline;gap:8px;flex-wrap:wrap;}
+html.dot #s-closet .cbuy .who b{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #s-closet .cbuy .who span{font-size:13px;color:var(--d-t2);}
+html.dot #s-closet .cbuy button{border:0;padding:9px 12px;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;box-shadow:var(--d-box2);margin:2px;}
+html.dot #s-closet .cbuy .buy{flex:1 1 auto;display:inline-flex;align-items:center;justify-content:center;gap:5px;background:var(--d-acc);color:var(--d-on-acc, #FCF7F1);}
+html.dot #s-closet .cbuy .buy:disabled{background:var(--d-surface);color:var(--d-t2);}
+html.dot #s-closet .cbuy .no{background:var(--d-surface);color:var(--d-t1);}
+html.dot #s-closet .cbuy button:active{transform:translate(2px,2px);}
+html.dot #s-closet .citem.try{background:var(--d-warn-bg);box-shadow:0 -3px 0 0 var(--d-acc),0 3px 0 0 var(--d-acc),-3px 0 0 0 var(--d-acc),3px 0 0 0 var(--d-acc);}
+html.dot #s-closet .citem.try:active{box-shadow:0 -3px 0 0 var(--d-acc),0 3px 0 0 var(--d-acc),-3px 0 0 0 var(--d-acc),3px 0 0 0 var(--d-acc);}
 /* ── 내 이름 (1.2 · nick.js) ── */
 html.dot #nickCard .nickrow{display:flex;gap:8px;align-items:stretch;margin:12px 0 0;}
 html.dot #nickCard .nickrow input{flex:1 1 auto;min-width:0;width:auto;margin-bottom:2px;font-size:16px;}

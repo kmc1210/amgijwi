@@ -2308,11 +2308,31 @@ const LEGACY = {
       // 사기 · 착용 · 벗기
       data.closet = cleanCloset({ cheese:12 });
       openCloset("home");
-      tapClosetItem("beret"); r.short = [data.closet.cheese, data.closet.own.length, $("#cMsg").textContent];
+      const NN = h => { const d = document.createElement("div"); d.innerHTML = h; return d.innerHTML; };
+      // 누르면 사지 않고 입어 보기만 한다. 치즈가 모자라면 사기 버튼이 잠긴다
+      tapClosetItem("beret");
+      r.short = [data.closet.cheese, data.closet.own.length, $("#cBuy").textContent.replace(/\s+/g, " ").trim(), $("#cBuyBtn").disabled];
+      r.tryStage = [closetTry, $("#cMouse").innerHTML === NN(mouseSVGWorn("day", false, { head:"beret" })), JSON.stringify(data.closet.wear), document.querySelector('#cGrid [data-i="beret"]').classList.contains("try")];
+      buyClosetItem(); r.shortNoBuy = [data.closet.cheese, data.closet.own.length];
+      $("#cBuyNo").click(); r.stopTry = [closetTry, $("#cBuy").innerHTML, $("#cMouse").innerHTML === NN(mouseSVGWorn("day", false, {}))];
       data.closet.cheese = 35;
-      tapClosetItem("beret"); r.bought = [data.closet.cheese, data.closet.wear.head];
-      tapClosetItem("ribbon"); r.ribbonShort = data.closet.wear.head;            // 15 남음 → 리본(10) 사면 머리를 바꿔 입는다
+      tapClosetItem("beret"); r.tryOnly = [data.closet.cheese, data.closet.own.length, $("#cBuyBtn").disabled, /20 사기/.test($("#cBuyBtn").textContent)];
+      tapClosetItem("beret"); r.tapAgain = closetTry;                             // 같은 것을 또 누르면 그만 본다
+      tapClosetItem("beret"); $("#cBuyBtn").click(); r.bought = [data.closet.cheese, data.closet.wear.head, closetTry, $("#cBuy").innerHTML];
+      tapClosetItem("ribbon"); r.tryOverWorn = [data.closet.wear.head, $("#cMouse").innerHTML === NN(mouseSVGWorn("day", false, { head:"ribbon" }))];   // 입은 것은 그대로 두고 무대에서만 바꿔 보인다
+      $("#cBuyBtn").click();                                                      // 15 남음 → 리본(10) 사면 머리를 바꿔 입는다
       r.afterRibbon = [data.closet.cheese, data.closet.wear.head];
+      // 입어 보는 중에 입고 있던 같은 칸 아이템을 누르면 벗기지 않고 입어 보기만 끝낸다. 다른 칸의 가진 옷은 같이 입혀 볼 수 있다
+      const keepCloset = JSON.stringify(data.closet);
+      data.closet = cleanCloset({ cheese:5, own:["beret","apron"], wear:{ head:"beret" } }); closetLockUntil = 0; renderCloset();
+      tapClosetItem("ribbon"); closetLockUntil = 0; tapClosetItem("beret"); r.backToWorn = [closetTry, data.closet.wear.head];
+      closetLockUntil = 0; tapClosetItem("ribbon"); closetLockUntil = 0; tapClosetItem("apron"); r.combo = [closetTry, data.closet.wear.body];
+      // 방금 눌러 줄이 밀린 직후의 누름은 받지 않는다
+      closetLockUntil = 0; tapClosetItem("ribbon"); tapClosetItem("ribbon"); const lockedNow = closetLocked();
+      document.querySelector('#cGrid [data-i="beret"]').click(); r.locked = [lockedNow, data.closet.wear.head];
+      closetLockUntil = 0; closetTry = ""; data.closet = cleanCloset(JSON.parse(keepCloset)); renderCloset();
+      // 다른 곳에 갔다 오면 입어 보던 것은 잊는다
+      data.closet.cheese = 40; tapClosetItem("crown"); go("home"); openCloset("home"); r.forget = closetTry; data.closet.cheese = 5;
       tapClosetItem("beret"); r.swap = data.closet.wear.head;                   // 가진 베레모로 바꿔 입기
       tapClosetItem("beret"); r.off = data.closet.wear.head || null;            // 다시 누르면 벗기
       r.tabs = document.querySelectorAll("#cTabs button").length;
@@ -2339,7 +2359,7 @@ const LEGACY = {
       // 리뷰 반영: 빈 바퀴 · 두 번 누르기 · 오늘 받은 몫 · 연속 보너스와 첫 안내
       data.closet = cleanCloset({ cheese:3 }); closetResult(0); r.emptyLine = seen($("#resCheese"));
       data.closet = cleanCloset({ cheese:40 }); openCloset("home");
-      tapClosetItem("apron"); tapClosetItem("apron"); r.dbl = data.closet.wear.body;
+      tapClosetItem("apron"); tapClosetItem("apron"); r.dbl = [data.closet.wear.body || null, data.closet.cheese, closetTry];
       const today = ymd(new Date());
       data.closet = cleanCloset({ cheese:9, roundDay:today, roundCount:10, streakDay:today });
       r.keepToday = restoreCloset({ cheese:2, roundDay:"2020-01-01", roundCount:0, streakDay:"" });
@@ -2373,8 +2393,18 @@ const LEGACY = {
     ok("빈 바퀴는 치즈 줄을 숨긴다", r.emptyHidden);
     eq("7 · 14일 연속이면 그날 한 번 +5", r.streak, [true, false, 15]);
     eq("연속 6일은 보너스 없음", r.noStreak, false);
-    ok("치즈가 모자라면 사지 않고 몇 개 모자란지 알려준다", r.short[0] === 12 && r.short[1] === 0 && /8개 모자라요/.test(r.short[2]), JSON.stringify(r.short));
-    eq("사면 치즈가 줄고 바로 입는다", r.bought, [15, "beret"]);
+    ok("치즈가 모자라면 몇 개 모자란지 알려주고 사기 버튼을 잠근다", r.short[0] === 12 && r.short[1] === 0 && /8개 모자라요/.test(r.short[2]) && r.short[3] === true, JSON.stringify(r.short));
+    eq("아직 없는 아이템을 누르면 무대 쥐돌이에게만 입혀 본다(고른 옷은 그대로)", r.tryStage, ["beret", true, "{}", true]);
+    eq("치즈가 모자라면 사기를 불러도 사지지 않는다", r.shortNoBuy, [12, 0]);
+    eq("그만 보기를 누르면 원래 모습으로", r.stopTry, ["", "", true]);
+    eq("눌렀다고 바로 사지 않는다. 사기 버튼이 값과 함께 뜬다", r.tryOnly, [35, 0, false, true]);
+    eq("입어 보던 것을 또 누르면 그만 본다", r.tapAgain, "");
+    eq("사기를 눌러야 치즈가 줄고 바로 입는다", r.bought, [15, "beret", "", ""]);
+    eq("다른 것을 입어 보는 동안에도 입고 있던 옷은 바뀌지 않는다", r.tryOverWorn, ["beret", true]);
+    eq("입어 보는 중에 입고 있던 것을 누르면 벗기지 않고 원래대로", r.backToWorn, ["", "beret"]);
+    eq("다른 칸의 가진 옷은 입어 보는 것과 같이 입혀 볼 수 있다", r.combo, ["ribbon", "apron"]);
+    eq("줄이 밀린 직후의 누름은 받지 않는다", r.locked, [true, "beret"]);
+    eq("옷장을 나갔다 오면 입어 보던 것은 잊는다", r.forget, "");
     eq("같은 칸의 다른 아이템을 사면 바꿔 입는다", r.afterRibbon, [5, "ribbon"]);
     ok("가진 것은 눌러서 바꿔 입고, 다시 누르면 벗는다", r.swap === "beret" && r.off === null);
     eq("칸은 머리 · 얼굴 · 몸 · 손 네 개(배경 없음)", r.tabs, 4);
@@ -2389,7 +2419,7 @@ const LEGACY = {
     eq("옷장 없는 예전 백업을 되살려도 치즈를 지킨다", r.oldKeeps, 7);
     eq("전체 삭제는 레시피만 지우고 치즈는 남긴다", r.wipeKeeps, 7);
     eq("카드가 없는 빈 바퀴면 결과 화면 치즈 줄을 숨긴다", r.emptyLine, false);
-    eq("사자마자 두 번 눌려도 벗겨지지 않는다", r.dbl, "apron");
+    eq("두 번 연달아 눌러도 사지지 않는다(입어 보기를 켰다 끌 뿐)", r.dbl, [null, 40, ""]);
     eq("예전 백업을 되살려도 오늘 받은 몫은 다시 받지 않는다", r.keepToday, [2, 10, true]);
     ok("입은 그림은 같은 옷이면 다시 쓰고, 옷이 바뀌면 새로 그린다", r.wornSame && r.wornChanges);
     ok("연속 보너스로 처음 치즈가 생기면 보너스 말과 옷장 안내를 한 말풍선에", /7일 연속/.test(r.streakHint) && /꾸밀 수 있츄/.test(r.streakHint), r.streakHint);
