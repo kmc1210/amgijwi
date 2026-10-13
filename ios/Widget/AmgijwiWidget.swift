@@ -47,6 +47,7 @@ struct Summary: Decodable {
     }
 
     struct Memo: Decodable {
+        var id: String?         // 위젯에서 메모 하나를 고를 때 쓴다
         var t: String
         var p: Bool             // 고정한 메모인가
     }
@@ -423,13 +424,14 @@ struct AmgijwiWidget: Widget {
     }
 }
 
-/// 위젯 묶음. 쥐돌이 위젯은 모든 버전에, 레시피 위젯(고르는 화면이 있는 큰 위젯)은 iOS 17 부터 낸다.
+/// 위젯 묶음. 쥐돌이 위젯은 모든 버전에, 레시피 위젯 · 메모 위젯(고르는 화면이 있다)은 iOS 17 부터 낸다.
 @main
 struct AmgijwiWidgets: WidgetBundle {
     var body: some Widget {
         AmgijwiWidget()
         if #available(iOSApplicationExtension 17.0, *) {
             RecipeWidget()
+            MemoWidget()
         }
     }
 }
