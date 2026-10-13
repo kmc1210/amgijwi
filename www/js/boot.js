@@ -113,3 +113,5 @@ if(restoredFromCopy) setTimeout(()=>toast("앱에 보관해 둔 사본으로 레
 if(data.pin) openLock("enter");
 /* 앱을 처음 설치해 처음 열었으면 다섯 장짜리 가이드를 한 번 보여준다(웹은 띄우지 않는다) */
 if(guideDue()) openGuide();
+/* 이미 쓰던 사람에게는 앱을 열 때 이름을 한 번 묻는다(가이드를 보는 중이면 가이드가 끝난 뒤에 — guide.js) */
+else if(!data.pin) openNickAsk();

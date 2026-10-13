@@ -2861,6 +2861,91 @@ const LEGACY = {
     eq("웹에서는 넘기지 않는다", r.web, [null, true]);
   }
 
+  // ── 6-10w. 1.2 내 이름(닉네임) ────────────────────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const backup = JSON.stringify(data), visit0 = VISIT;
+      const wait = ms => new Promise(res => setTimeout(res, ms));
+      const seen = el => !!el && el.getClientRects().length > 0;
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      data.closet = cleanCloset({ cheese:40 }); data.bday = cleanBday({}); data.hints = data.hints.filter(h => h !== "nick").concat(["closet"]);
+      // 다듬기
+      r.clean = [cleanNickName("  민철  "), cleanNickName("가나다라마바사아자차"), cleanNickName("a\nb"), cleanNickName(null), cleanNickName("🐭🐭🐭🐭🐭🐭🐭🐭🐭")].map(x => Array.from(x).length + ":" + x.replace(/\n/g, "N")).join("|");
+      r.cleanObj = [JSON.stringify(cleanNick({ name:"", free:true })), JSON.stringify(cleanNick({ name:"쥐", free:true })), JSON.stringify(cleanNick("x"))];
+      // 처음 등록은 무료 → 한 번은 무료로 고침 → 그다음은 치즈 30
+      data.nick = cleanNick({}); r.none = [nickCall(), nickLead("안녕"), nickCost()];
+      r.empty = setNick("   ").why;
+      const a = setNick("민처"); r.first = [a.ok, a.cost, data.nick.name, data.nick.free, data.closet.cheese, nickCall(), nickCost()];
+      r.same = setNick("민처").why;
+      const b = setNick("민철"); r.fix = [b.ok, b.cost, data.nick.name, data.nick.free, data.closet.cheese, nickCost()];
+      const c = setNick("철이"); r.paid = [c.ok, c.cost, data.nick.name, data.closet.cheese];
+      data.closet.cheese = 12; const d = setNick("다시"); r.poor = [d.ok, d.why, d.lack, data.nick.name, data.closet.cheese];
+      // 불러 주는 곳
+      const mid = new Date(); mid.setHours(13, 0, 0, 0);
+      VISIT = { info:{ kind:"next", gap:1, streak:2, count:5 }, now:mid }; initAway(); go("home");
+      r.greet = $("#greetT").textContent.indexOf("철이님, ") === 0;
+      VISIT = { info:{ kind:"back", gap:3, streak:1, count:6 }, now:mid }; initAway(); r.away = awayGreeting();
+      data.bday = cleanBday({ m:10, d:24 }); r.bdayAlarm = bdayAlarmItem(new Date(2026, 9, 10, 12, 0)).title; data.bday = cleanBday({});
+      data.nudge = { on:true }; r.nudge = nudgeAlarmItems(new Date(2026, 9, 12, 10, 0))[0].title; delete data.nudge;
+      mascot.away = ""; mascot.awayGap = 0; VISIT = visit0;
+      // 설정 칸
+      data.closet.cheese = 40; go("set");
+      r.card = [seen($("#nickCard")), $("#nickIn").value, /치즈 30 · 바꾸기/.test($("#nickSave").textContent)];
+      $("#nickIn").value = "새이름"; $("#nickSave").click(); r.cardSave = [data.nick.name, data.closet.cheese, $("#nickIn").value];
+      data.closet.cheese = 3; renderSettings(); $("#nickIn").value = "또바꿈"; $("#nickSave").click(); r.cardPoor = [data.nick.name, /27개 모자라요/.test($("#nickMsg").textContent)];
+      await wait(300);
+      r.small = [...document.querySelectorAll("#nickCard *")].filter(el => seen(el) && [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()))
+        .map(el => getComputedStyle(el)).filter(c => c.fontFamily.indexOf("NeoDGM") >= 0 && parseFloat(c.fontSize) < 16).map(c => c.fontSize);
+      // 처음 한 번 묻기
+      data.nick = cleanNick({}); data.hints = data.hints.filter(h => h !== "nick"); go("home");
+      r.due = nickAskDue(); r.opened = [openNickAsk(), seen($("#nickAsk")), hintSeen("nick")];
+      $("#nickAskSave").click(); r.askEmpty = [seen($("#nickAsk")), /적어 주세요/.test($("#nickAskMsg").textContent)];
+      $("#nickAskIn").value = "쥐순이"; $("#nickAskSave").click(); r.askSaved = [seen($("#nickAsk")), data.nick.name, data.nick.free, /쥐순이님/.test($("#mbubble").textContent)];
+      r.again = openNickAsk();
+      data.nick = cleanNick({}); data.hints = data.hints.filter(h => h !== "nick"); openNickAsk(); $("#nickAskLater").click();
+      r.later = [seen($("#nickAsk")), data.nick.name, openNickAsk()];
+      // 가이드: 처음 본 가이드를 닫을 때만 묻는다
+      data.hints = data.hints.filter(h => h !== "nick" && h !== GUIDE_HINT); openGuide(); closeGuide(); r.afterGuide = seen($("#nickAsk")); closeNickAsk();
+      data.hints = data.hints.filter(h => h !== "nick"); openGuide(); closeGuide(); r.afterReplay = seen($("#nickAsk")); closeNickAsk();
+      // 백업 · 전체 삭제
+      data.nick = cleanNick({ name:"백업이", free:false });
+      const bk = backupJSON(); data.nick = cleanNick({ name:"지금이" }); applyBackup(bk); $("#dlgYes").click(); r.restored = data.nick.name;
+      const old = JSON.parse(backupJSON()); delete old.data.nick; applyBackup(JSON.stringify(old)); $("#dlgYes").click(); r.oldKeeps = data.nick.name;
+      $("#wipeAll").click(); $("#dlgYes").click(); r.wipeKeeps = data.nick.name;
+      // 웹
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      data.nick = cleanNick({}); data.hints = data.hints.filter(h => h !== "nick"); go("set");
+      r.web = [setNick("웹").why, nickAskDue(), seen($("#nickCard"))];
+      closeNickAsk();
+      data = JSON.parse(backup); data.closet = cleanCloset(data.closet); data.bday = cleanBday(data.bday); data.nick = cleanNick(data.nick); persist(); go("home");
+      return r;
+    });
+    eq("이름 다듬기: 공백을 떼고 8자까지, 줄바꿈은 빈칸으로, 이모지도 한 글자", r.clean, "2:민철|8:가나다라마바사아|3:a b|0:|8:🐭🐭🐭🐭🐭🐭🐭🐭");
+    eq("이름이 없으면 무료 고침도 없다", r.cleanObj, ['{"name":"","free":false}', '{"name":"쥐","free":true}', '{"name":"","free":false}']);
+    eq("이름이 없으면 그대로 부른다", r.none, ["", "안녕", 0]);
+    eq("빈 이름은 받지 않는다", r.empty, "empty");
+    eq("처음 등록은 무료이고, 무료 고침이 한 번 생긴다", r.first, [true, 0, "민처", true, 40, "민처님", 0]);
+    eq("같은 이름으로는 바꾸지 않는다", r.same, "same");
+    eq("한 번은 무료로 고친다(그다음부터 치즈 30)", r.fix, [true, 0, "민철", false, 40, 30]);
+    eq("그다음부터는 바꿀 때 치즈 30개", r.paid, [true, 30, "철이", 10]);
+    eq("치즈가 모자라면 바꾸지 않고 몇 개 모자란지 알려준다", r.poor, [false, "cheese", 18, "철이", 12]);
+    ok("홈 인사말이 이름을 부른다", r.greet);
+    eq("기다렸다는 말 · 생일 알림 · 부르는 알림도 이름을 부른다", [r.away, r.bdayAlarm, r.nudge], ["철이님, 흥… 3일 만이츄. 기다렸츄", "철이님, 생일 축하해츄!", "철이님, 3일째 기다렸츄…"]);
+    eq("설정에 내 이름 칸(지금 이름과 바꾸는 값)", r.card, [true, "철이", true]);
+    eq("설정에서 바꾸면 치즈가 줄고 칸이 새 이름으로", r.cardSave, ["새이름", 10, "새이름"]);
+    eq("설정에서 치즈가 모자라면 바꾸지 않고 알려준다", r.cardPoor, ["새이름", true]);
+    eq("내 이름 칸의 도트 글꼴도 16px 이상", r.small, []);
+    eq("이름이 없으면 한 번 묻는다", [r.due, r.opened], [true, [true, true, true]]);
+    eq("묻는 창: 빈 이름은 받지 않는다", r.askEmpty, [true, true]);
+    eq("묻는 창에서 등록하면 닫히고 쥐돌이가 이름을 부른다", r.askSaved, [false, "쥐순이", true, true]);
+    eq("이미 이름이 있으면 다시 묻지 않는다", r.again, false);
+    eq("나중에를 눌러도 다시 묻지 않는다", r.later, [false, "", false]);
+    eq("처음 본 가이드를 닫을 때만 묻고, 설정에서 다시 본 가이드 뒤에는 묻지 않는다", [r.afterGuide, r.afterReplay], [true, false]);
+    eq("이름은 백업을 따라가고, 이름 없는 예전 백업 · 전체 삭제에도 남는다", [r.restored, r.oldKeeps, r.wipeKeeps], ["백업이", "백업이", "백업이"]);
+    eq("웹에는 이름 기능이 없다", r.web, ["app", false, false]);
+  }
+
   await browser.close();
 
   console.log("");

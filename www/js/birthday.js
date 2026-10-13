@@ -53,7 +53,7 @@ function bdayAlarmItem(now){
     at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), h, mi);
     if(at > now) break;
   }
-  return {id:"bday", at: ymd(at) + "T" + data.bday.at, title:"생일 축하해츄!", body:"쥐돌이가 선물을 준비했츄",
+  return {id:"bday", at: ymd(at) + "T" + data.bday.at, title:nickLead("생일 축하해츄!"), body:"쥐돌이가 선물을 준비했츄",
           yearly: !(data.bday.m === 2 && data.bday.d === 29), image:"cake"};
 }
 

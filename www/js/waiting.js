@@ -24,7 +24,7 @@ function initAway(){
 }
 /* 인사 말풍선(mascot.js renderGreeting 이 묻는다). 기다린 얼굴이 아니면 null */
 function awayGreeting(){
-  return mascot.away ? awayOf(mascot.awayGap).say(mascot.awayGap) : null;
+  return mascot.away ? nickLead(awayOf(mascot.awayGap).say(mascot.awayGap)) : null;      // 이름이 있으면 불러서 (nick.js)
 }
 /* 한 바퀴를 끝냈다(study.js finish). 기다린 얼굴이었으면 풀리고, 홈에 돌아가면 반긴다 */
 function awayRoundDone(){
@@ -57,7 +57,7 @@ function nudgeAlarmItems(now){
   const h = Number(NUDGE_AT.slice(0, 2)), mi = Number(NUDGE_AT.slice(3, 5));
   return AWAY.filter(a=>a.nudge).sort((a, b)=>a.days - b.days).map(a=>{
     const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + a.days, h, mi);
-    return {id:"nudge-" + a.days, at: ymd(at) + "T" + NUDGE_AT, title:a.nudge[0], body:a.nudge[1], image:a.face};
+    return {id:"nudge-" + a.days, at: ymd(at) + "T" + NUDGE_AT, title:nickLead(a.nudge[0]), body:a.nudge[1], image:a.face};
   });
 }
 function nudgeSettings(){
