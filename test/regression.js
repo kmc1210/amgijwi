@@ -2874,8 +2874,10 @@ const LEGACY = {
       r.board = [open.locked, open.recipes.length === live.length, r0.id === String(d0.id), r0.n === d0.name, r0.m === true, r0.sets.length >= 1, Array.isArray(r0.sets[0].ing[0]), r0.steps.length <= 6];
       r.memoOrder = open.memos.map(m => m.t.replace(/\n/g, "⏎") + (m.p ? "*" : "")).join("|");
       r.memoIds = open.memos.map(m => m.id).join(",");
-      const keepM = data.memos; data.memos = Array.from({ length:40 }, (_, i) => ({ id:"x" + i, text:"가".repeat(600) + "🐭", at:"2026-10-0" + (i % 9 + 1) + "T00:00:00Z", pin:false }));
-      const many = widgetSummary().memos; r.memoCaps = [many.length, Array.from(many[0].t).length]; data.memos = keepM;
+      const keepM = data.memos; data.memos = Array.from({ length:130 }, (_, i) => ({ id:"x" + i, text:"가".repeat(498) + "🐭🐭🐭", at:"2026-10-0" + (i % 9 + 1) + "T00:00:00Z", pin:false }));
+      const manyS = widgetSummary(), many = manyS.memos;
+      r.memoCaps = [many.length, manyS.memoMore, Array.from(many[0].t).length, many[0].t.slice(-1), /[\ud800-\udbff]$/.test(many[0].t.slice(0, -1))]; data.memos = keepM;
+      r.memoShort = widgetMemoText("짧은 메모");
       r.memoTidy = widgetMemoText("  첫 줄  \r\n\n\n\n둘째   줄 \n 셋째  ");
       // 이모지를 반 토막 내지 않는다(반 토막이 실리면 위젯이 요약을 통째로 못 읽는다) · 실리지 않은 재료 수를 알린다
       const emo = "가".repeat(139) + "🐭🐭"; r.cut = [Array.from(widgetText(emo, 140)).length, /[\ud800-\udbff]$/.test(widgetText(emo, 140)), widgetText("a\n b", 9)];
@@ -2911,7 +2913,8 @@ const LEGACY = {
     eq("큰 위젯용으로 레시피(이름 · 재료 · 순서 · 외웠는지)를 넘긴다", r.board, [false, true, true, true, true, true, true, true]);
     eq("메모는 고정한 것 먼저, 그 안에서는 최신순(줄바꿈은 살린다)", r.memoOrder, "고정 메모⏎둘째 줄*|새 메모|옛 메모");
     eq("메모마다 고를 수 있게 id 를 싣는다", r.memoIds, "b,c,a");
-    eq("메모는 서른 개까지, 글은 500자까지", r.memoCaps, [30, 500]);
+    eq("메모는 백 개까지(나머지 수를 알린다), 글은 500자에서 … 로 끊고 이모지를 반 토막 내지 않는다", r.memoCaps, [100, 30, 500, "…", false]);
+    eq("짧은 메모에는 … 를 붙이지 않는다", r.memoShort, "짧은 메모");
     eq("메모 글 다듬기: 빈 줄 여러 개는 하나로, 줄 끝 공백은 뗀다", r.memoTidy, "첫 줄\n\n둘째 줄\n셋째");
     eq("ICE/HOT 을 같이 파는 메뉴는 재료 두 벌", r.twoSets, "ICE/HOT");
     eq("글자 단위로 잘라 이모지를 반 토막 내지 않는다", r.cut, [140, false, "a b"]);

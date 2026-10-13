@@ -269,10 +269,13 @@ struct MemoEntity: AppEntity {
     static var defaultQuery = MemoQuery()
 
     var displayRepresentation: DisplayRepresentation {
-        let first = text.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: true).first.map(String.init) ?? text
-        let head = String(first.prefix(40))
-        return pinned ? DisplayRepresentation(title: "\(head)", subtitle: "고정한 메모")
-                      : DisplayRepresentation(title: "\(head)")
+        /// 첫 줄이 제목, 둘째 줄이 덧말. 첫 줄이 같은 메모끼리도 가려 볼 수 있다.
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: true).map(String.init)
+        let head = String((lines.first ?? "(빈 메모)").prefix(40))
+        let rest = lines.count > 1 ? String(lines[1].prefix(40)) : ""
+        let sub = [pinned ? "★ 고정" : "", rest].filter { !$0.isEmpty }.joined(separator: " · ")
+        return sub.isEmpty ? DisplayRepresentation(title: "\(head)")
+                           : DisplayRepresentation(title: "\(head)", subtitle: "\(sub)")
     }
 }
 
@@ -358,8 +361,9 @@ struct MemoView: View {
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
-            /// 짧은 메모일 때만 쥐돌이가 구석에 선다. 긴 메모는 글이 자리를 다 쓴다.
-            if memo.t.count <= (family == .systemLarge ? 160 : 50) {
+            /// 짧고 줄 수도 적은 메모일 때만 쥐돌이가 구석에 선다. 긴 메모는 글이 자리를 다 쓴다(쥐돌이가 글을 덮지 않게).
+            if memo.t.count <= (family == .systemLarge ? 160 : 30),
+               memo.t.filter({ $0 == "\n" }).count < (family == .systemLarge ? 6 : 1) {
                 boardMouse(entry.summary, width: 42, height: 60)
             }
         }
@@ -368,9 +372,10 @@ struct MemoView: View {
     /// 고르지 않았을 때: 고정한 것부터 목록으로. 큰 위젯 여섯 개, 중간 위젯 세 개.
     private func list(_ memos: [Summary.Memo]) -> some View {
         let room = family == .systemLarge ? 6 : 3
+        let hidden = max(0, memos.count - room) + (entry.summary?.memoMore ?? 0)
         return ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading, spacing: 0) {
-                boardLabel(memos.count > room ? "메모 · 외 \(memos.count - room)개" : "메모")
+                boardLabel(hidden > 0 ? "메모 · 외 \(hidden)개" : "메모")
                 if memos.isEmpty {
                     Text("아직 메모가 없어요")
                         .font(.system(size: 16, weight: .heavy, design: .rounded))

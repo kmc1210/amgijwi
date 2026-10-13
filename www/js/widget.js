@@ -34,19 +34,21 @@ function widgetFaces(){
   return widgetFaceMemo;
 }
 /* 레시피 위젯 · 메모 위젯에 보여줄 것. 레시피는 위젯 한 칸에 그릴 수 있는 만큼만 추린다(재료 8줄 · 순서 4줄).
-   메모는 위젯에서 하나를 골라 크게 볼 수 있어서 서른 개까지, 글은 500자까지 넘긴다.
+   메모는 위젯에서 하나를 골라 크게 볼 수 있어서 백 개까지, 글은 500자까지 넘긴다(넘는 글은 끝에 … 를 붙인다).
+   백 개가 넘으면 나머지 수(memoMore)를 알린다.
    더 있으면 몇 개 더 있는지(more)만 알려 위젯이 "외 N개"를 바르게 적는다.
    PIN 잠금을 걸었으면 아무것도 넘기지 않고 locked 만 알린다 */
-const WIDGET_RECIPES = 300, WIDGET_MEMOS = 30, WIDGET_MEMO_TEXT = 500, WIDGET_ING = 8, WIDGET_STEPS = 4;
+const WIDGET_RECIPES = 300, WIDGET_MEMOS = 100, WIDGET_MEMO_TEXT = 500, WIDGET_ING = 8, WIDGET_STEPS = 4;
 /* 메모는 줄바꿈을 살린다(인수인계처럼 줄을 나눠 적은 글이 많다). 빈 줄 여러 개는 하나로, 글자 단위로 자른다 */
 function widgetMemoText(v){
   const t = String(v === undefined || v === null ? "" : v).replace(/\r/g, "").replace(/[ \t]+/g, " ").replace(/ ?\n ?/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
-  return Array.from(t).slice(0, WIDGET_MEMO_TEXT).join("");
+  const chars = Array.from(t);
+  return chars.length > WIDGET_MEMO_TEXT ? chars.slice(0, WIDGET_MEMO_TEXT - 1).join("").trim() + "…" : t;
 }
 /* 글자 단위로 자른다. 코드 단위로 자르면 이모지가 반 토막 나고, 그 반 토막 때문에 위젯이 요약을 통째로 못 읽는다 */
 function widgetText(v, n){ return Array.from(String(v === undefined || v === null ? "" : v).replace(/\s+/g, " ").trim()).slice(0, n).join(""); }
 function widgetBoard(){
-  if(data.pin) return {locked: true, recipes: [], memos: []};
+  if(data.pin) return {locked: true, recipes: [], memos: [], memoMore: 0};
   const recipes = liveDrinks().slice(0, WIDGET_RECIPES).map(d=>({
     id: String(d.id),
     n: widgetText(d.name, 40),
@@ -60,7 +62,7 @@ function widgetBoard(){
     steps: (d.steps || []).filter(Boolean).slice(0, WIDGET_STEPS).map(x=>widgetText(x, 60))
   }));
   const memos = sortedMemos().slice(0, WIDGET_MEMOS).map(m=>({id: String(m.id), t: widgetMemoText(m.text), p: !!m.pin}));
-  return {locked: false, recipes: recipes, memos: memos};
+  return {locked: false, recipes: recipes, memos: memos, memoMore: Math.max(0, data.memos.length - memos.length)};
 }
 /* 0 이상의 정수로. 위젯 쪽은 수가 아니면 요약을 통째로 못 읽는다 */
 function widgetInt(v){ return Math.max(0, Math.floor(Number(v) || 0)); }
@@ -82,7 +84,7 @@ function widgetSummary(){
     studied: typeof data.studied === "string" ? data.studied : "",
     kill: widgetInt(discardCount()),  // 개봉관리에 기한을 건 재료 수 = 날마다 폐기일을 챙길 것(홈의 "오늘 버릴 게 N개"와 같은 수)
     events: events,
-    locked: board.locked, recipes: board.recipes, memos: board.memos,
+    locked: board.locked, recipes: board.recipes, memos: board.memos, memoMore: board.memoMore,
     faces: art.faces, pal: art.pal
   };
 }
