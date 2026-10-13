@@ -58,20 +58,26 @@ extension MouseEntry {
         guard let s = summary else { return [:] }
         let first = grid.key(1), last = grid.key(grid.days)
         var marks: [Int: DayMark] = [:]
-        var covered = Set<Int>()        // 막대가 지나는 날. 0 은 지난달로, days+1 은 다음 달로 이어진다는 뜻
+        let keys = (1...grid.days).map { grid.key($0) }
+        var covered = Set<Int>()        // 막대가 지나는 날
+        /// 한 일정이 전날에서 이 날로 이어지는 날(1 은 지난달에서, days+1 은 다음 달로). 이어지지 않는 자리는 띄운다 —
+        /// 맞닿은 두 일정이 한 막대로 보이지 않게.
+        var joined = Set<Int>()
         for ev in s.cal where ev.e >= first && ev.d <= last && ev.d <= ev.e {
             if ev.d == ev.e {
                 if let day = Int(ev.d.suffix(2)) { marks[day, default: DayMark()].dot = true }
                 continue
             }
-            if ev.d < first { covered.insert(0) }
-            if ev.e > last { covered.insert(grid.days + 1) }
-            for day in 1...grid.days where grid.key(day) >= ev.d && grid.key(day) <= ev.e { covered.insert(day) }
+            let from = ev.d < first ? 1 : (keys.firstIndex(of: ev.d) ?? 0) + 1
+            let to = ev.e > last ? grid.days : (keys.firstIndex(of: ev.e) ?? grid.days - 1) + 1
+            guard from <= to else { continue }
+            for day in from...to { covered.insert(day) }
+            for day in (ev.d < first ? from : from + 1)...(ev.e > last ? to + 1 : to) where day <= grid.days + 1 { joined.insert(day) }
         }
-        for day in covered where day >= 1 && day <= grid.days {
+        for day in covered {
             marks[day, default: DayMark()].bar = true
-            marks[day]?.capLeft = !covered.contains(day - 1)
-            marks[day]?.capRight = !covered.contains(day + 1)
+            marks[day]?.capLeft = !joined.contains(day)
+            marks[day]?.capRight = !joined.contains(day + 1)
         }
         return marks
     }
@@ -79,7 +85,7 @@ extension MouseEntry {
     /// 다가오는 일정. 앞으로 시작할 것을 가까운 순으로 먼저, 이미 진행 중인 것은 그 뒤에
     /// (오래 이어지는 행사가 내일 일정을 가리지 않게 — www/js/widget.js 의 events 와 같은 순서).
     func calRows(_ grid: MonthGrid, limit: Int) -> [CalRow] {
-        guard let s = summary else { return [] }
+        guard let s = summary, !s.locked else { return [] }
         let cal = Calendar(identifier: .gregorian)
         let today = cal.startOfDay(for: date)
         var soon: [(Int, Summary.Event)] = []
@@ -90,9 +96,10 @@ extension MouseEntry {
             let left = cal.dateComponents([.day], from: today, to: cal.startOfDay(for: start)).day ?? 0
             if left >= 0 { soon.append((left, ev)) } else { ongoing.append(ev) }
         }
-        soon.sort { $0.0 < $1.0 }
+        /// 같은 날 일정은 앱이 넘긴 순서 그대로 둔다(sort 는 순서를 지켜 주지 않는다).
+        let ordered = soon.enumerated().sorted { $0.element.0 != $1.element.0 ? $0.element.0 < $1.element.0 : $0.offset < $1.offset }.map { $0.element }
         var rows: [CalRow] = []
-        for (left, ev) in soon {
+        for (left, ev) in ordered {
             let tag = left > 0 ? "D-\(left)" : (ev.d == ev.e ? "오늘" : "진행 중")
             rows.append(CalRow(id: rows.count, tag: tag, title: ev.t, when: calWhen(ev, grid), now: left == 0 && ev.d != ev.e))
         }
@@ -152,7 +159,7 @@ struct MonthGridView: View {
                 ForEach(0..<grid.weeks, id: \.self) { week in
                     HStack(spacing: 0) {
                         ForEach(0..<7, id: \.self) { col in
-                            cell(week * 7 + col - grid.lead + 1, sunday: col == 0)
+                            cell(week * 7 + col - grid.lead + 1, sunday: col == 0, rowH: rowH)
                                 .frame(width: colW, height: rowH)
                         }
                     }
@@ -161,19 +168,20 @@ struct MonthGridView: View {
         }
     }
 
-    @ViewBuilder private func cell(_ day: Int, sunday: Bool) -> some View {
+    /// 여섯 주짜리 달의 중간 크기 위젯은 한 줄이 16pt 남짓이다. 숫자 칸을 줄 높이에 맞춰 줄여 표시가 다음 줄로 넘치지 않게 한다.
+    @ViewBuilder private func cell(_ day: Int, sunday: Bool, rowH: CGFloat) -> some View {
         if day >= 1 && day <= grid.days {
             let mark = marks[day] ?? DayMark()
             let markH: CGFloat = large ? 5 : 3
             let today = day == grid.today
             VStack(spacing: 1) {
-                Text("\(day)")
+                Text(String(day))
                     .font(.system(size: large ? 13 : 11, weight: .bold, design: .rounded))
                     .foregroundColor(today ? Ink.bg : (sunday ? Ink.alert : Ink.text))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                     .frame(width: large ? 22 : 16)
-                    .frame(maxHeight: large ? 20 : 14)
+                    .frame(height: max(6, min(large ? 20 : 14, rowH - markH - 2)))
                     .background(today ? Ink.text : Color.clear)
                 ZStack {
                     if mark.bar {
@@ -225,7 +233,7 @@ struct CalendarBody: View {
                 let left = min(170, floor(geo.size.width * 0.48))
                 HStack(alignment: .top, spacing: 14) {
                     VStack(alignment: .leading, spacing: 0) {
-                        title(grid, size: 13).frame(height: 18, alignment: .top)
+                        title(grid, size: 13).frame(height: 17, alignment: .top)
                         MonthGridView(grid: grid, marks: marks, large: false)
                     }
                     .frame(width: left)
@@ -244,7 +252,7 @@ struct CalendarBody: View {
     }
 
     private func title(_ grid: MonthGrid, size: CGFloat) -> some View {
-        (Text("\(grid.month)월").font(.system(size: size, weight: .heavy, design: .rounded)).foregroundColor(Ink.text)
+        (Text(String(grid.month) + "월").font(.system(size: size, weight: .heavy, design: .rounded)).foregroundColor(Ink.text)
          + Text(" \(String(grid.year))").font(.system(size: size * 0.7, weight: .bold, design: .rounded)).foregroundColor(Ink.muted))
             .lineLimit(1)
     }

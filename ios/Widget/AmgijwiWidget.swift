@@ -208,23 +208,25 @@ extension MouseEntry {
 
     /// 가장 가까운 일정 한 줄: "D-3 신메뉴 출시" · "오늘 신메뉴 출시" · "진행 중 가을 행사".
     /// 앞으로 시작할 것 중 가장 가까운 것이 먼저다. 없으면 진행 중인 것.
+    /// PIN 잠금을 건 앱의 일정은 적지 않는다(잠금 전에 적어 둔 요약에 제목이 남아 있을 수 있다).
     var eventLine: String? {
-        guard let s = summary else { return nil }
+        guard let s = summary, !s.locked else { return nil }
         let cal = Calendar(identifier: .gregorian)
         let today = cal.startOfDay(for: date)
-        var soon: (Int, String)? = nil
+        var soon: (Int, String, Bool)? = nil
         var ongoing: String? = nil
         for ev in s.events {
             guard let start = dayFormat.date(from: ev.d), let end = dayFormat.date(from: ev.e) else { continue }
             if cal.startOfDay(for: end) < today { continue }        // 이 위젯이 그려지는 날에는 이미 끝났다
             let left = cal.dateComponents([.day], from: today, to: cal.startOfDay(for: start)).day ?? 0
             if left >= 0 {
-                if soon == nil || left < soon!.0 { soon = (left, ev.t) }
+                if soon == nil || left < soon!.0 { soon = (left, ev.t, ev.d != ev.e) }
             } else if ongoing == nil {
                 ongoing = ev.t
             }
         }
-        if let soon = soon { return (soon.0 == 0 ? "오늘" : "D-\(soon.0)") + " " + soon.1 }
+        /// 오늘 시작하는 기간 일정은 "진행 중"이다(앱의 일정 탭 · 달력 위젯과 같다).
+        if let soon = soon { return (soon.0 == 0 ? (soon.2 ? "진행 중" : "오늘") : "D-\(soon.0)") + " " + soon.1 }
         if let ongoing = ongoing { return "진행 중 " + ongoing }
         return nil
     }
