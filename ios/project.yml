@@ -24,7 +24,7 @@ packages:
 settings:
   base:
     MARKETING_VERSION: "1.2"
-    CURRENT_PROJECT_VERSION: "13"
+    CURRENT_PROJECT_VERSION: "14"
 
 targets:
   Amgijwi:
