@@ -109,3 +109,36 @@ function widgetSync(){
   b.postMessage(text);
   widgetSent = text;                // 넘긴 뒤에 적는다. 넘기다 실패했으면 다음에 다시 넘긴다
 }
+
+/* ---------- 위젯을 눌러 앱을 열었을 때 ----------
+   위젯마다 주소를 달아 두었다(ios/Widget — 레시피 위젯은 보여주던 레시피, 메모 위젯은 메모 탭, 달력 위젯은 일정 탭).
+   앱(SceneDelegate.swift)이 그 주소를 받아 이 함수를 부른다. 이 이름은 WebAppViewController.swift 에도 적혀 있다.
+   PIN 잠금 화면 · 이름 묻는 창에 가려 있으면 그것이 닫힌 뒤에 간다. 학습 중이거나 뭔가 적던 중이면 가지 않는다 —
+   위젯을 눌렀다고 하던 일을 날리면 안 된다 */
+const WIDGET_BUSY = ["study", "edit", "sub", "import"];     // 하던 일이 있는 화면: 학습 · 레시피/부재료 편집 · 가져오기
+let widgetPending = null;
+function widgetOpenFromApp(kind, id){
+  if(!isDot() || !isNativeApp()) return;
+  widgetPending = {kind: String(kind || ""), id: String(id || "")};
+  widgetGo();
+}
+function widgetGo(){
+  const w = widgetPending;
+  if(!w) return;
+  const lockEl = $("#lock"), guide = $("#onboard");
+  const locked = lockEl && lockEl.classList.contains("on");
+  /* 앱을 열 때의 잠금 · 이름 묻는 창이면 닫힌 뒤에 다시 불린다(closeLock · closeNickAsk).
+     설정에서 PIN 을 새로 정하는 중이면 하던 일이니 버린다 */
+  if((locked && lock.mode === "enter") || (!locked && nickAskOpen())) return;
+  widgetPending = null;
+  if(locked || (guide && !guide.hidden)) return;                                 // 처음 켠 사람은 가이드부터 본다
+  const busy = WIDGET_BUSY.some(n=>$("#s-" + n).classList.contains("active"));
+  if(busy || $("#sheet").classList.contains("on") || $("#dlg").classList.contains("on")) return;      // 시트 · "지울까요?" 창이 떠 있어도 가지 않는다
+  if(["cal", "memo", "recipe"].indexOf(w.kind) < 0) return;
+  if(state.selMode) exitSel();                                                   // 여러 개 고르던 중이었으면 푼다(탭을 누를 때와 같다)
+  if(w.kind === "cal"){ calToday(); go("cal"); return; }
+  if(w.kind === "memo"){ state.listTab = "memo"; go("list"); return; }
+  const d = liveDrinks().filter(x=>String(x.id) === w.id)[0];
+  $("#q").value = ""; state.listTab = "recipe"; go("list");
+  if(d) openSheet(d.id);
+}

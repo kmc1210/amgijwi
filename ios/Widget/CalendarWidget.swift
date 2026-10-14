@@ -292,6 +292,7 @@ struct CalendarWidgetView: View {
     var body: some View {
         CalendarBody(entry: entry, large: family == .systemLarge)
             .widgetBackground(Ink.bg)
+            .widgetURL(WidgetLink.calendar)
     }
 }
 

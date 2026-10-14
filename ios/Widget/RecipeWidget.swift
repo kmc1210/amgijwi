@@ -157,6 +157,8 @@ struct RecipeView: View {
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .widgetBackground(Ink.bg)
+        /// 누르면 앱에서 보여주던 그 레시피를 연다. 잠겨 있거나 보여줄 레시피가 없으면 레시피 탭만 연다.
+        .widgetURL(WidgetLink.recipe(boardBlocked(entry.summary) == nil ? entry.recipe?.0.id : nil))
     }
 
     private func label(_ text: String) -> some View { boardLabel(text) }
@@ -346,6 +348,7 @@ struct MemoView: View {
         .padding(16)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .widgetBackground(Ink.bg)
+        .widgetURL(WidgetLink.memo)
     }
 
     /// 고른 메모 하나를 크게. 줄바꿈을 살리고, 길면 글씨를 조금 줄이다가 그래도 넘치면 끝을 … 로 줄인다.

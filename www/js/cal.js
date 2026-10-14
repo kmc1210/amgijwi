@@ -364,10 +364,11 @@ function openEventSheet(id){
 
 $("#calPrev").addEventListener("click", ()=>calMove(-1));
 $("#calNext").addEventListener("click", ()=>calMove(1));
-$("#calToday").addEventListener("click", ()=>{
+/* 이번 달 · 오늘을 고른다("오늘" 버튼, 달력 위젯을 눌러 들어왔을 때) */
+function calToday(){
   const n = new Date();
   calCursor = {y:n.getFullYear(), m:n.getMonth()};
   state.calDay = ymd(n);
-  renderCal();
-});
+}
+$("#calToday").addEventListener("click", ()=>{ calToday(); renderCal(); });
 $("#calAdd").addEventListener("click", ()=>openEventSheet(null));
