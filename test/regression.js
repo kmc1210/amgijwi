@@ -2350,7 +2350,7 @@ const LEGACY = {
       // 정리: 엉뚱한 값 · 안 가진 옷은 입을 수 없다
       const c0 = cleanCloset({ cheese:-3, own:["beret","nope"], wear:{ head:"beret", face:"glasses", body:"mug" } });
       r.clean = [c0.cheese, c0.own.join(","), JSON.stringify(c0.wear)];
-      r.items = CLOSET_ITEMS.filter(i => !i.rows.every(row => row.length === 28 && row.split("").every(ch => ch === "." || MOUSE_PAL[ch]))).map(i => i.id);
+      r.items = CLOSET_ITEMS.filter(i => !i.rows.every(row => row.length === 28 && row.split("").every(ch => ch === "." || ch === "_" || MOUSE_PAL[ch]))).map(i => i.id);
       r.ids = new Set(CLOSET_ITEMS.map(i => i.id)).size === CLOSET_ITEMS.length && CLOSET_ITEMS.length === 19;
       // 그리기 규칙
       data.closet = cleanCloset({ cheese:0, own:["beret","glasses","apron","mug"], wear:{ head:"beret", face:"glasses", body:"apron", hand:"mug" } });

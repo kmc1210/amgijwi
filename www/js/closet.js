@@ -140,32 +140,26 @@ const CLOSET_ITEMS = [
       ".....HHHHHHHHHHHHHHHHHH.....",
       "..HHHHHHHHHHHHHHHHHHHHHHHH..",
       "....IIIIIIIIIIIIIIIIIIII...."]},
-  /* 속 빈 호박을 모자처럼 쓴다. 얼굴은 그대로 보이고, 깜빡일 때 새긴 얼굴이 번쩍인다(glow) — 빛나는 아이템이라 더 비싸다 */
+  /* 납작한 호박을 머리 위에 얹는다(눈과 겹치지 않게 두 줄 띄운다). 얼굴은 그대로 보이고, 깜빡일 때 새긴 얼굴이 번쩍인다(glow) — 빛나는 아이템이라 더 비싸다 */
   {id:"pumpkinhead", slot:"head", name:"호박 머리", price:80, y:0, season:HALLOWEEN, rows:[
-      "..............a.............",
-      ".............AA.............",
-      "........WWJJJWWJJJWW........",
-      "......WWJJJJJWWJJJJJWW......",
-      ".....WJJKKJJJJJJJJKKJJW.....",
-      ".....WJKKKKJJJJJJKKKKJW.....",
-      ".....WJJJJJJJKKJJJJJJJW.....",
-      ".....WJJKJKJKJJKJKJKJJW.....",
-      "......WWWWWWWWWWWWWWWW......"],
+      "........._....aA.._.........",
+      ".........WWJJWWJJWW.........",
+      ".......WWJJJJWWJJJJWW.......",
+      "......WJJKKJJJJJJKKJJW......",
+      "......WJJJJJJKKJJJJJJW......",
+      "......WJKJKJKJJKJKJKJW......",
+      ".......WWWWWWWWWWWWWW......."],
     glow:{K:"C"},
     perk:"깜빡일 때 번쩍이고, 달릴 때도 써요",
     run:{y:0, rows:[
+        "........______________......",
         "........___aA_________......",
-        "........__AA__________......",
-        "........WWJJJJWW______......",
-        ".......WJJJWJJJJW_____......",
-        "......WJJJJWJJJJJW____......",
-        "......WJKKJWJJJJJW____......",
-        ".....WJJKKJWJJJJJJW___......",
-        ".....WJJJJJWJJJJJJW.........",
-        ".....WKJKJKWJJJJJJW.........",
-        "......WJKKKWJJJJJW..........",
-        "......WWJJJWJJJJWW..........",
-        "........WWWWWWWW............"]}},
+        "........WWJJWWJJW.._____....",
+        "......WJJJJJWJJJJJW_____....",
+        ".....WJKKJJJWJJJJJW_____....",
+        ".....WJJJJJJWJJJJJW_____....",
+        ".....WKJKJKJWJJJJJW_____....",
+        "......WWWWWWWWWWWW._____...."]}},
   /* 날개 없이 박쥐 얼굴만, 오른쪽 귀 옆에 비스듬히 꽂은 핀 */
   {id:"batpin", slot:"head", name:"박쥐 머리핀", price:20, y:1, season:HALLOWEEN, rows:[
       "..................H.........",
@@ -351,6 +345,7 @@ function dressRows(rows, mode, wear){
       for(let x = 0; x < r.length; x++){
         const ch = glow && glow[r[x]] ? glow[r[x]] : r[x];
         if(ch === ".") continue;
+        if(ch === "_"){ if(slot !== "body") g[y][x] = "."; continue; }      // 지우는 칸(호박 머리가 귀 끝을 덮는다)
         if(slot === "body" && cells.indexOf(g[y][x]) < 0) continue;
         g[y][x] = ch;
       }
