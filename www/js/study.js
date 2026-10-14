@@ -386,10 +386,11 @@ function reviewDue(stat, now){
   const days = ((now || new Date()) - last) / 86400000;
   return days >= REVIEW_GAP_DAYS || days < 0;       // 기기 시계가 앞서 있던 날짜가 적혔으면 막지 않는다
 }
-/* 지금 끼어들어도 되는 때인가: 결과 화면을 그대로 보고 있고, 그 위에 뜬 창이 없다 */
+/* 지금 끼어들어도 되는 때인가: 결과 화면을 그대로 보고 있고, 그 위에 뜬 창이 없다.
+   결과 화면에서 광고를 부탁했거나 보는 중 · 고맙다 창이 떠 있어도 끼어들지 않는다 (ads.js) */
 function reviewQuiet(){
   return !document.hidden && $("#s-result").classList.contains("active")
-      && !document.querySelector("#sheet.on, #dlg.on, #lock.on");
+      && !document.querySelector("#sheet.on, #dlg.on, #lock.on") && !adBusy && $("#thx").hidden;
 }
 let reviewT = null;
 /* delay: 치즈를 다 먹고 웃은 뒤 한 박자(테스트는 짧게 준다) */

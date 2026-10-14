@@ -332,7 +332,10 @@ function closetHome(lead){
   }
 }
 /* 결과 화면: 받은 치즈와 옷장 버튼(앱만) */
-function closetResult(gain, stat){
+let resLast = null;            // 결과 화면을 다시 그릴 때(광고로 치즈가 늘었을 때) 쓴다
+function closetResultAgain(){ if(resLast) closetResult(resLast.gain, resLast.stat, true); }
+function closetResult(gain, stat, again){
+  if(!again) resLast = {gain: gain, stat: stat};
   const line = $("#resCheese"), btn = $("#closetBtn");
   if(!line || !btn) return;
   const on = isDot();
@@ -343,7 +346,7 @@ function closetResult(gain, stat){
              : capped ? "오늘 치즈는 다 받았어요"
              : short ? `짧은 바퀴는 ${CHEESE_ROUND_MIN}장이 모이면 치즈 +1 (${data.closet.pool}/${CHEESE_ROUND_MIN})` : "";
   line.style.display = on && said ? "" : "none"; btn.style.display = on ? "" : "none";
-  if($("#resAdMsg")) $("#resAdMsg").textContent = "";
+  if(!again) $("#resAdMsg").textContent = "";
   adButton();                   // 광고 보고 치즈 받기 (ads.js). 앱이 아니거나 오늘 몫을 다 봤으면 비운다
   if(!on) return;
   line.innerHTML = `<span class="ci">${cheeseSVG()}</span><span>${said}</span><small>지금 ${data.closet.cheese}개</small>`;

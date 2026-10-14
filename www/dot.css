@@ -667,8 +667,8 @@ html.dot #s-result .resad{width:100%;max-width:300px;margin:-6px auto 14px;}
 html.dot #s-result .resad:empty{display:none;}
 html.dot #s-result .resad .ci{display:inline-block;width:16px;height:16px;image-rendering:pixelated;}
 html.dot #s-result .resad .ci svg{width:100%;height:100%;display:block;}
-html.dot #s-result .resad .cmsg{min-height:0;margin:8px 3px 0;font-size:13px;color:var(--d-t2);text-align:center;}
-html.dot #s-result .resad .cmsg:empty{display:none;}
+html.dot #s-result #resAdMsg{max-width:300px;margin:-6px auto 14px;font-size:13px;color:var(--d-t2);text-align:center;}
+html.dot #s-result #resAdMsg:empty{display:none;}
 html.dot #closetCard{padding:0;}
 html.dot .closetrow{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;color:var(--d-t1);padding:14px 16px;text-align:left;}
 html.dot .closetrow .cm{width:42px;height:60px;flex:0 0 auto;image-rendering:pixelated;}

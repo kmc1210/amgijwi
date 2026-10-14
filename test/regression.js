@@ -2599,6 +2599,13 @@ const LEGACY = {
       $("#resAdBtn").click(); adResultFromApp("rewarded"); closeThanks(); await wait(400);
       r.resCap = [data.closet.cheese, adLeft(), !!$("#resAdBtn"), $("#resAd").innerHTML];
       openCloset("home"); r.resShared = [$("#adBtn").disabled, /내일 또 받아요/.test($("#adBtn").textContent)];
+      // 불러오는 중에 다른 화면으로 가면 부탁을 거둔다. 뒤늦은 결과로는 치즈도 창도 없다
+      data.closet.adDay = "2020-01-01"; go("result"); closetResult(1, state.stat);
+      const c0 = data.closet.cheese, p0 = posts.length; $("#resAdBtn").click(); r.resQuiet = reviewQuiet();
+      go("home"); r.resLeave = [JSON.stringify(posts.slice(p0)), adBusy, bgmHold]; adResultFromApp("rewarded"); r.resLate = [data.closet.cheese === c0, $("#thx").hidden];
+      // 광고가 뜬 뒤에는 거두지 않는다 · 결과 알림은 부탁한 화면(결과 화면)의 줄에
+      go("result"); closetResult(1, state.stat); $("#resAdBtn").click(); adResultFromApp("showing"); adLeave(); r.resShown = adBusy;
+      adResultFromApp("closed"); r.resMsgWhere = [/끝까지 봐야/.test($("#resAdMsg").textContent), $("#cMsg").textContent];
       delete window.__amgijwiAds; data.closet.adDay = "2020-01-01"; go("result"); closetResult(1, state.stat); r.resOff = $("#resAd").innerHTML; window.__amgijwiAds = true;
       data.closet.adDay = ymd(new Date()); data.closet.adCount = 3;
       // 날이 바뀌면 다시 3번
@@ -2643,6 +2650,11 @@ const LEGACY = {
     eq("결과 화면: 3번 다 보면 버튼을 숨긴다", r.resCap, [16, 0, false, ""]);
     eq("결과 화면에서 본 것도 옷장의 하루 몫에 들어간다", r.resShared, [true, true]);
     eq("광고가 꺼진 빌드의 결과 화면에는 버튼이 없다", r.resOff, "");
+    eq("광고를 불러오는 동안에는 별점 창이 끼어들지 않는다", r.resQuiet, false);
+    eq("불러오는 중에 화면을 옮기면 부탁을 거두고 배경음을 돌린다", r.resLeave, ['[{"op":"show"},{"op":"cancel"}]', false, false]);
+    eq("거둔 뒤에 온 결과로는 치즈도 고맙다 창도 없다", r.resLate, [true, true]);
+    eq("광고가 이미 떴으면 거두지 않는다", r.resShown, true);
+    eq("결과 알림은 부탁한 화면의 줄에", r.resMsgWhere, [true, ""]);
     ok("3번을 다 보면 앱에 더 부탁하지 않는다", r.capNoPost);
     eq("광고가 뜬 뒤에는 답을 기다리고 버튼은 잠긴 채", r.showing, [true, 0]);
     ok("광고가 뜨는 동안 배경음을 다시 켜지 않는다", r.hold[0] === true && r.hold[1] === false);

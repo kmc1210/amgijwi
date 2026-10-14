@@ -305,7 +305,7 @@ function renderStorageCard(){
   box.innerHTML = `<div class="setcard statuscard ${worst}">
     <h4>데이터 상태</h4>
     ${rows.map(([k, t, d])=>`<p style="margin:0 0 8px"><b>${k === "ok" ? "✓" : "!"} ${esc(t)}</b><br>${esc(d)}</p>`).join("")}
-    <p style="margin:0">${adsOn() ? "레시피는 이 기기 안에만 저장되고 어디로도 보내지 않습니다. 옷장에서 광고를 볼 때만 광고 회사와 통신합니다."
+    <p style="margin:0">${adsOn() ? "레시피는 이 기기 안에만 저장되고 어디로도 보내지 않습니다. 광고 버튼을 눌러 광고를 볼 때만 광고 회사와 통신합니다."
                                     : "레시피는 이 기기 안에만 저장되고, 서버로 나가는 통신은 없습니다."}</p>
   </div>`;
 }
