@@ -293,7 +293,8 @@ function drawMascot(){
   if(!el) return;
   if(sipping) return;                       // 커피 마시는 중엔 건드리지 않는다
   /* 날씨 옷은 밤에는 입히지 않는다. 자고 있는데 우비를 입고 있으면 이상하다.
-     옷을 입은 동안은 깜빡이지 않는다. 깜빡임 자세에는 옷이 없어서 한 칸 벗었다 입는 꼴이 된다 */
+     날씨 옷을 입은 동안은 깜빡이지 않는다(깜빡임 그림에는 날씨 옷이 없다).
+     옷장 옷은 깜빡임 그림에도 입힌다 — 호박 아이템은 이때 번쩍인다(closet.js 의 glow) */
   const mood = currentMood(), night = mood === "night";
   const wx = night ? null : wxNow();
   if(wx) el.innerHTML = weatherSVGWorn(wx);                       // 날씨 옷 위에는 안경만(closet.js)

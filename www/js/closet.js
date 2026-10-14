@@ -138,8 +138,8 @@ const CLOSET_ITEMS = [
       ".....HHHHHHHHHHHHHHHHHH.....",
       "..HHHHHHHHHHHHHHHHHHHHHHHH..",
       "....IIIIIIIIIIIIIIIIIIII...."]},
-  /* 속 빈 호박을 모자처럼 쓴다. 얼굴은 그대로 보이고, 깜빡일 때 새긴 얼굴이 번쩍인다(glow) */
-  {id:"pumpkinhead", slot:"head", name:"호박 머리", price:45, y:0, season:HALLOWEEN, rows:[
+  /* 속 빈 호박을 모자처럼 쓴다. 얼굴은 그대로 보이고, 깜빡일 때 새긴 얼굴이 번쩍인다(glow) — 빛나는 아이템이라 더 비싸다 */
+  {id:"pumpkinhead", slot:"head", name:"호박 머리", price:80, y:0, season:HALLOWEEN, rows:[
       "..............a.............",
       ".............AA.............",
       "........WWJJJWWJJJWW........",
@@ -149,16 +149,7 @@ const CLOSET_ITEMS = [
       ".....WJJJJJJJKKJJJJJJJW.....",
       ".....WJJKJKJKJJKJKJKJJW.....",
       "......WWWWWWWWWWWWWWWW......"],
-    glow:[
-      "..............a.............",
-      ".............AA.............",
-      "........WWJJJWWJJJWW........",
-      "......WWJJJJJWWJJJJJWW......",
-      ".....WJJCCJJJJJJJJCCJJW.....",
-      ".....WJCCCCJJJJJJCCCCJW.....",
-      ".....WJJJJJJJCCJJJJJJJW.....",
-      ".....WJJCJCJCJJCJCJCJJW.....",
-      "......WWWWWWWWWWWWWWWW......"]},
+    glow:{K:"C"}},
   /* 날개 없이 박쥐 얼굴만, 오른쪽 귀 옆에 비스듬히 꽂은 핀 */
   {id:"batpin", slot:"head", name:"박쥐 머리핀", price:20, y:1, season:HALLOWEEN, rows:[
       "..................H.........",
@@ -183,25 +174,25 @@ const CLOSET_ITEMS = [
       "...K2..................2K...",
       "..K222................222K..",
       "..K2222..............2222K..",
-      "...KKKKKKKKKKKKKKKKKKKKKK...",
-      "...KKKKKKKKKKKKKKKKKKKKKK...",
-      "...KKKKRRRRRRqqRRRRRRKKKK...",
-      "..KKKKKKKKKKR..RKKKKKKKKKK..",
-      "..KKKKKKKKKKq..qKKKKKKKKKK..",
-      "..KKKKKKKKK2....2KKKKKKKKK..",
-      "..KKKDKKKKK2....2KKKKKDKKK..",
-      "..KKKDKKKKK2....2KKKKKDKKK..",
-      "..KKKDKKKK2......2KKKKDKKK..",
-      ".KKKKDKKKK2......2KKKKDKKKK.",
-      ".KKKKDKKKK2......2KKKKDKKKK.",
-      ".KKKKDKKKK2......2KKKKDKKKK.",
-      ".KKKKDKKK2........2KKKDKKKK.",
-      ".KKKKDKKK2........2KKKDKKKK.",
+      "..KKKKKKKKKKKKKKKKKKKKKKKK..",
+      ".KKKKKKKKKKKKKKKKKKKKKKKKKK.",
+      "KKKKKKKRRRRRRqqRRRRRRKKKKKKK",
+      "KKKKKKKKKKKKR..RKKKKKKKKKKKK",
+      "KKKKKKKKKKKKq..qKKKKKKKKKKKK",
+      "KKKKKKKKKKK2....2KKKKKKKKKKK",
+      "KKKKKDKKKKK2....2KKKKKDKKKKK",
+      "KKKKKDKKKKK2....2KKKKKDKKKKK",
+      "KKKKKDKKKK2......2KKKKDKKKKK",
+      "KKKKKDKKKK2......2KKKKDKKKKK",
+      "KKKKKDKKKK2......2KKKKDKKKKK",
+      "KKKKKDKKKK2......2KKKKDKKKKK",
+      "KKKKKDKKK2........2KKKDKKKKK",
+      "KKKKKDKKK2........2KKKDKKKKK",
       "KKKKKDKKK2........2KKKDKKKKK",
       "KKKKKDKK2..........2KKDKKKKK",
       "KKKKKKKK2..........2KKKKKKKK"]},
-  /* 두 손으로 드는 호박 바구니. 깜빡일 때 눈 · 입이 번쩍인다(glow) */
-  {id:"pumpkin", slot:"hand", name:"호박 바구니", price:35, y:22, season:HALLOWEEN, rows:[
+  /* 두 손으로 드는 호박 바구니. 깜빡일 때 눈 · 입이 번쩍인다(glow) — 빛나는 아이템이라 더 비싸다 */
+  {id:"pumpkin", slot:"hand", name:"호박 바구니", price:60, y:22, season:HALLOWEEN, rows:[
       "..........ZZZZZZZZ..........",
       ".........Z........Z.........",
       ".........Z...Aa...Z.........",
@@ -212,17 +203,7 @@ const CLOSET_ITEMS = [
       ".owcwwppcJKJKJKJKJKcppwwcwo.",
       ".ocwwwddcJJKKKKKKJJcddwwwco.",
       ".........WWWWWWWWWW........."],
-    glow:[
-      "..........ZZZZZZZZ..........",
-      ".........Z........Z.........",
-      ".........Z...Aa...Z.........",
-      "owcwww..WJJJJJJJJJJW..wwwcwo",
-      ".ocwww.WJJCCJJJJCCJJW.wwwco.",
-      ".owcwwppcJCCJJJJCCJcppwwcwo.",
-      "ocwwwwppcJJJJJJJJJJcppwwwwco",
-      ".owcwwppcJCJCJCJCJCcppwwcwo.",
-      ".ocwwwddcJJCCCCCCJJcddwwwco.",
-      ".........WWWWWWWWWW........."]}
+    glow:{K:"C"}}
 ];
 /* 치즈: 한 바퀴 +1(하루 10개까지), 7일 연속 접속 +5.
    한 바퀴는 5장 이상이어야 친다 — 한 장짜리 바퀴를 열 번 넘겨 몇 초 만에 하루치를 받던 구멍을 막는다.
@@ -253,7 +234,8 @@ function cleanCloset(c){
   };
 }
 function closetItem(id){ return CLOSET_ITEMS.filter(i=>i.id === id)[0] || null; }
-/* 지금 옷장에서 팔고 있는가(기간 한정이면 그 날까지). today 는 테스트가 준다 */
+/* 지금 옷장에서 팔고 있는가(기간 한정이면 그 날까지). today 는 테스트가 준다.
+   기기 시계를 믿는다 — 시계를 되돌리면 다시 살 수 있지만, 통신 없이 기기 안에서만 쓰는 꾸미기라 막지 않는다 */
 function closetOnSale(it, today){ return !!it && (!it.season || (today || ymd(new Date())) <= it.season.until); }
 data.closet = cleanCloset(data.closet);
 
@@ -263,7 +245,7 @@ data.closet = cleanCloset(data.closet);
    앞치마(몸)는 쥐돌이 몸 색 칸(w · c)에만 칠한다. 그래서 발 · 머그 · 치즈 · 커피잔은 앞치마 앞에 그대로 남고,
    허리띠는 발 뒤로 지나간다(머그를 들면 옆구리를 돌아 보인다).
    넓은 옷(wide — 뱀파이어 망토)은 몸 바깥의 빈칸 · 테두리(. o)까지 칠해 몸 라인보다 퍼진다. 발 · 앞발 · 손에 든 것은 그래도 앞에 남는다.
-   깜빡이는 그림(mode blink)에서는 빛나는 줄(glow)이 있는 아이템을 그 줄로 그린다 — 호박이 깜빡일 때마다 번쩍인다.
+   깜빡이는 그림(mode blink)에서는 빛나는 아이템(glow — 바꿀 색 표)의 색을 바꿔 그린다 — 호박이 깜빡일 때마다 번쩍인다.
    mode: stand 서 있기 · eat 치즈 먹기 · sip 커피 마시기 · wx 날씨 옷. wear 를 주지 않으면 지금 입은 옷 */
 const CLOSET_BODY_CELLS = "wc", CLOSET_WIDE_CELLS = ".owc";
 function dressRows(rows, mode, wear){
@@ -275,10 +257,11 @@ function dressRows(rows, mode, wear){
     if(mode === "wx" && slot !== "face") return;                         // 우비 · 털모자 위에는 안경만
     if((mode === "eat" || mode === "sip") && slot === "hand") return;    // 치즈 · 커피를 드는 동안 머그는 내려놓는다
     const cells = it.wide ? CLOSET_WIDE_CELLS : CLOSET_BODY_CELLS;
-    (mode === "blink" && it.glow ? it.glow : it.rows).forEach((r, k)=>{
+    const glow = mode === "blink" && it.glow ? it.glow : null;
+    it.rows.forEach((r, k)=>{
       const y = it.y + k;
       for(let x = 0; x < r.length; x++){
-        const ch = r[x];
+        const ch = glow && glow[r[x]] ? glow[r[x]] : r[x];
         if(ch === ".") continue;
         if(slot === "body" && cells.indexOf(g[y][x]) < 0) continue;
         g[y][x] = ch;
@@ -478,22 +461,25 @@ function closetStageWear(){
 function renderCloset(){
   const c = data.closet;
   if(closetTry && c.own.indexOf(closetTry) >= 0) closetTry = "";      // 이미 가진 것은 입어 볼 게 없다
+  if(closetTry && !closetOnSale(closetItem(closetTry))){              // 입어 보는 사이에 판매가 끝났다
+    closetTry = ""; $("#cMsg").textContent = "핼러윈 판매가 끝났어요";
+  }
   $("#closetSub").textContent = "치즈 " + c.cheese + "개";
   $("#cCheese").innerHTML = `<span class="ci">${cheeseSVG()}</span><span>${c.cheese}</span>`;
   $("#cMouse").innerHTML = mouseSVGWorn("day", false, closetStageWear());
   $("#cTabs").innerHTML = CLOSET_SLOTS.map(([s, name])=>`<button type="button" data-s="${s}" class="${s === closetSlot ? "on" : ""}">${name}</button>`).join("");
   /* 기간 한정은 파는 동안 맨 앞에. 기간이 지나면 가진 것만 남는다 */
   const shown = CLOSET_ITEMS.filter(i=>i.slot === closetSlot && (c.own.indexOf(i.id) >= 0 || closetOnSale(i)));
-  const lim = i=>i.season && c.own.indexOf(i.id) < 0 ? 0 : 1;
-  $("#cGrid").innerHTML = shown.map((i, n)=>[i, n]).sort((a, b)=>lim(a[0]) - lim(b[0]) || a[1] - b[1]).map(([i])=>{
+  const lim = i=>!!i.season && c.own.indexOf(i.id) < 0;
+  $("#cGrid").innerHTML = shown.filter(lim).concat(shown.filter(i=>!lim(i))).map(i=>{
     const own = c.own.indexOf(i.id) >= 0, wear = c.wear[i.slot] === i.id, trying = closetTry === i.id;
     const off = (i.slot === "body" || i.slot === "hand") ? -40 : (i.slot === "face" ? -10 : 0);   // 아이템이 있는 자리를 보여준다
     const tag = wear ? "착용중" : (own ? "보유중" : `<span class="ci">${cheeseSVG()}</span>${i.price}`);
     const until = i.season ? i.season.until.split("-") : [];
     return `<button type="button" class="citem${own ? " own" : ""}${wear ? " wear" : ""}${trying ? " try" : ""}" data-i="${i.id}">
-      ${i.season && !own ? `<span class="lim">${esc(i.season.name)} · ~${Number(until[1])}/${Number(until[2])}</span>` : ""}
       <span class="th"><span style="margin-top:${off}px">${itemPreviewSVG(i.id)}</span></span>
-      <span class="nm">${esc(i.name)}</span><span class="pr">${tag}</span></button>`;
+      <span class="nm">${esc(i.name)}</span><span class="pr">${tag}</span>
+      ${i.season && !own ? `<span class="lim">${esc(i.season.name)} · ~${Number(until[1])}/${Number(until[2])}</span>` : ""}</button>`;
   }).join("");
   document.querySelectorAll("#cTabs button").forEach(b=>b.addEventListener("click", ()=>{
     if(closetLocked()) return;
@@ -555,7 +541,7 @@ function tapClosetItem(id){
 function buyClosetItem(){
   const c = data.closet, it = closetItem(closetTry);
   if(!it || c.own.indexOf(it.id) >= 0) return;
-  if(!closetOnSale(it)){ closetTry = ""; renderCloset(); return; }      // 입어 보는 사이에 판매가 끝났다
+  if(!closetOnSale(it)){ haptic("error"); renderCloset(); return; }      // 입어 보는 사이에 판매가 끝났다(renderCloset 이 내리고 알린다)
   if(c.cheese < it.price){ haptic("error"); return; }
   c.cheese -= it.price; c.own.push(it.id); c.wear[it.slot] = it.id;
   closetTry = ""; closetLock();
