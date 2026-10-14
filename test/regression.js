@@ -1308,6 +1308,7 @@ const LEGACY = {
     ok("첫 화면에 검색 설명 · 미리보기 그림이 있고 브랜드 이름은 없다", /<meta name="description" content="[^"]{60,}"/.test(site) && site.indexOf('og:image" content="https://amgijwi.com/og.png"') >= 0 && !/스타벅스|starbucks/i.test(site));
     let ld = null; try { ld = JSON.parse((/<script type="application\/ld\+json">([^<]+)<\/script>/.exec(site) || [])[1]); } catch (e) {}
     ok("앱 정보 묶음(JSON-LD)이 올바른 JSON 이다", !!ld && ld["@type"] === "SoftwareApplication" && ld.installUrl.indexOf("id6817266810") > 0);
+    ok("첫 화면에 네이버 소유 확인 태그가 있다(지우면 검색 등록이 풀린다)", /<meta name="naver-site-verification" content="[0-9a-f]{40}">/.test(site));
     const seo = ["og.png", "robots.txt", "sitemap.xml"];
     ok("검색 엔진용 파일이 있고 배포된다", seo.every(f => fs.existsSync(path.join(root, "site", f)) && deploy.indexOf("site/" + f) >= 0 || deploy.indexOf(f) >= 0 && fs.existsSync(path.join(root, "site", f))));
     ok("sitemap 의 주소는 모두 배포되는 페이지다", (fs.readFileSync(path.join(root, "site", "sitemap.xml"), "utf8").match(/<loc>[^<]+<\/loc>/g) || []).every(l => /^<loc>https:\/\/amgijwi\.com\/(support\.html|privacy\.html)?<\/loc>$/.test(l)));

@@ -44,3 +44,13 @@ npm run test:headers
 
 배포된 사이트의 보안 헤더와, 헤더 CSP 가 meta CSP 와 같은지 확인합니다.
 네트워크가 필요하고 **배포가 끝난 뒤에** 돌립니다.
+
+## 검색 등록
+
+구글 · 네이버 검색에 사이트를 등록한다(2026-10-14 시작). 소유 확인이 아래 두 가지에 걸려 있으니 지우지 않는다.
+
+- **구글 서치 콘솔**: 도메인 속성. Route 53 의 `amgijwi.com` TXT 레코드(`google-site-verification=…`)로 확인한다.
+  TXT 를 더 넣을 일이 생기면 새 레코드를 만들지 말고 이 레코드에 줄을 더한다.
+- **네이버 서치어드바이저**: 첫 화면(`site/index.html`)의 `naver-site-verification` meta 태그로 확인한다. `npm test` 가 있는지 본다.
+
+두 곳 모두 사이트맵은 `https://amgijwi.com/sitemap.xml` 을 제출한다(구글은 제출했고, 네이버는 이 태그가 배포된 뒤 소유 확인을 하고 제출한다). 페이지를 더하면 `site/sitemap.xml` 에도 넣는다.
