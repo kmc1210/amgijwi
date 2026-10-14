@@ -343,6 +343,8 @@ function closetResult(gain, stat){
              : capped ? "오늘 치즈는 다 받았어요"
              : short ? `짧은 바퀴는 ${CHEESE_ROUND_MIN}장이 모이면 치즈 +1 (${data.closet.pool}/${CHEESE_ROUND_MIN})` : "";
   line.style.display = on && said ? "" : "none"; btn.style.display = on ? "" : "none";
+  if($("#resAdMsg")) $("#resAdMsg").textContent = "";
+  adButton();                   // 광고 보고 치즈 받기 (ads.js). 앱이 아니거나 오늘 몫을 다 봤으면 비운다
   if(!on) return;
   line.innerHTML = `<span class="ci">${cheeseSVG()}</span><span>${said}</span><small>지금 ${data.closet.cheese}개</small>`;
 }

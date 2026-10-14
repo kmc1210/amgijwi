@@ -24,16 +24,29 @@ function adLeft(){
 }
 
 let adBusy = false, adWaitT = null;
-/* 옷장의 광고 버튼. renderCloset 이 그릴 때마다 부른다 */
+/* 광고 버튼은 두 곳에 있다: 옷장(#cAd)과 학습 결과 화면(#resAd). 하루 몫은 같이 쓴다.
+   옷장은 다 봤으면 "내일 또 받아요"로 남기고, 결과 화면은 버튼을 숨긴다(끝난 뒤마다 못 받는다고 말하지 않는다).
+   renderCloset · closetResult 가 그릴 때마다, 광고가 끝날 때마다 부른다 */
 function adButton(){
-  const box = $("#cAd"); if(!box) return;
-  if(!adsOn()){ box.innerHTML = ""; return; }
   const left = adLeft();
-  box.innerHTML = `<button type="button" class="adbtn" id="adBtn"${left < 1 || adBusy ? " disabled" : ""}>
+  const btn = id => `<button type="button" class="adbtn" id="${id}"${left < 1 || adBusy ? " disabled" : ""}>
       <span class="ci">${cheeseSVG()}</span><span>${adBusy ? "광고를 불러오는 중…" : "광고 보고 치즈 +" + AD_CHEESE}</span>
       <span class="left">${left < 1 ? "내일 또 받아요" : "오늘 " + left + "번"}</span></button>`;
-  $("#adBtn").addEventListener("click", watchAd);
+  const box = $("#cAd");
+  if(box){
+    box.innerHTML = adsOn() ? btn("adBtn") : "";
+    if($("#adBtn")) $("#adBtn").addEventListener("click", watchAd);
+  }
+  const res = $("#resAd");
+  if(res){
+    const msg = $("#resAdMsg"), said = msg ? msg.textContent : "";
+    res.innerHTML = adsOn() && (left > 0 || said) ? (left > 0 ? btn("resAdBtn") : "") + `<div class="cmsg" id="resAdMsg"></div>` : "";
+    if($("#resAdMsg")) $("#resAdMsg").textContent = said;
+    if($("#resAdBtn")) $("#resAdBtn").addEventListener("click", watchAd);
+  }
 }
+/* 광고 결과를 알릴 줄: 보고 있는 화면의 것 */
+function adMsg(){ return $("#s-result").classList.contains("active") ? $("#resAdMsg") : $("#cMsg"); }
 function watchAd(){
   const b = adBridge();
   if(!b || adBusy || adLeft() < 1 || closetLocked()) return;      // 사기 직후 밀려 올라온 버튼이 잘못 눌리지 않게
@@ -42,6 +55,7 @@ function watchAd(){
   bgmHold = true; bgmStop();
   haptic("light");
   $("#cMsg").textContent = "";
+  if($("#resAdMsg")) $("#resAdMsg").textContent = "";
   adButton();
   clearTimeout(adWaitT);
   /* 기다리다 그만두면 앱에도 알린다. 알리지 않으면 뒤늦게 불러온 광고가 느닷없이 뜬다 */
@@ -56,7 +70,7 @@ function adResultFromApp(result){
   adBusy = false;
   clearTimeout(adWaitT);
   bgmHold = false; armBgm();
-  const msg = $("#cMsg");
+  const msg = adMsg();
   /* 끝까지 봤으면 준다. 하루 몫은 누를 때 이미 확인했다 */
   if(result === "rewarded"){
     const c = data.closet, today = ymd(new Date());
@@ -64,6 +78,8 @@ function adResultFromApp(result){
     c.adCount += 1; c.cheese += AD_CHEESE;
     persist();
     if($("#s-closet").classList.contains("active")) renderCloset(); else adButton();
+    /* 결과 화면이면 치즈 줄의 "지금 N개"도 바로 고친다 */
+    const now = $("#resCheese small"); if(now) now.textContent = "지금 " + c.cheese + "개";
     closetHome();
     showThanks();
     return;
