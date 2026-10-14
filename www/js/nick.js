@@ -33,14 +33,21 @@ function cleanNick(n){
 data.nick = cleanNick(data.nick);
 
 /* 부르는 말: "민철님". 이름이 없으면 "" */
+/* "로" · "으로": 받침이 있으면 으로(ㄹ 받침은 로). 한글이 아니면 둘 다 적는다 */
+function josaRo(word){
+  const ch = Array.from(String(word || "")).pop() || "", code = ch.charCodeAt(0) - 0xAC00;
+  if(code < 0 || code > 11171) return "(으)로";
+  const jong = code % 28;
+  return jong === 0 || jong === 8 ? "로" : "으로";
+}
 function nickCall(){ return data.nick.name ? data.nick.name + "님" : ""; }
 /* 부르는 말을 앞에 붙인다: "민철님, 좋은 아침이에요". 이름이 없으면 그대로 */
 function nickLead(text){ const c = nickCall(); return c ? c + ", " + text : text; }
 /* 지금 이름을 정하거나 바꾸는 데 드는 치즈. 처음 등록과 한 번의 고침은 0 */
 function nickCost(){ return (!data.nick.had || data.nick.free) ? 0 : NICK_PRICE; }
 
-/* 이름을 정하거나 바꾼다. 돌려주는 것: {ok:true, cost} 또는 {ok:false, why:"empty" | "long" | "same" | "cheese" | "app"} */
-/* 저장해도 되는가만 본다(치즈는 쓰지 않는다). 설정 칸은 치즈가 들면 이걸로 먼저 보고 확인창을 띄운다 */
+/* 저장해도 되는가만 본다(치즈는 쓰지 않는다). 설정 칸은 치즈가 들면 이걸로 먼저 보고 확인창을 띄운다.
+   돌려주는 것: {ok:true, text, cost} 또는 {ok:false, why:"empty" | "long" | "same" | "cheese" | "app"} */
 function nickCheck(raw){
   if(!isDot()) return {ok:false, why:"app"};
   const text = cleanNickText(raw);
@@ -52,6 +59,7 @@ function nickCheck(raw){
   if(data.closet.cheese < cost) return {ok:false, why:"cheese", lack: cost - data.closet.cheese};
   return {ok:true, text: text, cost: cost};
 }
+/* 이름을 정하거나 바꾼다. 돌려주는 것: {ok:true, cost} 또는 nickCheck 의 {ok:false, why} */
 function setNick(raw){
   const c = nickCheck(raw);
   if(!c.ok) return c;
@@ -109,11 +117,17 @@ function nickSettings(){
   };
   $("#nickSave").addEventListener("click", ()=>{
     const raw = $("#nickIn").value, c = nickCheck(raw);
+    $("#nickMsg").textContent = "";
     if(!c.ok || !c.cost){ save(raw); return; }
     const after = data.closet.cheese - c.cost;
     confirmBox(data.nick.name ? "이름 바꾸기" : "이름 등록",
-      `치즈 ${c.cost}개를 써서 "${c.text}"(으)로 ${data.nick.name ? "바꿀까요" : "등록할까요"}? 치즈 ${data.closet.cheese}개 → ${after}개`,
-      data.nick.name ? "바꾸기" : "등록", ()=>save(raw));
+      `치즈 ${c.cost}개를 써서 "${c.text}"${josaRo(c.text)} ${data.nick.name ? "바꿀까요" : "등록할까요"}? 치즈 ${data.closet.cheese}개 → ${after}개`,
+      data.nick.name ? "바꾸기" : "등록", ()=>{
+        /* 창이 떠 있는 사이에 치즈 · 값이 바뀌었으면 묻고 동의한 것과 다르게 쓰지 않는다 */
+        const now = nickCheck(raw);
+        if(now.ok && now.cost !== c.cost){ haptic("error"); $("#nickMsg").textContent = "치즈가 바뀌었어요. 다시 눌러 주세요."; return; }
+        save(raw);
+      });
   });
 }
 

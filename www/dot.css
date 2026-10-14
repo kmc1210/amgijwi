@@ -806,9 +806,9 @@ html.dot #s-closet .citem.try:active{box-shadow:0 -3px 0 0 var(--d-acc),0 3px 0 
 html.dot #nickCard .nickrow{display:flex;gap:8px;align-items:stretch;margin:12px 0 0;}
 html.dot #nickCard .nickrow input{flex:1 1 auto;min-width:0;width:auto;margin-bottom:2px;font-size:16px;}
 html.dot #nickCard .nickrow .cta{flex:0 0 auto;width:auto;min-height:0;margin:2px 3px 2px 0;padding:0 16px;font-size:16px;line-height:1;white-space:nowrap;}
-/* 버튼은 입력칸과 같은 높이 · 같은 줄에(입력칸 아래 여백이 버튼에 같이 잡혀 버튼만 크고 처져 보였다) */
+/* 버튼은 입력칸과 같은 높이 · 같은 줄에. 입력칸 아래 여백(.fld input)이 줄 높이에 잡혀 버튼만 크고 처져 보였다 —
+   위아래 여백을 둘 다 2px 로 맞추면 줄(stretch)이 입력칸 높이를 따라간다 */
 html.dot #nickCard .nickrow input#nickIn{margin:2px 0;}
-html.dot #nickCard .nickrow .cta#nickSave{height:44px;align-self:flex-start;margin-bottom:0;}
 html.dot .nickmsg{min-height:20px;margin-top:8px;font-size:13px;color:var(--d-acc);}
 html.dot .nickask{position:absolute;inset:0;z-index:110;display:flex;align-items:center;justify-content:center;background:rgba(36,31,26,.45);}
 html.dot .nickask[hidden]{display:none;}
