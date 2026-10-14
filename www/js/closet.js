@@ -612,9 +612,9 @@ function runDressed(rows, items, lit){
   if(!runDressMemo.has(key)) runDressMemo.set(key, runDress(rows, items, lit));
   return runDressMemo.get(key);
 }
-/* 망토 자락 · 따라오는 박쥐. 달리기 층(#panicLayer) 전체에 그리는 그림 한 장. 한 칸 = 2px(쥐돌이 56×80 과 같다).
+/* 망토 자락 · 따라오는 박쥐. 달리기 층(#panicLayer) 전체 그림(mascot.js 의 runLane 이 감싼다)에 들어갈 조각. 한 칸 = 2px(쥐돌이 56×80 과 같다).
    bats 는 박쥐 자리(부드럽게 따라오도록 그릴 때마다 조금씩 다가간다) */
-function runFxSVG(it, f, i, bats, W, H, side){
+function runFxSVG(it, f, i, bats, side){
   let out = "";
   /* 도트 그림(rowsSVG — 같은 색은 한 줄로 묶는다)을 그 자리 · 크기로 끼워 넣는다 */
   const px = (rows, ox, oy, flip)=>{ out += rowsSVG(rows, flip).replace("<svg ", `<svg x="${ox}" y="${oy}" width="${rows[0].length*2}" height="${rows.length*2}" `); };
@@ -628,7 +628,7 @@ function runFxSVG(it, f, i, bats, W, H, side){
     b.x += (tx - b.x)*(0.18 - k*0.03); b.y += (ty - b.y)*0.2;
     px(RUN_BAT[Math.floor((i + k*2) / 2) % 2], Math.round(b.x), Math.round(b.y + Math.sin((i + k*4) / 3)*5), false);
   });
-  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" shape-rendering="crispEdges" aria-hidden="true">${out}</svg>`;
+  return out;
 }
 
 /* 입어 보는 중일 때 무대 아래에 뜨는 줄: 이름 · 값 · 사기 · 그만 보기. 치즈가 모자라면 몇 개 모자란지 알려주고 사기는 잠근다 */
