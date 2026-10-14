@@ -700,6 +700,10 @@ html.dot #s-closet .cgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1
 html.dot #s-closet .citem{min-width:0;border:0;background:var(--d-surface);color:var(--d-t1);padding:8px 6px 9px;display:flex;flex-direction:column;align-items:center;gap:4px;
   box-shadow:var(--d-box), var(--d-drop-sh);}
 html.dot #s-closet .citem.wear{background:var(--d-warn-bg);}
+/* 기간 한정 표시(핼러윈 · ~11/8). 가진 뒤에는 달지 않는다 */
+html.dot #s-closet .citem .fx{padding:0 5px;background:var(--d-acc);color:#FCF7F1;font-size:11px;font-weight:700;}
+html.dot #s-closet .cbuy .who .perk{flex:1 1 100%;font-style:normal;font-size:13px;font-weight:700;color:var(--d-acc);}
+html.dot #s-closet .citem .lim{max-width:100%;padding:1px 5px;background:#3B2A4A;color:#FCF7F1;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 html.dot #s-closet .citem:active{transform:translate(3px,3px);box-shadow:var(--d-box);}
 /* 카드가 좁아지면 미리보기도 같이 줄어든다(고정 폭이면 카드 밖으로 삐져나온다) */
 html.dot #s-closet .citem .th{width:100%;max-width:70px;height:56px;overflow:hidden;display:flex;justify-content:center;image-rendering:pixelated;}

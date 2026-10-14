@@ -200,6 +200,8 @@
   #panicRun svg{width:100%;height:100%;display:block;}
   #panicSh{position:absolute;left:0;top:0;width:34px;height:9px;border-radius:50%;
     background:rgba(90,65,50,.22);will-change:transform;transition:opacity .1s linear;}
+  #panicFx{position:absolute;left:0;top:0;width:100%;height:100%;}      /* 망토 자락 · 박쥐 (closet.js 의 runFxSVG) */
+  #panicFx svg{display:block;}
   #panicBell{position:absolute;left:0;top:0;width:26px;height:12px;will-change:transform;}
   #panicBell svg{width:100%;height:100%;display:block;}
   @media (prefers-reduced-motion:reduce){ #panicLayer{display:none !important;} }
