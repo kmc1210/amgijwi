@@ -2910,7 +2910,11 @@ const LEGACY = {
       go("home"); widgetOpenFromApp("recipe", String(live[1].id)); r.openRecipe = [act(), state.listTab, sheetOn(), $("#sheetBody h2").textContent === live[1].name]; closeSheet();
       go("home"); widgetOpenFromApp("recipe", "없는것"); r.openGone = [act(), sheetOn()];
       go("home"); widgetOpenFromApp("엉뚱", ""); r.openOdd = act();
-      go("home"); $("#lock").classList.add("on"); widgetOpenFromApp("cal", ""); r.openLocked = act(); lock.mode = "new"; closeLock(); lock.mode = "enter"; r.openUnlocked = act();
+      go("home"); $("#lock").classList.add("on"); lock.mode = "enter"; widgetOpenFromApp("cal", ""); r.openLocked = act(); closeLock(); r.openUnlocked = act();
+      go("set"); $("#lock").classList.add("on"); lock.mode = "new"; widgetOpenFromApp("cal", ""); r.openPinSetup = [widgetPending, act()]; closeLock(); r.openPinSetup.push(act()); lock.mode = "enter";
+      go("list"); state.listTab = "recipe"; renderList(); confirmBox("지울까요?", "", "삭제", () => {}); widgetOpenFromApp("cal", ""); r.openDlg = act(); $("#dlgNo").click();
+      go("closet"); widgetOpenFromApp("memo", ""); r.openCloset = act();
+      go("list"); state.listTab = "recipe"; renderList(); state.selMode = true; widgetOpenFromApp("memo", ""); r.openSel = [state.selMode, state.listTab];
       go("home"); startSession(live.slice(0, 5)); widgetOpenFromApp("cal", ""); r.openStudy = [act(), widgetPending]; go("home");
       go("list"); openSheet(live[0].id); widgetOpenFromApp("cal", ""); r.openSheet = [act(), sheetOn()]; closeSheet(); go("home");
       // 달라졌을 때만 넘긴다
@@ -2931,6 +2935,10 @@ const LEGACY = {
     eq("위젯을 누르면: 지워진 레시피면 레시피 탭만", r.openGone, ["s-list", false]);
     eq("위젯을 누르면: 모르는 주소는 무시한다", r.openOdd, "s-home");
     eq("위젯을 누르면: 잠금 화면에서는 기다렸다가 풀린 뒤에 간다", [r.openLocked, r.openUnlocked], ["s-home", "s-cal"]);
+    eq("위젯을 누르면: PIN 을 새로 정하는 중이면 버린다", r.openPinSetup, [null, "s-set", "s-set"]);
+    eq("위젯을 누르면: 확인 창이 떠 있으면 가지 않는다", r.openDlg, "s-list");
+    eq("위젯을 누르면: 옷장처럼 하던 일이 없는 화면에서는 간다", r.openCloset, "s-list");
+    eq("위젯을 누르면: 여러 개 고르던 중이었으면 풀고 간다", r.openSel, [false, "memo"]);
     eq("위젯을 누르면: 학습 중이면 가지 않는다", r.openStudy, ["s-study", null]);
     eq("위젯을 누르면: 시트가 열려 있으면 가지 않는다", r.openSheet, ["s-list", true]);
     eq("달력 위젯: 이번 달 첫날부터의 끝나지 않은 일정을 날짜순으로", r.cal, "걸친 행사,첫날,먼 일정");

@@ -184,6 +184,12 @@ extension WebAppViewController: WKNavigationDelegate {
         if pageReady { webView.evaluateJavaScript(js, completionHandler: nil) } else { pendingWidget = js }
     }
 
+    /// 오래 뒤에 두면 iOS 가 웹 화면을 내릴 때가 있다(빈 화면이 된다). 다시 불러오고, 그사이 위젯을 눌렀으면 뜬 뒤에 알린다.
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        pageReady = false
+        webView.reload()
+    }
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         pageReady = true
         if let js = pendingWidget {

@@ -412,10 +412,11 @@ struct ProgressBar: View {
     }
 }
 
-/// 위젯을 눌렀을 때 앱에 넘기는 주소. 앱(Sources/SceneDelegate.swift)이 받아 그 화면을 연다.
+/// 위젯을 눌렀을 때 앱에 넘기는 주소. 앱(Sources/SceneDelegate.swift)이 받아 WebAppViewController.openWidget 이 그 화면을 연다.
+/// 스킴과 종류 이름("recipe" · "memo" · "cal")은 openWidget 과 www/js/widget.js 의 widgetGo 에도 적혀 있다. 바꾸면 세 곳을 같이 바꾼다.
 /// 쥐돌이 위젯은 주소를 달지 않는다(그냥 앱이 열린다).
 enum WidgetLink {
-    static let scheme = "amgijwi-widget"       // SceneDelegate 의 것과 같아야 한다
+    static let scheme = "amgijwi-widget"
     static let calendar = URL(string: "\(scheme)://cal")
     static let memo = URL(string: "\(scheme)://memo")
     static func recipe(_ id: String?) -> URL? {
