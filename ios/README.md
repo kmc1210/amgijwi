@@ -145,9 +145,9 @@ cd ios
 xcodegen generate
 xcodebuild archive -project Amgijwi.xcodeproj -scheme Amgijwi -configuration Release \
   -destination 'generic/platform=iOS' -allowProvisioningUpdates \
-  -archivePath ~/Library/Developer/Xcode/Archives/$(date +%Y-%m-%d)/Amgijwi-1.0-<빌드번호>.xcarchive
+  -archivePath ~/Library/Developer/Xcode/Archives/$(date +%Y-%m-%d)/Amgijwi-<버전>-<빌드번호>.xcarchive
 xcodebuild -exportArchive -allowProvisioningUpdates -exportOptionsPlist ExportOptions.plist \
-  -archivePath ~/Library/Developer/Xcode/Archives/$(date +%Y-%m-%d)/Amgijwi-1.0-<빌드번호>.xcarchive \
+  -archivePath ~/Library/Developer/Xcode/Archives/$(date +%Y-%m-%d)/Amgijwi-<버전>-<빌드번호>.xcarchive \
   -exportPath /tmp/amgijwi-export
 ```
 
