@@ -3137,8 +3137,11 @@ const LEGACY = {
       mascot.away = ""; mascot.awayGap = 0; VISIT = visit0;
       // 설정 칸
       data.closet.cheese = 40; go("set");
-      r.card = [seen($("#nickCard")), $("#nickIn").value, /치즈 30 · 바꾸기/.test($("#nickSave").textContent)];
-      $("#nickIn").value = "새이름"; $("#nickSave").click(); r.cardSave = [data.nick.name, data.closet.cheese, $("#nickIn").value];
+      r.card = [seen($("#nickCard")), $("#nickIn").value, $("#nickSave").textContent.trim(), Math.round($("#nickSave").getBoundingClientRect().height) === Math.round($("#nickIn").getBoundingClientRect().height), Math.round($("#nickSave").getBoundingClientRect().top) === Math.round($("#nickIn").getBoundingClientRect().top)];
+      // 치즈가 드는 저장은 확인창을 먼저 띄운다. 취소하면 그대로, 바꾸기를 누르면 저장
+      $("#nickIn").value = "새이름"; $("#nickSave").click(); r.cardAsk = [$("#dlg").classList.contains("on"), /치즈 30개를 써서 "새이름"/.test($("#dlgM").textContent), /40개 → 10개/.test($("#dlgM").textContent), data.nick.name !== "새이름", data.closet.cheese];
+      $("#dlgNo").click(); r.cardNo = [data.nick.name !== "새이름", data.closet.cheese];
+      renderSettings(); $("#nickIn").value = "새이름"; $("#nickSave").click(); $("#dlgYes").click(); r.cardSave = [data.nick.name, data.closet.cheese, $("#nickIn").value];
       data.closet.cheese = 3; renderSettings(); $("#nickIn").value = "또바꿈"; $("#nickSave").click(); r.cardPoor = [data.nick.name, /27개 모자라요/.test($("#nickMsg").textContent)];
       await wait(300);
       r.small = [...document.querySelectorAll("#nickCard *")].filter(el => seen(el) && [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()))
@@ -3186,7 +3189,9 @@ const LEGACY = {
     eq("이름 지우기는 무료이고, 지운 뒤 다시 등록은 치즈 30개", [r.cleared, r.reReg], [["", true, 30, "", "cheese", 12], [30, false, 10]]);
     ok("홈 인사말이 이름을 부른다", r.greet);
     eq("기다렸다는 말 · 생일 알림 · 부르는 알림도 이름을 부른다", [r.away, r.bdayAlarm, r.nudge], ["철이님, 흥… 3일 만이츄. 기다렸츄", "철이님, 생일 축하해츄!", "철이님, 3일째 기다렸츄…"]);
-    eq("설정에 내 이름 칸(지금 이름과 바꾸는 값)", r.card, [true, "철이", true]);
+    eq("설정에 내 이름 칸: 지금 이름, 짧은 \"바꾸기\", 입력칸과 같은 높이 · 같은 줄", r.card, [true, "철이", "바꾸기", true, true]);
+    eq("치즈가 드는 저장은 확인창부터(이름 · 쓰는 치즈 · 남는 치즈), 아직 안 바뀐다", r.cardAsk, [true, true, true, true, 40]);
+    eq("확인창에서 취소하면 그대로", r.cardNo, [true, 40]);
     eq("설정에서 바꾸면 치즈가 줄고 칸이 새 이름으로", r.cardSave, ["새이름", 10, "새이름"]);
     eq("설정에서 치즈가 모자라면 바꾸지 않고 알려준다", r.cardPoor, ["새이름", true]);
     eq("내 이름 칸의 도트 글꼴도 16px 이상", r.small, []);

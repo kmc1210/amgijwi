@@ -40,15 +40,22 @@ function nickLead(text){ const c = nickCall(); return c ? c + ", " + text : text
 function nickCost(){ return (!data.nick.had || data.nick.free) ? 0 : NICK_PRICE; }
 
 /* 이름을 정하거나 바꾼다. 돌려주는 것: {ok:true, cost} 또는 {ok:false, why:"empty" | "long" | "same" | "cheese" | "app"} */
-function setNick(raw){
+/* 저장해도 되는가만 본다(치즈는 쓰지 않는다). 설정 칸은 치즈가 들면 이걸로 먼저 보고 확인창을 띄운다 */
+function nickCheck(raw){
   if(!isDot()) return {ok:false, why:"app"};
-  const text = cleanNickText(raw), had = data.nick.had;
+  const text = cleanNickText(raw);
   if(!text) return {ok:false, why:"empty"};
   /* 길면 잘라서 저장하지 않는다. 잘린 이름을 고치느라 무료 고침을 쓰게 된다 */
   if(nickChars(text).length > NICK_MAX) return {ok:false, why:"long"};
   if(text === data.nick.name) return {ok:false, why:"same"};
   const cost = nickCost();
   if(data.closet.cheese < cost) return {ok:false, why:"cheese", lack: cost - data.closet.cheese};
+  return {ok:true, text: text, cost: cost};
+}
+function setNick(raw){
+  const c = nickCheck(raw);
+  if(!c.ok) return c;
+  const text = c.text, had = data.nick.had, cost = c.cost;
   data.closet.cheese -= cost;
   /* 처음 등록하면 무료 고침이 한 번 생기고, 그 고침을 쓰면 사라진다 */
   data.nick = {name: text, free: !had, had: true};
@@ -81,7 +88,7 @@ function nickSettings(){
   card.innerHTML = `<h4>내 이름</h4>
     <p>${n.name ? "쥐돌이가 <b>" + esc(nickCall()) + "</b>이라고 불러요. " : "이름을 알려 주면 쥐돌이가 그 이름으로 불러요. "}${note}</p>
     <div class="fld nickrow"><input type="text" id="nickIn" maxlength="${NICK_MAX * 2}" placeholder="${NICK_MAX}자까지" value="${esc(n.name)}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="내 이름">
-      <button type="button" class="cta ghost" id="nickSave">${n.name ? (cost ? "치즈 " + cost + " · 바꾸기" : "무료로 고치기") : (cost ? "치즈 " + cost + " · 등록" : "등록")}</button></div>
+      <button type="button" class="cta ghost" id="nickSave">${n.name ? (cost ? "바꾸기" : "고치기") : "등록"}</button></div>
     <div class="nickmsg" id="nickMsg"></div>${n.name ? `<button type="button" class="bdclear" id="nickClear">이름 지우기</button>` : ""}`;
   const clear = $("#nickClear");
   if(clear) clear.addEventListener("click", ()=>{
@@ -89,8 +96,9 @@ function nickSettings(){
       clearNick(); renderSettings(); renderGreeting(); toast("이름을 지웠어요");
     });
   });
-  $("#nickSave").addEventListener("click", ()=>{
-    const r = setNick($("#nickIn").value);
+  /* 값(치즈 30개)은 위 설명에 적고 버튼은 짧게. 대신 치즈가 드는 저장은 확인창으로 한 번 더 묻는다 */
+  const save = raw=>{
+    const r = setNick(raw);
     if(r.ok){
       haptic("success"); toast(r.cost ? "이름을 바꿨어요 · 치즈 -" + r.cost : "이름을 저장했어요");
       renderSettings(); renderGreeting();
@@ -98,6 +106,14 @@ function nickSettings(){
     }
     haptic("error");
     $("#nickMsg").textContent = nickWhy(r);
+  };
+  $("#nickSave").addEventListener("click", ()=>{
+    const raw = $("#nickIn").value, c = nickCheck(raw);
+    if(!c.ok || !c.cost){ save(raw); return; }
+    const after = data.closet.cheese - c.cost;
+    confirmBox(data.nick.name ? "이름 바꾸기" : "이름 등록",
+      `치즈 ${c.cost}개를 써서 "${c.text}"(으)로 ${data.nick.name ? "바꿀까요" : "등록할까요"}? 치즈 ${data.closet.cheese}개 → ${after}개`,
+      data.nick.name ? "바꾸기" : "등록", ()=>save(raw));
   });
 }
 
