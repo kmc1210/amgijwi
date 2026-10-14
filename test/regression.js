@@ -2291,6 +2291,23 @@ const LEGACY = {
       closetTry = "pumpkinhead"; buyClosetItem(); r.noBuy = [data.closet.cheese, data.closet.own.indexOf("pumpkinhead"), closetTry];
       r.keepWear = cleanCloset(data.closet).wear.head;
       closetOnSale = realOn;
+      // 달리기: 달리기용 그림이 있는 옷(망토 · 호박 머리)만 입고 달린다
+      data.closet = cleanCloset({ cheese:0, own:["cape", "pumpkinhead", "beret", "pumpkin"], wear:{ body:"cape", head:"pumpkinhead", hand:"pumpkin" } });
+      r.runWear = runWear().map(i => i.id).join(",");
+      const side = RUN_SPR.s0, dressed = runDress(side, runWear(), false), litRows = runDress(side, runWear(), true);
+      r.runDress = [dressed.join("") !== side.join(""), dressed[0].slice(8, 22).indexOf("o") < 0, dressed[26].slice(4, 9) === side[26].slice(4, 9), dressed.join("").indexOf("C") < 0, litRows.join("").indexOf("C") >= 0];
+      data.closet.wear = { head:"beret" }; r.runNone = runWear().length;
+      data.closet.wear = { body:"cape" };
+      const bats = [0,1,2].map(() => ({ x:null, y:null }));
+      const fxL = runFxSVG(closetItem("cape"), { x:200, y:100, flip:false }, 0, bats, 402, 300), fxR = runFxSVG(closetItem("cape"), { x:200, y:100, flip:true }, 0, [0,1,2].map(() => ({ x:null, y:null })), 402, 300);
+      r.runFx = [(fxL.match(/<rect/g) || []).length > 60, bats.every(b => b.x > 200), fxL !== fxR];
+      // 옷장: 효과 있는 아이템에 "효과", 입어 보면 한 줄 설명
+      data.closet = cleanCloset({ cheese:300, own:[], wear:{} });
+      closetOnSale = (it, today) => realOn(it, today || "2026-10-20");
+      openCloset("home"); closetSlot = "body"; renderCloset();
+      r.perkTag = [!!document.querySelector('#cGrid [data-i="cape"] .fx'), !!document.querySelector('#cGrid [data-i="apron"] .fx')];
+      tapClosetItem("cape"); r.perkLine = ($("#cBuy .perk") || {}).textContent;
+      closetOnSale = realOn; closetTry = ""; closetSlot = "head";      // 다음 옷장 테스트는 머리 칸에서 시작한다
       data = JSON.parse(backup); data.closet = cleanCloset(data.closet); persist(); go("home");
       return r;
     });
@@ -2316,6 +2333,12 @@ const LEGACY = {
     eq("입어 보는 사이에 판매가 끝나면 내리고 알린다", r.endedTry, ["", "핼러윈 판매가 끝났어요"]);
     eq("기간이 지나면 살 수 없다", r.noBuy, [140, -1, ""]);
     eq("기간이 지나도 산 것은 계속 입는다", r.keepWear, "witchhat");
+    eq("달릴 때 입는 옷: 망토 · 호박 머리(호박 바구니 · 베레모는 벗는다)", r.runWear, "cape,pumpkinhead");
+    eq("달리기 그림: 덧그리고, 호박 머리가 귀를 덮고, 앞발은 그대로, 번쩍일 때만 빛난다", r.runDress, [true, true, true, true, true]);
+    eq("달리기용 그림이 없는 옷만 입었으면 그대로 달린다", r.runNone, 0);
+    eq("망토: 자락 · 박쥐를 그리고, 박쥐는 등 뒤(왼쪽으로 달리면 오른쪽)에 있다", r.runFx, [true, true, true]);
+    eq("옷장: 효과 있는 아이템에만 \"효과\" 표시", r.perkTag, [true, false]);
+    eq("입어 보면 효과 설명 한 줄", r.perkLine, "달릴 때 망토가 펄럭이고 박쥐가 따라와요");
   }
 
   // ── 6-10p. 1.1 쥐돌이 옷장 ─────────────────────────────────────

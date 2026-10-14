@@ -116,6 +116,7 @@ function stopPanic(){
   if(panicT){ clearInterval(panicT); panicT = null; }
   const L = $("#panicLayer"); if(L) L.classList.remove("on");
   const m = $("#mascot"); if(m) m.style.visibility = "";
+  const fx = $("#panicFx"); if(fx) fx.innerHTML = "";
   const b = $("#mbubble"); if(b) b.style.opacity = "";
 }
 function runPanic(laps){
@@ -210,6 +211,10 @@ function runLane(laps){
   stopSip();
   L.classList.add("on");                    // 켠 뒤에 재야 자리가 나온다
   const plan = lanePlan(laps);
+  /* 달리기용 그림이 있는 옷(망토 · 호박 머리)은 입고 달린다. 망토면 자락이 펄럭이고 박쥐 셋이 따라온다 (closet.js) */
+  const wear = runWear(), cape = wear.filter(it=>it.run.tail)[0];
+  const fx = $("#panicFx"), bats = cape && cape.run.bats ? [0, 1, 2].map(()=>({x:null, y:null})) : [];
+  const head = wear.some(it=>it.slot === "head");
   $("#mascot").style.visibility = "hidden";
   $("#mbubble").style.opacity = "0";        // 뛰는 줄이 말풍선 자리다. 끝나면 다시 말한다
   let i = 0, rot = null;
@@ -221,11 +226,12 @@ function runLane(laps){
       return;
     }
     const f = plan[i];
-    R.innerHTML = rowsSVG(f.rows, f.flip);
+    R.innerHTML = rowsSVG(wear.length ? runDress(f.rows, wear, Math.floor(i/8) % 3 === 0) : f.rows, f.flip);
+    if(fx) fx.innerHTML = cape ? runFxSVG(cape, f, i, bats, L.clientWidth, L.clientHeight) : "";
     R.style.transform = "translate3d(" + f.x + "px," + f.y + "px,0)";
     const k = SIREN_DOT_ROT[Math.floor(i/3) % 4];
     if(k !== rot){ rot = k; B.innerHTML = sirenDotSVG(k); }
-    B.style.transform = "translate3d(" + (f.x + 13) + "px," + (f.y - 14) + "px,0)";
+    B.style.transform = "translate3d(" + (f.x + 13) + "px," + (f.y - (head ? 24 : 18)) + "px,0)";     // 모자를 쓰면 그 위로
     S.style.transform = "translate3d(" + f.sh.x + "px," + f.sh.y + "px,0) scale(" + f.sh.s.toFixed(2) + ")";
     S.style.opacity = String(f.sh.o);
     i++;

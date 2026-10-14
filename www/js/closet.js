@@ -15,6 +15,8 @@ Object.keys(CLOSET_PAL).forEach(k=>{ MOUSE_PAL[k] = CLOSET_PAL[k]; });
 const CLOSET_SLOTS = [["head","머리"],["face","얼굴"],["body","몸"],["hand","손"]];
 /* 기간 한정 아이템(season). 그 날까지만 옷장에 나오고 살 수 있다. 산 것은 기간이 지나도 그대로 입는다 */
 const HALLOWEEN = {name:"핼러윈", until:"2026-11-08"};
+/* 망토를 입고 달릴 때 뒤를 따라오는 작은 박쥐(날개 위 · 아래 두 장) */
+const RUN_BAT = [["H.....H", "HH.H.HH", ".H2H2H.", "..HHH.."], [".......", ".HH.HH.", "HHH2H2H", "H..H..H"]];
 const CLOSET_ITEMS = [
   {id:"beret", slot:"head", name:"베레모", price:20, y:1, rows:[
       ".............11.............",
@@ -149,7 +151,21 @@ const CLOSET_ITEMS = [
       ".....WJJJJJJJKKJJJJJJJW.....",
       ".....WJJKJKJKJJKJKJKJJW.....",
       "......WWWWWWWWWWWWWWWW......"],
-    glow:{K:"C"}},
+    glow:{K:"C"},
+    perk:"깜빡일 때 번쩍이고, 달릴 때도 써요",
+    run:{y:0, rows:[
+        "........___aA_________......",
+        "........__AA__________......",
+        "........WWJJJJWW______......",
+        ".......WJJJWJJJJW_____......",
+        "......WJJJJWJJJJJW____......",
+        "......WJKKJWJJJJJW____......",
+        ".....WJJKKJWJJJJJJW___......",
+        ".....WJJJJJWJJJJJJW.........",
+        ".....WKJKJKWJJJJJJW.........",
+        "......WJKKKWJJJJJW..........",
+        "......WWJJJWJJJJWW..........",
+        "........WWWWWWWW............"]}},
   /* 날개 없이 박쥐 얼굴만, 오른쪽 귀 옆에 비스듬히 꽂은 핀 */
   {id:"batpin", slot:"head", name:"박쥐 머리핀", price:20, y:1, season:HALLOWEEN, rows:[
       "..................H.........",
@@ -190,7 +206,77 @@ const CLOSET_ITEMS = [
       "KKKKKDKKK2........2KKKDKKKKK",
       "KKKKKDKKK2........2KKKDKKKKK",
       "KKKKKDKK2..........2KKDKKKKK",
-      "KKKKKKKK2..........2KKKKKKKK"]},
+      "KKKKKKKK2..........2KKKKKKKK"],
+    perk:"달릴 때 망토가 펄럭이고 박쥐가 따라와요",
+    run:{y:18, cells:".owc", rows:[
+        "....................KK......",
+        "...................K22K.....",
+        "..................K222K.....",
+        "...............qRRKKKKK.....",
+        "............qRRq............",
+        ".....RR.RRqR................",
+        ".....RqRqR..................",
+        "......RRR...................",
+        "......R.R...................",
+        "......q..q.................."],
+      tail:[[
+          "..KKKK................",
+          ".KKKKK........KDK.....",
+          "KKKKKK......DKKKKKDKK.",
+          "KKKKKK....KKKKKKKKKKKD",
+          "KKKKKK...DKKKK2K222222",
+          "2KKKKK.KKKKKKK22222222",
+          "22KKKKDKKKKKK2.2......",
+          ".22KKKKKKKKK22........",
+          "..22KKKKKK222.........",
+          "...22KKKK222..........",
+          "....22KKK2............",
+          ".....2KK2.............",
+          "......222.............",
+          "......22..............",
+          "......................",
+          "......................",
+          "......................",
+          "......................"],
+        [
+          "..KKKK................",
+          ".KKKKK................",
+          "KKKKKK...DKKD.........",
+          "KKKKKK.KKKKKKKKD....KD",
+          "KKKKKKDKKKKKKKKKKKDKK2",
+          "2KKKKKKKKKKKKKKKKKKK22",
+          "22KKKKKKKKKKKK2KK2222.",
+          ".22KKKKKK22222222222..",
+          "..22KKKKK22222.22.....",
+          "...22KKK2.............",
+          "....22222.............",
+          ".....222..............",
+          "......................",
+          "......................",
+          "......................",
+          "......................",
+          "......................",
+          "......................"],
+        [
+          "..KKKK................",
+          ".KKKKK..............KD",
+          "KKKKKK.............KK2",
+          "KKKKKKDKK........KDK22",
+          "KKKKKKKKKDKK...DKKK22.",
+          "2KKKKKKKKKKKDKKKK222..",
+          "22KKKKKKKKKKKKKKK22...",
+          ".22KKKKKKKKKKKKK2.....",
+          "..22KKKKKKKKKK222.....",
+          "...22K2K2222K222......",
+          "....2222222222........",
+          ".....2.2....2.........",
+          "......................",
+          "......................",
+          "......................",
+          "......................",
+          "......................",
+          "......................"]],
+      bats:true}},
   /* 두 손으로 드는 호박 바구니. 깜빡일 때 눈 · 입이 번쩍인다(glow) — 빛나는 아이템이라 더 비싸다 */
   {id:"pumpkin", slot:"hand", name:"호박 바구니", price:60, y:22, season:HALLOWEEN, rows:[
       "..........ZZZZZZZZ..........",
@@ -203,7 +289,8 @@ const CLOSET_ITEMS = [
       ".owcwwppcJKJKJKJKJKcppwwcwo.",
       ".ocwwwddcJJKKKKKKJJcddwwwco.",
       ".........WWWWWWWWWW........."],
-    glow:{K:"C"}}
+    glow:{K:"C"},
+    perk:"깜빡일 때 눈 · 입이 번쩍여요"}
 ];
 /* 치즈: 한 바퀴 +1(하루 10개까지), 7일 연속 접속 +5.
    한 바퀴는 5장 이상이어야 친다 — 한 장짜리 바퀴를 열 번 넘겨 몇 초 만에 하루치를 받던 구멍을 막는다.
@@ -479,6 +566,7 @@ function renderCloset(){
     return `<button type="button" class="citem${own ? " own" : ""}${wear ? " wear" : ""}${trying ? " try" : ""}" data-i="${i.id}">
       <span class="th"><span style="margin-top:${off}px">${itemPreviewSVG(i.id)}</span></span>
       <span class="nm">${esc(i.name)}</span><span class="pr">${tag}</span>
+      ${i.perk && !own ? `<span class="fx">효과</span>` : ""}
       ${i.season && !own ? `<span class="lim">${esc(i.season.name)} · ~${Number(until[1])}/${Number(until[2])}</span>` : ""}</button>`;
   }).join("");
   document.querySelectorAll("#cTabs button").forEach(b=>b.addEventListener("click", ()=>{
@@ -491,6 +579,51 @@ function renderCloset(){
   adButton();                   // 광고 보고 치즈 받기 (ads.js)
   scheduleClosetBlink();
 }
+/* ---------- 달릴 때 입는 옷 (mascot.js 의 runLane) ----------
+   달리기는 옆모습 그림이라 정면 옷을 얹을 수 없다. 달리기용 덧그림(run)이 있는 옷만 입고 달리고, 나머지는 달리는 동안 벗는다.
+   run.rows 는 옆모습 28×40 위의 덧그림(y 행부터). "_" 는 지우는 칸(호박 머리가 귀를 덮는다), cells 가 있으면 그 칸에만 칠한다(망토).
+   lit 이면 빛나는 옷(glow)은 빛나는 색으로 — 호박 머리가 달리며 번쩍인다 */
+function runWear(){
+  const w = wornNow();
+  return ["body", "hand", "face", "head"].map(s=>closetItem(w[s])).filter(it=>it && it.run);
+}
+function runDress(rows, items, lit){
+  const g = rows.map(r=>r.split(""));
+  items.forEach(it=>{
+    const glow = lit && it.glow ? it.glow : null;
+    it.run.rows.forEach((r, k)=>{
+      const row = g[it.run.y + k]; if(!row) return;
+      for(let x = 0; x < r.length; x++){
+        let ch = r[x];
+        if(ch === ".") continue;
+        if(ch === "_"){ row[x] = "."; continue; }
+        if(it.run.cells && it.run.cells.indexOf(row[x]) < 0) continue;
+        row[x] = glow && glow[ch] ? glow[ch] : ch;
+      }
+    });
+  });
+  return g.map(r=>r.join(""));
+}
+/* 망토 자락 · 따라오는 박쥐. 달리기 층(#panicLayer) 전체에 그리는 그림 한 장. 한 칸 = 2px(쥐돌이 56×80 과 같다).
+   bats 는 박쥐 자리(부드럽게 따라오도록 그릴 때마다 조금씩 다가간다) */
+function runFxSVG(it, f, i, bats, W, H){
+  let out = "";
+  const px = (rows, ox, oy, flip)=>rows.forEach((r, y)=>{ for(let x = 0; x < r.length; x++){
+    const ch = r[x]; if(ch === "." || !MOUSE_PAL[ch]) continue;
+    out += `<rect x="${ox + (flip ? r.length - 1 - x : x)*2}" y="${oy + y*2}" width="2" height="2" fill="${MOUSE_PAL[ch]}"/>`; } });
+  /* 자락: 목 뒤(옆모습 18열 · 18행)에서 뒤로. 오른쪽을 보고 달리면(flip) 거울로 */
+  const t = it.run.tail[Math.floor(i / 2) % it.run.tail.length];
+  px(t, f.flip ? f.x + (28 - 18 - t[0].length)*2 : f.x + 18*2, f.y + 18*2, f.flip);
+  const back = f.flip ? -1 : 1;
+  bats.forEach((b, k)=>{
+    const tx = f.x + 20 + back*(40 + k*24), ty = f.y - 4 + k*16;
+    if(b.x === null){ b.x = tx; b.y = ty; }
+    b.x += (tx - b.x)*(0.18 - k*0.03); b.y += (ty - b.y)*0.2;
+    px(RUN_BAT[Math.floor((i + k*2) / 2) % 2], Math.round(b.x), Math.round(b.y + Math.sin((i + k*4) / 3)*5), false);
+  });
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" shape-rendering="crispEdges" aria-hidden="true">${out}</svg>`;
+}
+
 /* 입어 보는 중일 때 무대 아래에 뜨는 줄: 이름 · 값 · 사기 · 그만 보기. 치즈가 모자라면 몇 개 모자란지 알려주고 사기는 잠근다 */
 function closetBuyBar(){
   const bar = $("#cBuy"); if(!bar) return;
@@ -498,7 +631,8 @@ function closetBuyBar(){
   if(!it){ bar.innerHTML = ""; return; }
   const lack = it.price - data.closet.cheese;
   bar.innerHTML = `<div class="cbuy">
-      <div class="who"><b>${esc(it.name)}</b><span>${lack > 0 ? "치즈가 " + lack + "개 모자라요" : "입어 보는 중이에요"}</span></div>
+      <div class="who"><b>${esc(it.name)}</b><span>${lack > 0 ? "치즈가 " + lack + "개 모자라요" : "입어 보는 중이에요"}</span>
+        ${it.perk ? `<em class="perk">${esc(it.perk)}</em>` : ""}</div>
       <button type="button" class="buy" id="cBuyBtn"${lack > 0 ? " disabled" : ""}><span class="ci">${cheeseSVG()}</span>${it.price} 사기</button>
       <button type="button" class="no" id="cBuyNo">그만 보기</button></div>`;
   $("#cBuyBtn").addEventListener("click", buyClosetItem);
