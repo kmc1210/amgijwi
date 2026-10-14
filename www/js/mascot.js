@@ -208,15 +208,16 @@ function lanePlan(laps){
 }
 /* 달릴 때 얼굴: 놀라서 눈이 휘둥그레(눈동자를 한 칸으로), 털 명암으로 둥근 눈썹(목 줄과 같은 색 c), 이마 뒤 땀 한 방울.
    입은 그대로(명암만). 옆모습(s0~s5)과 돌아설 때 정면(qf) 둘 다. 달리기 그림(RUN_SPR)은 그대로 두고 그릴 때 바꾼다 */
-const PANIC_SIDE = [[13,6,"h"],[12,5,"h"],[12,7,"h"],[12,6,"k"], [8,4,"c"],[8,5,"c"],[8,6,"c"],[8,7,"c"],[9,4,"c"],[9,7,"c"],
+/* 눈동자 아래 칸을 흰자로(한 칸 눈동자) · 눈썹 · 땀. 테두리(o) · 귀(p)는 덮지 않는다 — 윤곽이 끊기지 않게 */
+const PANIC_SIDE = [[13,6,"h"], [8,6,"c"],[8,7,"c"],[9,5,"c"],[9,8,"c"],
                     [9,17,"B"],[10,16,"S"],[10,17,"B"],[11,16,"S"],[11,17,"S"]];
-const PANIC_FRONT = [[13,5,"h"],[13,14,"h"],[12,13,"h"],[12,15,"h"], [8,4,"c"],[8,5,"c"],[8,6,"c"],[9,7,"c"],
-                     [8,13,"c"],[8,14,"c"],[8,15,"c"],[9,12,"c"],[9,16,"c"], [6,19,"B"],[7,19,"S"],[7,20,"B"],[8,19,"S"],[8,20,"S"]];
+const PANIC_FRONT = [[13,5,"h"],[13,14,"h"], [8,5,"c"],[8,6,"c"],[9,7,"c"],
+                     [8,13,"c"],[8,14,"c"],[8,15,"c"],[9,12,"c"],[9,16,"c"], [7,17,"B"],[8,17,"S"],[8,18,"S"]];
 const panicFaceMemo = new Map();
 function panicFace(rows){
   if(!panicFaceMemo.has(rows)){
     const g = rows.map(r=>r.split(""));
-    (rows === RUN_SPR.qf ? PANIC_FRONT : PANIC_SIDE).forEach(([y, x, ch])=>{ if(g[y] && g[y][x] !== undefined && g[y][x] !== ".") g[y][x] = ch; });
+    (rows === RUN_SPR.qf ? PANIC_FRONT : PANIC_SIDE).forEach(([y, x, ch])=>{ if(g[y] && g[y][x] !== undefined && ".op".indexOf(g[y][x]) < 0) g[y][x] = ch; });
     panicFaceMemo.set(rows, g.map(r=>r.join("")));
   }
   return panicFaceMemo.get(rows);
@@ -226,7 +227,7 @@ function panicBits(sweat, dust){
   let out = "";
   sweat.forEach(s=>{ out += `<rect x="${Math.round(s.x)}" y="${Math.round(s.y)}" width="2" height="4" fill="${MOUSE_PAL.S}"/><rect x="${Math.round(s.x)}" y="${Math.round(s.y)}" width="2" height="2" fill="${MOUSE_PAL.B}"/>`; });
   dust.forEach(d=>{ const z = d.a > 4 ? 6 : 4;
-    out += `<rect x="${d.x}" y="${d.y}" width="${z}" height="${z}" fill="${d.a > 4 ? MOUSE_PAL.g : MOUSE_PAL.L}"/><rect x="${d.x + d.dx}" y="${d.y - 4}" width="${z - 2}" height="${z - 2}" fill="${MOUSE_PAL.L}"/>`; });
+    out += `<rect x="${d.x}" y="${d.y}" width="${z}" height="${z}" fill="${d.a > 4 ? MOUSE_PAL.g : MOUSE_PAL.L}"/><rect x="${d.x + d.vx*3}" y="${d.y - 4}" width="${z - 2}" height="${z - 2}" fill="${MOUSE_PAL.L}"/>`; });
   return out;
 }
 function runLane(laps){
@@ -244,6 +245,7 @@ function runLane(laps){
   $("#mbubble").style.opacity = "0";        // 뛰는 줄이 말풍선 자리다. 끝나면 다시 말한다
   let i = 0, rot = null;
   const sweat = [], dust = [];
+  let fxLast = "";
   panicT = setInterval(()=>{
     if(i >= plan.length || !$("#s-home").classList.contains("active")){
       const done = $("#s-home").classList.contains("active");
@@ -258,15 +260,19 @@ function runLane(laps){
     const rows = !wear.length ? face : side ? runDressed(face, wear, lit) : dressRows(face, lit ? "blink" : "stand", front);
     R.innerHTML = rowsSVG(rows, f.flip);
     /* 땀은 몇 걸음마다 이마 뒤에서 뒤로 튀고, 먼지는 발이 닿을 때(s0 · s3) 발 뒤에서 인다. 뒤 = 보는 쪽의 반대 */
-    const back = f.flip ? -1 : 1;
-    if(side && i % 9 === 0) sweat.push({x:f.x + (f.flip ? 20 : 34), y:f.y + 20, vx:3*back, vy:-3, a:10});
-    if(f.rows === RUN_SPR.s0 || f.rows === RUN_SPR.s3) dust.push({x:f.x + (f.flip ? 8 : 42), y:f.sh.y - 2, dx:6*back, a:7});
-    sweat.forEach(s=>{ s.x += s.vx; s.y += s.vy; s.vy += 0.8; s.a--; });
-    dust.forEach(d=>{ d.x += 2*back; d.y -= 1; d.a--; });
-    for(let k = sweat.length - 1; k >= 0; k--) if(sweat[k].a <= 0) sweat.splice(k, 1);
-    for(let k = dust.length - 1; k >= 0; k--) if(dust[k].a <= 0) dust.splice(k, 1);
-    if(fx) fx.innerHTML = `<svg width="${fxW}" height="${fxH}" viewBox="0 0 ${fxW} ${fxH}" shape-rendering="crispEdges" aria-hidden="true">`
-      + (cape ? runFxSVG(cape, f, i, bats, side) : "") + panicBits(sweat, dust) + `</svg>`;
+    if(fx){
+      /* 방향은 생길 때 정한다 — 돌아서도 이미 튄 땀 · 먼지는 원래 쪽으로 간다 */
+      const back = f.flip ? -1 : 1;
+      if(side && i % 9 === 0) sweat.push({x:f.x + (f.flip ? 20 : 34), y:f.y + 20, vx:3*back, vy:-3, a:10});
+      if(f.rows === RUN_SPR.s0 || f.rows === RUN_SPR.s3) dust.push({x:f.x + (f.flip ? 8 : 42), y:f.sh.y - 2, vx:2*back, a:7});
+      sweat.forEach(s=>{ s.x += s.vx; s.y += s.vy; s.vy += 0.8; s.a--; });
+      dust.forEach(d=>{ d.x += d.vx; d.y -= 1; d.a--; });
+      for(let k = sweat.length - 1; k >= 0; k--) if(sweat[k].a <= 0) sweat.splice(k, 1);
+      for(let k = dust.length - 1; k >= 0; k--) if(dust[k].a <= 0) dust.splice(k, 1);
+      const bits = (cape ? runFxSVG(cape, f, i, bats, side) : "") + panicBits(sweat, dust);
+      const html = bits ? `<svg width="${fxW}" height="${fxH}" viewBox="0 0 ${fxW} ${fxH}" shape-rendering="crispEdges" aria-hidden="true">${bits}</svg>` : "";
+      if(html !== fxLast){ fx.innerHTML = html; fxLast = html; }      // 그릴 게 없거나 같으면 건드리지 않는다
+    }
     R.style.transform = "translate3d(" + f.x + "px," + f.y + "px,0)";
     const k = SIREN_DOT_ROT[Math.floor(i/3) % 4];
     if(k !== rot){ rot = k; B.innerHTML = sirenDotSVG(k); }

@@ -2303,8 +2303,9 @@ const LEGACY = {
       r.runFx = [(fxL.match(/<rect/g) || []).length > 20, bats.every(b => b.x > 200), fxL !== fxR];
       // 달릴 때 얼굴: 놀란 눈(눈동자 한 칸) · 명암 눈썹(c) · 땀. 달리기 그림 원본은 그대로
       const pf = panicFace(RUN_SPR.s0), pq = panicFace(RUN_SPR.qf);
-      r.panic = [pf[12][6] === "k" && pf[13][6] === "h", pf[8].slice(4, 8), pf.join("").indexOf("B") >= 0, pq[13][5] === "h" && pq[13][14] === "h", RUN_SPR.s0[13][6] === "k", panicFace(RUN_SPR.s0) === pf];
-      r.bits = [/<rect/.test(panicBits([{ x:10, y:10, vx:3, vy:0, a:5 }], [{ x:20, y:20, dx:6, a:6 }])), panicBits([], [])];
+      r.panic = [pf[12][6] === "k" && pf[13][6] === "h", pf[8].slice(4, 9), pf.join("").indexOf("B") >= 0, pq[13][5] === "h" && pq[13][14] === "h", RUN_SPR.s0[13][6] === "k", panicFace(RUN_SPR.s0) === pf];
+      r.bits = [/<rect/.test(panicBits([{ x:10, y:10, vx:3, vy:0, a:5 }], [{ x:20, y:20, vx:2, a:6 }])), panicBits([], [])];
+      r.outline = ["s0", "s1", "s2", "s3", "s4", "s5", "qf"].every(k => { const a = RUN_SPR[k], b = panicFace(a); return a.every((row, y) => row.split("").every((ch, x) => ".op".indexOf(ch) < 0 || b[y][x] === ch)); });
       // 옷장: 효과 있는 아이템에 "효과", 입어 보면 한 줄 설명
       data.closet = cleanCloset({ cheese:300, own:[], wear:{} });
       closetOnSale = (it, today) => realOn(it, today || "2026-10-20");
@@ -2337,7 +2338,8 @@ const LEGACY = {
     eq("입어 보는 사이에 판매가 끝나면 내리고 알린다", r.endedTry, ["", "핼러윈 판매가 끝났어요"]);
     eq("기간이 지나면 살 수 없다", r.noBuy, [140, -1, ""]);
     eq("기간이 지나도 산 것은 계속 입는다", r.keepWear, "witchhat");
-    eq("달릴 때 얼굴: 놀란 눈 · 명암 눈썹 · 땀, 정면도 놀란 눈, 원본은 그대로, 다시 만들지 않는다", r.panic, [true, ".ccc", true, true, true, true]);
+    eq("달릴 때 얼굴: 놀란 눈 · 명암 눈썹 · 땀, 정면도 놀란 눈, 원본은 그대로, 다시 만들지 않는다", r.panic, [true, ".occw", true, true, true, true]);
+    ok("달릴 때 얼굴은 테두리 · 귀를 덮지 않는다", r.outline);
     eq("땀 · 먼지 조각을 그린다(없으면 빈칸)", r.bits, [true, ""]);
     eq("달릴 때 입는 옷: 망토 · 호박 머리(호박 바구니 · 베레모는 벗는다)", r.runWear, "cape,pumpkinhead");
     eq("달리기 그림: 덧그리고, 호박 머리가 귀를 덮고, 앞발은 그대로, 번쩍일 때만 빛난다", r.runDress, [true, true, true, true, true]);
