@@ -65,7 +65,7 @@ final class WebAppViewController: UIViewController {
         /// 진동 통로. 웹이 느낌 이름만 넘긴다 (HapticBridge.swift).
         config.userContentController.add(haptics, name: HapticBridge.name)
 
-        /// 보상형 광고 통로. 옷장에서 광고 버튼을 누를 때만 쓴다 (AdBridge.swift).
+        /// 보상형 광고 통로. 옷장 · 학습 결과 화면에서 광고 버튼을 누를 때만 쓴다 (AdBridge.swift).
         config.userContentController.add(ads, name: AdBridge.name)
 
         /// 별점 요청 통로. 전부 외운 바퀴 뒤에 가끔 애플의 평가 창을 청한다 (ReviewBridge.swift).

@@ -2680,6 +2680,26 @@ const LEGACY = {
       adResultFromApp("rewarded"); r.afterShowing = [data.closet.cheese, bgmHold]; closeThanks();
       // 고맙다 창을 닫자마자 다시 떠도 바로 사라지지 않는다
       showThanks(); closeThanks(); showThanks(); await wait(420); r.reopen = $("#thx").hidden; closeThanks(); await wait(400);
+      // 학습 결과 화면에도 같은 버튼. 하루 몫은 옷장과 같이 쓰고, 다 봤으면 결과 화면에서는 숨긴다
+      data.closet.adDay = "2020-01-01"; data.closet.cheese = 0;
+      const live = liveDrinks(); startSession(live.slice(0, 5)); state.stat = { ok:5, again:0, total:5 }; finish(); stopEat(); clearTimeout(reviewT);
+      r.res = [seen($("#resAdBtn")), /광고 보고 치즈 \+5/.test($("#resAdBtn").textContent), /오늘 3번/.test($("#resAdBtn").textContent)];
+      $("#resAdBtn").click(); adResultFromApp("failed"); r.resFail = [seen($("#resAdMsg")), /볼 수 있는 광고가 없어요/.test($("#resAdMsg").textContent), seen($("#resAdBtn"))];
+      $("#resAdBtn").click(); r.resClear = $("#resAdMsg").textContent; adResultFromApp("rewarded");
+      r.resGot = [data.closet.cheese, $("#resCheese small").textContent, /오늘 2번/.test($("#resAdBtn").textContent), seen($("#thx .card")), $("#cMsg").textContent];
+      closeThanks(); await wait(400);
+      $("#resAdBtn").click(); adResultFromApp("rewarded"); closeThanks(); await wait(400);
+      $("#resAdBtn").click(); adResultFromApp("rewarded"); closeThanks(); await wait(400);
+      r.resCap = [data.closet.cheese, adLeft(), !!$("#resAdBtn"), $("#resAd").innerHTML];
+      openCloset("home"); r.resShared = [$("#adBtn").disabled, /내일 또 받아요/.test($("#adBtn").textContent)];
+      // 불러오는 중에 다른 화면으로 가면 부탁을 거둔다. 뒤늦은 결과로는 치즈도 창도 없다
+      data.closet.adDay = "2020-01-01"; go("result"); closetResult(1, state.stat);
+      const c0 = data.closet.cheese, p0 = posts.length; $("#resAdBtn").click(); r.resQuiet = reviewQuiet();
+      go("home"); r.resLeave = [JSON.stringify(posts.slice(p0)), adBusy, bgmHold]; adResultFromApp("rewarded"); r.resLate = [data.closet.cheese === c0, $("#thx").hidden];
+      // 광고가 뜬 뒤에는 거두지 않는다 · 결과 알림은 부탁한 화면(결과 화면)의 줄에
+      go("result"); closetResult(1, state.stat); $("#resAdBtn").click(); adResultFromApp("showing"); adLeave(); r.resShown = adBusy;
+      adResultFromApp("closed"); r.resMsgWhere = [/끝까지 봐야/.test($("#resAdMsg").textContent), $("#cMsg").textContent];
+      delete window.__amgijwiAds; data.closet.adDay = "2020-01-01"; go("result"); closetResult(1, state.stat); r.resOff = $("#resAd").innerHTML; window.__amgijwiAds = true;
       data.closet.adDay = ymd(new Date()); data.closet.adCount = 3;
       // 날이 바뀌면 다시 3번
       data.closet.adDay = "2020-01-01"; r.nextDay = adLeft();
@@ -2716,6 +2736,18 @@ const LEGACY = {
     eq("광고 버튼 · 고맙다 창의 도트 글꼴도 16px 이상", r.small, []);
     ok("고맙다 창은 눌러서 닫는다", r.closedThx);
     eq("하루 3번까지(치즈 15), 다 보면 버튼이 잠긴다", r.cap, [15, 0, true, true]);
+    eq("학습 결과 화면에도 광고 버튼(치즈 +5 · 오늘 3번)", r.res, [true, true, true]);
+    eq("결과 화면: 광고가 없으면 버튼 아래에 알린다", r.resFail, [true, true, true]);
+    eq("결과 화면: 다시 누르면 알림을 지운다", r.resClear, "");
+    eq("결과 화면: 끝까지 보면 치즈 +5 · 치즈 줄도 바뀌고 고맙다 창이 결과 화면 위에 뜬다", r.resGot, [6, "지금 6개", true, true, ""]);
+    eq("결과 화면: 3번 다 보면 버튼을 숨긴다", r.resCap, [16, 0, false, ""]);
+    eq("결과 화면에서 본 것도 옷장의 하루 몫에 들어간다", r.resShared, [true, true]);
+    eq("광고가 꺼진 빌드의 결과 화면에는 버튼이 없다", r.resOff, "");
+    eq("광고를 불러오는 동안에는 별점 창이 끼어들지 않는다", r.resQuiet, false);
+    eq("불러오는 중에 화면을 옮기면 부탁을 거두고 배경음을 돌린다", r.resLeave, ['[{"op":"show"},{"op":"cancel"}]', false, false]);
+    eq("거둔 뒤에 온 결과로는 치즈도 고맙다 창도 없다", r.resLate, [true, true]);
+    eq("광고가 이미 떴으면 거두지 않는다", r.resShown, true);
+    eq("결과 알림은 부탁한 화면의 줄에", r.resMsgWhere, [true, ""]);
     ok("3번을 다 보면 앱에 더 부탁하지 않는다", r.capNoPost);
     eq("광고가 뜬 뒤에는 답을 기다리고 버튼은 잠긴 채", r.showing, [true, 0]);
     ok("광고가 뜨는 동안 배경음을 다시 켜지 않는다", r.hold[0] === true && r.hold[1] === false);

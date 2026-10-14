@@ -1,5 +1,5 @@
 /* 암기쥐 — 광고 보고 치즈 받기 (1.1 · 앱 전용)
-   옷장에서 버튼을 누르면 보상형 광고를 하나 보고, 끝까지 보면 치즈 +5 를 받는다. 하루 3번까지.
+   옷장이나 학습 결과 화면(1.2.1)에서 버튼을 누르면 보상형 광고를 하나 보고, 끝까지 보면 치즈 +5 를 받는다. 하루 3번까지.
    광고는 앱(AdBridge.swift)이 띄운다. 웹은 "보여 달라"고 부탁하고 결과만 받는다 — 웹뷰는 여전히
    바깥과 통신하지 않는다(CSP connect-src 'none' 그대로).
    광고가 꺼진 빌드(window.__amgijwiAds 가 true 가 아님)나 웹에서는 버튼이 아예 나오지 않는다.
@@ -24,24 +24,48 @@ function adLeft(){
 }
 
 let adBusy = false, adWaitT = null;
-/* 옷장의 광고 버튼. renderCloset 이 그릴 때마다 부른다 */
+/* 광고 버튼은 두 곳에 있다: 옷장(#cAd)과 학습 결과 화면(#resAd). 하루 몫은 같이 쓴다.
+   옷장은 다 봤으면 "내일 또 받아요"로 남기고, 결과 화면은 버튼을 숨긴다(끝난 뒤마다 못 받는다고 말하지 않는다).
+   renderCloset · closetResult 가 그릴 때마다, 광고가 끝날 때마다 부른다 */
 function adButton(){
-  const box = $("#cAd"); if(!box) return;
-  if(!adsOn()){ box.innerHTML = ""; return; }
   const left = adLeft();
-  box.innerHTML = `<button type="button" class="adbtn" id="adBtn"${left < 1 || adBusy ? " disabled" : ""}>
+  const btn = id => `<button type="button" class="adbtn" id="${id}"${left < 1 || adBusy ? " disabled" : ""}>
       <span class="ci">${cheeseSVG()}</span><span>${adBusy ? "광고를 불러오는 중…" : "광고 보고 치즈 +" + AD_CHEESE}</span>
       <span class="left">${left < 1 ? "내일 또 받아요" : "오늘 " + left + "번"}</span></button>`;
-  $("#adBtn").addEventListener("click", watchAd);
+  const box = $("#cAd");
+  if(box){
+    box.innerHTML = adsOn() ? btn("adBtn") : "";
+    if($("#adBtn")) $("#adBtn").addEventListener("click", watchAd);
+  }
+  const res = $("#resAd");
+  if(res){
+    res.innerHTML = adsOn() && left > 0 ? btn("resAdBtn") : "";
+    if($("#resAdBtn")) $("#resAdBtn").addEventListener("click", watchAd);
+  }
+}
+/* 광고를 부탁한 화면("result" · "closet")과, 광고가 화면에 떴는가.
+   결과를 알리는 줄은 부탁한 화면의 것이다 */
+let adFrom = "", adShown = false;
+function adMsg(){ return adFrom === "result" ? $("#resAdMsg") : $("#cMsg"); }
+/* 광고를 불러오는 동안 다른 화면으로 가면 부탁을 거둔다(shell.js 의 go 가 부른다).
+   거두지 않으면 뒤늦게 불러온 광고가 학습 카드 위에 느닷없이 뜬다. 이미 떴으면 광고가 화면을 덮고 있어 여기 올 수 없다 */
+function adLeave(){
+  if(!adBusy || adShown) return;
+  const b = adBridge(); if(b) b.postMessage({op:"cancel"});
+  adBusy = false; adFrom = "";
+  clearTimeout(adWaitT);
+  bgmHold = false; armBgm();
+  adButton();
 }
 function watchAd(){
   const b = adBridge();
   if(!b || adBusy || adLeft() < 1 || closetLocked()) return;      // 사기 직후 밀려 올라온 버튼이 잘못 눌리지 않게
-  adBusy = true;
+  adBusy = true; adShown = false;
+  adFrom = $("#s-result").classList.contains("active") ? "result" : "closet";
   /* 광고 소리와 겹치지 않게 배경음을 잠깐 끈다. 끝나면 다시 켠다 */
   bgmHold = true; bgmStop();
   haptic("light");
-  $("#cMsg").textContent = "";
+  $("#cMsg").textContent = ""; $("#resAdMsg").textContent = "";
   adButton();
   clearTimeout(adWaitT);
   /* 기다리다 그만두면 앱에도 알린다. 알리지 않으면 뒤늦게 불러온 광고가 느닷없이 뜬다 */
@@ -52,11 +76,11 @@ function watchAd(){
    showing 광고가 떴다(아직 끝난 게 아니다) · rewarded 끝까지 봤다 · closed 중간에 닫았다 · failed 광고가 없거나 불러오지 못했다 */
 function adResultFromApp(result){
   if(!adBusy) return;               // 부탁한 적이 없거나 이미 끝난 일이다(두 번 받지 않는다)
-  if(result === "showing"){ clearTimeout(adWaitT); return; }
+  if(result === "showing"){ clearTimeout(adWaitT); adShown = true; return; }
   adBusy = false;
   clearTimeout(adWaitT);
   bgmHold = false; armBgm();
-  const msg = $("#cMsg");
+  const msg = adMsg();
   /* 끝까지 봤으면 준다. 하루 몫은 누를 때 이미 확인했다 */
   if(result === "rewarded"){
     const c = data.closet, today = ymd(new Date());
@@ -64,6 +88,8 @@ function adResultFromApp(result){
     c.adCount += 1; c.cheese += AD_CHEESE;
     persist();
     if($("#s-closet").classList.contains("active")) renderCloset(); else adButton();
+    if(adFrom === "result") closetResultAgain();      // 결과 화면의 치즈 줄("지금 N개")을 다시 그린다 (closet.js)
+    adFrom = "";
     closetHome();
     showThanks();
     return;
@@ -71,6 +97,7 @@ function adResultFromApp(result){
   if(msg) msg.textContent = result === "closed" ? "광고를 끝까지 봐야 치즈를 받아요."
                                                 : "지금은 볼 수 있는 광고가 없어요. 잠시 뒤에 다시 해 보세요.";
   if(result !== "closed") haptic("error");
+  adFrom = "";
   adButton();
 }
 

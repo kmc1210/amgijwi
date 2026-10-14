@@ -17,6 +17,7 @@ $("#dlgYes").addEventListener("click", ()=>{ $("#dlg").classList.remove("on"); i
 
 /* ---------- 화면 전환 ---------- */
 function go(name){
+  if(!$("#s-"+name).classList.contains("active")) adLeave();     // 광고를 불러오는 중에 다른 화면으로 가면 부탁을 거둔다 (ads.js)
   if(name !== "result"){ stopEat(); stopCaw(); }
   if(name !== "home"){ stopSip(); stopPanic(); }
   if(name !== "list" && state.selMode) exitSel();

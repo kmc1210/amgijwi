@@ -660,7 +660,15 @@ html.dot #s-home .cchip:active{transform:translate(2px,2px);box-shadow:none;}
 html.dot .cgain{display:flex;align-items:center;justify-content:center;gap:8px;margin:2px auto 16px;
   font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;color:var(--d-t1);}
 html.dot .cgain small{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px;color:var(--d-t2);}
-html.dot #closetBtn{margin-top:12px;}
+html.dot #closetBtn{margin-top:12px;border:0;border-radius:0;background:var(--d-surface);color:var(--d-t1);box-shadow:var(--d-box2);
+  font-family:"NeoDGM",monospace;font-weight:400;font-size:17px;-webkit-font-smoothing:none;}
+/* 결과 화면의 광고 버튼. 옷장의 것(.adbtn)과 같은 모양 */
+html.dot #s-result .resad{width:100%;max-width:300px;margin:-6px auto 14px;}
+html.dot #s-result .resad:empty{display:none;}
+html.dot #s-result .resad .ci{display:inline-block;width:16px;height:16px;image-rendering:pixelated;}
+html.dot #s-result .resad .ci svg{width:100%;height:100%;display:block;}
+html.dot #s-result #resAdMsg{max-width:300px;margin:-6px auto 14px;font-size:13px;color:var(--d-t2);text-align:center;}
+html.dot #s-result #resAdMsg:empty{display:none;}
 html.dot #closetCard{padding:0;}
 html.dot .closetrow{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;color:var(--d-t1);padding:14px 16px;text-align:left;}
 html.dot .closetrow .cm{width:42px;height:60px;flex:0 0 auto;image-rendering:pixelated;}
@@ -719,12 +727,13 @@ html.dot #bdayCard .bdtime label{font:inherit;color:inherit;letter-spacing:0;dis
 
 /* ── 광고 보고 치즈 받기 · 고맙다 창 (1.1 · ads.js) ── */
 html.dot #s-closet #cAd:empty{display:none;}
-html.dot #s-closet .adbtn{display:flex;align-items:center;gap:8px;width:calc(100% - 6px);margin:12px 3px 2px;border:0;padding:11px 12px;
+html.dot :is(#s-closet, #s-result) .adbtn{display:flex;align-items:center;gap:8px;width:calc(100% - 6px);margin:12px 3px 2px;border:0;padding:11px 12px;
   background:var(--d-warn-bg);color:var(--d-t1);font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;text-align:left;box-shadow:var(--d-box2);}
-html.dot #s-closet .adbtn .left{margin-left:auto;font-family:inherit;font-size:16px;color:var(--d-t2);}
-html.dot #s-closet .adbtn:active{transform:translate(2px,2px);}
-html.dot #s-closet .adbtn:disabled{background:var(--d-surface);color:var(--d-t2);}
-html.dot .thx{position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(36,31,26,.35);}
+html.dot :is(#s-closet, #s-result) .adbtn .left{margin-left:auto;font-family:inherit;font-size:16px;color:var(--d-t2);}
+html.dot :is(#s-closet, #s-result) .adbtn:active{transform:translate(2px,2px);}
+html.dot :is(#s-closet, #s-result) .adbtn:disabled{background:var(--d-surface);color:var(--d-t2);}
+html.dot #s-result .adbtn{margin:0 3px;}
+html.dot .thx{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(36,31,26,.35);}
 html.dot .thx[hidden]{display:none;}
 html.dot .thx.out{animation:thxfade .35s steps(3) forwards;}
 @keyframes thxfade{to{opacity:0}}
