@@ -2903,6 +2903,16 @@ const LEGACY = {
       data.pin = "hash"; const shut = widgetSummary();
       r.locked = [shut.locked, shut.recipes.length, shut.memos.length, JSON.stringify(shut).indexOf(d0.name) < 0, JSON.stringify(shut).indexOf("옛 메모") < 0];
       data.pin = pin0; data.memos = memos0;
+      // 위젯을 눌러 들어오면 그 화면으로 간다. 잠금 · 이름 묻는 창에 가려 있으면 닫힌 뒤에, 하던 일이 있으면 가지 않는다
+      const act = () => (document.querySelector(".screen.active") || {}).id, sheetOn = () => $("#sheet").classList.contains("on");
+      go("home"); widgetOpenFromApp("cal", ""); r.openCal = act();
+      go("home"); widgetOpenFromApp("memo", ""); r.openMemo = [act(), state.listTab];
+      go("home"); widgetOpenFromApp("recipe", String(live[1].id)); r.openRecipe = [act(), state.listTab, sheetOn(), $("#sheetBody h2").textContent === live[1].name]; closeSheet();
+      go("home"); widgetOpenFromApp("recipe", "없는것"); r.openGone = [act(), sheetOn()];
+      go("home"); widgetOpenFromApp("엉뚱", ""); r.openOdd = act();
+      go("home"); $("#lock").classList.add("on"); widgetOpenFromApp("cal", ""); r.openLocked = act(); lock.mode = "new"; closeLock(); lock.mode = "enter"; r.openUnlocked = act();
+      go("home"); startSession(live.slice(0, 5)); widgetOpenFromApp("cal", ""); r.openStudy = [act(), widgetPending]; go("home");
+      go("list"); openSheet(live[0].id); widgetOpenFromApp("cal", ""); r.openSheet = [act(), sheetOn()]; closeSheet(); go("home");
       // 달라졌을 때만 넘긴다
       widgetSent = ""; widgetSync(); widgetSync(); r.once = posts.length;
       data.closet.cheese = 28; widgetSync(); r.changed = posts.length; r.isText = typeof posts[0] === "string" && JSON.parse(posts[1]).cheese === 28;
@@ -2915,6 +2925,14 @@ const LEGACY = {
       data = JSON.parse(backup); data.closet = cleanCloset(data.closet); data.bday = cleanBday(data.bday); persist(); go("home");
       return r;
     });
+    eq("위젯을 누르면: 달력 위젯은 일정 탭으로", r.openCal, "s-cal");
+    eq("위젯을 누르면: 메모 위젯은 메모 탭으로", r.openMemo, ["s-list", "memo"]);
+    eq("위젯을 누르면: 레시피 위젯은 그 레시피를 연다", r.openRecipe, ["s-list", "recipe", true, true]);
+    eq("위젯을 누르면: 지워진 레시피면 레시피 탭만", r.openGone, ["s-list", false]);
+    eq("위젯을 누르면: 모르는 주소는 무시한다", r.openOdd, "s-home");
+    eq("위젯을 누르면: 잠금 화면에서는 기다렸다가 풀린 뒤에 간다", [r.openLocked, r.openUnlocked], ["s-home", "s-cal"]);
+    eq("위젯을 누르면: 학습 중이면 가지 않는다", r.openStudy, ["s-study", null]);
+    eq("위젯을 누르면: 시트가 열려 있으면 가지 않는다", r.openSheet, ["s-list", true]);
     eq("달력 위젯: 이번 달 첫날부터의 끝나지 않은 일정을 날짜순으로", r.cal, "걸친 행사,첫날,먼 일정");
     eq("달력 위젯: 시작하는 날 · 끝나는 날", r.calShape, [true, true, true]);
     eq("달력 위젯: PIN 잠금이면 일정을 넘기지 않는다", r.calLocked, [true, 0, 0, true]);

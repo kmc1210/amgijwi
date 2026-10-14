@@ -7,6 +7,9 @@ import CoreHaptics
 final class WebAppViewController: UIViewController {
 
     private var webView: WKWebView!
+    /// 첫 화면이 다 떴는가 · 그 전에 위젯을 눌러 들어온 것(뜬 뒤에 웹에 알린다)
+    private var pageReady = false
+    private var pendingWidget: String?
     private let handler: BundleSchemeHandler?
     private let alarms = AlarmBridge()
     private let share = ShareBridge()
@@ -168,6 +171,26 @@ final class WebAppViewController: UIViewController {
 }
 
 extension WebAppViewController: WKNavigationDelegate {
+
+    /// 위젯을 눌러 들어왔을 때(Widget/AmgijwiWidget.swift 의 WidgetLink). "amgijwi-widget://recipe?id=…" · "…://memo" · "…://cal".
+    /// 웹(www/js/widget.js 의 widgetOpenFromApp)에 어느 화면인지만 알린다. 페이지가 아직 안 떴으면 뜬 뒤에 알린다.
+    /// 그 밖의 주소는 받지 않는다.
+    func openWidget(_ url: URL) {
+        guard url.scheme == "amgijwi-widget", let kind = url.host, ["recipe", "memo", "cal"].contains(kind) else { return }
+        let id = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "id" })?.value ?? ""
+        guard let data = try? JSONSerialization.data(withJSONObject: [kind, String(id.prefix(64))]),
+              let args = String(data: data, encoding: .utf8) else { return }
+        let js = "typeof widgetOpenFromApp === 'function' && widgetOpenFromApp.apply(null, \(args))"
+        if pageReady { webView.evaluateJavaScript(js, completionHandler: nil) } else { pendingWidget = js }
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        pageReady = true
+        if let js = pendingWidget {
+            pendingWidget = nil
+            webView.evaluateJavaScript(js, completionHandler: nil)
+        }
+    }
 
     /// 앱 안에서는 우리 파일만 연다. 바깥 주소는 사파리로 넘긴다.
     /// 지금은 외부 링크가 없지만, 나중에 하나 생겼을 때 앱이 통째로 떠나가면 곤란하다.

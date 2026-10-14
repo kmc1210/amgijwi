@@ -412,6 +412,21 @@ struct ProgressBar: View {
     }
 }
 
+/// 위젯을 눌렀을 때 앱에 넘기는 주소. 앱(Sources/SceneDelegate.swift)이 받아 그 화면을 연다.
+/// 쥐돌이 위젯은 주소를 달지 않는다(그냥 앱이 열린다).
+enum WidgetLink {
+    static let scheme = "amgijwi-widget"       // SceneDelegate 의 것과 같아야 한다
+    static let calendar = URL(string: "\(scheme)://cal")
+    static let memo = URL(string: "\(scheme)://memo")
+    static func recipe(_ id: String?) -> URL? {
+        var c = URLComponents()
+        c.scheme = scheme
+        c.host = "recipe"
+        if let id = id { c.queryItems = [URLQueryItem(name: "id", value: id)] }
+        return c.url
+    }
+}
+
 extension View {
     /// iOS 17 부터는 위젯 바탕을 이렇게 알려줘야 한다(안 그러면 "바탕을 정하라"는 안내가 뜬다).
     @ViewBuilder func widgetBackground(_ color: Color) -> some View {

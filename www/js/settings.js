@@ -75,6 +75,7 @@ function closeLock(){
   $("#lock").classList.remove("on"); lock.buf = "";
   bdayHome();                   // 잠금에 가려 미뤄 둔 생일 폭죽이 있으면 지금 터트린다 (birthday.js)
   if(lock.mode === "enter") openNickAsk();      // PIN 을 쓰는 사람에게는 잠금을 푼 뒤에 이름을 한 번 묻는다 (nick.js)
+  widgetGo();                   // 위젯을 눌러 들어왔으면 잠금을 푼 뒤에 그 화면으로 간다 (widget.js)
 }
 $("#lockCancel").addEventListener("click", closeLock);
 
