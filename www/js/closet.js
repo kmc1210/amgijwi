@@ -331,7 +331,8 @@ data.closet = cleanCloset(data.closet);
    머그(손)는 팔을 가운데로 모으는 칸까지 갖고 있어 먼저 그린다.
    앞치마(몸)는 쥐돌이 몸 색 칸(w · c)에만 칠한다. 그래서 발 · 머그 · 치즈 · 커피잔은 앞치마 앞에 그대로 남고,
    허리띠는 발 뒤로 지나간다(머그를 들면 옆구리를 돌아 보인다).
-   넓은 옷(wide — 뱀파이어 망토)은 몸 바깥의 빈칸 · 테두리(. o)까지 칠해 몸 라인보다 퍼진다. 발 · 앞발 · 손에 든 것은 그래도 앞에 남는다.
+   넓은 옷(wide — 뱀파이어 망토)은 몸 바깥의 빈칸 · 테두리(. o)까지 칠해 몸 라인보다 퍼진다. 팔은 망토 안으로 들어가고,
+   발 · 앞발 · 손에 든 것(머그 · 호박 바구니)은 망토 앞에 남는다.
    깜빡이는 그림(mode blink)에서는 빛나는 아이템(glow — 바꿀 색 표)의 색을 바꿔 그린다 — 호박이 깜빡일 때마다 번쩍인다.
    mode: stand 서 있기 · eat 치즈 먹기 · sip 커피 마시기 · wx 날씨 옷. wear 를 주지 않으면 지금 입은 옷 */
 const CLOSET_BODY_CELLS = "wc", CLOSET_WIDE_CELLS = ".owc";
@@ -549,7 +550,7 @@ function renderCloset(){
   const c = data.closet;
   if(closetTry && c.own.indexOf(closetTry) >= 0) closetTry = "";      // 이미 가진 것은 입어 볼 게 없다
   if(closetTry && !closetOnSale(closetItem(closetTry))){              // 입어 보는 사이에 판매가 끝났다
-    closetTry = ""; $("#cMsg").textContent = "핼러윈 판매가 끝났어요";
+    $("#cMsg").textContent = closetItem(closetTry).season.name + " 판매가 끝났어요"; closetTry = "";
   }
   $("#closetSub").textContent = "치즈 " + c.cheese + "개";
   $("#cCheese").innerHTML = `<span class="ci">${cheeseSVG()}</span><span>${c.cheese}</span>`;
@@ -604,16 +605,22 @@ function runDress(rows, items, lit){
   });
   return g.map(r=>r.join(""));
 }
+/* 달리는 동안 같은 그림을 다시 만들지 않게 기억해 둔다(달릴 때마다 비운다 — 입은 옷이 바뀌었을 수 있다) */
+const runDressMemo = new Map();
+function runDressed(rows, items, lit){
+  const key = rows.join("") + (lit ? "+" : "-");
+  if(!runDressMemo.has(key)) runDressMemo.set(key, runDress(rows, items, lit));
+  return runDressMemo.get(key);
+}
 /* 망토 자락 · 따라오는 박쥐. 달리기 층(#panicLayer) 전체에 그리는 그림 한 장. 한 칸 = 2px(쥐돌이 56×80 과 같다).
    bats 는 박쥐 자리(부드럽게 따라오도록 그릴 때마다 조금씩 다가간다) */
-function runFxSVG(it, f, i, bats, W, H){
+function runFxSVG(it, f, i, bats, W, H, side){
   let out = "";
-  const px = (rows, ox, oy, flip)=>rows.forEach((r, y)=>{ for(let x = 0; x < r.length; x++){
-    const ch = r[x]; if(ch === "." || !MOUSE_PAL[ch]) continue;
-    out += `<rect x="${ox + (flip ? r.length - 1 - x : x)*2}" y="${oy + y*2}" width="2" height="2" fill="${MOUSE_PAL[ch]}"/>`; } });
+  /* 도트 그림(rowsSVG — 같은 색은 한 줄로 묶는다)을 그 자리 · 크기로 끼워 넣는다 */
+  const px = (rows, ox, oy, flip)=>{ out += rowsSVG(rows, flip).replace("<svg ", `<svg x="${ox}" y="${oy}" width="${rows[0].length*2}" height="${rows.length*2}" `); };
   /* 자락: 목 뒤(옆모습 18열 · 18행)에서 뒤로. 오른쪽을 보고 달리면(flip) 거울로 */
   const t = it.run.tail[Math.floor(i / 2) % it.run.tail.length];
-  px(t, f.flip ? f.x + (28 - 18 - t[0].length)*2 : f.x + 18*2, f.y + 18*2, f.flip);
+  if(side !== false) px(t, f.flip ? f.x + (28 - 18 - t[0].length)*2 : f.x + 18*2, f.y + 18*2, f.flip);
   const back = f.flip ? -1 : 1;
   bats.forEach((b, k)=>{
     const tx = f.x + 20 + back*(40 + k*24), ty = f.y - 4 + k*16;

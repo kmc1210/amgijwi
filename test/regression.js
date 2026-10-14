@@ -2300,7 +2300,7 @@ const LEGACY = {
       data.closet.wear = { body:"cape" };
       const bats = [0,1,2].map(() => ({ x:null, y:null }));
       const fxL = runFxSVG(closetItem("cape"), { x:200, y:100, flip:false }, 0, bats, 402, 300), fxR = runFxSVG(closetItem("cape"), { x:200, y:100, flip:true }, 0, [0,1,2].map(() => ({ x:null, y:null })), 402, 300);
-      r.runFx = [(fxL.match(/<rect/g) || []).length > 60, bats.every(b => b.x > 200), fxL !== fxR];
+      r.runFx = [(fxL.match(/<rect/g) || []).length > 20, bats.every(b => b.x > 200), fxL !== fxR];
       // 옷장: 효과 있는 아이템에 "효과", 입어 보면 한 줄 설명
       data.closet = cleanCloset({ cheese:300, own:[], wear:{} });
       closetOnSale = (it, today) => realOn(it, today || "2026-10-20");

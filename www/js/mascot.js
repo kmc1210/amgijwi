@@ -214,7 +214,9 @@ function runLane(laps){
   /* 달리기용 그림이 있는 옷(망토 · 호박 머리)은 입고 달린다. 망토면 자락이 펄럭이고 박쥐 셋이 따라온다 (closet.js) */
   const wear = runWear(), cape = wear.filter(it=>it.run.tail)[0];
   const fx = $("#panicFx"), bats = cape && cape.run.bats ? [0, 1, 2].map(()=>({x:null, y:null})) : [];
-  const head = wear.some(it=>it.slot === "head");
+  const front = {}; wear.forEach(it=>{ front[it.slot] = it.id; });      // 정면(폴짝 · 돌아서기)에서는 옷장 그림 그대로
+  const fxW = L.clientWidth, fxH = L.clientHeight;
+  runDressMemo.clear();
   $("#mascot").style.visibility = "hidden";
   $("#mbubble").style.opacity = "0";        // 뛰는 줄이 말풍선 자리다. 끝나면 다시 말한다
   let i = 0, rot = null;
@@ -226,12 +228,15 @@ function runLane(laps){
       return;
     }
     const f = plan[i];
-    R.innerHTML = rowsSVG(wear.length ? runDress(f.rows, wear, Math.floor(i/8) % 3 === 0) : f.rows, f.flip);
-    if(fx) fx.innerHTML = cape ? runFxSVG(cape, f, i, bats, L.clientWidth, L.clientHeight) : "";
+    /* 옆모습엔 달리기용 덧그림, 정면(폴짝 · 돌아서기 RUN_SPR.qf)엔 옷장 그림을 입힌다. 망토 자락은 옆모습일 때만 */
+    const lit = Math.floor(i/8) % 3 === 0, side = f.rows !== RUN_SPR.qf;
+    const rows = !wear.length ? f.rows : side ? runDressed(f.rows, wear, lit) : dressRows(f.rows, lit ? "blink" : "stand", front);
+    R.innerHTML = rowsSVG(rows, f.flip);
+    if(fx) fx.innerHTML = cape ? runFxSVG(cape, f, i, bats, fxW, fxH, side) : "";
     R.style.transform = "translate3d(" + f.x + "px," + f.y + "px,0)";
     const k = SIREN_DOT_ROT[Math.floor(i/3) % 4];
     if(k !== rot){ rot = k; B.innerHTML = sirenDotSVG(k); }
-    B.style.transform = "translate3d(" + (f.x + 13) + "px," + (f.y - (head ? 24 : 18)) + "px,0)";     // 모자를 쓰면 그 위로
+    B.style.transform = "translate3d(" + (f.x + 13) + "px," + (f.y - 18) + "px,0)";
     S.style.transform = "translate3d(" + f.sh.x + "px," + f.sh.y + "px,0) scale(" + f.sh.s.toFixed(2) + ")";
     S.style.opacity = String(f.sh.o);
     i++;
