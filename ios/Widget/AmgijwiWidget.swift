@@ -299,15 +299,22 @@ extension Color {
 }
 
 /// 앱의 기본 테마 색(크림 바탕 · 짙은 글씨 · 갈색 강조).
+/// 아이폰이 다크 모드면 어두운 색으로. 앱에서 고른 테마(그린 등)는 위젯에 옮기지 않는다 —
+/// 위젯은 다른 앱 위젯과 한 화면에 섞여 놓이니, 다른 위젯들처럼 아이폰 라이트 · 다크만 따라간다.
 enum Ink {
-    static let bg = Color(hex: "#F3E9DC")!
-    static let text = Color(hex: "#241F1A")!
-    static let muted = Color(hex: "#7A6D62")!
-    static let accent = Color(hex: "#A65E2E")!
-    static let track = Color(hex: "#E4D6C4")!
-    static let line = Color(hex: "#4A423A")!
-    static let alert = Color(hex: "#B5453C")!
-    static let span = Color(hex: "#4A7FC1")!        // 달력의 기간 일정 막대
+    static let bg = pair("#F3E9DC", "#241F1A")
+    static let text = pair("#241F1A", "#FCF7F1")
+    static let muted = pair("#7A6D62", "#C7BDB1")
+    static let accent = pair("#A65E2E", "#E0965C")
+    static let track = pair("#E4D6C4", "#3A2F26")
+    static let line = pair("#4A423A", "#8A7A6A")
+    static let alert = pair("#B5453C", "#E0736A")
+    static let span = pair("#4A7FC1", "#6F9BD6")        // 달력의 기간 일정 막대
+
+    private static func pair(_ light: String, _ dark: String) -> Color {
+        let l = UIColor(Color(hex: light)!), d = UIColor(Color(hex: dark)!)
+        return Color(UIColor { $0.userInterfaceStyle == .dark ? d : l })
+    }
 }
 
 struct MouseWidgetView: View {

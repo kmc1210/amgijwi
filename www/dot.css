@@ -424,6 +424,11 @@ html.dot #s-set .setcard p{color:var(--d-t2);}
 html.dot #s-set .setcard .cta:not(:last-child){margin-bottom:16px;}
 /* 테마 · 소리 고르기 */
 html.dot #s-set .theme-b{border:0;border-radius:0;background:var(--d-surface);color:var(--d-t1);margin:2px;box-shadow:var(--d-box2);}
+/* 테마 버튼은 네 개(자동 · 기본 · 다크 · 그린). 좁은 아이폰에서도 한 줄에 들어가게 칸을 나눠 쓰고 색 동그라미를 줄인다 */
+html.dot #s-set #themeBtns{display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:6px;}
+html.dot #s-set #themeBtns .theme-b{min-width:0;padding-left:4px;padding-right:4px;}
+html.dot #s-set #themeBtns .sw{justify-content:center;gap:2px;}
+html.dot #s-set #themeBtns .sw i{width:12px;height:12px;}
 html.dot #s-set .theme-b.on{background:var(--d-warn-bg);color:var(--d-t1);
   box-shadow:0 -2px 0 0 var(--d-acc), 0 2px 0 0 var(--d-acc), -2px 0 0 0 var(--d-acc), 2px 0 0 0 var(--d-acc);}
 html.dot #s-set .sw i{border-radius:0;}

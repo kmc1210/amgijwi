@@ -228,7 +228,10 @@ if(!data || !Array.isArray(data.drinks)){
 data.mastered = data.mastered || [];
 data.needReview = data.needReview || [];
 if(data.mode !== "blank") data.mode = "flip";
-if(["cream","dark","green"].indexOf(data.theme) < 0) data.theme = "cream";
+/* 테마. auto 는 아이폰 라이트 · 다크를 따라간다(settings.js 의 shownTheme). 처음 설치하면 auto 로 시작하고,
+   이미 쓰던 사람은 고른 그대로 둔다(예전 데이터에 테마가 없으면 크림이었다) */
+const THEMES = ["auto", "cream", "dark", "green"];
+if(THEMES.indexOf(data.theme) < 0) data.theme = freshData ? "auto" : "cream";
 if(["as-is","upper","lower"].indexOf(data.enCase) < 0) data.enCase = "as-is";
 /* 소리는 꺼진 채로 시작한다. 카페 근무 중에 갑자기 울리면 곤란하다 */
 if(["off","sfx","all"].indexOf(data.sound) < 0) data.sound = "off";
