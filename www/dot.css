@@ -683,9 +683,10 @@ html.dot .cchip{display:inline-flex;align-items:center;gap:5px;border:0;backgrou
 html.dot .cchip .ci, html.dot .cgain .ci, html.dot #s-closet .ci{display:inline-block;width:16px;height:16px;image-rendering:pixelated;}
 html.dot :is(.cchip, .cgain, #s-closet) .ci svg{width:100%;height:100%;display:block;}
 html.dot #s-home .cchip:active{transform:translate(2px,2px);box-shadow:none;}
-html.dot .cgain{display:flex;align-items:center;justify-content:center;gap:8px;margin:2px auto 16px;
-  font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;color:var(--d-t1);}
-html.dot .cgain small{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px;color:var(--d-t2);}
+html.dot .cgain{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;column-gap:10px;row-gap:4px;margin:2px auto 16px;
+  font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;color:var(--d-t1);text-align:center;}
+html.dot .cgain .cg{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;}
+html.dot .cgain small{font-family:-apple-system,"Apple SD Gothic Neo",sans-serif;font-size:13px;color:var(--d-t2);white-space:nowrap;}
 html.dot #closetBtn{margin-top:12px;border:0;border-radius:0;background:var(--d-surface);color:var(--d-t1);box-shadow:var(--d-box2);
   font-family:"NeoDGM",monospace;font-weight:400;font-size:17px;-webkit-font-smoothing:none;}
 /* 결과 화면의 광고 버튼. 옷장의 것(.adbtn)과 같은 모양 */
