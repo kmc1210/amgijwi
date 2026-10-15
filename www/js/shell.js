@@ -16,8 +16,10 @@ function confirmBox(title, msg, yesLabel, cb, opts){
   onYes = cb; $("#dlg").classList.toggle("go", !!opts.go); $("#dlg").classList.add("on");
   haptic(opts.haptic || "warning");     // 지우기 · 덮어쓰기처럼 되돌릴 수 없는 일 앞에서 멈칫
 }
-$("#dlgNo").addEventListener("click", ()=>{ $("#dlg").classList.remove("on"); onYes=null; });
-$("#dlgYes").addEventListener("click", ()=>{ $("#dlg").classList.remove("on"); if(onYes){ const f=onYes; onYes=null; f(); } });
+/* 확인창 뒤에서 기다리던 받은 레시피 파일 · 새 버전 소식이 있으면 창을 닫은 뒤에 연다 (recipeshare.js · update.js) */
+function afterDlg(){ setTimeout(()=>{ recipeGo(); updateGo(); }, 0); }
+$("#dlgNo").addEventListener("click", ()=>{ $("#dlg").classList.remove("on"); onYes=null; afterDlg(); });
+$("#dlgYes").addEventListener("click", ()=>{ $("#dlg").classList.remove("on"); if(onYes){ const f=onYes; onYes=null; f(); } afterDlg(); });
 
 /* ---------- 화면 전환 ---------- */
 function go(name){

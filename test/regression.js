@@ -3344,6 +3344,16 @@ const LEGACY = {
       go("home"); await wait(20); r.afterHome = on(); r.laterLabel = $("#dlgNo").textContent; close();
       $("#lock").classList.add("on"); updateFromApp("1.6"); r.lockWait = on();
       closeLock(); r.afterLock = on(); close();
+      // 다른 확인창이 떠 있으면 그 창을 닫은 뒤에 묻는다
+      confirmBox("t", "m", "삭제", null); updateFromApp("1.7"); r.dlgWait = $("#dlgT").textContent;
+      close(); await wait(20); r.afterDlg = [on(), $("#dlgT").textContent]; close();
+      // 묻기 전에 꺼져도 잃지 않게 기다리는 버전을 적어 둔다(물으면 지운다)
+      go("list"); updateFromApp("1.8"); r.waitSaved = updateGet(UPDATE_WAIT_KEY);
+      go("home"); await wait(20); r.waitCleared = updateGet(UPDATE_WAIT_KEY); close();
+      // 이 앱보다 새것만 묻는다(그사이 업데이트했으면 묻지 않는다)
+      const realInfo = window.__amgijwiInfo; window.__amgijwiInfo = { app: "1.9 (30)" };
+      r.newer = [updateWanted("1.9"), updateWanted("1.8.5"), updateWanted("1.10"), updateWanted("1.9.1"), updateWanted("2")];
+      window.__amgijwiInfo = realInfo;
       // 다른 확인창은 취소 버튼이 "취소"로 돌아온다
       confirmBox("t", "m", "삭제", null); r.cancelBack = [$("#dlgNo").textContent, $("#dlg").classList.contains("go")]; close();
       // 숫자 · 점이 아닌 버전은 받지 않는다
@@ -3363,7 +3373,10 @@ const LEGACY = {
     eq("홈이 아니면 기다렸다가 홈으로 오면 묻는다", [r.wait, r.afterHome, r.laterLabel], [false, true, "나중에"]);
     eq("잠금이 풀린 뒤에 묻는다", [r.lockWait, r.afterLock], [false, true]);
     eq("다른 확인창의 취소 버튼 · 빨간 버튼은 그대로", r.cancelBack, ["취소", false]);
-    eq("이상한 버전 글은 받지 않는다", [r.bad, r.asked], [false, "1.6"]);
+    eq("다른 확인창이 닫힌 뒤에 묻는다", [r.dlgWait, r.afterDlg], ["t", [true, "새 버전이 나왔어요"]]);
+    eq("묻기 전에는 기다리는 버전을 적어 두고, 물으면 지운다", [r.waitSaved, r.waitCleared], ["1.8", ""]);
+    eq("이 앱보다 새 버전만 묻는다(1.10 > 1.9)", r.newer, [false, false, true, true, true]);
+    eq("이상한 버전 글은 받지 않는다", [r.bad, r.asked], [false, "1.8"]);
     eq("웹에서는 묻지 않는다", r.web, [null, false]);
   }
 

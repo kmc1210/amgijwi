@@ -3,8 +3,9 @@ import WebKit
 import StoreKit
 
 /// 새 버전 알림. 하루에 한 번(앱을 켜거나 다시 꺼낼 때) 애플의 앱스토어 검색 주소에 지금 나와 있는 버전만 묻는다.
-/// 보내는 것은 앱 번호와 나라(kr)뿐이고, 레시피 · 기록 같은 내용은 보내지 않는다(www/privacy.html 2번).
+/// 보내는 것은 앱 번호와 나라(kr)뿐이고, 레시피 · 기록 같은 내용은 보내지 않는다(www/privacy.html 3번).
 /// 이 앱보다 새 버전이면 웹(www/js/update.js 의 updateFromApp)에 버전만 알리고, 언제 · 한 번만 물을지는 웹이 정한다.
+/// 웹은 받은 버전을 적어 두므로, 묻기 전에 앱이 꺼져도 하루를 기다리지 않고 다음에 켤 때 묻는다.
 /// 웹 화면 자체는 여전히 통신하지 못한다(CSP connect-src 'none'). 묻는 것은 여기 앱 쪽이다.
 ///
 /// 웹 → 앱: window.webkit.messageHandlers.amgijwiUpdate.postMessage("open") — 앱스토어 페이지를 앱 안에 띄운다.
@@ -20,6 +21,8 @@ final class UpdateBridge: NSObject {
     private weak var host: UIViewController?
     private var tell: ((String) -> Void)?
     private var busy = false
+    /// 쿠키 · 캐시를 남기지 않는 세션
+    private lazy var session = URLSession(configuration: .ephemeral)
 
     func attach(host: UIViewController, tell: @escaping (String) -> Void) {
         self.host = host
@@ -35,8 +38,6 @@ final class UpdateBridge: NSObject {
         busy = true
         var req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
         req.httpMethod = "GET"
-        /// 쿠키 · 캐시를 남기지 않는 세션
-        let session = URLSession(configuration: .ephemeral)
         session.dataTask(with: req) { [weak self] data, _, error in
             let found = (error == nil) ? data.flatMap(UpdateBridge.storeVersion) : nil
             DispatchQueue.main.async {
@@ -52,7 +53,6 @@ final class UpdateBridge: NSObject {
                 self.tell?("typeof updateFromApp === 'function' && updateFromApp(\"\(found.version)\")")
             }
         }.resume()
-        session.finishTasksAndInvalidate()
     }
 
     /// 앱스토어 답에서 버전과 최소 iOS 를 꺼낸다. 숫자와 점으로만 된 버전만 받는다(웹으로 그대로 넘기므로).
@@ -74,17 +74,19 @@ final class UpdateBridge: NSObject {
         return false
     }
 
-    /// 앱스토어 페이지를 앱 안에 띄운다(거기서 바로 업데이트). 못 띄우면 앱스토어 앱으로 넘긴다.
+    /// 앱스토어 페이지를 앱 안에 띄운다(거기서 바로 업데이트). 페이지를 다 불러온 뒤에 띄우고,
+    /// 못 불러왔거나 이미 다른 창(공유 시트 · 광고)이 떠 있으면 앱스토어 앱으로 넘긴다.
     private func openStore() {
-        guard let host = host else { return }
         let store = SKStoreProductViewController()
         store.delegate = self
-        host.present(store, animated: true)
-        store.loadProduct(withParameters: [SKStoreProductParameterITunesItemIdentifier: UpdateBridge.appID]) { [weak store] ok, _ in
-            guard !ok else { return }
-            store?.dismiss(animated: true)
-            if let url = URL(string: "itms-apps://apps.apple.com/app/id\(UpdateBridge.appID)") {
-                UIApplication.shared.open(url)
+        store.loadProduct(withParameters: [SKStoreProductParameterITunesItemIdentifier: UpdateBridge.appID]) { [weak self] ok, _ in
+            DispatchQueue.main.async {
+                guard let host = self?.host else { return }
+                if ok, host.presentedViewController == nil {
+                    host.present(store, animated: true)
+                } else if let url = URL(string: "itms-apps://apps.apple.com/app/id\(UpdateBridge.appID)") {
+                    UIApplication.shared.open(url)
+                }
             }
         }
     }
