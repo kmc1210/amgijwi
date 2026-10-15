@@ -2257,14 +2257,24 @@ const LEGACY = {
     await page.emulateMedia({ colorScheme:"dark" });
     await page.waitForTimeout(50);
     const r2 = await page.evaluate(() => [shownTheme(), document.body.getAttribute("data-theme")]);
-    const r3 = await page.evaluate(() => { data.theme = "green"; applyTheme(); return document.body.getAttribute("data-theme"); });
+    const r3 = await page.evaluate(() => { data.theme = "green"; applyTheme(); persist(); return document.body.getAttribute("data-theme"); });
     await page.emulateMedia({ colorScheme:"light" });
-    const r4 = await page.evaluate(() => { const src = JSON.stringify(data); return [JSON.parse(src).theme]; });
+    await page.waitForTimeout(50);
+    const r4 = await page.evaluate(() => [document.body.getAttribute("data-theme"), (Store.load() || {}).theme]);
     await page.evaluate(t => { data.theme = t; applyTheme(); persist(); go("home"); }, theme0);
     eq("자동: 아이폰이 라이트면 기본, 자동 버튼이 켜진다", r1, ["cream", "cream", true]);
     eq("자동: 아이폰이 다크로 바뀌면 바로 다크로", r2, ["dark", "dark"]);
+    {
+      const vp0 = page.viewportSize();
+      await page.setViewportSize({ width:320, height:700 });
+      const fit = await page.evaluate(() => { document.documentElement.classList.add("dot"); go("set"); const box = $("#themeBtns").getBoundingClientRect(), card = $("#themeBtns").closest(".setcard").getBoundingClientRect();
+        const ok = [...document.querySelectorAll("#themeBtns .theme-b")].every(b => b.getBoundingClientRect().right <= card.right + 0.5) && box.right <= card.right + 0.5;
+        document.documentElement.classList.remove("dot"); return ok; });
+      await page.setViewportSize(vp0);
+      ok("좁은 아이폰(320)에서도 테마 버튼 넷이 칸 안에", fit);
+    }
     eq("직접 고른 테마는 아이폰 설정과 상관없다", r3, "green");
-    ok("테마는 저장된다", r4[0] === "green");
+    eq("고른 테마는 아이폰 설정이 바뀌어도 그대로, 저장소에도 남는다", r4, ["green", "green"]);
   }
 
   // ── 6-10s. 1.3 레시피 보내기 · 받기 ──────────────────────────────

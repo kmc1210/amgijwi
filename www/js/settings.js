@@ -387,7 +387,7 @@ function applyBackup(text){
   if(!d || !Array.isArray(d.drinks)){ toast("레시피 데이터를 찾지 못했어요"); return; }
   confirmBox("백업 복원", `레시피 ${d.drinks.length}개를 불러오고 현재 데이터를 덮어쓸까요?`, "복원", ()=>{
     const keepMode = (d.mode === "blank" || d.mode === "flip") ? d.mode : data.mode;
-    const keepTheme = ["auto","cream","dark","green"].indexOf(d.theme) >= 0 ? d.theme : data.theme;
+    const keepTheme = THEMES.indexOf(d.theme) >= 0 ? d.theme : data.theme;
     const keepSound = ["off","sfx","all"].indexOf(d.sound) >= 0 ? d.sound : data.sound;
     const keepCats = (Array.isArray(d.cats) && d.cats.length)
       ? d.cats.map(c=>({id:String(c.id||uid()), label:String(c.label||"분류"), emo:String(c.emo||"@cup")}))
