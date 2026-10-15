@@ -2268,6 +2268,15 @@ const LEGACY = {
       // 같은 화면 안에서 다시 그려도 묶음은 그대로, 다른 화면에 갔다 오면 첫 화면
       renderSettings(); r.stay = seen($("#pinToggle"));
       go("home"); go("set"); r.reset = [seen($("#setGroups")), seen($("#pinToggle"))];
+      // 설정 > 쥐돌이에서 옷장에 갔다 닫으면 쥐돌이 묶음으로 돌아온다
+      openSetGroup("mouse"); openCloset("set"); $("#closetClose").click(); r.closetBack = [seen($("#nickCard")), seen($("#setGroups"))];
+      // 날짜 없는 백업 · 앞선 날짜도 깨지지 않는다
+      go("home"); go("set");
+      data.backup = { count:3 }; renderSettings(); r.noAt = document.querySelector('#setGroups [data-g="data"] .gn').textContent.trim();
+      const tmr = new Date(); tmr.setDate(tmr.getDate() + 1); data.backup = { at: ymd(tmr), count:3 }; renderSettings(); r.future = document.querySelector('#setGroups [data-g="data"] .gn').textContent.trim();
+      // 모든 설정 칸이 묶음을 갖고, 진동 없는 기기는 줄에서도 진동을 뺀다
+      r.tagged = [...document.querySelectorAll("#s-set .scroll > .setcard, #setStatus")].every(el => el.dataset.group);
+      document.documentElement.classList.add("nohaptic"); renderSettings(); r.noVib = document.querySelector('#setGroups [data-g="screen"] .gt span').textContent; document.documentElement.classList.remove("nohaptic");
       // 백업한 뒤에는 경고가 풀린다
       data.backup = { at: ymd(new Date()), count: 3 }; renderSettings();
       r.fresh = [!!document.querySelector('#setGroups [data-g="data"] .gn.warn'), document.querySelector('#setGroups [data-g="data"] .gn').textContent.trim()];
@@ -2284,6 +2293,10 @@ const LEGACY = {
     eq("백업과 보안: 데이터 상태 · PIN · 백업", r.data, [true, true, true]);
     ok("같은 화면에서 다시 그려도 열어 둔 묶음은 그대로", r.stay);
     eq("다른 화면에 갔다 오면 묶음 첫 화면부터", r.reset, [true, false]);
+    eq("설정에서 연 옷장을 닫으면 보던 묶음으로", r.closetBack, [true, false]);
+    eq("날짜 없는 백업은 없는 것으로, 앞선 날짜는 오늘로", [r.noAt, r.future], ["백업 아직 없음", "오늘 백업했어요"]);
+    ok("설정 칸은 모두 묶음에 들어 있다", r.tagged);
+    eq("진동 없는 기기는 묶음 줄에서도 진동을 뺀다", r.noVib, "테마 · 소리 · 영문 이름 표기");
     eq("오늘 백업했으면 경고가 풀린다", r.fresh, [false, "오늘 백업했어요"]);
   }
 

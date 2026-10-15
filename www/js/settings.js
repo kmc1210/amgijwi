@@ -254,20 +254,35 @@ document.querySelectorAll("#wxBtns .theme-b").forEach(b=>{
 /* ---------- 설정 묶음 ----------
    칸이 많아 다섯 묶음으로 나눈다. 첫 화면엔 묶음 줄만 보이고, 누르면 그 묶음(data-group)의 칸만 보인다.
    묶음 줄 오른쪽에는 지금 상태 한 줄(치즈 · 테마 · 레시피 수 · 마지막 백업). 백업이 없거나 14일 넘게 지났으면 경고색 */
+/* items: 묶음 줄에 적는 칸 이름과 그 칸. 이 기기에서 안 보이는 칸(웹에 없는 것 · 진동 없는 아이패드)은 줄에서도 뺀다 */
 const SET_GROUPS = [
-  {id:"mouse", name:"쥐돌이", items:"옷장 · 내 이름 · 생일 · 부르는 알림 · 날씨 옷", ico:"mouse"},
-  {id:"screen", name:"화면과 소리", items:"테마 · 소리 · 진동 · 영문 이름 표기", ico:"palette"},
-  {id:"recipe", name:"레시피", items:"카테고리 · 레시피 가져오기", ico:"note"},
-  {id:"data", name:"백업과 보안", items:"백업 · 불러오기 · PIN 잠금 · 데이터 관리", ico:"box"},
-  {id:"help", name:"도움말", items:"사용법 · 건의하기 · 처리방침", ico:"bulb"}];
-const THEME_NAME = {auto:"자동", cream:"기본", dark:"다크", green:"그린"};
+  {id:"mouse", name:"쥐돌이", ico:"mouse", items:[["옷장", "#closetCard"], ["내 이름", "#nickCard"], ["생일", "#bdayCard"], ["부르는 알림", "#nudgeCard"], ["날씨 옷", "#wxBtns"]]},
+  {id:"screen", name:"화면과 소리", ico:"palette", items:[["테마", "#themeBtns"], ["소리", "#soundBtns"], ["진동", "#hapticCard"], ["영문 이름 표기", "#enSeg"]]},
+  {id:"recipe", name:"레시피", ico:"note", items:[["카테고리", "#catList"], ["레시피 가져오기", "#rsFile"]]},
+  {id:"data", name:"백업과 보안", ico:"box", items:[["백업", "#expFile"], ["불러오기", "#impFile"], ["PIN 잠금", "#pinToggle"], ["데이터 관리", "#wipeAll"]]},
+  {id:"help", name:"도움말", ico:"bulb", items:[["사용법", "#openGuide"], ["건의하기", "#feedbackBtn"], ["처리방침", "#privacyLink"]]}];
+function setItemShown(sel){
+  const el = $(sel); if(!el) return false;
+  const card = el.closest(".setcard") || el;
+  if(card.style.display === "none") return false;                                    // 이 기기에 없는 칸(applyEnvText)
+  return !(card.id === "hapticCard" && document.documentElement.classList.contains("nohaptic"));
+}
+/* 마지막 백업이 며칠 전인가. 없거나 날짜가 없으면 null, 시계가 앞서 있던 날짜면 0 */
+function backupDaysAgo(){
+  const b = data.backup;
+  if(!b || typeof b.at !== "string" || !b.at) return null;
+  return Math.max(0, dayGap(b.at, ymd(new Date())));
+}
 function setGroupNote(id){
   if(id === "mouse") return isDot() && isNativeApp() ? {t: "치즈 " + data.closet.cheese + "개"} : null;
-  if(id === "screen") return {t: (THEME_NAME[data.theme] || "기본") + " 테마"};
+  if(id === "screen"){
+    const b = document.querySelector('#themeBtns [data-theme="' + data.theme + '"]');
+    return {t: (b ? b.textContent.trim() : "기본") + " 테마"};
+  }
   if(id === "recipe") return {t: "레시피 " + liveDrinks().length + "개"};
   if(id === "data"){
-    if(!data.backup) return {t: "백업 아직 없음", warn: true};
-    const days = dayGap(data.backup.at, ymd(new Date()));
+    const days = backupDaysAgo();
+    if(days === null) return {t: "백업 아직 없음", warn: true};
     return days >= 14 ? {t: "마지막 백업 " + days + "일 전", warn: true} : {t: days === 0 ? "오늘 백업했어요" : "마지막 백업 " + days + "일 전"};
   }
   return null;
@@ -285,11 +300,14 @@ function renderSetGroups(){
     const n = setGroupNote(x.id);
     const ico = x.ico === "mouse" ? mouseSVGWorn("day", false) : icon(x.ico);
     return `<button type="button" class="setgrp" data-g="${x.id}"><span class="gi">${ico}</span>
-      <span class="gt"><b>${esc(x.name)}</b><span>${esc(x.items)}</span></span>
+      <span class="gt"><b>${esc(x.name)}</b><span>${esc(x.items.filter(it=>setItemShown(it[1])).map(it=>it[0]).join(" · "))}</span></span>
       ${n ? `<span class="gn${n.warn ? " warn" : ""}">${n.warn ? icon("warn") : ""}${esc(n.t)}</span>` : ""}<span class="ga">›</span></button>`;
   }).join("");
-  box.querySelectorAll(".setgrp").forEach(b=>b.addEventListener("click", ()=>{ haptic("selection"); openSetGroup(b.dataset.g); }));
 }
+$("#setGroups").addEventListener("click", e=>{
+  const b = e.target.closest(".setgrp"); if(!b) return;
+  haptic("selection"); openSetGroup(b.dataset.g);
+});
 function openSetGroup(id){
   state.setGroup = id || "";
   renderSetGroups();
@@ -298,6 +316,7 @@ function openSetGroup(id){
 $("#setBack").addEventListener("click", ()=>{ haptic("light"); openSetGroup(""); });
 
 function renderSettings(){
+  renderSetGroups();            // 먼저 묶어 둔다(아래 칸 중 하나가 실패해도 칸이 한꺼번에 펼쳐지지 않게). 끝에서 상태 줄을 다시 그린다
   closetSettings();             // 맨 위 쥐돌이 옷장 줄 (closet.js)
   nickSettings();               // 내 이름 (nick.js)
   bdaySettings();               // 내 생일 (birthday.js)
