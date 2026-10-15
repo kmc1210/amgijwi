@@ -339,7 +339,7 @@ const usesOf  = id => data.drinks.filter(d=>(d.subRefs||[]).indexOf(id)>=0);
 const state = {filter:"all", deck:[], idx:0, flipped:false, stat:{ok:0,again:0,total:0},
                editingId:null, selMode:false, sel:new Set(), revealed:new Set(), discOpen:false,
                editSubRefs:[], subEditId:null, subFrom:"edit", parentForm:null, cupSel:[], cupCustom:false,
-               listTab:"recipe", subPlace:"", shelfOpen:new Set(), calDay:null};
+               listTab:"recipe", subPlace:"", shelfOpen:new Set(), calDay:null, setGroup:""};
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
@@ -411,6 +411,7 @@ const BELLY = {y0:29,
    icon("search") 처럼 부르면 글자 크기에 맞는 인라인 SVG 가 나온다 */
 const ICON_PAL = {h:"#FFFFFF", W:"#FFFFFF", w:"#FCF7F1", c:"#EBDDCD", C:"#A8998A", M:"#C97F4B", n:"#A65E2E", N:"#8A4A20", m:"#5E3412", X:"#F3CE86", Y:"#E2A64A", y:"#C1802A", x:"#8A5A12", Q:"#D4796F", r:"#B5453C", R:"#8E332B", q:"#6E2620", F:"#6BB58C", g:"#3E8E63", G:"#2F6B4A", f:"#23503A", D:"#8FC5F7", E:"#4A9BEE", e:"#2E7BD0", A:"#B9D0E8", B:"#7CA3D2", b:"#3A6FAE", a:"#24507E", K:"#4A423A", k:"#241F1A", j:"#141210", s:"#C7BDB1", S:"#9A8F85", p:"#F5BEAC", P:"#DF9B88", o:"#8A7A6A"};
 const ICONS = {
+  palette:["................", "....KKKKKKK.....", "..KKwwwwwwwKK...", ".KwwrrwwwYYwwK..", ".KwwrrwwwYYwwK..", "KwwwwwwwwwwwwwK.", "KwEEwwwwwwwggwK.", "KwEEwwKKwwwggwK.", "KwwwwKwwKwwwwwK.", "KwwwwKwwKwwwwK..", ".KwwwwKKwwwwK...", ".KwwwwwwwwwK....", "..KKwwwwwwKK....", "....KKKKKK......", "................", "................"],
   ade:["................","..........gg....",".........ggg....",".....xxxxxx.....","...xxYXXXXYxx...","..xYXYYYYYYXYx..","..xYhYYYYYYYYx..","..xYhYYYYYYYYx..","..xYYYYYYYYYYx..","..xYyYYYYYYyYx..","...xxYyyyyYxx...",".....xxxxxx.....","................","................","................","................"],
   back:["...DDDDDDDDDD...",".DDEEEEEEEEEEDD.","DEEEEEEEEEEEEEED","EEEEEEEEEEhhhEEE","EEEEEEEEEEhhhEEE","EEEEEEEEEEhhhEEE","EEEEEEhEEEhhhEEE","EEEEEhhEEEhhhEEE","EEEEhhhhhhhhhEEE","EEEhhhhhhhhhhEEE","EEEEhhhhhhhhEEEE","EEEEEhhEEEEEEEEE","EEEEEEhEEEEEEEEE","eEEEEEEEEEEEEEEe",".eeEEEEEEEEEEee.","...eeeeeeeeee..."],
   box:["................","................","..mmmmmmmmmmmm..","..myYYYYYYYYym..","..myxxxxxxxxym..","..mmmmmmmmmmmm..","..mNnnnnnnnnNm..","..mNNNNNNNNNNm..","..mNNNNNNNNNNm..","..mNNNNNNNNNNm..","..mNNNNNNNNNNm..","..mNmmmmmmmmNm..","..mmmmmmmmmmmm..","................","................","................"],

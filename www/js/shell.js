@@ -17,6 +17,7 @@ $("#dlgYes").addEventListener("click", ()=>{ $("#dlg").classList.remove("on"); i
 
 /* ---------- 화면 전환 ---------- */
 function go(name){
+  if(name === "set" && !$("#s-set").classList.contains("active")) state.setGroup = "";      // 다른 화면에서 들어오면 묶음 첫 화면부터 (settings.js)
   if(!$("#s-"+name).classList.contains("active")) adLeave();     // 광고를 불러오는 중에 다른 화면으로 가면 부탁을 거둔다 (ads.js)
   setTimeout(recipeGo, 0);      // 하던 일이 끝나 기다리던 레시피 파일이 있으면 이제 연다 (recipeshare.js)
   if(name !== "result"){ stopEat(); stopCaw(); }

@@ -734,3 +734,19 @@
 /* 색 고르기 창은 iOS · 브라우저 기본 창을 쓴다. 칸 전체를 눌러도 열리게 입력을 위에 투명하게 덮는다 */
 .trc input{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:0;padding:0;cursor:pointer;}
 .trprev .tagrow:last-child{margin-bottom:0;}
+/* 설정 묶음 (settings.js 의 renderSetGroups) */
+.grpoff{display:none !important;}
+#setGroups{display:flex;flex-direction:column;gap:10px;}
+.setgrp{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px 16px;border:1.5px solid var(--line);border-radius:16px;background:var(--surface);color:var(--ink);}
+.setgrp .gi{flex:0 0 32px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;}
+.setgrp .gi svg{width:100%;height:100%;display:block;image-rendering:pixelated;}
+.setgrp .gt{flex:1;min-width:0;display:flex;flex-direction:column;}
+.setgrp .gt b{font-size:16px;}
+.setgrp .gt span{font-size:12.5px;color:var(--muted);}
+.setgrp .gn{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:700;color:var(--accent-ink);white-space:nowrap;}
+.setgrp .gn svg{width:14px;height:14px;}
+.setgrp .gn.warn{color:var(--danger);}
+.setgrp .ga{color:var(--muted);font-size:18px;}
+.setback{display:flex;align-items:center;gap:8px;padding:2px 0 12px;font-size:20px;color:var(--ink);background:none;border:0;}
+.setback b{font-size:19px;}
+#setGroups[hidden], .setback[hidden]{display:none;}

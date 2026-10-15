@@ -251,6 +251,52 @@ document.querySelectorAll("#wxBtns .theme-b").forEach(b=>{
   });
 });
 
+/* ---------- 설정 묶음 ----------
+   칸이 많아 다섯 묶음으로 나눈다. 첫 화면엔 묶음 줄만 보이고, 누르면 그 묶음(data-group)의 칸만 보인다.
+   묶음 줄 오른쪽에는 지금 상태 한 줄(치즈 · 테마 · 레시피 수 · 마지막 백업). 백업이 없거나 14일 넘게 지났으면 경고색 */
+const SET_GROUPS = [
+  {id:"mouse", name:"쥐돌이", items:"옷장 · 내 이름 · 생일 · 부르는 알림 · 날씨 옷", ico:"mouse"},
+  {id:"screen", name:"화면과 소리", items:"테마 · 소리 · 진동 · 영문 이름 표기", ico:"palette"},
+  {id:"recipe", name:"레시피", items:"카테고리 · 레시피 가져오기", ico:"note"},
+  {id:"data", name:"백업과 보안", items:"백업 · 불러오기 · PIN 잠금 · 데이터 관리", ico:"box"},
+  {id:"help", name:"도움말", items:"사용법 · 건의하기 · 처리방침", ico:"bulb"}];
+const THEME_NAME = {auto:"자동", cream:"기본", dark:"다크", green:"그린"};
+function setGroupNote(id){
+  if(id === "mouse") return isDot() && isNativeApp() ? {t: "치즈 " + data.closet.cheese + "개"} : null;
+  if(id === "screen") return {t: (THEME_NAME[data.theme] || "기본") + " 테마"};
+  if(id === "recipe") return {t: "레시피 " + liveDrinks().length + "개"};
+  if(id === "data"){
+    if(!data.backup) return {t: "백업 아직 없음", warn: true};
+    const days = dayGap(data.backup.at, ymd(new Date()));
+    return days >= 14 ? {t: "마지막 백업 " + days + "일 전", warn: true} : {t: days === 0 ? "오늘 백업했어요" : "마지막 백업 " + days + "일 전"};
+  }
+  return null;
+}
+function renderSetGroups(){
+  const box = $("#setGroups"); if(!box) return;
+  /* 회귀 검사는 칸 하나하나를 다루므로 묶지 않고 다 펼친다(test/regression.js 가 켠다. 앱에서는 켜지 않는다) */
+  if(window.__amgijwiSetAll){ box.hidden = true; $("#setBack").hidden = true; document.querySelectorAll("#s-set .grpoff").forEach(el=>el.classList.remove("grpoff")); return; }
+  const g = SET_GROUPS.filter(x=>x.id === state.setGroup)[0];
+  box.hidden = !!g;
+  $("#setBack").hidden = !g;
+  document.querySelectorAll("#s-set [data-group]").forEach(el=>el.classList.toggle("grpoff", !g || el.dataset.group !== g.id));
+  if(g){ $("#setBackT").textContent = g.name; return; }
+  box.innerHTML = SET_GROUPS.map(x=>{
+    const n = setGroupNote(x.id);
+    const ico = x.ico === "mouse" ? mouseSVGWorn("day", false) : icon(x.ico);
+    return `<button type="button" class="setgrp" data-g="${x.id}"><span class="gi">${ico}</span>
+      <span class="gt"><b>${esc(x.name)}</b><span>${esc(x.items)}</span></span>
+      ${n ? `<span class="gn${n.warn ? " warn" : ""}">${n.warn ? icon("warn") : ""}${esc(n.t)}</span>` : ""}<span class="ga">›</span></button>`;
+  }).join("");
+  box.querySelectorAll(".setgrp").forEach(b=>b.addEventListener("click", ()=>{ haptic("selection"); openSetGroup(b.dataset.g); }));
+}
+function openSetGroup(id){
+  state.setGroup = id || "";
+  renderSetGroups();
+  const sc = $("#s-set .scroll"); if(sc) sc.scrollTop = 0;
+}
+$("#setBack").addEventListener("click", ()=>{ haptic("light"); openSetGroup(""); });
+
 function renderSettings(){
   closetSettings();             // 맨 위 쥐돌이 옷장 줄 (closet.js)
   nickSettings();               // 내 이름 (nick.js)
@@ -267,6 +313,7 @@ function renderSettings(){
   $("#cntMastered").textContent = data.mastered.length;
   renderStorageCard();
   $("#expBox").style.display = "none";
+  renderSetGroups();
 }
 
 /* 데이터가 얼마나 안전한 상태인지 한자리에서 보여준다.

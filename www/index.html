@@ -22,9 +22,9 @@
      두 벌이면 교집합이 적용되니 고칠 때는 반드시 둘 다 고친다. 어긋나면 test/headers.js 가 실패한다. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>암기쥐 · 카페 음료 레시피 외우기</title>
-<link rel="stylesheet" href="style.css?v=74">
+<link rel="stylesheet" href="style.css?v=75">
 <!-- iOS 앱에서만 쓰는 도트 화면. 모든 규칙이 html.dot 아래에 있어 웹에는 아무 영향이 없다 -->
-<link rel="stylesheet" href="dot.css?v=74">
+<link rel="stylesheet" href="dot.css?v=75">
 </head>
 <body>
 <div class="phone">
@@ -327,23 +327,26 @@
     <section class="screen" id="s-set">
       <div class="appbar"><div><h1>설정</h1><p>저장과 백업</p></div></div>
       <div class="scroll">
+        <!-- 설정은 다섯 묶음으로 나눠 보여준다(settings.js 의 renderSetGroups). 첫 화면엔 묶음 줄만, 누르면 그 묶음의 칸들 -->
+        <div id="setGroups"></div>
+        <button type="button" class="setback" id="setBack" hidden><span>‹</span><b id="setBackT"></b></button>
         <!-- 쥐돌이 옷장(앱만). closet.js 가 지금 입은 모습과 치즈 수를 채운다 -->
-        <div class="setcard" data-env="app" id="closetCard"></div>
+        <div class="setcard" data-env="app" id="closetCard" data-group="mouse"></div>
         <!-- 내 이름(앱만). 쥐돌이가 부를 이름을 nick.js 가 채운다 -->
-        <div class="setcard" data-env="app" id="nickCard"></div>
+        <div class="setcard" data-env="app" id="nickCard" data-group="mouse"></div>
         <!-- 내 생일(앱만). 월 · 일과 알림을 birthday.js 가 채운다 -->
-        <div class="setcard" data-env="app" id="bdayCard"></div>
+        <div class="setcard" data-env="app" id="bdayCard" data-group="mouse"></div>
         <!-- 쥐돌이가 부르는 알림(앱만, 기본 꺼짐). waiting.js 가 채운다 -->
-        <div class="setcard" data-env="app" id="nudgeCard"></div>
+        <div class="setcard" data-env="app" id="nudgeCard" data-group="mouse"></div>
         <!-- 튜토리얼을 첫 실행에 세우지 않는 대신, 언제든 찾아올 수 있게 맨 위에 둔다 -->
-        <div class="setcard">
+        <div class="setcard" data-group="help">
           <h4>사용법</h4>
           <p>카드 학습, 레시피 넣기, 백업까지 한 번에 훑어봐요.</p>
           <button class="cta ghost" id="openGuide">사용법 보기</button>
         </div>
 
         <!-- 서버가 없어 메일로 받는다. 메일 앱이 받는 사람 · 제목 · 앱 정보를 채운 채로 열리고, 보내기는 사용자가 누른다 -->
-        <div class="setcard" data-env="app">
+        <div class="setcard" data-env="app" data-group="help">
           <h4>쥐돌이에게 건의하기</h4>
           <p>불편한 점이나 바라는 기능을 알려 주세요. 메일 앱이 열려요.</p>
           <a class="cta ghost" id="feedbackBtn" href="#" style="display:block;text-align:center;text-decoration:none">건의 메일 쓰기</a>
@@ -351,7 +354,7 @@
           <a class="cta ghost" id="reviewLink" href="https://apps.apple.com/app/id6817266810?action=write-review" style="display:block;text-align:center;text-decoration:none;margin-top:10px">App Store 에 리뷰 남기기</a>
         </div>
 
-        <div class="setcard">
+        <div class="setcard" data-group="screen">
           <h4>테마</h4>
           <p>화면 색을 바꿉니다. 자동은 아이폰의 라이트 · 다크 설정을 따라가요. 선택한 테마는 이 기기에 저장돼요.</p>
           <div class="themes" id="themeBtns">
@@ -373,7 +376,7 @@
             </button>
           </div>
         </div>
-        <div class="setcard">
+        <div class="setcard" data-group="screen">
           <h4>소리</h4>
           <p>효과음은 카드를 넘기거나 빈칸을 열거나 외웠을 때 짧게 납니다.
              배경음은 켜 두면 앱을 쓰는 동안 계속 흘러요. 화면을 벗어나면 멈춥니다.
@@ -385,7 +388,7 @@
           </div>
         </div>
         <!-- 진동이 안 되는 기기(아이패드)에서는 앱이 <html> 에 nohaptic 을 붙이고 dot.css 가 숨긴다 -->
-        <div class="setcard" data-env="app" id="hapticCard">
+        <div class="setcard" data-env="app" id="hapticCard" data-group="screen">
           <h4>진동</h4>
           <p>카드를 뒤집거나 외웠을 때, 한 바퀴를 끝냈을 때 폰이 짧게 톡 울립니다.
              아이폰 설정에서 시스템 햅틱을 끄면 여기와 상관없이 울리지 않아요.</p>
@@ -395,7 +398,7 @@
           </div>
         </div>
 
-        <div class="setcard">
+        <div class="setcard" data-group="mouse">
           <h4>날씨 옷</h4>
           <p>비 오는 날엔 쥐돌이가 우비에 장화를 신고, 눈 오는 날엔 털모자에 목도리를 두릅니다.
              자동으로 두면 달을 보고 어림잡아요. 지금은 인터넷에서 날씨를 받아오지 않습니다.
@@ -409,15 +412,15 @@
           </div>
         </div>
 
-        <div id="setStatus"></div>
+        <div id="setStatus" data-group="data"></div>
 
-        <div class="setcard">
+        <div class="setcard" data-group="data">
           <h4>PIN 잠금</h4>
           <p id="pinDesc">앱을 열 때 네 자리 숫자를 묻습니다. <span data-env="web">폰을 잠깐 빌려주거나 주소를 아는 사람이 들어오는 걸 막아줘요. 암호화는 아니라서 브라우저 개발자 도구로는 우회할 수 있습니다.</span><span data-env="app">폰을 잠깐 빌려줄 때 남이 들여다보는 걸 막아줘요. 암호화는 아니라서 마음먹고 기기를 뜯어보면 우회할 수 있습니다.</span></p>
           <button class="cta ghost" id="pinToggle">PIN 설정하기</button>
         </div>
 
-        <div class="setcard">
+        <div class="setcard" data-group="screen">
           <h4>영문 이름 표기</h4>
           <p>저장된 글자는 그대로 두고 화면에 보이는 모양만 바꿉니다.</p>
           <div class="seg" id="enSeg">
@@ -427,14 +430,14 @@
           </div>
         </div>
 
-        <div class="setcard">
+        <div class="setcard" data-group="recipe">
           <h4>카테고리</h4>
           <p>학습 범위와 레시피 목록에서 쓰이는 분류예요. 이름과 이모지를 바꾸거나 새로 만들 수 있습니다.</p>
           <div id="catList"></div>
           <button class="cta ghost" id="catAdd" style="margin-top:10px">+ 카테고리 추가</button>
         </div>
 
-        <div class="setcard">
+        <div class="setcard" data-group="data">
           <h4>백업 내보내기</h4>
           <p>레시피와 학습 기록을 JSON 파일 하나로 저장합니다. 기기를 바꾸거나 <span data-env="web">브라우저 데이터가 지워져도</span><span data-env="app">앱을 다시 깔아도</span> 이 파일로 복구할 수 있어요.</p>
           <button class="cta" id="expFile"><span data-env="web">파일로 저장</span><span data-env="app">파일로 내보내기</span></button>
@@ -443,14 +446,14 @@
         </div>
 
         <!-- 받은 레시피 파일(.amgijwi)을 골라 가져오기(앱만). 지금 레시피는 그대로 두고 고른 것만 더한다 (recipeshare.js) -->
-        <div class="setcard" data-env="app">
+        <div class="setcard" data-env="app" data-group="recipe">
           <h4>레시피 가져오기</h4>
           <p>동료에게 받은 암기쥐 레시피 파일을 골라 가져와요. 지금 레시피는 그대로 두고, 고른 것만 더해요.</p>
           <button class="cta ghost" id="rsFile">레시피 파일 선택</button>
           <input type="file" id="rsInput" style="display:none">
         </div>
 
-        <div class="setcard">
+        <div class="setcard" data-group="data">
           <h4>백업 불러오기</h4>
           <p>백업 파일을 선택하거나 복사해둔 텍스트를 붙여넣으세요. 현재 데이터는 덮어쓰기 됩니다.</p>
           <button class="cta ghost" id="impFile">백업 파일 선택</button>
@@ -459,7 +462,7 @@
           <button class="cta ghost" id="impText">붙여넣은 텍스트로 복원</button>
         </div>
 
-        <div class="setcard">
+        <div class="setcard" data-group="data">
           <h4>데이터 관리</h4>
           <p>레시피 <b id="cntDrinks">0</b>개 · 개봉 항목 <b id="cntShelf">0</b>개 · 외운 항목 <b id="cntMastered">0</b>개</p>
           <button class="cta ghost" id="loadSamples">샘플 데이터 불러오기</button>
@@ -467,7 +470,7 @@
           <button class="cta danger" id="wipeAll">전체 데이터 삭제</button>
         </div>
 
-        <div class="setcard">
+        <div class="setcard" data-group="help">
           <h4>이 앱의 보안</h4>
           <p style="margin-bottom:0">외부로 나가는 통신이 전혀 없습니다. 서버도, 계정도, 분석 도구도 사용하지 않아요. 입력한 레시피는 <span data-env="web">이 기기의 브라우저 저장소에만 남고, <span data-os="ios">홈 화면 앱을 삭제하거나 </span>브라우저 데이터를 지우면</span><span data-env="app">이 기기 안에만 남고, 앱을 지우면</span> 함께 사라집니다. 그래서 백업 파일을 한 번 만들어 두시는 걸 권해요.</p>
           <!-- 앱스토어 심사 기준상 개인정보 처리방침은 앱 안에서도 찾을 수 있어야 한다.
@@ -531,24 +534,24 @@
 
 <!-- 한 파일이던 app.js 를 구역별로 나눴다. 전역을 그대로 쓰는 고전 script 라 순서가 중요하다.
      core 가 데이터와 헬퍼를 만들고, boot 가 마지막에 첫 화면을 그린다. -->
-<script src="js/core.js?v=74"></script>
-<script src="js/sound.js?v=74"></script>
-<script src="js/mascot.js?v=74"></script>
-<script src="js/shell.js?v=74"></script>
-<script src="js/home.js?v=74"></script>
-<script src="js/cal.js?v=74"></script>
-<script src="js/study.js?v=74"></script>
-<script src="js/list.js?v=74"></script>
-<script src="js/editor.js?v=74"></script>
-<script src="js/settings.js?v=74"></script>
-<script src="js/guide.js?v=74"></script>
-<script src="js/closet.js?v=74"></script>
-<script src="js/birthday.js?v=74"></script>
-<script src="js/ads.js?v=74"></script>
-<script src="js/waiting.js?v=74"></script>
-<script src="js/widget.js?v=74"></script>
-<script src="js/nick.js?v=74"></script>
-<script src="js/recipeshare.js?v=74"></script>
-<script src="js/boot.js?v=74"></script>
+<script src="js/core.js?v=75"></script>
+<script src="js/sound.js?v=75"></script>
+<script src="js/mascot.js?v=75"></script>
+<script src="js/shell.js?v=75"></script>
+<script src="js/home.js?v=75"></script>
+<script src="js/cal.js?v=75"></script>
+<script src="js/study.js?v=75"></script>
+<script src="js/list.js?v=75"></script>
+<script src="js/editor.js?v=75"></script>
+<script src="js/settings.js?v=75"></script>
+<script src="js/guide.js?v=75"></script>
+<script src="js/closet.js?v=75"></script>
+<script src="js/birthday.js?v=75"></script>
+<script src="js/ads.js?v=75"></script>
+<script src="js/waiting.js?v=75"></script>
+<script src="js/widget.js?v=75"></script>
+<script src="js/nick.js?v=75"></script>
+<script src="js/recipeshare.js?v=75"></script>
+<script src="js/boot.js?v=75"></script>
 </body>
 </html>
