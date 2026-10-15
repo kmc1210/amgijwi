@@ -2619,6 +2619,11 @@ const LEGACY = {
       // 짧은 바퀴는 결과 화면에서 모인 장수를 알려준다
       data.closet = cleanCloset({}); const g = earnRoundCheese({ total:2, ok:2, again:0 }); closetResult(g, { total:2, ok:2, again:0 });
       r.shortSaid = [$("#resCheese").style.display !== "none", $("#resCheese").textContent];
+      // 화면 전환(go) 없이 결과 화면만 보이게 해서 잰다
+      const shown = document.querySelector(".screen.active"); shown.classList.remove("active"); $("#s-result").classList.add("active");
+      const cg = $("#resCheese .cg"), sm = $("#resCheese small");
+      r.oneLine = [!!cg && !!cg.querySelector(".ci"), !!cg && cg.getBoundingClientRect().height <= 26, sm.getBoundingClientRect().height <= 20 && /^지금 \d+개$/.test(sm.textContent)];
+      $("#s-result").classList.remove("active"); shown.classList.add("active");
       closetResult(0, { total:0, ok:0, again:0 }); r.emptyHidden = $("#resCheese").style.display === "none";
       data.closet = cleanCloset(JSON.parse(closetKeep));
       const visit0 = VISIT;
@@ -2711,7 +2716,25 @@ const LEGACY = {
     eq("한 장짜리 바퀴 열 번으로는 치즈 2개뿐이다(예전엔 10개)", r.oneCard, [2, 2]);
     eq("하루 몫을 다 받은 뒤에는 모으지도 않는다", r.cappedPool, [0, 3]);
     eq("모아 둔 장수는 0~4 로 다듬는다", r.poolClean, [4, 0, 0]);
-    ok("짧은 바퀴는 결과 화면에서 모인 장수를 알려준다", r.shortSaid[0] && /5장이 모이면 치즈 \+1 \(2\/5\)/.test(r.shortSaid[1]), JSON.stringify(r.shortSaid));
+    eq("결과 화면 치즈 줄: 치즈 그림은 글 첫머리에 붙고 글은 한 줄, 지금 N개는 쪼개지지 않는다", r.oneLine, [true, true, true]);
+    {
+      // 좁은 아이폰(320pt)에서도 치즈 그림과 글은 한 줄, 지금 N개는 통째로 다음 줄에
+      const vp = page.viewportSize();
+      await page.setViewportSize({ width: 320, height: 700 });
+      const narrow = await page.evaluate(() => {
+        const keep = JSON.stringify(data.closet);
+        data.closet = cleanCloset({ cheese:1234, pool:2 }); closetResult(0, { total:2, ok:2, again:0 });
+        const shown = document.querySelector(".screen.active"); shown.classList.remove("active"); $("#s-result").classList.add("active");
+        const cg = $("#resCheese .cg").getBoundingClientRect(), sm = $("#resCheese small").getBoundingClientRect();
+        const out = [cg.height <= 26, sm.height <= 20, cg.right <= document.documentElement.clientWidth, sm.right <= document.documentElement.clientWidth];
+        $("#s-result").classList.remove("active"); shown.classList.add("active");
+        data.closet = cleanCloset(JSON.parse(keep));
+        return out;
+      });
+      await page.setViewportSize(vp);
+      eq("320pt 에서도 치즈 줄이 화면 안에서 한 줄씩", narrow, [true, true, true, true]);
+    }
+    ok("짧은 바퀴는 결과 화면에서 모인 장수를 알려준다", r.shortSaid[0] && /5장 모이면 치즈 \+1 \(2\/5\)/.test(r.shortSaid[1]), JSON.stringify(r.shortSaid));
     ok("빈 바퀴는 치즈 줄을 숨긴다", r.emptyHidden);
     eq("7 · 14일 연속이면 그날 한 번 +5", r.streak, [true, false, 15]);
     eq("연속 6일은 보너스 없음", r.noStreak, false);
