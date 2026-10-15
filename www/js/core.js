@@ -230,7 +230,8 @@ data.needReview = data.needReview || [];
 if(data.mode !== "blank") data.mode = "flip";
 /* 테마. auto 는 아이폰 라이트 · 다크를 따라간다(settings.js 의 shownTheme). 처음 설치하면 auto 로 시작하고,
    이미 쓰던 사람은 고른 그대로 둔다(예전 데이터에 테마가 없으면 크림이었다) */
-const THEMES = ["auto", "cream", "dark", "green"];
+/* hwnight 는 치즈로 사는 테마(closet.js 의 THEME_SHOP). 안 산 테마가 골라져 있으면 applyTheme 이 기본으로 그린다 */
+const THEMES = ["auto", "cream", "dark", "green", "hwnight"];
 if(THEMES.indexOf(data.theme) < 0) data.theme = freshData ? "auto" : "cream";
 if(["as-is","upper","lower"].indexOf(data.enCase) < 0) data.enCase = "as-is";
 /* 소리는 꺼진 채로 시작한다. 카페 근무 중에 갑자기 울리면 곤란하다 */
@@ -409,8 +410,14 @@ const BELLY = {y0:29,
    이모지 대신 쓴다. 쥐돌이와 같은 도트 문법이지만 16x16 이고 팔레트를 따로 둔다.
    MOUSE_PAL 에 이미 글자가 차 있어 섞으면 부딪힌다 (B·S 로 한 번 겪었다).
    icon("search") 처럼 부르면 글자 크기에 맞는 인라인 SVG 가 나온다 */
-const ICON_PAL = {h:"#FFFFFF", W:"#FFFFFF", w:"#FCF7F1", c:"#EBDDCD", C:"#A8998A", M:"#C97F4B", n:"#A65E2E", N:"#8A4A20", m:"#5E3412", X:"#F3CE86", Y:"#E2A64A", y:"#C1802A", x:"#8A5A12", Q:"#D4796F", r:"#B5453C", R:"#8E332B", q:"#6E2620", F:"#6BB58C", g:"#3E8E63", G:"#2F6B4A", f:"#23503A", D:"#8FC5F7", E:"#4A9BEE", e:"#2E7BD0", A:"#B9D0E8", B:"#7CA3D2", b:"#3A6FAE", a:"#24507E", K:"#4A423A", k:"#241F1A", j:"#141210", s:"#C7BDB1", S:"#9A8F85", p:"#F5BEAC", P:"#DF9B88", o:"#8A7A6A"};
+const ICON_PAL = {V:"#6A4C86", v:"#3B2A4A", O:"#E8822A", u:"#B85A16", h:"#FFFFFF", W:"#FFFFFF", w:"#FCF7F1", c:"#EBDDCD", C:"#A8998A", M:"#C97F4B", n:"#A65E2E", N:"#8A4A20", m:"#5E3412", X:"#F3CE86", Y:"#E2A64A", y:"#C1802A", x:"#8A5A12", Q:"#D4796F", r:"#B5453C", R:"#8E332B", q:"#6E2620", F:"#6BB58C", g:"#3E8E63", G:"#2F6B4A", f:"#23503A", D:"#8FC5F7", E:"#4A9BEE", e:"#2E7BD0", A:"#B9D0E8", B:"#7CA3D2", b:"#3A6FAE", a:"#24507E", K:"#4A423A", k:"#241F1A", j:"#141210", s:"#C7BDB1", S:"#9A8F85", p:"#F5BEAC", P:"#DF9B88", o:"#8A7A6A"};
 const ICONS = {
+  /* 핼러윈 밤 테마의 탭 아이콘(settings.js 의 applyTheme 이 바꿔 끼운다) */
+  home_hw:["............k.k.", "......vvvv...kkk", "......vVVv......", ".....vVVVVv.....", "....vVVVVVVv....", "...vVVVVVVVVv...", "..vVVVVVVVVVVv..", ".vvvvvvvvvvvvvv.", "..KkkkkkkkkkkK..", "..KkOOkkkkOOkK..", "..KkOOkkkkOOkK..", "..KkkkkuuukkkK..", "..KkkkkuOukkkK..", "..KkkkkuOukkkK..", "..KkkkkuOukkkK..", "..KKKKKuuuKKKK.."],
+  cards_hw:["................", ".....vvvvvvvvvv.", ".....vVVVVVVVVv.", ".....vVVVVVVVVv.", ".....vVVVVVVVVv.", ".CCCCCCCCCCVVVv.", ".CwwwwgwwwCVVVv.", ".CwwwOOOwwCVVVv.", ".CwwOOOOOwCVVVv.", ".CwwOkOkOwCvvvv.", ".CwwOOOOOwC.....", ".CwwOkkkOwC.....", ".CwwwOOOwwC.....", ".CwwwwwwwwC.....", ".CCCCCCCCCC.....", "................"],
+  note_hw:["................", "..CCCCCCCC......", "..CWwwwwwC......", "..CwVVVVwC...gg.", "..CwwwwwwC..ggO.", "..CwVVVVwC.gOO..", "..CwwwwwwCCOO...", "..CwVVVVwCOu....", "..CwwwwwwCu.....", "..CwVVwwwC......", "..CwwwwwwC......", "..CCCCCCCC......", "................", "................", "................", "................"],
+  calendar_hw:["................", "....K......K....", "....K......K....", "..KKKKKKKKKKKK..", "..KuOOOOOOOOuK..", "..KKKKKKKKKKKK..", "..KwWWWWWWWWwK..", "..KwcwcwcwcwwK..", "..KwwwwwwwgwwK..", "..KwcwcwcOOOwK..", "..KwwwwwwOkOwK..", "..KwcwcwcOOOwK..", "..KKKKKKKKKKKK..", "................", "................", "................"],
+  gear_hw:["......vvvv......", "......vVVv......", "..vv.vvVVvv.vv..", "..vvvvVVVVvvvv..", "...vVVVVVVVVv...", "..vvVVVgVVVVvv..", "vvvVVVOOOOVVVvvv", "vVVVVOOkOkOVVVVv", "vVVVVOOOOOOVVVVv", "vvvVVVOkkOVVVvvv", "..vvVVVVVVVVvv..", "...vVVVVVVVVv...", "..vvvvVVVVvvvv..", "..vv.vvVVvv.vv..", "......vVVv......", "......vvvv......"],
   palette:["................", "....KKKKKKK.....", "..KKwwwwwwwKK...", ".KwwrrwwwYYwwK..", ".KwwrrwwwYYwwK..", "KwwwwwwwwwwwwwK.", "KwEEwwwwwwwggwK.", "KwEEwwKKwwwggwK.", "KwwwwKwwKwwwwwK.", "KwwwwKwwKwwwwK..", ".KwwwwKKwwwwK...", ".KwwwwwwwwwK....", "..KKwwwwwwKK....", "....KKKKKK......", "................", "................"],
   ade:["................","..........gg....",".........ggg....",".....xxxxxx.....","...xxYXXXXYxx...","..xYXYYYYYYXYx..","..xYhYYYYYYYYx..","..xYhYYYYYYYYx..","..xYYYYYYYYYYx..","..xYyYYYYYYyYx..","...xxYyyyyYxx...",".....xxxxxx.....","................","................","................","................"],
   back:["...DDDDDDDDDD...",".DDEEEEEEEEEEDD.","DEEEEEEEEEEEEEED","EEEEEEEEEEhhhEEE","EEEEEEEEEEhhhEEE","EEEEEEEEEEhhhEEE","EEEEEEhEEEhhhEEE","EEEEEhhEEEhhhEEE","EEEEhhhhhhhhhEEE","EEEhhhhhhhhhhEEE","EEEEhhhhhhhhEEEE","EEEEEhhEEEEEEEEE","EEEEEEhEEEEEEEEE","eEEEEEEEEEEEEEEe",".eeEEEEEEEEEEee.","...eeeeeeeeee..."],

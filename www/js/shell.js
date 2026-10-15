@@ -21,6 +21,7 @@ function go(name){
   if(name === "set" && !["s-set", "s-closet", "s-import"].some(id=>$("#" + id).classList.contains("active"))) state.setGroup = "";
   if(!$("#s-"+name).classList.contains("active")) adLeave();     // 광고를 불러오는 중에 다른 화면으로 가면 부탁을 거둔다 (ads.js)
   setTimeout(recipeGo, 0);      // 하던 일이 끝나 기다리던 레시피 파일이 있으면 이제 연다 (recipeshare.js)
+  setTimeout(themeFxSync, 0);   // 홈이면 테마 움직임을 켜고, 아니면 멈춘다 (themefx.js)
   if(name !== "result"){ stopEat(); stopCaw(); }
   if(name !== "home"){ stopSip(); stopPanic(); }
   if(name !== "list" && state.selMode) exitSel();

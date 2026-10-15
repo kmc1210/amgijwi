@@ -57,6 +57,19 @@ html.dot body[data-theme="green"]{
   --d-dot:#7F9488; --d-late:#B5453C;
 }
 
+/* 핼러윈 밤(치즈로 사는 테마, 11월 8일까지) — 짙은 보라 밤하늘 · 호박 주황. 외곽선은 다크처럼 밝게 */
+html.dot body[data-theme="hwnight"]{
+  --d-bg:#1C1424; --d-surface:#2A1F35;
+  --d-line:#9A7FB5; --d-drop:#000000;
+  --d-t1:#F6EEE6; --d-t2:#C9B8D9;
+  --d-acc:#E8822A; --d-acc-dark:#8A3E0C; --d-acc-hi:#FFB061; --d-on-acc:#1C1424;
+  --d-hero:#3B2A4A; --d-hero-hi:#5A4170; --d-hero-lo:#24182E; --d-hero-t:#F6EEE6; --d-hero-t2:#D8C3EA;
+  --d-ring-track:#5A4170; --d-ring-fill:#E8822A; --d-ring-hi:#FFB061; --d-ring-lo:#B85A16;
+  --d-warn-bg:#4A2E14; --d-warn-t:#FFB061;
+  --d-tab:#221A2B;
+  --d-dot:#7E6A92; --d-late:#E0736A;
+}
+
 /* 자주 쓰는 도트 외곽선. body 에서 계산되므로 테마마다 --d-line 색을 따라간다 */
 html.dot body{
   --d-box:0 -3px 0 0 var(--d-line), 0 3px 0 0 var(--d-line), -3px 0 0 0 var(--d-line), 3px 0 0 0 var(--d-line);
@@ -849,3 +862,16 @@ html.dot .setgrp .ga{color:var(--d-t2);}
 html.dot .setgrp:active{transform:translate(3px,3px);box-shadow:var(--d-box2);}
 html.dot .setback{color:var(--d-t1);}
 html.dot .setback b{font-family:"NeoDGM",monospace;font-weight:400;font-size:20px;-webkit-font-smoothing:none;}
+/* 치즈로 사는 테마 버튼(settings.js 의 renderThemeShop) */
+html.dot #s-set #themeShop{display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:6px;margin-top:8px;}
+html.dot #s-set #themeShop[hidden]{display:none;}
+html.dot #s-set #themeShop .theme-b{min-width:0;padding-left:4px;padding-right:4px;}
+html.dot #s-set #themeShop .sw{justify-content:center;gap:2px;}
+html.dot #s-set #themeShop .sw i{width:12px;height:12px;}
+html.dot #s-set #themeShop small{display:flex;align-items:center;justify-content:center;gap:3px;font-size:12px;margin-top:2px;}
+html.dot #s-set #themeShop .pr{color:var(--d-acc);font-weight:700;}
+html.dot #s-set #themeShop .pr .ci{width:12px;height:12px;display:inline-block;}
+html.dot #s-set #themeShop .pr .ci svg{width:100%;height:100%;display:block;}
+html.dot #s-set #themeShop .lim{color:var(--d-t2);}
+/* 어두운 테마에서도 생일 고르기 글자가 보이게 */
+html.dot #bdayCard .bdrow select{color:var(--d-t1);background-color:var(--d-surface);}

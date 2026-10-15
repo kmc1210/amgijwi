@@ -38,7 +38,7 @@
   }
 
   /* ── 다크 ───────────────────────────────── */
-  body[data-theme="dark"]{
+  body[data-theme="dark"], body[data-theme="hwnight"]{      /* 핼러윈 밤은 어두운 테마라 다크의 기본 색 위에 도트 색(dot.css)만 바꾼다 */
     --bg:#14110E; --surface:#1E1A16; --surface-2:#252019;
     --ink:#F2EBE3; --ink-2:#C3B7AB; --muted:#8C8076; --line:#312A23;
     --accent:#D89A63; --accent-ink:#EBB783; --accent-soft:#352819;
@@ -196,6 +196,8 @@
   .mascot svg{display:block;width:100%;height:100%;}
   .mascot:active{transform:scale(.94);}
   /* 비상 달리기 레이어 — 홈 위에 겹쳐 그리고 터치는 통과시킨다 */
+  #themeFx{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:39;image-rendering:pixelated;}
+  #themeFx[hidden]{display:none;}
   #panicLayer{position:absolute;left:0;right:0;top:0;height:300px;pointer-events:none;z-index:40;display:none;}
   #panicLayer.on{display:block;}
   #panicRun{position:absolute;left:0;top:0;width:56px;height:80px;will-change:transform;}
