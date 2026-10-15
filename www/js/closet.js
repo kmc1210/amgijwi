@@ -522,12 +522,13 @@ function closetResult(gain, stat, again){
   const short = !!stat && stat.total >= 1 && !roundCounts(stat);
   const said = gain ? "치즈 +" + gain
              : capped ? "오늘 치즈는 다 받았어요"
-             : short ? `짧은 바퀴는 ${CHEESE_ROUND_MIN}장이 모이면 치즈 +1 (${data.closet.pool}/${CHEESE_ROUND_MIN})` : "";
+             : short ? `${CHEESE_ROUND_MIN}장 모이면 치즈 +1 (${data.closet.pool}/${CHEESE_ROUND_MIN})` : "";
   line.style.display = on && said ? "" : "none"; btn.style.display = on ? "" : "none";
   if(!again) $("#resAdMsg").textContent = "";
   adButton();                   // 광고 보고 치즈 받기 (ads.js). 앱이 아니거나 오늘 몫을 다 봤으면 비운다
   if(!on) return;
-  line.innerHTML = `<span class="ci">${cheeseSVG()}</span><span>${said}</span><small>지금 ${data.closet.cheese}개</small>`;
+  /* 치즈 그림은 글 첫머리에 붙여 둔다. 좁으면 "지금 N개"만 통째로 다음 줄로 내려간다(글자 사이가 쪼개지지 않게) */
+  line.innerHTML = `<span class="cg"><span class="ci">${cheeseSVG()}</span>${said}</span><small>지금 ${data.closet.cheese}개</small>`;
 }
 /* 설정: 맨 위 옷장 줄 */
 function closetSettings(){
