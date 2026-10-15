@@ -2248,6 +2248,25 @@ const LEGACY = {
     ok("건의하기는 앱에만 보인다", r.btn === true && r.webBtn === false);
   }
 
+  // ── 6-10t. 1.3 자동 테마 ────────────────────────────────────────
+  {
+    const theme0 = await page.evaluate(() => data.theme);
+    await page.emulateMedia({ colorScheme:"light" });
+    const r1 = await page.evaluate(() => { data.theme = "auto"; applyTheme(); go("set");
+      return [shownTheme(), document.body.getAttribute("data-theme"), document.querySelector('#themeBtns [data-theme="auto"]').classList.contains("on")]; });
+    await page.emulateMedia({ colorScheme:"dark" });
+    await page.waitForTimeout(50);
+    const r2 = await page.evaluate(() => [shownTheme(), document.body.getAttribute("data-theme")]);
+    const r3 = await page.evaluate(() => { data.theme = "green"; applyTheme(); return document.body.getAttribute("data-theme"); });
+    await page.emulateMedia({ colorScheme:"light" });
+    const r4 = await page.evaluate(() => { const src = JSON.stringify(data); return [JSON.parse(src).theme]; });
+    await page.evaluate(t => { data.theme = t; applyTheme(); persist(); go("home"); }, theme0);
+    eq("자동: 아이폰이 라이트면 기본, 자동 버튼이 켜진다", r1, ["cream", "cream", true]);
+    eq("자동: 아이폰이 다크로 바뀌면 바로 다크로", r2, ["dark", "dark"]);
+    eq("직접 고른 테마는 아이폰 설정과 상관없다", r3, "green");
+    ok("테마는 저장된다", r4[0] === "green");
+  }
+
   // ── 6-10s. 1.3 레시피 보내기 · 받기 ──────────────────────────────
   {
     const r = await page.evaluate(async () => {

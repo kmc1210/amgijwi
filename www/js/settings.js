@@ -191,10 +191,14 @@ document.querySelectorAll("#enSeg button").forEach(b=>{
 
 /* ---------- 테마 ---------- */
 const THEME_BAR = {cream:"#F7F3EE", dark:"#14110E", green:"#F1F6F1"};
+/* 지금 화면에 입힐 테마: 자동이면 아이폰이 다크 모드인지 보고 다크 · 기본 중에 고른다 */
+const darkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+function shownTheme(){ return data.theme === "auto" ? (darkQuery && darkQuery.matches ? "dark" : "cream") : data.theme; }
 function applyTheme(){
-  document.body.setAttribute("data-theme", data.theme);
+  const t = shownTheme();
+  document.body.setAttribute("data-theme", t);
   const m = document.querySelector('meta[name="theme-color"]');
-  if(m) m.setAttribute("content", THEME_BAR[data.theme] || "#F7F3EE");
+  if(m) m.setAttribute("content", THEME_BAR[t] || "#F7F3EE");
   document.querySelectorAll("#themeBtns .theme-b").forEach(b=>{
     b.classList.toggle("on", b.dataset.theme === data.theme);
   });
@@ -202,6 +206,11 @@ function applyTheme(){
 document.querySelectorAll("#themeBtns .theme-b").forEach(b=>{
   b.addEventListener("click", ()=>{ data.theme = b.dataset.theme; persist(); applyTheme(); });
 });
+/* 자동이면 아이폰 설정이 바뀔 때(밤에 저절로 어두워지는 것 포함) 바로 따라간다 */
+if(darkQuery){
+  const follow = ()=>{ if(data.theme === "auto") applyTheme(); };
+  if(darkQuery.addEventListener) darkQuery.addEventListener("change", follow); else if(darkQuery.addListener) darkQuery.addListener(follow);
+}
 
 function applySound(){
   document.querySelectorAll("#soundBtns .theme-b").forEach(b=>{
@@ -378,7 +387,7 @@ function applyBackup(text){
   if(!d || !Array.isArray(d.drinks)){ toast("레시피 데이터를 찾지 못했어요"); return; }
   confirmBox("백업 복원", `레시피 ${d.drinks.length}개를 불러오고 현재 데이터를 덮어쓸까요?`, "복원", ()=>{
     const keepMode = (d.mode === "blank" || d.mode === "flip") ? d.mode : data.mode;
-    const keepTheme = ["cream","dark","green"].indexOf(d.theme) >= 0 ? d.theme : data.theme;
+    const keepTheme = ["auto","cream","dark","green"].indexOf(d.theme) >= 0 ? d.theme : data.theme;
     const keepSound = ["off","sfx","all"].indexOf(d.sound) >= 0 ? d.sound : data.sound;
     const keepCats = (Array.isArray(d.cats) && d.cats.length)
       ? d.cats.map(c=>({id:String(c.id||uid()), label:String(c.label||"분류"), emo:String(c.emo||"@cup")}))
