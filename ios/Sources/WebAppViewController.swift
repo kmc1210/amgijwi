@@ -18,6 +18,7 @@ final class WebAppViewController: UIViewController {
     private let review = ReviewBridge()
     private let widget = WidgetBridge()
     private let store = StoreBridge()
+    private let update = UpdateBridge()
 
     init() {
         handler = BundleSchemeHandler()
@@ -74,12 +75,16 @@ final class WebAppViewController: UIViewController {
         /// 홈 화면 위젯에 넘길 요약 통로. 받은 것을 위젯과 같이 쓰는 칸에 적는다 (WidgetBridge.swift).
         config.userContentController.add(widget, name: WidgetBridge.name)
 
+        /// 새 버전 알림 통로. 하루 한 번 앱스토어에 버전만 묻고, 새것이면 웹이 홈에서 한 번 묻는다 (UpdateBridge.swift).
+        config.userContentController.add(update, name: UpdateBridge.name)
+
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
         alarms.attach(webView)
         ads.attach(webView, host: self)
         review.attach(host: self)
         share.attach(webView, host: self)
+        update.attach(host: self) { [weak self] js in self?.tell(js) }
 
         /// 안전 영역까지 페이지가 직접 그린다. index.html 의 viewport-fit=cover 와 짝이다.
         /// 여기서 여백을 자동으로 넣어버리면 노치 대응 CSS 와 이중으로 겹친다.
@@ -111,7 +116,12 @@ final class WebAppViewController: UIViewController {
             return
         }
         webView.load(URLRequest(url: BundleSchemeHandler.startURL))
+        /// 켤 때와 다시 앞으로 꺼낼 때 새 버전을 확인한다(하루 한 번만 실제로 묻는다)
+        NotificationCenter.default.addObserver(self, selector: #selector(becameActive),
+                                               name: UIApplication.didBecomeActiveNotification, object: nil)
     }
+
+    @objc private func becameActive() { update.checkIfDue() }
 
     /// window.__amgijwiHaptics: 진동을 낼 수 있는 기기인지. 아니면 설정의 진동 칸을 숨긴다.
     /// window.__amgijwiInfo: 건의 메일 본문에 붙이는 앱 버전 · 기기 · iOS 버전. 메일은 사용자가 직접 보낸다.
