@@ -9,7 +9,7 @@ final class WebAppViewController: UIViewController {
     private var webView: WKWebView!
     /// 첫 화면이 다 떴는가 · 그 전에 위젯을 눌러 들어온 것(뜬 뒤에 웹에 알린다)
     private var pageReady = false
-    private var pendingWidget: String?
+    private var pendingJS: [String] = []
     private let handler: BundleSchemeHandler?
     private let alarms = AlarmBridge()
     private let share = ShareBridge()
@@ -181,7 +181,27 @@ extension WebAppViewController: WKNavigationDelegate {
         guard let data = try? JSONSerialization.data(withJSONObject: [kind, String(id.prefix(64))]),
               let args = String(data: data, encoding: .utf8) else { return }
         let js = "typeof widgetOpenFromApp === 'function' && widgetOpenFromApp.apply(null, \(args))"
-        if pageReady { webView.evaluateJavaScript(js, completionHandler: nil) } else { pendingWidget = js }
+        tell(js)
+    }
+
+    /// 받은 레시피 파일(.amgijwi — 다른 앱에서 "암기쥐에서 열기"). 내용만 읽어 웹(www/js/recipeshare.js 의 recipesFromApp)에 넘기고,
+    /// iOS 가 앱 안(Inbox)으로 복사해 둔 파일은 지운다. 고르고 들이는 일은 웹이 한다. 너무 큰 파일(2MB 넘게)은 받지 않는다.
+    func openRecipeFile(_ url: URL) {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer {
+            if scoped { url.stopAccessingSecurityScopedResource() }
+            if url.path.contains("/Inbox/") { try? FileManager.default.removeItem(at: url) }
+        }
+        guard let size = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize, size <= 2_000_000,
+              let data = try? Data(contentsOf: url), let text = String(data: data, encoding: .utf8),
+              let arg = try? JSONSerialization.data(withJSONObject: [text]),
+              let args = String(data: arg, encoding: .utf8) else { return }
+        tell("typeof recipesFromApp === 'function' && recipesFromApp.apply(null, \(args))")
+    }
+
+    /// 웹에 알린다. 첫 화면이 아직 안 떴으면 뜬 뒤에 차례대로 알린다.
+    private func tell(_ js: String) {
+        if pageReady { webView.evaluateJavaScript(js, completionHandler: nil) } else { pendingJS.append(js) }
     }
 
     /// 오래 뒤에 두면 iOS 가 웹 화면을 내릴 때가 있다(빈 화면이 된다). 다시 불러오고, 그사이 위젯을 눌렀으면 뜬 뒤에 알린다.
@@ -192,10 +212,9 @@ extension WebAppViewController: WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         pageReady = true
-        if let js = pendingWidget {
-            pendingWidget = nil
-            webView.evaluateJavaScript(js, completionHandler: nil)
-        }
+        let waiting = pendingJS
+        pendingJS = []
+        waiting.forEach { webView.evaluateJavaScript($0, completionHandler: nil) }
     }
 
     /// 앱 안에서는 우리 파일만 연다. 바깥 주소는 사파리로 넘긴다.

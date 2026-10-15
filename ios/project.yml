@@ -75,6 +75,27 @@ targets:
         CFBundleLocalizations:
           - ko
 
+        # ── 레시피 파일(.amgijwi) ──
+        # 동료가 보낸 레시피 파일을 카톡 · 메일 · 파일 앱에서 누르면 "암기쥐에서 열기"가 뜨게 한다.
+        # 파일은 iOS 가 앱 안으로 복사해 넘긴다(제자리에서 열지 않는다). 읽은 뒤 지운다 — WebAppViewController.openRecipeFile
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: 암기쥐 레시피
+            LSHandlerRank: Owner
+            LSItemContentTypes:
+              - com.amgijwi.recipes
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.amgijwi.recipes
+            UTTypeDescription: 암기쥐 레시피
+            UTTypeConformsTo:
+              - public.data
+              - public.content
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - amgijwi
+              public.mime-type:
+                - application/x-amgijwi-recipes
+        LSSupportsOpeningDocumentsInPlace: false
+
         # ── 보상형 광고(AdMob) ──
         # 여기 ID 들은 비밀 값이 아니다. 앱 안에 그대로 들어가고 광고 요청마다 드러난다.
         # 광고를 끄려면 AmgijwiAdsEnabled 를 false 로 두거나 AmgijwiRewardedUnit 을 비운다(옷장에 광고 버튼이 사라진다).
