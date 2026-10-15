@@ -190,21 +190,64 @@ document.querySelectorAll("#enSeg button").forEach(b=>{
 });
 
 /* ---------- 테마 ---------- */
-const THEME_BAR = {cream:"#F7F3EE", dark:"#14110E", green:"#F1F6F1"};
+const THEME_BAR = {cream:"#F7F3EE", dark:"#14110E", green:"#F1F6F1", hwnight:"#1C1424"};
 /* 지금 화면에 입힐 테마: 자동이면 아이폰이 다크 모드인지 보고 다크 · 기본 중에 고른다 */
 const darkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
-function shownTheme(){ return data.theme === "auto" ? (darkQuery && darkQuery.matches ? "dark" : "cream") : data.theme; }
+function shownTheme(){
+  if(data.theme === "auto") return darkQuery && darkQuery.matches ? "dark" : "cream";
+  /* 치즈로 사는 테마는 산 사람만, 그리고 도트 화면(앱)에서만. 아니면 기본 */
+  if(THEME_SHOP.some(t=>t.id === data.theme) && !(isDot() && themeOwned(data.theme))) return "cream";
+  return data.theme;
+}
 function applyTheme(){
   const t = shownTheme();
   document.body.setAttribute("data-theme", t);
   const m = document.querySelector('meta[name="theme-color"]');
   if(m) m.setAttribute("content", THEME_BAR[t] || "#F7F3EE");
+  themeTabIcons();
+  renderThemeShop();
+  themeFxSync();                // 홈의 테마 움직임 (themefx.js)
   document.querySelectorAll("#themeBtns .theme-b").forEach(b=>{
     b.classList.toggle("on", b.dataset.theme === data.theme);
   });
 }
 document.querySelectorAll("#themeBtns .theme-b").forEach(b=>{
   b.addEventListener("click", ()=>{ data.theme = b.dataset.theme; persist(); applyTheme(); });
+});
+/* 핼러윈 밤은 탭 아이콘도 핼러윈 모양으로. 앱이 켜질 때 paintIcons 뒤에도 한 번 부른다(boot.js) */
+function themeTabIcons(){
+  const hw = shownTheme() === "hwnight";
+  document.querySelectorAll("#tabs [data-ico]").forEach(el=>{
+    const name = el.getAttribute("data-ico");
+    el.innerHTML = icon(hw && ICONS[name + "_hw"] ? name + "_hw" : name);
+  });
+}
+/* 치즈로 사는 테마 버튼(앱만). 산 것은 고르기, 안 산 것은 값과 기간 — 누르면 확인창에서 산다. 기간이 지난 안 산 테마는 숨긴다 */
+function renderThemeShop(){
+  const box = $("#themeShop"); if(!box) return;
+  if(!isDot() || !isNativeApp()){ box.innerHTML = ""; return; }
+  const list = THEME_SHOP.filter(t=>themeOwned(t.id) || closetOnSale(t));
+  box.innerHTML = list.map(t=>{
+    const own = themeOwned(t.id), until = t.season ? t.season.until.split("-") : null;
+    return `<button type="button" class="theme-b shop${data.theme === t.id ? " on" : ""}" data-shop="${t.id}">
+      <span class="sw">${t.sw.map(c=>`<i style="background:${c}"></i>`).join("")}</span>${esc(t.name)}
+      ${own ? "" : `<small class="pr"><span class="ci">${cheeseSVG()}</span>${t.price}</small>${until ? `<small class="lim">~${Number(until[1])}/${Number(until[2])}</small>` : ""}`}</button>`;
+  }).join("");
+  box.hidden = !list.length;
+}
+$("#themeShop").addEventListener("click", e=>{
+  const b = e.target.closest("[data-shop]"); if(!b) return;
+  const t = THEME_SHOP.filter(x=>x.id === b.dataset.shop)[0]; if(!t) return;
+  if(themeOwned(t.id)){ data.theme = t.id; persist(); applyTheme(); haptic("selection"); return; }
+  if(!closetOnSale(t)){ renderThemeShop(); return; }
+  const c = data.closet;
+  if(c.cheese < t.price){ haptic("error"); toast("치즈가 " + (t.price - c.cheese) + "개 모자라요"); return; }
+  confirmBox(t.name + " 테마", `치즈 ${t.price}개로 살까요? 치즈 ${c.cheese}개 → ${c.cheese - t.price}개`, "사기", ()=>{
+    if(themeOwned(t.id) || c.cheese < t.price || !closetOnSale(t)) return;
+    c.cheese -= t.price; c.themes.push(t.id); data.theme = t.id;
+    persist(); applyTheme(); renderSettings();
+    sfx("chu"); haptic("success"); toast(t.name + " 테마를 샀어요");
+  });
 });
 /* 자동이면 아이폰 설정이 바뀔 때(밤에 저절로 어두워지는 것 포함) 바로 따라간다 */
 if(darkQuery){

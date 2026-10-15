@@ -1137,7 +1137,7 @@ const LEGACY = {
     data = JSON.parse(backup); persist(); go("home");
     return r;
   });
-  eq("아이콘이 서른한 개다(탭바의 홈·학습 카드·설정, 설정 묶음의 팔레트 포함)", dots.count, 31);
+  eq("아이콘이 서른여섯 개다(탭바의 홈·학습 카드·설정, 설정 묶음의 팔레트, 핼러윈 탭 아이콘 다섯 포함)", dots.count, 36);
   ok("모두 정사각이고 16칸 이상이다", dots.square === true, JSON.stringify(dots.sizes));
   ok("팔레트에 없는 색을 쓰지 않는다", dots.knownColors === true);
   ok("아이콘은 제 팔레트 색만 쓴다", dots.onlyIconPal === true);
@@ -2249,6 +2249,62 @@ const LEGACY = {
     ok("건의하기는 앱에만 보인다", r.btn === true && r.webBtn === false);
   }
 
+  // ── 6-10w. 1.3 테마 상점 · 핼러윈 밤 ─────────────────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {}, wait = ms => new Promise(res => setTimeout(res, ms));
+      const backup = JSON.stringify(data);
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      const realOn = closetOnSale; closetOnSale = (it, today) => realOn(it, today || "2026-10-20");
+      data.closet = cleanCloset({ cheese:40 }); data.theme = "cream"; applyTheme(); go("set"); renderSettings();
+      const btn = () => document.querySelector('#themeShop [data-shop="hwnight"]');
+      r.shop = [!!btn(), /100/.test(btn().textContent), /~11\/8/.test(btn().textContent)];
+      // 안 산 테마가 골라져 있으면 기본으로 그린다
+      data.theme = "hwnight"; applyTheme(); r.notOwned = shownTheme(); data.theme = "cream"; applyTheme();
+      // 치즈가 모자라면 사지 않는다
+      btn().click(); r.poor = [$("#dlg").classList.contains("on"), /60개 모자라요/.test($("#toast").textContent), data.closet.themes.length];
+      // 사기: 확인창 → 치즈가 줄고 바로 입는다 · 탭 아이콘도 핼러윈
+      data.closet.cheese = 150; renderSettings(); btn().click();
+      r.ask = [$("#dlg").classList.contains("on"), /150개 → 50개/.test($("#dlgM").textContent)];
+      $("#dlgYes").click();
+      r.bought = [data.closet.cheese, data.closet.themes.join(","), data.theme, document.body.getAttribute("data-theme"), btn().classList.contains("on"), /100/.test(btn().textContent)];
+      const hwInk = () => /#3B2A4A/i.test($("#tabs [data-ico=home]").innerHTML);      // 핼러윈 탭 아이콘의 짙은 보라
+      r.icons = hwInk();
+      // 다른 테마로 바꿨다가 산 테마를 다시 고르면 치즈 없이
+      document.querySelector('#themeBtns [data-theme="dark"]').click(); r.other = [document.body.getAttribute("data-theme"), !hwInk()];
+      btn().click(); r.again = [data.theme, data.closet.cheese, $("#dlg").classList.contains("on")];
+      // 홈 움직임: 홈 · 핼러윈 밤에서만
+      go("home"); await wait(60); r.fxHome = [!$("#themeFx").hidden, !!fxT];
+      go("list"); await wait(60); r.fxList = [$("#themeFx").hidden, fxT];
+      go("home"); await wait(60);
+      // 기간이 지나도 산 테마는 남고, 안 산 사람에게는 사라진다
+      closetOnSale = (it, today) => realOn(it, today || "2026-11-09");
+      go("set"); renderSettings(); r.keep = !!btn();
+      const own = data.closet.themes; data.closet.themes = []; renderSettings(); r.gone = [!!btn(), $("#themeShop").hidden]; data.closet.themes = own;
+      // 백업을 되살려도 산 테마는 치즈 · 옷처럼 따라간다
+      r.restore = cleanCloset(JSON.parse(JSON.stringify(data.closet))).themes.join(",");
+      closetOnSale = realOn;
+      data = JSON.parse(backup); data.closet = cleanCloset(data.closet); persist(); applyTheme();
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText(); applyTheme(); go("home");
+      r.webFx = [$("#themeFx").hidden];
+      return r;
+    });
+    eq("테마 상점: 핼러윈 밤 · 치즈 100 · ~11/8", r.shop, [true, true, true]);
+    eq("안 산 테마가 골라져 있으면 기본으로 그린다", r.notOwned, "cream");
+    eq("치즈가 모자라면 확인창 없이 몇 개 모자란지 알린다", r.poor, [false, true, 0]);
+    eq("사기 전에 확인창(쓰는 치즈 · 남는 치즈)", r.ask, [true, true]);
+    eq("사면 치즈가 줄고 바로 입는다, 값은 사라진다", r.bought, [50, "hwnight", "hwnight", "hwnight", true, false]);
+    ok("핼러윈 밤이면 탭 아이콘도 핼러윈", r.icons);
+    eq("다른 테마로 바꾸면 탭 아이콘도 원래대로", r.other, ["dark", true]);
+    eq("산 테마는 다시 고를 때 치즈가 안 든다", r.again, ["hwnight", 50, false]);
+    eq("홈에서 핼러윈 밤이면 움직인다", r.fxHome, [true, true]);
+    eq("홈이 아니면 멈춘다", r.fxList, [true, null]);
+    ok("기간이 지나도 산 테마는 고를 수 있다", r.keep);
+    eq("기간이 지나면 안 산 사람에게는 상점 칸이 사라진다", r.gone, [false, true]);
+    eq("산 테마는 백업을 따라간다", r.restore, "hwnight");
+    eq("앱이 아니면 테마 움직임이 없다", r.webFx, [true]);
+  }
+
   // ── 6-10g. 1.3 설정 묶음 ────────────────────────────────────────
   {
     const r = await page.evaluate(() => {
@@ -2428,7 +2484,7 @@ const LEGACY = {
       const day = mouseRows("day");
       const worn = dressRows(day, "stand", { body:"cape", hand:"pumpkin" });
       const out = []; for(let y = 17; y < 37; y++) for(let x = 0; x < 28; x++) if(day[y][x] === "." && worn[y][x] !== ".") out.push(1);
-      r.wide = [out.length > 20, worn[28][6] === "p", worn[38][3] === "d", worn[26][10] === "J" || worn[26][10] === "K", dressRows(day, "stand", { body:"cape" })[22][13] === "q"];
+      r.wide = [out.length > 20, worn[28][6] === "p", worn[38][3] === "d", worn[26][10] === "J" || worn[26][10] === "K", dressRows(day, "stand", { body:"cape" })[24][13] === "q"];
       const apron = dressRows(day, "stand", { body:"apron" }); let outA = 0; for(let y = 17; y < 37; y++) for(let x = 0; x < 28; x++) if(day[y][x] === "." && apron[y][x] !== ".") outA++;
       r.apronStays = outA;
       // 깜빡이는 그림에서만 호박이 번쩍인다

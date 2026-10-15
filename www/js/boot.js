@@ -83,6 +83,7 @@ applyTheme();
 applyDeviceText();
 applyEnvText();
 paintIcons();
+themeTabIcons();                  // 테마가 탭 아이콘을 바꾸면 그 모양으로 (settings.js)
 initVisit();
 initAway();                       // 며칠 만에 열었으면 기다린 얼굴 (waiting.js)
 renderHome();

@@ -15,6 +15,12 @@ Object.keys(CLOSET_PAL).forEach(k=>{ MOUSE_PAL[k] = CLOSET_PAL[k]; });
 const CLOSET_SLOTS = [["head","머리"],["face","얼굴"],["body","몸"],["hand","손"]];
 /* 기간 한정 아이템(season). 그 날까지만 옷장에 나오고 살 수 있다. 산 것은 기간이 지나도 그대로 입는다 */
 const HALLOWEEN = {name:"핼러윈", until:"2026-11-08"};
+/* 치즈로 사는 테마. 산 것은 설정 > 화면과 소리 > 테마에서 고른다. 기간 한정은 그 날까지만 팔고, 산 것은 계속 쓴다.
+   색은 dot.css 의 body[data-theme="…"], 홈의 움직임은 themefx.js, 탭 아이콘은 core.js 의 ICONS["…_hw"] */
+const THEME_SHOP = [
+  {id:"hwnight", name:"핼러윈 밤", price:100, season:HALLOWEEN, sw:["#1C1424", "#E8822A", "#6A4C86"]}];
+function themeOwned(id){ return data.closet.themes.indexOf(id) >= 0; }
+
 /* 망토를 입고 달릴 때 뒤를 따라오는 작은 박쥐(날개 위 · 아래 두 장) */
 const RUN_BAT = [["H.....H", "HH.H.HH", ".H2H2H.", "..HHH.."], [".......", ".HH.HH.", "HHH2H2H", "H..H..H"]];
 const CLOSET_ITEMS = [
@@ -179,8 +185,8 @@ const CLOSET_ITEMS = [
       ".....HH......HH......HH.....",
       "......HH.....HH.....HH......",
       ".......HHHHH....HHHHH......."]},
-  /* 몸 바깥까지 퍼지는 코트(wide). 서 있는 깃 · 가슴의 금색 끈 매듭 · 주름 */
-  {id:"cape", slot:"body", name:"뱀파이어 망토", price:120, y:17, season:HALLOWEEN, wide:true, rows:[
+  /* 몸 바깥까지 퍼지는 코트(wide). 서 있는 깃 · 가슴의 금색 끈 매듭 · 주름. 입 · 볼을 가리지 않게 턱 털 아래(19행)부터 */
+  {id:"cape", slot:"body", name:"뱀파이어 망토", price:120, y:19, season:HALLOWEEN, wide:true, rows:[
       "...K2..................2K...",
       "..K222................222K..",
       "..K2222..............2222K..",
@@ -198,9 +204,7 @@ const CLOSET_ITEMS = [
       "KKKKKDKKKK2......2KKKKDKKKKK",
       "KKKKKDKKK2........2KKKDKKKKK",
       "KKKKKDKKK2........2KKKDKKKKK",
-      "KKKKKDKKK2........2KKKDKKKKK",
-      "KKKKKDKK2..........2KKDKKKKK",
-      "KKKKKKKK2..........2KKKKKKKK"],
+      "KKKKKDKKK2........2KKKDKKKKK"],
     perk:"달릴 때 망토가 펄럭이고 박쥐가 따라와요",
     run:{y:18, cells:".owc", rows:[
         "....................KK......",
@@ -311,7 +315,9 @@ function cleanCloset(c){
     adDay: typeof c.adDay === "string" ? c.adDay : "",
     adCount: Math.max(0, Math.floor(Number(c.adCount) || 0)),
     /* 짧은 바퀴에서 모아 둔 장수(0~4) */
-    pool: Math.min(CHEESE_ROUND_MIN - 1, Math.max(0, Math.floor(Number(c.pool) || 0)))
+    pool: Math.min(CHEESE_ROUND_MIN - 1, Math.max(0, Math.floor(Number(c.pool) || 0))),
+    /* 치즈로 산 테마(THEME_SHOP 의 id) */
+    themes: Array.isArray(c.themes) ? c.themes.filter(id=>THEME_SHOP.some(t=>t.id === id)) : []
   };
 }
 function closetItem(id){ return CLOSET_ITEMS.filter(i=>i.id === id)[0] || null; }
