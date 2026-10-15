@@ -2260,7 +2260,7 @@ const LEGACY = {
       const btn = () => document.querySelector('#themeShop [data-shop="hwnight"]');
       r.shop = [!!btn(), /100/.test(btn().textContent), /~11\/8/.test(btn().textContent)];
       // 안 산 테마가 골라져 있으면 기본으로 그린다
-      data.theme = "hwnight"; applyTheme(); r.notOwned = shownTheme(); data.theme = "cream"; applyTheme();
+      data.theme = "hwnight"; applyTheme(); r.notOwned = [shownTheme(), btn().classList.contains("on")]; data.theme = "cream"; applyTheme();
       // 치즈가 모자라면 사지 않는다
       btn().click(); r.poor = [$("#dlg").classList.contains("on"), /60개 모자라요/.test($("#toast").textContent), data.closet.themes.length];
       // 사기: 확인창 → 치즈가 줄고 바로 입는다 · 탭 아이콘도 핼러윈
@@ -2275,6 +2275,7 @@ const LEGACY = {
       btn().click(); r.again = [data.theme, data.closet.cheese, $("#dlg").classList.contains("on")];
       // 홈 움직임: 홈 · 핼러윈 밤에서만
       go("home"); await wait(60); r.fxHome = [!$("#themeFx").hidden, !!fxT];
+      window.__amgijwiSetAll = false; go("set"); openSetGroup(""); renderSettings(); r.note = document.querySelector('#setGroups [data-g="screen"] .gn').textContent.trim(); window.__amgijwiSetAll = true; renderSettings(); go("home"); await wait(60);
       go("list"); await wait(60); r.fxList = [$("#themeFx").hidden, fxT];
       go("home"); await wait(60);
       // 기간이 지나도 산 테마는 남고, 안 산 사람에게는 사라진다
@@ -2290,7 +2291,7 @@ const LEGACY = {
       return r;
     });
     eq("테마 상점: 핼러윈 밤 · 치즈 100 · ~11/8", r.shop, [true, true, true]);
-    eq("안 산 테마가 골라져 있으면 기본으로 그린다", r.notOwned, "cream");
+    eq("안 산 테마가 골라져 있으면 기본으로 그리고, 상점 버튼도 골라진 것처럼 안 보인다", r.notOwned, ["cream", false]);
     eq("치즈가 모자라면 확인창 없이 몇 개 모자란지 알린다", r.poor, [false, true, 0]);
     eq("사기 전에 확인창(쓰는 치즈 · 남는 치즈)", r.ask, [true, true]);
     eq("사면 치즈가 줄고 바로 입는다, 값은 사라진다", r.bought, [50, "hwnight", "hwnight", "hwnight", true, false]);
@@ -2298,6 +2299,7 @@ const LEGACY = {
     eq("다른 테마로 바꾸면 탭 아이콘도 원래대로", r.other, ["dark", true]);
     eq("산 테마는 다시 고를 때 치즈가 안 든다", r.again, ["hwnight", 50, false]);
     eq("홈에서 핼러윈 밤이면 움직인다", r.fxHome, [true, true]);
+    eq("설정 묶음 줄에도 핼러윈 밤 테마", r.note, "핼러윈 밤 테마");
     eq("홈이 아니면 멈춘다", r.fxList, [true, null]);
     ok("기간이 지나도 산 테마는 고를 수 있다", r.keep);
     eq("기간이 지나면 안 산 사람에게는 상점 칸이 사라진다", r.gone, [false, true]);

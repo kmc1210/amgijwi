@@ -196,7 +196,7 @@ const darkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: 
 function shownTheme(){
   if(data.theme === "auto") return darkQuery && darkQuery.matches ? "dark" : "cream";
   /* 치즈로 사는 테마는 산 사람만, 그리고 도트 화면(앱)에서만. 아니면 기본 */
-  if(THEME_SHOP.some(t=>t.id === data.theme) && !(isDot() && themeOwned(data.theme))) return "cream";
+  if(themeShopItem(data.theme) && !(isDot() && themeOwned(data.theme))) return "cream";
   return data.theme;
 }
 function applyTheme(){
@@ -229,7 +229,7 @@ function renderThemeShop(){
   const list = THEME_SHOP.filter(t=>themeOwned(t.id) || closetOnSale(t));
   box.innerHTML = list.map(t=>{
     const own = themeOwned(t.id), until = t.season ? t.season.until.split("-") : null;
-    return `<button type="button" class="theme-b shop${data.theme === t.id ? " on" : ""}" data-shop="${t.id}">
+    return `<button type="button" class="theme-b shop${own && data.theme === t.id ? " on" : ""}" data-shop="${t.id}">
       <span class="sw">${t.sw.map(c=>`<i style="background:${c}"></i>`).join("")}</span>${esc(t.name)}
       ${own ? "" : `<small class="pr"><span class="ci">${cheeseSVG()}</span>${t.price}</small>${until ? `<small class="lim">~${Number(until[1])}/${Number(until[2])}</small>` : ""}`}</button>`;
   }).join("");
@@ -237,7 +237,7 @@ function renderThemeShop(){
 }
 $("#themeShop").addEventListener("click", e=>{
   const b = e.target.closest("[data-shop]"); if(!b) return;
-  const t = THEME_SHOP.filter(x=>x.id === b.dataset.shop)[0]; if(!t) return;
+  const t = themeShopItem(b.dataset.shop); if(!t) return;
   if(themeOwned(t.id)){ data.theme = t.id; persist(); applyTheme(); haptic("selection"); return; }
   if(!closetOnSale(t)){ renderThemeShop(); return; }
   const c = data.closet;
@@ -245,7 +245,7 @@ $("#themeShop").addEventListener("click", e=>{
   confirmBox(t.name + " 테마", `치즈 ${t.price}개로 살까요? 치즈 ${c.cheese}개 → ${c.cheese - t.price}개`, "사기", ()=>{
     if(themeOwned(t.id) || c.cheese < t.price || !closetOnSale(t)) return;
     c.cheese -= t.price; c.themes.push(t.id); data.theme = t.id;
-    persist(); applyTheme(); renderSettings();
+    persist(); renderSettings();          // renderSettings 가 applyTheme 을 부른다
     sfx("chu"); haptic("success"); toast(t.name + " 테마를 샀어요");
   });
 });
@@ -319,8 +319,8 @@ function backupDaysAgo(){
 function setGroupNote(id){
   if(id === "mouse") return isDot() && isNativeApp() ? {t: "치즈 " + data.closet.cheese + "개"} : null;
   if(id === "screen"){
-    const b = document.querySelector('#themeBtns [data-theme="' + data.theme + '"]');
-    return {t: (b ? b.textContent.trim() : "기본") + " 테마"};
+    const b = document.querySelector('#themeBtns [data-theme="' + data.theme + '"]'), shop = themeShopItem(data.theme);
+    return {t: (shop && themeOwned(shop.id) ? shop.name : b ? b.textContent.trim() : "기본") + " 테마"};
   }
   if(id === "recipe") return {t: "레시피 " + liveDrinks().length + "개"};
   if(id === "data"){

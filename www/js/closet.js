@@ -19,6 +19,7 @@ const HALLOWEEN = {name:"핼러윈", until:"2026-11-08"};
    색은 dot.css 의 body[data-theme="…"], 홈의 움직임은 themefx.js, 탭 아이콘은 core.js 의 ICONS["…_hw"] */
 const THEME_SHOP = [
   {id:"hwnight", name:"핼러윈 밤", price:100, season:HALLOWEEN, sw:["#1C1424", "#E8822A", "#6A4C86"]}];
+function themeShopItem(id){ return THEME_SHOP.filter(t=>t.id === id)[0] || null; }
 function themeOwned(id){ return data.closet.themes.indexOf(id) >= 0; }
 
 /* 망토를 입고 달릴 때 뒤를 따라오는 작은 박쥐(날개 위 · 아래 두 장) */
@@ -317,7 +318,7 @@ function cleanCloset(c){
     /* 짧은 바퀴에서 모아 둔 장수(0~4) */
     pool: Math.min(CHEESE_ROUND_MIN - 1, Math.max(0, Math.floor(Number(c.pool) || 0))),
     /* 치즈로 산 테마(THEME_SHOP 의 id) */
-    themes: Array.isArray(c.themes) ? c.themes.filter(id=>THEME_SHOP.some(t=>t.id === id)) : []
+    themes: Array.isArray(c.themes) ? c.themes.filter(id=>!!themeShopItem(id)) : []
   };
 }
 function closetItem(id){ return CLOSET_ITEMS.filter(i=>i.id === id)[0] || null; }
