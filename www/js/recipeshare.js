@@ -63,15 +63,21 @@ function readRecipePack(text){
     cups: Array.isArray(d.cups) ? d.cups.map(s).slice(0, 8) : [],
     ing: pairs(d.ing), ingHot: pairs(d.ingHot),
     steps: Array.isArray(d.steps) ? d.steps.map(s).filter(Boolean) : [], tip: s(d.tip),
-    cat: d.cat && typeof d.cat === "object" ? {label: s(d.cat.label).slice(0, 20), emo: s(d.cat.emo).slice(0, 20)} : null,
+    cat: d.cat && typeof d.cat === "object" ? {label: s(d.cat.label).slice(0, 20), emo: safeEmo(s(d.cat.emo))} : null,
     subs: Array.isArray(d.subs) ? d.subs.filter(x=>x && typeof x === "object").map(x=>({
       name: s(x.name).trim(), ing: pairs(x.ing), steps: Array.isArray(x.steps) ? x.steps.map(s) : [], tip: s(x.tip), place: s(x.place), dur: s(x.dur)
     })).filter(x=>x.name) : []
   } : null).filter(d=>d && d.name && d.ing.length);
   return drinks.length ? drinks : null;
 }
-const recipeKey = n=>String(n || "").trim().toLowerCase();
-function recipeOwned(name){ return data.drinks.filter(d=>recipeKey(d.name) === recipeKey(name))[0] || null; }
+/* 분류 아이콘: "@이름"은 앱에 있는 그림만(없으면 컵), 그 밖은 글자 그대로(catMark 가 이스케이프한다) */
+function safeEmo(v){
+  if(v.charAt(0) !== "@") return v.slice(0, 8);
+  return Object.prototype.hasOwnProperty.call(ICONS, v.slice(1)) ? v : "@cup";
+}
+/* 같은 레시피인가: 이름과 ICE/HOT 이 같으면. 아메리카노 ICE · HOT 을 따로 둔 매장도 있다 */
+const recipeKey = (n, t)=>String(n || "").trim().toLowerCase() + "|" + String(t || "").trim().toUpperCase();
+function recipeOwned(d){ return data.drinks.filter(x=>recipeKey(x.name, x.temp) === recipeKey(d.name, d.temp))[0] || null; }
 
 /* 앱이 받은 파일 내용을 넘긴다(WebAppViewController.openRecipeFile). 이 이름은 그쪽에도 적혀 있다.
    잠금 화면 · 이름 묻는 창 · 처음 가이드에 가려 있으면 닫힌 뒤에 연다 */
@@ -80,11 +86,14 @@ function recipesFromApp(text){
   recipePendingText = String(text || "");
   recipeGo();
 }
+/* 잠금 · 이름 묻는 창 · 처음 가이드에 가려 있거나, 하던 일(학습 · 편집 · 가져오기 화면, 열린 시트 · 확인창)이 있으면
+   기다렸다가 그것이 끝난 뒤(closeLock · closeNickAsk · closeGuide · 화면을 옮길 때 shell.js 의 go)에 연다 */
 function recipeGo(){
   const text = recipePendingText;
   if(text === null) return;
   const lockEl = $("#lock"), guide = $("#onboard");
   if((lockEl && lockEl.classList.contains("on")) || nickAskOpen() || (guide && !guide.hidden)) return;
+  if(WIDGET_BUSY.some(n=>$("#s-" + n).classList.contains("active")) || $("#sheet").classList.contains("on") || $("#dlg").classList.contains("on")) return;
   recipePendingText = null;
   openRecipeImport(text);
 }
@@ -92,7 +101,7 @@ function openRecipeImport(text){
   const drinks = readRecipePack(text);
   if(!drinks){ haptic("error"); toast("암기쥐 레시피 파일이 아니에요"); return; }
   if(state.selMode) exitSel();
-  recipeIncoming = drinks.map(d=>({d: d, have: !!recipeOwned(d.name), on: !recipeOwned(d.name)}));
+  recipeIncoming = drinks.map(d=>{ const have = !!recipeOwned(d); return {d: d, have: have, on: !have}; });
   renderRecipeImport();
   $("#mask").classList.add("on"); $("#sheet").classList.add("on");
 }
@@ -106,8 +115,10 @@ function renderRecipeImport(){
     ${list.some(x=>x.have) ? `<div class="rsnote">이미 있는 레시피는 고르면 받은 것으로 바꿔요(외운 기록은 그대로)</div>` : ""}
     <button class="cta" id="rsGo"${n ? "" : " disabled"}>${n ? n + "개 가져오기" : "고른 레시피가 없어요"}</button>
     <button class="cta ghost" id="rsNo">닫기</button>`;
+  /* 고를 때는 버튼만 고친다(수백 줄을 다시 그리면 느리고 스크롤이 튄다) */
+  const goBtn = ()=>{ const k = recipeIncoming.filter(x=>x.on).length; $("#rsGo").disabled = !k; $("#rsGo").textContent = k ? k + "개 가져오기" : "고른 레시피가 없어요"; };
   document.querySelectorAll("#sheetBody .rsrow input").forEach(c=>c.addEventListener("change", ()=>{
-    recipeIncoming[Number(c.dataset.i)].on = c.checked; haptic("selection"); renderRecipeImport();
+    recipeIncoming[Number(c.dataset.i)].on = c.checked; haptic("selection"); goBtn();
   }));
   $("#rsGo").addEventListener("click", ()=>{
     const r = importRecipes((recipeIncoming || []).filter(x=>x.on).map(x=>x.d));
@@ -119,26 +130,32 @@ function renderRecipeImport(){
   });
   $("#rsNo").addEventListener("click", ()=>{ recipeIncoming = null; closeSheet(); });
 }
-/* 고른 레시피를 들인다. 같은 이름이 있으면 그 레시피를 받은 내용으로 바꾸되 id · 외운 기록 · 보관 · 등록한 날은 그대로 둔다 */
+/* 고른 레시피를 들인다. 같은 레시피(이름 · ICE/HOT)가 있으면 받은 내용으로 바꾸되 id · 외운 기록 · 보관 · 등록한 날 ·
+   원래 이어 둔 부재료는 그대로 둔다. 한 파일에 같은 레시피가 두 번 있으면 뒤의 것이 이긴다 */
 function importRecipes(drinks){
   let added = 0, replaced = 0;
-  const today = ymd(new Date());
+  const today = ymd(new Date()), byKey = {};
   const fresh = drinks.map(d=>{
     let cat = d.cat ? data.cats.filter(c=>c.label === d.cat.label)[0] : null;
-    if(d.cat && !cat && d.cat.label){ cat = {id: uid(), label: d.cat.label, emo: d.cat.emo || "@cup"}; data.cats.push(cat); }
-    const old = recipeOwned(d.name);
+    if(d.cat && !cat && d.cat.label){ cat = {id: uid(), label: d.cat.label, emo: safeEmo(d.cat.emo || "@cup")}; data.cats.push(cat); }
+    const key = recipeKey(d.name, d.temp), old = recipeOwned(d);
+    const id = old ? old.id : (byKey[key] || uid());
+    byKey[key] = id;
     return {
-      id: old ? old.id : uid(), cat: cat ? cat.id : (old ? old.cat : (data.cats[0] || {}).id),
+      id: id, cat: cat ? cat.id : (old ? old.cat : (data.cats[0] || {}).id),
       name: d.name, en: d.en, temp: d.temp, cups: d.cups, ing: d.ing, ingHot: d.ingHot, steps: d.steps, tip: d.tip,
-      arch: old ? !!old.arch : false, at: old ? (old.at || today) : today,
-      subs: d.subs          // liftSubs 가 data.subs 로 옮기고 subRefs 를 단다
+      arch: old ? !!old.arch : false, at: old ? (old.at || "") : today,
+      subRefs: old ? (old.subRefs || []).slice() : [],
+      subs: d.subs          // liftSubs 가 data.subs 로 옮기고 subRefs 에 더한다
     };
   });
   liftSubs({subs: data.subs, drinks: fresh});
+  const had = new Set(data.drinks.map(x=>x.id));
   fresh.forEach(r=>{
     const i = data.drinks.findIndex(x=>x.id === r.id);
-    if(i >= 0){ data.drinks[i] = r; replaced++; } else { data.drinks.push(r); added++; }
+    if(i >= 0) data.drinks[i] = r; else data.drinks.push(r);
   });
+  new Set(fresh.map(r=>r.id)).forEach(id=>{ if(had.has(id)) replaced++; else added++; });
   persist();
   return {added: added, replaced: replaced};
 }
@@ -152,6 +169,7 @@ $("#selShare").addEventListener("click", ()=>{
 $("#rsFile").addEventListener("click", ()=>$("#rsInput").click());
 $("#rsInput").addEventListener("change", e=>{
   const f = e.target.files && e.target.files[0]; if(!f) return;
+  if(f.size > 2000000){ e.target.value = ""; haptic("error"); toast("암기쥐 레시피 파일이 아니에요"); return; }      // 앱으로 열 때와 같은 한도
   const rd = new FileReader();
   rd.onload = ()=>{ e.target.value = ""; openRecipeImport(String(rd.result)); };
   rd.onerror = ()=>toast("파일을 읽지 못했어요");

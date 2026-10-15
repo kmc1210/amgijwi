@@ -2281,7 +2281,7 @@ const LEGACY = {
       const incoming = { kind:"amgijwi.recipes", v:1, n:2, drinks:[
         { name:"유자 캐모마일", temp:"HOT", cups:["Tall"], ing:[["유자청", "30g"], ["캐모마일", "1티백"]], steps:["우리기"], tip:"", cat:{ label:"티 신메뉴", emo:"@cup" },
           subs:[{ name:"자몽청", ing:[["자몽", "100g"], ["설탕", "100g"]], steps:["섞기"], tip:"", place:"", dur:"" }, { name:"유자청", ing:[["유자", "1개"]], steps:[], tip:"", place:"", dur:"" }] },
-        { name:live[0].name, temp:"ICE", cups:[], ing:[["바뀐 재료", "1"]], steps:[], tip:"", cat:null, subs:[] },
+        { name:live[0].name, temp:live[0].temp, cups:[], ing:[["바뀐 재료", "1"]], steps:[], tip:"", cat:null, subs:[] },
         { name:"", ing:[["버릴 것", "1"]] } ] };
       const before = data.drinks.length, subsBefore = data.subs.length, catsBefore = data.cats.length;
       recipesFromApp(JSON.stringify(incoming));
@@ -2292,6 +2292,14 @@ const LEGACY = {
       const yuja = data.drinks.filter(d => d.name === "유자 캐모마일")[0], same = data.drinks.filter(d => d.id === live[0].id)[0];
       r.imported = [data.drinks.length - before, !!yuja, same.ing[0][0], data.mastered.indexOf(live[0].id) >= 0, data.subs.length - subsBefore, data.cats.length - catsBefore,
                     yuja && subsOf(yuja).map(s => s.name).sort().join(","), (document.querySelector(".screen.active") || {}).id, /가져오고 1개를 바꿨어요/.test($("#toast").textContent)];
+      // 같은 이름이라도 ICE · HOT 이 다르면 다른 레시피 · 한 파일에 같은 레시피가 둘이면 하나로 · 모르는 아이콘은 컵으로 · 원래 부재료는 남긴다
+      const ice = { name:"테스트라떼", temp:"ICE", ing:[["a", "1"]], steps:[], subs:[] }, hot = { name:"테스트라떼", temp:"HOT", ing:[["b", "1"]], steps:[], subs:[] };
+      const n0 = data.drinks.length; importRecipes([ice, hot, Object.assign({}, hot, { ing:[["c", "1"]] })]);
+      r.temps = [data.drinks.length - n0, data.drinks.filter(d => d.name === "테스트라떼" && d.temp === "HOT")[0].ing[0][0]];
+      r.emo = [safeEmo("@constructor"), safeEmo("@cup"), safeEmo("커피")];
+      importRecipes([{ name:live[0].name, temp:live[0].temp, ing:[["새", "1"]], steps:[], subs:[] }]); r.keepSubs = (data.drinks.filter(d => d.id === live[0].id)[0].subRefs || []).indexOf("subX") >= 0;
+      // 하던 일이 있으면(편집 중) 기다렸다가 화면을 옮긴 뒤에 연다
+      go("edit"); recipesFromApp(JSON.stringify(incoming)); r.busyWait = $("#sheet").classList.contains("on"); go("list"); await wait(20); r.afterBusy = $("#sheet").classList.contains("on"); closeSheet();
       // 잠금 화면에 가려 있으면 푼 뒤에 연다
       $("#lock").classList.add("on"); lock.mode = "enter"; recipesFromApp(JSON.stringify(incoming)); r.lockedWait = $("#sheet").classList.contains("on");
       closeLock(); r.afterUnlock = $("#sheet").classList.contains("on"); closeSheet();
@@ -2314,6 +2322,10 @@ const LEGACY = {
     eq("이미 있는 것도 고르면 2개", r.goN, "2개 가져오기");
     eq("가져오기: 새 것은 더하고, 같은 이름은 바꾸되 외운 기록은 남기고, 같은 부재료는 합치고 새 분류는 만든다", r.imported, [1, true, "바뀐 재료", true, 1, 1, "유자청,자몽청", "s-list", true]);
     eq("잠금 화면에 가려 있으면 기다렸다가 풀린 뒤에 연다", [r.lockedWait, r.afterUnlock], [false, true]);
+    eq("ICE · HOT 은 다른 레시피, 한 파일의 같은 레시피는 하나로(뒤의 것)", r.temps, [2, "c"]);
+    eq("모르는 아이콘 이름은 컵으로, 글자 아이콘은 그대로", r.emo, ["@cup", "@cup", "커피"]);
+    ok("바꿔도 원래 이어 둔 부재료는 남는다", r.keepSubs);
+    eq("편집 중이면 기다렸다가 화면을 옮긴 뒤에 연다", [r.busyWait, r.afterBusy], [false, true]);
     eq("웹에는 보내기가 없다", r.web, [false, true]);
   }
 

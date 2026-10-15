@@ -192,9 +192,13 @@ extension WebAppViewController: WKNavigationDelegate {
             if scoped { url.stopAccessingSecurityScopedResource() }
             if url.path.contains("/Inbox/") { try? FileManager.default.removeItem(at: url) }
         }
-        guard let size = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize, size <= 2_000_000,
-              let data = try? Data(contentsOf: url), let text = String(data: data, encoding: .utf8),
-              let arg = try? JSONSerialization.data(withJSONObject: [text]),
+        /// 너무 크거나 읽지 못하면 빈 내용을 넘긴다 — 웹이 "레시피 파일이 아니에요"라고 알린다(아무 일 없이 끝나지 않게)
+        var text = ""
+        if let size = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize, size <= 2_000_000,
+           let data = try? Data(contentsOf: url), let s = String(data: data, encoding: .utf8) {
+            text = s
+        }
+        guard let arg = try? JSONSerialization.data(withJSONObject: [text]),
               let args = String(data: arg, encoding: .utf8) else { return }
         tell("typeof recipesFromApp === 'function' && recipesFromApp.apply(null, \(args))")
     }
