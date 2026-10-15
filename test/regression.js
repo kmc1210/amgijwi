@@ -57,7 +57,8 @@ const LEGACY = {
   /* 이름을 묻는 창(nick.js)은 처음 한 번 뜬다. 다른 검사들 위에 떠서 가리지 않게 여기서는 이미 본 것으로 해 둔다.
      그 창 자체는 "내 이름" 검사에서 따로 연다 */
   await page.waitForFunction(() => typeof markHint === "function" && typeof data !== "undefined");
-  await page.evaluate(() => { markHint("nick"); });
+  /* 설정은 다섯 묶음으로 나뉘어 있다. 칸 하나하나를 보는 검사들을 위해 묶지 않고 펼쳐 둔다. 묶음 자체는 "설정 묶음" 검사에서 따로 본다 */
+  await page.evaluate(() => { markHint("nick"); window.__amgijwiSetAll = true; });
   await page.waitForTimeout(400);
 
   // ── 1. 로드 자체 ────────────────────────────────────────────────
@@ -1136,7 +1137,7 @@ const LEGACY = {
     data = JSON.parse(backup); persist(); go("home");
     return r;
   });
-  eq("아이콘이 서른 개다(탭바의 홈·학습 카드·설정 포함)", dots.count, 30);
+  eq("아이콘이 서른한 개다(탭바의 홈·학습 카드·설정, 설정 묶음의 팔레트 포함)", dots.count, 31);
   ok("모두 정사각이고 16칸 이상이다", dots.square === true, JSON.stringify(dots.sizes));
   ok("팔레트에 없는 색을 쓰지 않는다", dots.knownColors === true);
   ok("아이콘은 제 팔레트 색만 쓴다", dots.onlyIconPal === true);
@@ -2246,6 +2247,57 @@ const LEGACY = {
     ok("앱 정보가 없으면 본문 끝 줄을 아예 빼다", r.bare.indexOf("---") < 0 && r.bare.indexOf("암기쥐 ") < 0, r.bare);
     ok("메일 앱을 못 열면 주소를 알려 준다", /skmnzn110719@gmail\.com/.test(r.toast), r.toast);
     ok("건의하기는 앱에만 보인다", r.btn === true && r.webBtn === false);
+  }
+
+  // ── 6-10g. 1.3 설정 묶음 ────────────────────────────────────────
+  {
+    const r = await page.evaluate(() => {
+      const r = {}, seen = el => !!el && el.getClientRects().length > 0;
+      const backup = JSON.stringify(data);
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      window.__amgijwiSetAll = false;
+      data.closet = cleanCloset({ cheese:42 }); data.backup = null;
+      go("home"); go("set");
+      const rows = [...document.querySelectorAll("#setGroups .setgrp")];
+      r.main = [rows.map(b => b.querySelector(".gt b").textContent).join(","), seen($("#nickCard")), seen($("#themeBtns")), $("#setBack").hidden];
+      r.notes = rows.map(b => (b.querySelector(".gn") || { textContent:"" }).textContent.trim());
+      r.warn = !!document.querySelector('#setGroups [data-g="data"] .gn.warn');
+      rows[0].click(); r.mouse = [seen($("#closetCard")), seen($("#nickCard")), seen($("#themeBtns")), seen($("#setGroups")), $("#setBackT").textContent];
+      $("#setBack").click(); r.back = [seen($("#setGroups")), seen($("#nickCard"))];
+      openSetGroup("data"); r.data = [seen($("#setStatus")), seen($("#pinToggle")), seen($("#expFile"))];
+      // 같은 화면 안에서 다시 그려도 묶음은 그대로, 다른 화면에 갔다 오면 첫 화면
+      renderSettings(); r.stay = seen($("#pinToggle"));
+      go("home"); go("set"); r.reset = [seen($("#setGroups")), seen($("#pinToggle"))];
+      // 설정 > 쥐돌이에서 옷장에 갔다 닫으면 쥐돌이 묶음으로 돌아온다
+      openSetGroup("mouse"); openCloset("set"); $("#closetClose").click(); r.closetBack = [seen($("#nickCard")), seen($("#setGroups"))];
+      // 날짜 없는 백업 · 앞선 날짜도 깨지지 않는다
+      go("home"); go("set");
+      data.backup = { count:3 }; renderSettings(); r.noAt = document.querySelector('#setGroups [data-g="data"] .gn').textContent.trim();
+      const tmr = new Date(); tmr.setDate(tmr.getDate() + 1); data.backup = { at: ymd(tmr), count:3 }; renderSettings(); r.future = document.querySelector('#setGroups [data-g="data"] .gn').textContent.trim();
+      // 모든 설정 칸이 묶음을 갖고, 진동 없는 기기는 줄에서도 진동을 뺀다
+      r.tagged = [...document.querySelectorAll("#s-set .scroll > .setcard, #setStatus")].every(el => el.dataset.group);
+      document.documentElement.classList.add("nohaptic"); renderSettings(); r.noVib = document.querySelector('#setGroups [data-g="screen"] .gt span').textContent; document.documentElement.classList.remove("nohaptic");
+      // 백업한 뒤에는 경고가 풀린다
+      data.backup = { at: ymd(new Date()), count: 3 }; renderSettings();
+      r.fresh = [!!document.querySelector('#setGroups [data-g="data"] .gn.warn'), document.querySelector('#setGroups [data-g="data"] .gn').textContent.trim()];
+      window.__amgijwiSetAll = true;
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      data = JSON.parse(backup); data.closet = cleanCloset(data.closet); persist(); renderSettings(); go("home");
+      return r;
+    });
+    eq("설정 첫 화면은 묶음 다섯 줄만", r.main, ["쥐돌이,화면과 소리,레시피,백업과 보안,도움말", false, false, true]);
+    eq("묶음 줄의 상태 한 줄(치즈 · 테마 · 레시피 수 · 백업 · 없음)", [r.notes[0], r.notes[3], r.notes[4]], ["치즈 42개", "백업 아직 없음", ""]);
+    ok("백업이 없으면 백업과 보안 줄이 경고색", r.warn);
+    eq("쥐돌이를 누르면 그 칸들만, 위에 ‹ 쥐돌이", r.mouse, [true, true, false, false, "쥐돌이"]);
+    eq("‹ 를 누르면 묶음 첫 화면으로", r.back, [true, false]);
+    eq("백업과 보안: 데이터 상태 · PIN · 백업", r.data, [true, true, true]);
+    ok("같은 화면에서 다시 그려도 열어 둔 묶음은 그대로", r.stay);
+    eq("다른 화면에 갔다 오면 묶음 첫 화면부터", r.reset, [true, false]);
+    eq("설정에서 연 옷장을 닫으면 보던 묶음으로", r.closetBack, [true, false]);
+    eq("날짜 없는 백업은 없는 것으로, 앞선 날짜는 오늘로", [r.noAt, r.future], ["백업 아직 없음", "오늘 백업했어요"]);
+    ok("설정 칸은 모두 묶음에 들어 있다", r.tagged);
+    eq("진동 없는 기기는 묶음 줄에서도 진동을 뺀다", r.noVib, "테마 · 소리 · 영문 이름 표기");
+    eq("오늘 백업했으면 경고가 풀린다", r.fresh, [false, "오늘 백업했어요"]);
   }
 
   // ── 6-10t. 1.3 자동 테마 ────────────────────────────────────────

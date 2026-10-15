@@ -839,3 +839,13 @@ html.dot #sheet .rsrow .nm{flex:1;min-width:0;font-weight:700;}
 html.dot #sheet .rsrow .nm small{font-weight:600;color:var(--d-t2);margin-left:4px;}
 html.dot #sheet .rsrow .tg{font-size:12px;font-weight:700;color:var(--d-acc);white-space:nowrap;}
 html.dot #sheet .rsrow .tg.have{color:var(--d-t2);}
+/* 설정 묶음 */
+html.dot .setgrp{border:0;border-radius:0;background:var(--d-surface);color:var(--d-t1);margin:3px 3px 6px;width:calc(100% - 6px);box-shadow:var(--d-box);}
+html.dot .setgrp .gt b{font-family:"NeoDGM",monospace;font-weight:400;font-size:17px;-webkit-font-smoothing:none;}
+html.dot .setgrp .gt span{color:var(--d-t2);}
+html.dot .setgrp .gn{color:var(--d-acc);}
+html.dot .setgrp .gn.warn{color:var(--d-late);}
+html.dot .setgrp .ga{color:var(--d-t2);}
+html.dot .setgrp:active{transform:translate(3px,3px);box-shadow:var(--d-box2);}
+html.dot .setback{color:var(--d-t1);}
+html.dot .setback b{font-family:"NeoDGM",monospace;font-weight:400;font-size:20px;-webkit-font-smoothing:none;}
