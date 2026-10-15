@@ -485,6 +485,13 @@ html.dot #lock .dots i{border-radius:0;}
 html.dot #lock .keys button:not(.blank){border:0;border-radius:0;background:var(--d-surface);margin:3px;
   font-family:"NeoDGM",monospace;font-weight:400;font-size:22px;-webkit-font-smoothing:none;box-shadow:var(--d-box), var(--d-drop-sh);}
 html.dot #lock .keys button:not(.blank):active{transform:translate(3px,3px);box-shadow:var(--d-box);background:var(--d-warn-bg);}
+/* 확인창이 뜨면 뒤를 살짝 어둡게 · 흐리게 해서 창에 눈이 가게 한다. 도트답게 몇 단계로 툭 뜬다 */
+html.dot #dlg{background:rgba(28,22,18,.38);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);}
+html.dot #dlg.on{animation:dlgIn .16s steps(3) both;}
+html.dot #dlg.on .box{animation:dlgPop .16s steps(3) both;}
+@keyframes dlgIn{from{opacity:0;}to{opacity:1;}}
+@keyframes dlgPop{from{transform:scale(.92);}to{transform:none;}}
+@media (prefers-reduced-motion: reduce){ html.dot #dlg.on, html.dot #dlg.on .box{animation:none;} }
 html.dot #dlg .box{border-radius:0;background:var(--d-surface);color:var(--d-t1);box-shadow:var(--d-box), 6px 6px 0 0 rgba(0,0,0,.25);}
 html.dot #dlg h4{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
 html.dot #dlg p{color:var(--d-t2);}
