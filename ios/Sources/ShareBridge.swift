@@ -5,8 +5,10 @@ import WebKit
 /// 그래서 웹이 파일 이름과 내용을 넘기면 여기서 임시 파일로 만들어 iOS 공유 시트를 띄운다.
 /// "파일에 저장" · AirDrop · 메일 · 메신저 중 어디로 보낼지는 사용자가 고른다. 서버는 거치지 않는다.
 ///
-/// 웹 → 앱: window.webkit.messageHandlers.amgijwiShare.postMessage({name, text})
-/// 앱 → 웹: shareDoneFromApp(true | false)   어딘가로 보냈으면 true, 닫거나 실패하면 false
+/// 레시피 보내기(www/js/recipeshare.js)도 같은 통로를 쓴다. 그때는 kind: "recipes" 와, 파일과 같이 갈 한 줄(note — 앱스토어 주소)을 넘긴다.
+///
+/// 웹 → 앱: window.webkit.messageHandlers.amgijwiShare.postMessage({name, text, kind?, note?})
+/// 앱 → 웹: shareDoneFromApp(true | false, kind)   어딘가로 보냈으면 true, 닫거나 실패하면 false
 final class ShareBridge: NSObject {
 
     /// 웹이 postMessage 로 부르는 이름. settings.js 의 shareBridge() 와 같아야 한다.
@@ -22,8 +24,8 @@ final class ShareBridge: NSObject {
         self.host = host
     }
 
-    private func present(name raw: String, text: String) {
-        guard let host = host else { done(false); return }
+    private func present(name raw: String, text: String, kind: String, note: String?) {
+        guard let host = host else { done(false, kind); return }
 
         /// 이름에 경로가 섞여 와도 임시 폴더 밖으로 나가지 않게 마지막 조각만 쓴다.
         let last = (raw as NSString).lastPathComponent
@@ -38,7 +40,10 @@ final class ShareBridge: NSObject {
             let url = dir.appendingPathComponent(name)
             try text.write(to: url, atomically: true, encoding: .utf8)
 
-            let sheet = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+            /// 한 줄은 메신저 · 메일에만 붙인다. 파일에 저장 · 에어드롭에 붙으면 글 파일이 하나 더 생긴다
+            var items: [Any] = [url]
+            if let note = note, !note.isEmpty { items.append(ShareNote(note)) }
+            let sheet = UIActivityViewController(activityItems: items, applicationActivities: nil)
             /// 아이패드는 공유 시트를 말풍선으로 띄운다. 기준 자리를 안 주면 앱이 멈춘다.
             if let pop = sheet.popoverPresentationController {
                 pop.sourceView = host.view
@@ -46,17 +51,18 @@ final class ShareBridge: NSObject {
                 pop.permittedArrowDirections = []
             }
             sheet.completionWithItemsHandler = { [weak self] _, completed, _, _ in
-                self?.done(completed)
+                self?.done(completed, kind)
             }
             host.present(sheet, animated: true)
         } catch {
-            done(false)
+            done(false, kind)
         }
     }
 
-    private func done(_ ok: Bool) {
+    private func done(_ ok: Bool, _ kind: String) {
+        let safeKind = kind.filter { $0.isLetter }          // 웹이 보낸 값 그대로 JS 에 넣지 않는다
         DispatchQueue.main.async {
-            let js = "typeof \(ShareBridge.reply) === 'function' && \(ShareBridge.reply)(\(ok ? "true" : "false"))"
+            let js = "typeof \(ShareBridge.reply) === 'function' && \(ShareBridge.reply)(\(ok ? "true" : "false"), '\(safeKind)')"
             self.webView?.evaluateJavaScript(js, completionHandler: nil)
         }
     }
@@ -68,6 +74,24 @@ extension ShareBridge: WKScriptMessageHandler {
                                didReceive message: WKScriptMessage) {
         guard let body = message.body as? [String: Any],
               let text = body["text"] as? String else { return }
-        present(name: body["name"] as? String ?? "", text: text)
+        present(name: body["name"] as? String ?? "", text: text,
+                kind: body["kind"] as? String ?? "", note: body["note"] as? String)
+    }
+}
+
+/// 공유 시트에 파일과 같이 넣는 한 줄. 메시지 · 메일 · 메신저에는 붙고, 파일에 저장 · 에어드롭 · 복사에는 붙이지 않는다.
+final class ShareNote: NSObject, UIActivityItemSource {
+    private let text: String
+    init(_ text: String) { self.text = text }
+
+    func activityViewControllerPlaceholderItem(_ activityViewController: UIActivityViewController) -> Any { text }
+
+    func activityViewController(_ activityViewController: UIActivityViewController,
+                                itemForActivityType activityType: UIActivity.ActivityType?) -> Any? {
+        guard let type = activityType else { return text }
+        if type == .airDrop || type == .copyToPasteboard || type.rawValue.contains("SaveToFiles") || type.rawValue.contains("DocumentManager") {
+            return nil
+        }
+        return text
     }
 }

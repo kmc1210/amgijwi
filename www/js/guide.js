@@ -93,6 +93,7 @@ function closeGuide(){
   markHint(GUIDE_HINT);
   go("home");
   if(first) openNickAsk();                  // 가이드를 다 봤으면 이름을 한 번 묻는다 (nick.js)
+  recipeGo();                               // 받은 레시피 파일이 있으면 이제 연다 (recipeshare.js)
 }
 function guideGo(i){
   if(!guide) return;

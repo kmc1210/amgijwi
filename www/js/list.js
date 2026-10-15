@@ -362,6 +362,8 @@ function updateSelBar(){
   $("#selDelete").textContent = n ? n + "개 삭제" : "삭제";
   $("#selArchive").disabled = n === 0;
   $("#selArchive").textContent = n ? n + "개 보관" : "보관";
+  $("#selShare").disabled = n === 0;
+  $("#selShare").textContent = n ? n + "개 보내기" : "보내기";
 }
 /* 목록 전체를 다시 그리지 않고 해당 줄만 갱신 (탭 반응이 즉각적이도록) */
 function toggleSel(id){
@@ -807,10 +809,12 @@ function openSheet(id){
     ${detailHTML(d)}
     <button class="cta" id="sheetEdit" style="margin-top:22px">수정하기</button>
     ${d.arch ? "" : `<button class="cta ghost" id="sheetStudy">이 메뉴만 학습</button>`}
+    ${shareOn() ? `<button class="cta ghost" id="sheetShare">이 레시피 보내기</button>` : ""}
     <button class="cta ghost" id="sheetArch">${d.arch ? "보관 해제하기" : "보관하기"}</button>
     <button class="cta danger" id="sheetDel">삭제하기</button>`;
   $("#mask").classList.add("on"); $("#sheet").classList.add("on");
   $("#sheetEdit").addEventListener("click", ()=>{ closeSheet(); openEditor(d.id); });
+  if($("#sheetShare")) $("#sheetShare").addEventListener("click", ()=>sendRecipes([d.id]));      // recipeshare.js
   if($("#sheetStudy")) $("#sheetStudy").addEventListener("click", ()=>{
     closeSheet();
     setTimeout(()=>openModeSheet([d], d.name), 220);   // 시트를 닫았다가 방식 시트로 갈아끼운다

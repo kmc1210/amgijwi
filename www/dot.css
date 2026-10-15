@@ -823,3 +823,14 @@ html.dot .nickask .acts button{flex:1;border:0;padding:11px 8px;font-family:"Neo
 html.dot .nickask .acts .later{background:var(--d-surface);color:var(--d-t1);}
 html.dot .nickask .acts .save{background:var(--d-acc);color:var(--d-on-acc);}
 html.dot #nickCard .bdclear{display:block;margin:6px 0 0 auto;border:0;background:none;padding:6px 2px;font:inherit;font-size:14px;color:var(--d-t2);text-decoration:underline;}
+/* 레시피 보내기 · 받기 (recipeshare.js) */
+html.dot #s-list .selactions .share-b{background:var(--d-acc);color:var(--d-on-acc, #FCF7F1);}
+html.dot #s-list .selactions .share-b[disabled]{background:var(--d-surface);color:var(--d-t2);opacity:1;}
+html.dot #sheet .rsnote{font-size:13px;color:var(--d-t2);margin:0 0 12px;}
+html.dot #sheet .rslist{margin:0 0 12px;}
+html.dot #sheet .rsrow{display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:2px dotted var(--d-drop);}
+html.dot #sheet .rsrow input{width:20px;height:20px;flex:0 0 auto;accent-color:var(--d-acc);}
+html.dot #sheet .rsrow .nm{flex:1;min-width:0;font-weight:700;}
+html.dot #sheet .rsrow .nm small{font-weight:600;color:var(--d-t2);margin-left:4px;}
+html.dot #sheet .rsrow .tg{font-size:12px;font-weight:700;color:var(--d-acc);white-space:nowrap;}
+html.dot #sheet .rsrow .tg.have{color:var(--d-t2);}

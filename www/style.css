@@ -178,6 +178,8 @@
   .appbar .archbtn b{font-variant-numeric:tabular-nums;}
   .selactions .arch-b{background:var(--accent-soft);color:var(--accent-ink);}
   .selactions .arch-b[disabled]{opacity:.45;}
+  .selactions .share-b{background:var(--accent);color:var(--on-accent);}
+  .selactions .share-b[disabled]{opacity:.45;}
   .appbar .gtext{flex:1;min-width:0;}
   .mwrap{position:relative;flex:0 0 52px;}
   .mascot{width:56px;height:80px;padding:0;display:block;margin-bottom:2px;}

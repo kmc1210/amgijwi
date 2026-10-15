@@ -16,13 +16,18 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.rootViewController = app
         window.makeKeyAndVisible()
         self.window = window
-        /// 앱이 꺼져 있을 때 위젯을 눌러 켰으면 주소가 여기로 온다.
-        if let url = connectionOptions.urlContexts.first?.url { app.openWidget(url) }
+        /// 앱이 꺼져 있을 때 위젯을 눌러 켰거나 레시피 파일(.amgijwi)로 열었으면 주소가 여기로 온다.
+        if let url = connectionOptions.urlContexts.first?.url { open(url, in: app) }
     }
 
-    /// 앱이 켜져 있을 때 위젯을 눌렀으면 여기로 온다.
+    /// 앱이 켜져 있을 때 위젯을 눌렀거나 레시피 파일로 열었으면 여기로 온다.
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
-        guard let url = URLContexts.first?.url else { return }
-        (window?.rootViewController as? WebAppViewController)?.openWidget(url)
+        guard let url = URLContexts.first?.url, let app = window?.rootViewController as? WebAppViewController else { return }
+        open(url, in: app)
+    }
+
+    /// 파일이면 레시피 받기, 아니면 위젯 주소.
+    private func open(_ url: URL, in app: WebAppViewController) {
+        if url.isFileURL { app.openRecipeFile(url) } else { app.openWidget(url) }
     }
 }

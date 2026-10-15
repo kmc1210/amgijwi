@@ -75,6 +75,7 @@ function closeLock(){
   $("#lock").classList.remove("on"); lock.buf = "";
   bdayHome();                   // 잠금에 가려 미뤄 둔 생일 폭죽이 있으면 지금 터트린다 (birthday.js)
   if(lock.mode === "enter") openNickAsk();      // PIN 을 쓰는 사람에게는 잠금을 푼 뒤에 이름을 한 번 묻는다 (nick.js)
+  recipeGo();                   // 받은 레시피 파일이 있으면 잠금을 푼 뒤에 연다 (recipeshare.js)
   widgetGo();                   // 위젯을 눌러 들어왔으면 잠금을 푼 뒤에 그 화면으로 간다 (widget.js)
 }
 $("#lockCancel").addEventListener("click", closeLock);
@@ -326,7 +327,9 @@ function shareBridge(){
   if(!isNativeApp() || !w || !w.messageHandlers || !w.messageHandlers.amgijwiShare) return null;
   return w.messageHandlers.amgijwiShare;
 }
-function shareDoneFromApp(ok){
+/* kind: "recipes" 면 레시피 보내기(recipeshare.js), 없으면 백업 */
+function shareDoneFromApp(ok, kind){
+  if(kind === "recipes"){ recipeShareDone(ok); return; }
   if(ok){ markBackedUp(); toast("백업 파일을 내보냈어요"); }
   else toast("백업을 내보내지 않았어요");      // 시트를 닫았으면 백업한 것으로 치지 않는다
 }

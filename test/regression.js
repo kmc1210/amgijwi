@@ -2248,6 +2248,87 @@ const LEGACY = {
     ok("건의하기는 앱에만 보인다", r.btn === true && r.webBtn === false);
   }
 
+  // ── 6-10s. 1.3 레시피 보내기 · 받기 ──────────────────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const backup = JSON.stringify(data);
+      const wait = ms => new Promise(res => setTimeout(res, ms));
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      const posts = [], realWk = window.webkit;
+      window.webkit = { messageHandlers: Object.assign({}, realWk && realWk.messageHandlers, { amgijwiShare: { postMessage: m => posts.push(m) } }) };
+      const live = liveDrinks();
+      // 부재료를 쓰는 레시피 하나를 만든다
+      const sub = { id:"subX", name:"자몽청", ing:[["자몽", "100g"], ["설탕", "100g"]], steps:["섞기"], tip:"", place:"", dur:"" };
+      data.subs.push(sub); live[0].subRefs = ["subX"]; data.mastered = [live[0].id];
+      // 보내기: 꾸러미 모양
+      const pack = recipePack([live[0].id, live[1].id]);
+      r.pack = [pack.kind, pack.n, pack.drinks[0].name === live[0].name, pack.drinks[0].subs.map(x => x.name).join(","), !!pack.drinks[0].cat, "id" in pack.drinks[0], "mastered" in pack];
+      // 고르기 모드의 보내기 버튼 · 레시피 하나 열었을 때 보내기
+      state.listTab = "recipe"; go("list"); enterSel(); renderList();
+      r.selBtn0 = [$("#selShare").disabled, $("#selShare").textContent];
+      [...document.querySelectorAll("#listBody .row")].slice(0, 2).forEach(x => toggleSel(x.dataset.id)); renderList();
+      r.selBtn = [$("#selShare").disabled, $("#selShare").textContent];
+      $("#selShare").click();
+      const m = posts[posts.length - 1];
+      r.posted = [m.kind, /^카페 레시피 2개\.amgijwi$/.test(m.name), JSON.parse(m.text).n, /apps\.apple\.com\/kr\/app\/id6817266810/.test(m.note)];
+      shareDoneFromApp(true, "recipes"); r.done = [state.selMode, /레시피를 보냈어요/.test($("#toast").textContent)];
+      shareDoneFromApp(false, "recipes"); shareDoneFromApp(true); r.backupStill = /백업 파일을 내보냈어요/.test($("#toast").textContent);
+      go("list"); openSheet(live[2].id); r.sheetBtn = !!$("#sheetShare"); $("#sheetShare").click(); r.sheetPost = JSON.parse(posts[posts.length - 1].text).drinks.map(d => d.name).join(",") === live[2].name; closeSheet();
+      // 받기: 형식이 아닌 파일
+      recipesFromApp("{\"hello\":1}"); r.bad = [$("#sheet").classList.contains("on"), /레시피 파일이 아니에요/.test($("#toast").textContent)];
+      // 받기: 새 것 하나 + 이미 있는 것 하나(이름이 같다)
+      const incoming = { kind:"amgijwi.recipes", v:1, n:2, drinks:[
+        { name:"유자 캐모마일", temp:"HOT", cups:["Tall"], ing:[["유자청", "30g"], ["캐모마일", "1티백"]], steps:["우리기"], tip:"", cat:{ label:"티 신메뉴", emo:"@cup" },
+          subs:[{ name:"자몽청", ing:[["자몽", "100g"], ["설탕", "100g"]], steps:["섞기"], tip:"", place:"", dur:"" }, { name:"유자청", ing:[["유자", "1개"]], steps:[], tip:"", place:"", dur:"" }] },
+        { name:live[0].name, temp:live[0].temp, cups:[], ing:[["바뀐 재료", "1"]], steps:[], tip:"", cat:null, subs:[] },
+        { name:"", ing:[["버릴 것", "1"]] } ] };
+      const before = data.drinks.length, subsBefore = data.subs.length, catsBefore = data.cats.length;
+      recipesFromApp(JSON.stringify(incoming));
+      const rows = [...document.querySelectorAll("#sheetBody .rsrow")];
+      r.sheet = [rows.length, rows.map(x => x.querySelector("input").checked).join(","), rows.map(x => x.querySelector(".tg").textContent).join(","), $("#rsGo").textContent];
+      rows[1].querySelector("input").click(); r.goN = $("#rsGo").textContent;
+      $("#rsGo").click();
+      const yuja = data.drinks.filter(d => d.name === "유자 캐모마일")[0], same = data.drinks.filter(d => d.id === live[0].id)[0];
+      r.imported = [data.drinks.length - before, !!yuja, same.ing[0][0], data.mastered.indexOf(live[0].id) >= 0, data.subs.length - subsBefore, data.cats.length - catsBefore,
+                    yuja && subsOf(yuja).map(s => s.name).sort().join(","), (document.querySelector(".screen.active") || {}).id, /가져오고 1개를 바꿨어요/.test($("#toast").textContent)];
+      // 같은 이름이라도 ICE · HOT 이 다르면 다른 레시피 · 한 파일에 같은 레시피가 둘이면 하나로 · 모르는 아이콘은 컵으로 · 원래 부재료는 남긴다
+      const ice = { name:"테스트라떼", temp:"ICE", ing:[["a", "1"]], steps:[], subs:[] }, hot = { name:"테스트라떼", temp:"HOT", ing:[["b", "1"]], steps:[], subs:[] };
+      const n0 = data.drinks.length; importRecipes([ice, hot, Object.assign({}, hot, { ing:[["c", "1"]] })]);
+      r.temps = [data.drinks.length - n0, data.drinks.filter(d => d.name === "테스트라떼" && d.temp === "HOT")[0].ing[0][0]];
+      r.emo = [safeEmo("@constructor"), safeEmo("@cup"), safeEmo("커피")];
+      importRecipes([{ name:live[0].name, temp:live[0].temp, ing:[["새", "1"]], steps:[], subs:[] }]); r.keepSubs = (data.drinks.filter(d => d.id === live[0].id)[0].subRefs || []).indexOf("subX") >= 0;
+      // 하던 일이 있으면(편집 중) 기다렸다가 화면을 옮긴 뒤에 연다
+      go("edit"); recipesFromApp(JSON.stringify(incoming)); r.busyWait = $("#sheet").classList.contains("on"); go("list"); await wait(20); r.afterBusy = $("#sheet").classList.contains("on"); closeSheet();
+      // 잠금 화면에 가려 있으면 푼 뒤에 연다
+      $("#lock").classList.add("on"); lock.mode = "enter"; recipesFromApp(JSON.stringify(incoming)); r.lockedWait = $("#sheet").classList.contains("on");
+      closeLock(); r.afterUnlock = $("#sheet").classList.contains("on"); closeSheet();
+      // 웹에는 보내기가 없다
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      r.web = [shareOn(), getComputedStyle($("#selShare")).display === "none"];
+      window.webkit = realWk;
+      data = JSON.parse(backup); persist(); exitSel(); go("home");
+      return r;
+    });
+    eq("보내기 꾸러미: 종류 · 개수 · 이름 · 부재료 · 분류는 담고, id · 외운 기록은 없다", r.pack, ["amgijwi.recipes", 2, true, "자몽청", true, false, false]);
+    eq("고르기 전에는 보내기가 잠겨 있다", r.selBtn0, [true, "보내기"]);
+    eq("고르면 \"2개 보내기\"", r.selBtn, [false, "2개 보내기"]);
+    eq("보내기: 공유 시트에 파일 이름 · 내용 · 앱스토어 주소 한 줄", r.posted, ["recipes", true, 2, true]);
+    eq("보냈으면 고르기를 풀고 알린다", r.done, [false, true]);
+    ok("백업 내보내기 알림은 그대로", r.backupStill);
+    eq("레시피 하나를 열었을 때 \"이 레시피 보내기\"", [r.sheetBtn, r.sheetPost], [true, true]);
+    eq("암기쥐 레시피 파일이 아니면 열지 않고 알린다", r.bad, [false, true]);
+    eq("받기: 이름 없는 것은 빼고, 이미 있는 것은 기본으로 고르지 않는다", r.sheet, [2, "true,false", "새로,이미 있어요", "1개 가져오기"]);
+    eq("이미 있는 것도 고르면 2개", r.goN, "2개 가져오기");
+    eq("가져오기: 새 것은 더하고, 같은 이름은 바꾸되 외운 기록은 남기고, 같은 부재료는 합치고 새 분류는 만든다", r.imported, [1, true, "바뀐 재료", true, 1, 1, "유자청,자몽청", "s-list", true]);
+    eq("잠금 화면에 가려 있으면 기다렸다가 풀린 뒤에 연다", [r.lockedWait, r.afterUnlock], [false, true]);
+    eq("ICE · HOT 은 다른 레시피, 한 파일의 같은 레시피는 하나로(뒤의 것)", r.temps, [2, "c"]);
+    eq("모르는 아이콘 이름은 컵으로, 글자 아이콘은 그대로", r.emo, ["@cup", "@cup", "커피"]);
+    ok("바꿔도 원래 이어 둔 부재료는 남는다", r.keepSubs);
+    eq("편집 중이면 기다렸다가 화면을 옮긴 뒤에 연다", [r.busyWait, r.afterBusy], [false, true]);
+    eq("웹에는 보내기가 없다", r.web, [false, true]);
+  }
+
   // ── 6-10h. 1.2.1 핼러윈 한정 아이템 ─────────────────────────────
   {
     const r = await page.evaluate(() => {
