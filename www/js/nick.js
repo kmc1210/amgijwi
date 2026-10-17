@@ -135,7 +135,7 @@ function nickSettings(){
 /* 가이드를 닫은 뒤(guide.js closeGuide), 이미 쓰던 사람은 앱을 열 때(boot.js) 한 번만 묻는다.
    "나중에"를 눌러도 다시 묻지 않는다 — 설정 → 내 이름에서 언제든 할 수 있다 */
 function nickAskDue(){ return isDot() && !data.nick.name && !hintSeen(NICK_HINT); }
-function closeNickAsk(){ const box = $("#nickAsk"); if(box) box.hidden = true; setTimeout(()=>{ widgetGo(); recipeGo(); updateGo(); }, 0); }      // 위젯을 눌러 들어왔으면 이제 그 화면으로(인사를 마친 뒤에 — widget.js)
+function closeNickAsk(){ const box = $("#nickAsk"); if(box) box.hidden = true; setTimeout(()=>{ widgetGo(); cloudAsk(); recipeGo(); updateGo(); }, 0); }      // 위젯을 눌러 들어왔으면 이제 그 화면으로(인사를 마친 뒤에 — widget.js)
 function nickAskOpen(){ const box = $("#nickAsk"); return !!box && !box.hidden; }
 function openNickAsk(){
   const box = $("#nickAsk");

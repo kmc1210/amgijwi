@@ -899,3 +899,8 @@ html.dot #s-list .exbar .exdel{flex:0 0 auto;border:0;border-radius:0;background
 html.dot #s-list .exbar .exdel:active{transform:translate(2px,2px);box-shadow:none;}
 html.dot #sheet .banner.exb{background:var(--d-warn-bg);color:var(--d-warn-t);align-items:center;}
 html.dot #sheet .banner.exb > span svg{width:24px;height:24px;display:block;}
+
+/* ---------- iCloud 자동 백업 카드 (icloud.js) ---------- */
+html.dot #cloudCard .cloudst{margin:10px 0 0;font-size:13px;color:var(--d-t2);}
+html.dot #cloudCard #cloudNow{margin-top:10px;}
+html.dot #cloudCard #cloudNow:disabled{opacity:.5;}

@@ -48,11 +48,13 @@ targets:
       - target: AmgijwiWidget
 
     # 앱과 위젯이 같이 쓰는 칸(App Group). 앱이 위젯에 넘길 요약을 여기에 적는다 — Sources/WidgetBridge.swift
+    # iCloud 키-값 저장소: 사용자 본인 iCloud 에 백업 하나를 둔다 — Sources/CloudBridge.swift
     entitlements:
       path: Amgijwi.entitlements
       properties:
         com.apple.security.application-groups:
           - group.com.amgijwi.app
+        com.apple.developer.ubiquity-kvstore-identifier: $(TeamIdentifierPrefix)$(CFBundleIdentifier)
 
     settings:
       base:
