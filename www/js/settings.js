@@ -495,12 +495,12 @@ $("#impText").addEventListener("click", ()=>{
   if(!t){ toast("붙여넣은 내용이 없어요"); return; }
   applyBackup(t);
 });
-/* quiet: 따로 묻고 온 경우(iCloud 되살리기 — icloud.js) 복원 확인창을 다시 띄우지 않는다 */
+/* quiet: 따로 묻고 온 경우(iCloud 되살리기 — icloud.js) 복원 확인창을 다시 띄우지 않는다. 그때는 되살렸으면 true */
 function applyBackup(text, quiet){
   let parsed;
-  try{ parsed = JSON.parse(text); }catch(e){ toast("백업 형식이 아니에요"); return; }
+  try{ parsed = JSON.parse(text); }catch(e){ toast("백업 형식이 아니에요"); return false; }
   const d = parsed && parsed.data ? parsed.data : parsed;
-  if(!d || !Array.isArray(d.drinks)){ toast("레시피 데이터를 찾지 못했어요"); return; }
+  if(!d || !Array.isArray(d.drinks)){ toast("레시피 데이터를 찾지 못했어요"); return false; }
   const run = ()=>{
     const keepCloud = data.cloud;        // iCloud 백업을 켰는지는 이 기기 것을 둔다
     const keepMode = (d.mode === "blank" || d.mode === "flip") ? d.mode : data.mode;
@@ -564,7 +564,7 @@ function applyBackup(text, quiet){
     data.cloud = keepCloud;
     persist(); syncAlarms(); applyTheme(); applySound(); applyHaptic(); applyWx(); $("#impBox").value=""; toast("복원했어요"); go("home");
   };
-  if(quiet) run();
+  if(quiet){ run(); return true; }
   else confirmBox("백업 복원", `레시피 ${d.drinks.length}개를 불러오고 현재 데이터를 덮어쓸까요?`, "복원", run);
 }
 const SHELF_SAMPLES = [

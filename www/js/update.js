@@ -38,10 +38,7 @@ function updateFromApp(ver){
    아니면 기다렸다가 그것이 끝난 뒤(closeLock · closeNickAsk · closeGuide · 확인창을 닫을 때 · 화면을 옮길 때 shell.js 의 go)에 묻는다 */
 function updateGo(){
   const ver = updatePending;
-  if(!ver || document.hidden || !$("#s-home").classList.contains("active")) return;
-  const lockEl = $("#lock"), guide = $("#onboard");
-  if((lockEl && lockEl.classList.contains("on")) || nickAskOpen() || (guide && !guide.hidden)) return;
-  if($("#sheet").classList.contains("on") || $("#dlg").classList.contains("on") || recipePendingText !== null) return;
+  if(!ver || !canInterrupt(true)) return;
   updatePending = null;
   updateSet(UPDATE_KEY, ver); updateSet(UPDATE_WAIT_KEY, "");
   confirmBox("새 버전이 나왔어요", `암기쥐 ${ver} 버전이 나왔어요. 앱스토어에서 업데이트하고 새 기능을 만나 보세요.`, "업데이트", ()=>{

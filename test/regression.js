@@ -3426,15 +3426,19 @@ const LEGACY = {
       window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
       const posts = [], saves = () => posts.filter(m => m.op === "save").length;
       window.webkit = { messageHandlers: Object.assign({}, realWk && realWk.messageHandlers, { amgijwiCloud: { postMessage: m => posts.push(m) } }) };
-      const reset = () => { delete data.cloud; Object.assign(cloud, { account: null, device: "", remote: null, busy: false, asked: false, found: null, manual: false }); clearTimeout(cloud.retryT); };
+      const reset = () => { delete data.cloud; dlgClosedAt = 0; Object.assign(cloud, { account: null, device: "", remote: null, busy: false, asked: false, found: null, manual: false }); clearTimeout(cloud.retryT); };
       const fresh = () => { data.drinks = seed(); data.events = []; data.memos = []; data.mastered = []; data.needReview = []; data.closet.cheese = 0; };
       const mine = () => ({ id: uid(), cat: "coffee", name: "우리 매장 라떼 " + uid().slice(0, 4), temp: "ICE", cups: [], ing: [["우유", "200 ml"]], steps: [], tip: "", subRefs: [] });
       reset(); r.defaultOn = cloudState().on;
+      // 정하기 전에는 저장하지 않는다
+      data.drinks = seed(); data.drinks.push(mine()); cloudStatusFromApp({ account: true, device: "me", meta: null });
+      r.undecidedNoSave = saves() === 0; $("#dlg").classList.remove("on"); cloud.offered = false;
+      cloudChoose(true);
       // 예시만 있는 빈 상태(새로 깐 앱)는 저장하지 않는다 — iCloud 의 진짜 백업을 덮지 않게
-      fresh(); cloudStatusFromApp({ account: true, device: "me", meta: { at: "2026-10-01T00:00:00.000Z", drinks: 40, mastered: 30, device: "old" } });
+      fresh(); cloudChoose(true); cloudStatusFromApp({ account: true, device: "me", meta: { at: "2026-10-01T00:00:00.000Z", drinks: 40, mastered: 30, device: "old" } });
       document.dispatchEvent(new Event("visibilitychange")); r.freshNoSave = saves() === 0;
       // 레시피를 하나 넣으면 저장(백업 파일과 같은 모양, PIN 은 빼고)
-      reset(); fresh(); data.drinks.push(mine());
+      reset(); fresh(); data.drinks.push(mine()); cloudChoose(true);
       cloudStatusFromApp({ account: true, device: "me", meta: null }); await wait(5);
       const first = posts.filter(m => m.op === "save").pop();
       r.firstSave = [saves(), !!first && JSON.parse(first.json).app === "brewnote", !!first && !("pin" in JSON.parse(first.json).data)];
@@ -3469,7 +3473,7 @@ const LEGACY = {
       cloudStatusFromApp({ account: true, device: "me", meta: null }); r.signedIn = [$("#cloudNow").disabled, !/로그인하면/.test($("#cloudState").textContent)];
       go("home");
       // 끄면 저장하지 않는다
-      cloudState().on = false; data.memos.push({ id: uid(), text: "또", pin: false }); n = saves(); cloudSave(true); r.offNoSave = saves() === n; cloudState().on = true;
+      cloudState().on = false; data.memos.push({ id: uid(), text: "또", pin: false }); n = saves(); cloudSave(true); r.offNoSave = saves() === n; cloudChoose(true);
       // 새로 깐 것 같으면 되살릴지 묻는다 · "새로 시작"이면 그 백업은 다시 묻지 않는다
       const meta = { at: "2026-10-16T12:12:00.000Z", drinks: 24, mastered: 12, device: "iphone" };
       fresh(); cloud.asked = false; cloudState().skip = "";
@@ -3486,9 +3490,37 @@ const LEGACY = {
       const other = JSON.parse(backupJSON()); other.data.drinks = [{ id: uid(), cat: "coffee", name: "되살린 라떼", temp: "ICE", cups: [], ing: [["우유", "200 ml"]], steps: [], tip: "" }];
       other.data.cloud = { on: false };
       cloudLoadedFromApp(JSON.stringify(other)); await wait(10);
-      r.loaded = [data.drinks.map(d => d.name).join(","), on(), cloudState().on, cloudState().sig === cloudSig()];
+      r.loaded = [data.drinks.map(d => d.name).join(","), on(), cloudState().sig === cloudSig()];
       // 되살리기를 고른 뒤의 다른 확인창 취소가 "새로 시작" 기록을 건드리지 않는다
       const skipBefore = cloudState().skip; confirmBox("t", "m", "삭제", null); $("#dlgNo").click(); r.noLeak = cloudState().skip === skipBefore;
+      // 켤지 한 번 묻기: iCloud 로그인 · 정하지 않음 · 지킬 데이터가 있을 때만, 홈에서
+      reset(); fresh(); go("home");
+      cloudStatusFromApp({ account: true, device: "me", meta: null }); r.offerFresh = on();
+      data.drinks.push(mine()); cloud.offered = false; cloudStatusFromApp({ account: false, device: "me", meta: null }); r.offerNoAccount = on();
+      cloud.offered = false; go("list"); cloudStatusFromApp({ account: true, device: "me", meta: null }); r.offerNotHome = on();
+      go("home"); await wait(20);
+      r.offer = [on(), $("#dlgT").textContent, $("#dlgYes").textContent, $("#dlgNo").textContent];
+      n = saves(); $("#dlgYes").click(); await wait(10);
+      r.offerYes = [cloudState().on, saves() === n + 1, /iCloud에 자동으로 백업되츄/.test($("#mbubble").textContent)];
+      cloudSavedFromApp(true, "", new Date().toISOString());
+      cloud.offered = false; cloudStatusFromApp({ account: true, device: "me", meta: null }); r.offerOnce = on();
+      reset(); fresh(); data.drinks.push(mine()); go("home"); cloudStatusFromApp({ account: true, device: "me", meta: null }); await wait(10);
+      $("#dlgNo").click(); n = saves(); data.memos.push({ id: uid(), text: "끈 뒤", pin: false }); cloudSave(false);
+      r.offerNo = [cloudState().on, saves() === n];
+      // 되살리면 켠 것으로 친다(이 기기에서 끈 것은 그대로, 못 되살렸으면 아무것도 안 바꾼다)
+      reset(); fresh(); cloudLoadedFromApp(JSON.stringify(other)); r.restoreOn = cloudState().on;
+      reset(); fresh(); cloudChoose(false); cloudLoadedFromApp(JSON.stringify(other)); r.restoreKeepOff = cloudState().on;
+      reset(); fresh(); cloudLoadedFromApp("{망가진"); r.badLoad = [cloudState().on, data.drinks.every(d => d.sample)];
+      // 예전 빌드에서 저절로 켜진 것(고른 적 없음)은 정하지 않음으로 돌린다
+      reset(); data.cloud = { on: true }; r.legacy = cloudState().on;
+      // 방금 다른 창을 닫았으면 켤지 묻기는 다음 기회로
+      reset(); fresh(); data.drinks.push(mine()); go("home"); dlgClosedAt = Date.now();
+      cloudStatusFromApp({ account: true, device: "me", meta: null }); r.deferred = on(); dlgClosedAt = 0;
+      // 백업하기를 눌렀는데 iCloud 에 더 큰 백업이 있으면 바꾸기 전에 묻는다
+      cloud.offered = false; cloudStatusFromApp({ account: true, device: "me", meta: { at: "2026-10-10T00:00:00.000Z", drinks: 40, mastered: 30, device: "me" } }); await wait(10);
+      n = saves(); $("#dlgYes").click(); await wait(10);
+      r.offerBig = [cloudState().on, on(), /40개짜리/.test($("#dlgM").textContent), saves() === n];
+      $("#dlgNo").click();
       // 웹에서는 카드가 없고 저장하지 않는다
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
       n = saves(); cloudSave(true); renderCloud(); r.web = [saves() === n, getComputedStyle($("#cloudCard")).display === "none"];
@@ -3496,7 +3528,8 @@ const LEGACY = {
       data = JSON.parse(backup); persist(); go("home");
       return r;
     });
-    eq("iCloud 자동 백업은 처음에 켜져 있다", r.defaultOn, true);
+    eq("iCloud 자동 백업은 처음에 정하지 않은 상태다", r.defaultOn, undefined);
+    eq("정하기 전에는 iCloud 에 올리지 않는다", r.undecidedNoSave, true);
     eq("예시만 있는 새 앱은 저장하지 않는다(iCloud 의 백업을 덮지 않게)", r.freshNoSave, true);
     eq("레시피를 넣으면 저장: 백업 파일과 같은 모양, PIN 은 빼고", r.firstSave, [1, true, true]);
     eq("저장하면 때 · 지문을 적고 백업한 것으로 친다", r.saved, ["2026-10-17T06:00:00.000Z", true, true]);
@@ -3515,7 +3548,18 @@ const LEGACY = {
     eq("새로 시작을 고른 백업은 다시 묻지 않는다", [r.skip, r.notAgain], ["2026-10-16T12:12:00.000Z", false]);
     eq("쓰던 기기에서는 묻지 않는다", r.usedNoAsk, false);
     eq("잠금이 풀린 뒤에 묻는다", [r.lockWait, r.afterLock], [false, true]);
-    eq("되살리기: 앱에 load 를 부탁하고, 확인창 없이 바꾸고, 이 기기의 iCloud 설정은 그대로, 바로 다시 올리지 않는다", [r.loadAsked].concat(r.loaded), [true, "되살린 라떼", false, true, true]);
+    eq("되살리기: 앱에 load 를 부탁하고, 확인창 없이 바꾸고, 바로 다시 올리지 않는다", [r.loadAsked].concat(r.loaded), [true, "되살린 라떼", false, true]);
+    eq("켤지 묻지 않는 때: 예시뿐 · iCloud 로그인 없음 · 홈이 아님", [r.offerFresh, r.offerNoAccount, r.offerNotHome], [false, false, false]);
+    eq("홈에서 켤지 한 번 묻는다", r.offer, [true, "iCloud에 백업할까요?", "백업하기", "안 할래요"]);
+    eq("백업하기: 켜고 바로 저장, 쥐돌이가 알려 준다", r.offerYes, [true, true, true]);
+    eq("한 번 정하면 다시 묻지 않는다", r.offerOnce, false);
+    eq("안 할래요: 끄고 저장하지 않는다", r.offerNo, [false, true]);
+    eq("iCloud 에서 되살리면 켠 것으로 친다", r.restoreOn, true);
+    eq("이 기기에서 끈 것은 되살려도 그대로", r.restoreKeepOff, false);
+    eq("못 되살렸으면 켜지 않고 데이터도 그대로", r.badLoad, [undefined, true]);
+    eq("예전 빌드의 저절로 켜짐은 다시 묻는다", r.legacy, undefined);
+    eq("다른 창을 방금 닫았으면 켤지 묻기를 미룬다", r.deferred, false);
+    eq("백업하기를 눌러도 더 큰 백업이 있으면 바꾸기 전에 묻는다", r.offerBig, [true, true, true, true]);
     eq("되살리기 뒤 다른 확인창의 취소가 새로 시작 기록을 건드리지 않는다", r.noLeak, true);
     eq("웹에는 iCloud 백업이 없다", r.web, [true, true]);
   }
