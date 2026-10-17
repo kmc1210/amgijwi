@@ -1371,6 +1371,7 @@ const LEGACY = {
       document.documentElement.classList.add("dot");
       const backup = JSON.stringify(data);
       data.backup = null;                         // 백업 권유가 뜨는 상태
+      if (liveDrinks().length < 8) data.drinks = data.drinks.concat(sampleDefs().filter(d => !data.drinks.some(x => x.name === d.name)));   // 레시피 8개부터 권한다
       renderHome(); renderBackupBanner();
       r.appGreet = fam("#greetT");
       r.ringShown = seen(document.querySelector("#ringPx"));
@@ -3344,6 +3345,75 @@ const LEGACY = {
     eq("요약이 달라졌을 때만 앱에 넘긴다", [r.once, r.changed, r.isText], [1, 2, true]);
     ok("한 바퀴 끝내면 오늘 외운 날로 적는다(위젯이 기쁜 얼굴로)", r.studied);
     eq("웹에서는 넘기지 않는다", r.web, [null, true]);
+  }
+
+  // ── 6-10y. 1.4 예시 레시피 표시 · 예시 줄이기 ─────────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const wait = ms => new Promise(res => setTimeout(res, ms));
+      const backup = JSON.stringify(data);
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      // 처음 설치: 예시 6개, 모두 예시 표시
+      const fresh = seed();
+      r.seed = [fresh.length, fresh.every(d => d.sample), fresh.map(d => d.name).sort().join(",") === SAMPLE_KEEP.slice().sort().join(",")];
+      // 예전 사용자: 손대지 않은 예시만 표시(15개 중 무엇이든), 고친 것 · 직접 넣은 것은 표시 없음
+      const old = sampleDefs();
+      const edited = Object.assign({}, old[1], { ing: [["에스프레소", "3샷"]] });
+      const mine = { id: uid(), cat: "coffee", name: "우리 매장 라떼", temp: "ICE", cups: [], ing: [["우유", "200 ml"]], steps: [], tip: "", subRefs: [] };
+      const cupOnly = Object.assign({}, old[2], { cups: ["20oz"] }), tipOnly = Object.assign({}, old[3], { tip: "우리 매장은 시럽 한 펌프 더" });
+      const root = { drinks: [old[0], edited, old[10], mine, cupOnly, tipOnly].map(d => Object.assign({}, d, { sample: false })) };
+      markOldSamples(root);
+      r.migrate = [root.drinks.map(d => !!d.sample), root.sampleMarked];
+      // 목록 · 상세 · 카드
+      data.drinks = seed(); data.drinks.push(Object.assign({}, mine)); data.mastered = [data.drinks[0].id]; data.needReview = [data.drinks[1].id];
+      data.drinks[5].arch = true;                                      // 보관한 예시 하나(말차라떼)
+      data.listSort = "new"; state.listTab = "recipe"; go("list"); renderList();
+      const pills = [...document.querySelectorAll("#listBody .row .pill.ex")].length;
+      const doneRow = document.querySelector(`#listBody .row[data-id="${data.drinks[0].id}"]`);
+      r.donePill = !!doneRow && !!doneRow.querySelector(".pill.ex") && !!doneRow.querySelector(".pill.done");
+      const bar = $("#listBody .exbar");
+      r.list = [pills, !!bar && /예시 레시피 5개/.test(bar.textContent), !!$("#exDel")];
+      const ex = data.drinks[2];
+      openSheet(ex.id); r.sheet = !!$("#sheetBody .banner.exb"); closeSheet();
+      openSheet(mine.id); r.sheetMine = !!$("#sheetBody .banner.exb"); closeSheet();
+      r.card = [/예시/.test(frontHTML(ex)), /예시/.test(frontHTML(mine))];
+      // 고치면 예시 표시가 사라진다
+      openEditor(ex.id); await wait(30); $("#saveBtn").click(); await wait(30);
+      r.edited = !!data.drinks.find(d => d.id === ex.id).sample;
+      // 예시 지우기: 예시만, 외운 기록도 함께 정리
+      go("list"); renderList(); $("#exDel").click(); $("#dlgYes").click();
+      r.del = [data.drinks.length, data.drinks.map(d => d.name).sort().join(","), data.mastered.length, data.needReview.length, !$("#listBody .exbar")];
+      // 백업 되살리기: 1.4 백업은 표시를 그대로, 예전 백업(표시 없음)은 손대지 않은 예시에 한 번 표시
+      data.drinks = seed(); data.drinks.push(Object.assign({}, mine)); data.sampleMarked = 1;
+      applyBackup(backupJSON()); $("#dlgYes").click();
+      r.restoreNew = [data.drinks.filter(d => d.sample).length, data.sampleMarked];
+      const oldBk = JSON.parse(backupJSON()); delete oldBk.data.sampleMarked; oldBk.data.drinks.forEach(d => { delete d.sample; });
+      applyBackup(JSON.stringify(oldBk)); $("#dlgYes").click();
+      r.restoreOld = [data.drinks.filter(d => d.sample).length, data.drinks.find(d => d.name === "우리 매장 라떼").sample, data.sampleMarked];
+      go("list");
+      // 빈 목록에서 예시 넣기 버튼은 6개
+      data.drinks = []; renderList(); r.emptyBtn = ($("#emptySample") || {}).textContent;
+      // 받은 레시피로 바꾸면 예시 표시가 사라진다
+      data.drinks = seed(); const ame = data.drinks.find(d => d.name === "아메리카노");
+      importRecipes([{ name: ame.name, en: "", temp: ame.temp, cups: [], ing: [["에스프레소", "3샷"]], ingHot: [], steps: [], tip: "", cat: null, subs: [] }]);
+      r.imported = !!data.drinks.find(d => d.id === ame.id).sample;
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      data = JSON.parse(backup); persist(); go("home");
+      return r;
+    });
+    eq("처음 설치하면 예시 레시피 6개, 모두 예시 표시", r.seed, [6, true, true]);
+    eq("예전 사용자는 손대지 않은 예시에만 표시(재료 · 컵 · 기억 포인트를 고친 것, 직접 넣은 것 제외)", r.migrate, [[true, false, true, false, false, false], 1]);
+    eq("목록: 보이는 예시 5개에 예시 표시(보관한 것은 목록에 없다), 맨 위에 예시 지우기 줄", r.list, [5, true, true]);
+    ok("외운 예시는 예시와 완료를 같이 보인다", r.donePill);
+    eq("상세: 예시에만 안내", [r.sheet, r.sheetMine], [true, false]);
+    eq("학습 카드: 예시에만 예시 표시", r.card, [true, false]);
+    eq("고치면 예시 표시가 사라진다", r.edited, false);
+    eq("예시 지우기는 보이는 예시만 지우고 기록도 정리한다(고친 것 · 직접 넣은 것 · 보관한 것은 남는다)", r.del, [3, ["말차라떼", "바닐라라떼", "우리 매장 라떼"].sort().join(","), 0, 0, true]);
+    eq("백업 되살리기: 1.4 백업은 예시 표시 그대로", r.restoreNew, [6, 1]);
+    eq("백업 되살리기: 예전 백업은 손대지 않은 예시에만 한 번 표시", r.restoreOld, [6, false, 1]);
+    eq("빈 목록의 예시 넣기 버튼", r.emptyBtn, "예시 레시피 6개 넣어보기");
+    eq("받은 레시피로 바꾸면 예시 표시가 사라진다", r.imported, false);
   }
 
   // ── 6-10x. 1.3 새 버전 알림 ────────────────────────────────────

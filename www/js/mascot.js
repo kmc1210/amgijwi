@@ -461,7 +461,7 @@ function sentenceLines(msg){ return String(msg).replace(/([.!?])[ \t]+(?=\S)/g, 
 const CHEERS = [
   "오늘 하루도 화이팅이츄!",
   "한 잔씩 천천히 하면 다 외워지츄",
-  "어제보다 한 개만 더! 그거면 충분하츄",
+  "어제보다 한 잔만 더! 그거면 충분하츄",
   "손이 기억할 때까지 조금씩 해보자츄",
   "레시피는 반복이 답이츄",
   "틀린 건 실력이 느는 중이라는 뜻이츄",
@@ -491,7 +491,7 @@ function situationCheer(now, streak, v){
 
   /* ── 급한 말 ── */
   if(total === 0)
-    return {ico:icon("note"), msg:"레시피가 아직 없츄. 한 개만 넣어보면 바로 시작이츄"};
+    return {ico:icon("note"), msg:"레시피가 아직 없츄. 하나만 넣어보면 바로 시작이츄"};
   if(kill > 0 && hour < 14)                       // 오픈·미들 시간대에만
     return {ico:icon("trash"), msg:"오늘 버릴 게 " + kill + "개 있츄. 개봉관리 먼저 보고 가자츄"};
   if(rev >= 5)

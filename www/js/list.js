@@ -318,7 +318,7 @@ function renderList(){
           <b style="display:block;font-size:15px;color:var(--ink);margin-bottom:8px">아직 레시피가 없어요</b>
           오른쪽 위 <b>+</b> 로 직접 넣거나<br>사진 속 글자를 붙여넣어 등록할 수 있어요.<br>
           어떤 앱인지 먼저 둘러보시려면 아래를 눌러보세요.
-          <button class="cta ghost" id="emptySample" style="margin-top:18px">샘플 레시피 15개 넣어보기</button>
+          <button class="cta ghost" id="emptySample" style="margin-top:18px">예시 레시피 ${SAMPLE_KEEP.length}개 넣어보기</button>
         </div>`;
     if($("#emptySample")) $("#emptySample").addEventListener("click", loadSamples);
     if($("#emptyArch")) $("#emptyArch").addEventListener("click", openArch);
@@ -328,6 +328,9 @@ function renderList(){
     $("#selBtn").style.display = "none";
     return;
   }
+  /* 손대지 않은 예시가 있으면 맨 위에 한 줄 — 매장 레시피로 바꾸거나 한 번에 지우게 한다 */
+  const nEx = liveDrinks().filter(d=>d.sample).length;
+  if(nEx && !q && !sm) html += `<div class="exbar"><span class="exm">${icon("cup")}</span><span class="ext"><b>예시 레시피 ${nEx}개</b>가 들어 있어요. 매장 레시피와 다를 수 있어요.</span><button type="button" class="exdel" id="exDel">예시 지우기</button></div>`;
   if(data.listSort === "new"){
     /* 최신순에서는 분류 제목을 접는다. 방금 넣은 것이 맨 위여야 하는데
        분류로 묶으면 그 분류 안에서만 위가 되어 눈에 안 띈다 */
@@ -346,6 +349,7 @@ function renderList(){
   }
   $("#listBody").innerHTML = html || noResultHTML(q, "레시피가");
   bindRows("#listBody", sm);
+  if($("#exDel")) $("#exDel").addEventListener("click", deleteSamples);
 
   $("#listBar").style.display = sm ? "none" : "flex";
   $("#selBar").style.display = sm ? "flex" : "none";
@@ -412,13 +416,27 @@ $("#selDelete").addEventListener("click", ()=>{
   const first = data.drinks.find(d=>d.id===ids[0]);
   const label = ids.length === 1 ? `“${first?first.name:""}”를` : `선택한 ${ids.length}개를`;
   confirmBox("레시피 삭제", `${label} 삭제할까요? 되돌릴 수 없어요.`, "삭제", ()=>{
-    data.drinks = data.drinks.filter(d=>ids.indexOf(d.id) < 0);
-    ids.forEach(id=>{ rm(data.mastered,id); rm(data.needReview,id); });
-    persist();
+    removeDrinks(ids);
     toast(`${ids.length}개를 삭제했어요`);
     exitSel(); renderHome();
   });
 });
+/* 레시피를 지우고 외운 기록 · 다시 볼 기록도 정리한다(여러 개 삭제 · 예시 지우기가 같이 쓴다) */
+function removeDrinks(ids){
+  data.drinks = data.drinks.filter(d=>ids.indexOf(d.id) < 0);
+  ids.forEach(id=>{ rm(data.mastered,id); rm(data.needReview,id); });
+  persist();
+}
+/* 예시 레시피 지우기 — 목록에 보이는 손대지 않은 예시만(줄에 적힌 수와 같다). 보관한 것 · 고친 것 · 직접 넣은 것은 남는다 */
+function deleteSamples(){
+  const ids = liveDrinks().filter(d=>d.sample).map(d=>d.id);
+  if(!ids.length) return;
+  confirmBox("예시 지우기", `예시 레시피 ${ids.length}개를 지울까요? 직접 넣거나 고친 레시피는 그대로예요.`, "지우기", ()=>{
+    removeDrinks(ids);
+    toast(`예시 ${ids.length}개를 지웠어요`);
+    renderList(); renderHome();
+  });
+}
 $("#q").addEventListener("input", renderList);
 document.querySelectorAll("#listSeg button").forEach(b=>{
   b.addEventListener("click", ()=>{
@@ -805,6 +823,7 @@ function openSheet(id){
   $("#sheetBody").innerHTML = `
     <h2 style="margin:0 0 2px;font-size:23px;font-weight:800;letter-spacing:-.5px">${esc(d.name)}</h2>
     <div style="font-size:12.5px;color:var(--muted);margin-bottom:18px">${[enText(d.en),d.temp,cupText(d)].filter(Boolean).map(esc).join(" · ")}</div>
+    ${d.sample ? `<div class="banner exb" style="margin:0 0 18px"><span>${icon("cup")}</span><div><b>예시 레시피예요.</b><br>매장 레시피와 다를 수 있어요. 우리 매장 용량으로 고치면 예시 표시가 사라져요.</div></div>` : ""}
     ${d.arch ? `<div class="banner ok" style="margin:0 0 18px"><span>${icon("box")}</span><div><b>보관 중인 레시피예요.</b><br>학습과 레시피 목록에는 나오지 않습니다.</div></div>` : ""}
     ${detailHTML(d)}
     <button class="cta" id="sheetEdit" style="margin-top:22px">수정하기</button>

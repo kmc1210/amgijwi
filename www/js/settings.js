@@ -545,11 +545,14 @@ function applyBackup(text){
       ingHot:Array.isArray(x.ingHot)?x.ingHot.map(p=>[String(p[0]||""),String(p[1]||"")]):[],
         steps:Array.isArray(x.steps)?x.steps.map(String):[], tip:String(x.tip||""),
         arch:!!x.arch,
+        sample:!!x.sample,                   /* 손대지 않은 예시 (core.js 의 sampleSig) */
         at:String(x.at||""),                 /* 등록한 날. 옛 백업에는 없어서 빈 값이 된다 */
         subRefs:Array.isArray(x.subRefs)?x.subRefs.map(String):[],
         subs:Array.isArray(x.subs)?x.subs.map(cleanSub):[]
-      })), mastered:Array.isArray(d.mastered)?d.mastered:[], needReview:Array.isArray(d.needReview)?d.needReview:[]};
+      })), mastered:Array.isArray(d.mastered)?d.mastered:[], needReview:Array.isArray(d.needReview)?d.needReview:[],
+      sampleMarked:d.sampleMarked ? 1 : 0};
     liftSubs(data);
+    if(!data.sampleMarked) markOldSamples(data);      // 1.4 전 백업: 손대지 않은 예시에 한 번 표시(이미 표시한 백업은 다시 맞춰 보지 않는다)
     data.drinks.forEach(x=>{ x.subRefs = (x.subRefs||[]).filter(id=>data.subs.some(s=>s.id===id)); });
     persist(); syncAlarms(); applyTheme(); applySound(); applyHaptic(); applyWx(); $("#impBox").value=""; toast("복원했어요"); go("home");
   });
@@ -562,7 +565,7 @@ const SHELF_SAMPLES = [
   {name:"과일청",         place:"냉장", dur:"14일", note:""}
 ];
 
-/* 샘플 다시 넣기 — 이미 같은 이름이 있으면 건너뜀 */
+/* 예시 다시 넣기 — 이미 같은 이름이 있으면 건너뜀 */
 function loadSamples(){
   const have = {};
   data.drinks.forEach(d=>{ have[d.name] = true; });
@@ -571,7 +574,7 @@ function loadSamples(){
   data.shelf.forEach(s=>{ haveShelf[s.name] = true; });
   const freshShelf = SHELF_SAMPLES.filter(s=>!haveShelf[s.name])
     .map(s=>({id:uid(), name:s.name, place:s.place, dur:s.dur, note:s.note}));
-  if(!fresh.length && !freshShelf.length){ toast("샘플이 이미 다 들어 있어요"); return; }
+  if(!fresh.length && !freshShelf.length){ toast("예시가 이미 다 들어 있어요"); return; }
   data.drinks = data.drinks.concat(fresh);
   data.shelf = data.shelf.concat(freshShelf);
   persist();

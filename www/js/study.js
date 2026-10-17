@@ -274,7 +274,7 @@ function frontHTML(d){
     <div class="cat">${catMark(catEmo(d.cat))} ${esc(catLabel(d.cat) || "기타")}</div>
     <h2>${esc(d.name)}</h2>
     ${d.en?`<div class="en">${esc(enText(d.en))}</div>`:""}
-    <div class="tags">${d.temp?`<span class="tag">${esc(d.temp)}</span>`:""}${cupList(d).map(c=>`<span class="tag">${esc(c)}</span>`).join("")}</div>
+    <div class="tags">${d.sample?`<span class="tag ex">예시</span>`:""}${d.temp?`<span class="tag">${esc(d.temp)}</span>`:""}${cupList(d).map(c=>`<span class="tag">${esc(c)}</span>`).join("")}</div>
     <div class="hint">재료와 용량을 떠올린 뒤 카드를 탭하세요</div></div></div>`;
 }
 function detailHTML(d){
