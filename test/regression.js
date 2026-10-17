@@ -3630,6 +3630,10 @@ const LEGACY = {
       // 옷장을 떠나면 끊긴다
       tapClosetItem("pumpkin"); tapClosetItem("cape"); $("#cFxBtn").click(); await wait(60); go("home"); await wait(120);
       r.leave = !$("#cRun");
+      // 치즈가 모자라면 미리 보기 뒤에도 그렇게 말한다
+      data.closet = cleanCloset({ cheese: 10 }); openCloset("home"); tapClosetItem("pumpkin"); $("#cFxBtn").click(); await wait(1200);
+      r.poorSay = $("#cSay").textContent;
+      closetTry = ""; stopClosetRun(); clearTimeout(closetGlowT); glowStop(closetStage); closetStage.lit = false; closetStage.blink = false;
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
       data = JSON.parse(backup); persist(); go("home");
       return r;
@@ -3640,6 +3644,7 @@ const LEGACY = {
     eq("다른 옷을 입어 보면 달리기를 끊고 쥐돌이를 다시 보인다", r.stopped, [true, true]);
     eq("호박 바구니: 그 자리에서 번쩍인다", r.lit, [true, true, "번쩍!"]);
     eq("옷장을 떠나면 달리기가 끊긴다", r.leave, true);
+    eq("치즈가 모자라면 미리 보기 뒤에도 그렇게 말한다", r.poorSay, "치즈가 모자라츄…");
   }
 
   // ── 6-10x. 1.3 새 버전 알림 ────────────────────────────────────
