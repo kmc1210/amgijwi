@@ -145,8 +145,11 @@ const SAMPLE_KEEP = ["아메리카노", "카페라떼", "바닐라라떼", "아�
 function seed(){
   return sampleDefs().filter(d=>SAMPLE_KEEP.indexOf(d.name) >= 0).map(d=>Object.assign(d, {sample:true}));
 }
-/* 예시와 내용까지 같은가(이름 · 온도 · 재료 · 순서) */
-function sampleSig(d){ return JSON.stringify([d.name, d.temp || "", d.ing || [], d.steps || []]); }
+/* 예시와 내용까지 같은가 — 편집 화면에서 고칠 수 있는 칸 전부(이름 · 영문 · 분류 · 온도 · 컵 · 재료 두 벌 · 순서 · 기억 포인트 · 부재료).
+   컵이나 기억 포인트만 고친 레시피도 사용자 것으로 본다(예시로 잘못 표시하면 "예시 지우기"에 지워진다) */
+function sampleSig(d){
+  return JSON.stringify([d.name, d.en || "", d.cat || "", d.temp || "", d.cups || [], d.ing || [], d.ingHot || [], d.steps || [], d.tip || "", (d.subRefs || []).length]);
+}
 function sampleDefs(){
   const S = (cat,name,en,temp,cup,ing,steps,tip)=>
     ({id:uid(), cat, name, en, temp, cups: cup?[cup]:[], ing, steps, tip, subRefs:[]});
@@ -292,7 +295,7 @@ function markOldSamples(root){
   root.drinks.forEach(d=>{ if(sigs.has(sampleSig(d))) d.sample = true; });
   root.sampleMarked = 1;
 }
-if(!data.sampleMarked) markOldSamples(data);
+if(!data.sampleMarked){ markOldSamples(data); Store.save(data); }
 
 /* ---------- 부재료 공용 목록 ----------
    예전에는 부재료를 레시피 안에 하나씩 박아 넣었다. 같은 자몽청을 쓰는 메뉴가 다섯 개면

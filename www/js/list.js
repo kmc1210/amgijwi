@@ -416,21 +416,23 @@ $("#selDelete").addEventListener("click", ()=>{
   const first = data.drinks.find(d=>d.id===ids[0]);
   const label = ids.length === 1 ? `“${first?first.name:""}”를` : `선택한 ${ids.length}개를`;
   confirmBox("레시피 삭제", `${label} 삭제할까요? 되돌릴 수 없어요.`, "삭제", ()=>{
-    data.drinks = data.drinks.filter(d=>ids.indexOf(d.id) < 0);
-    ids.forEach(id=>{ rm(data.mastered,id); rm(data.needReview,id); });
-    persist();
+    removeDrinks(ids);
     toast(`${ids.length}개를 삭제했어요`);
     exitSel(); renderHome();
   });
 });
-/* 예시 레시피 지우기 — 손대지 않은 예시만(보관한 것도). 고친 레시피는 예시 표시가 없어서 남는다 */
+/* 레시피를 지우고 외운 기록 · 다시 볼 기록도 정리한다(여러 개 삭제 · 예시 지우기가 같이 쓴다) */
+function removeDrinks(ids){
+  data.drinks = data.drinks.filter(d=>ids.indexOf(d.id) < 0);
+  ids.forEach(id=>{ rm(data.mastered,id); rm(data.needReview,id); });
+  persist();
+}
+/* 예시 레시피 지우기 — 목록에 보이는 손대지 않은 예시만(줄에 적힌 수와 같다). 보관한 것 · 고친 것 · 직접 넣은 것은 남는다 */
 function deleteSamples(){
-  const ids = data.drinks.filter(d=>d.sample).map(d=>d.id);
+  const ids = liveDrinks().filter(d=>d.sample).map(d=>d.id);
   if(!ids.length) return;
   confirmBox("예시 지우기", `예시 레시피 ${ids.length}개를 지울까요? 직접 넣거나 고친 레시피는 그대로예요.`, "지우기", ()=>{
-    data.drinks = data.drinks.filter(d=>!d.sample);
-    ids.forEach(id=>{ rm(data.mastered,id); rm(data.needReview,id); });
-    persist();
+    removeDrinks(ids);
     toast(`예시 ${ids.length}개를 지웠어요`);
     renderList(); renderHome();
   });
