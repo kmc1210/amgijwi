@@ -165,6 +165,7 @@ function rowHTML(d, pill, selectable){
   const on = selectable && state.sel.has(d.id);
   const badge = selectable ? ""
     : (pill ? `<span class="pill">${esc(pill)}</span>`
+      : d.sample ? `<span class="pill ex">예시</span>`        // 매장 레시피로 착각하지 않게 — 고치면 사라진다
       : (isNewDrink(d) ? `<span class="pill new">새로 넣음</span>`
         : (has(data.mastered,d.id) ? `<span class="pill done">완료</span>` : "")));
   return `<button class="row${on?" on":""}" data-id="${esc(d.id)}">

@@ -562,7 +562,7 @@ const SHELF_SAMPLES = [
   {name:"과일청",         place:"냉장", dur:"14일", note:""}
 ];
 
-/* 샘플 다시 넣기 — 이미 같은 이름이 있으면 건너뜀 */
+/* 예시 다시 넣기 — 이미 같은 이름이 있으면 건너뜀 */
 function loadSamples(){
   const have = {};
   data.drinks.forEach(d=>{ have[d.name] = true; });
@@ -571,7 +571,7 @@ function loadSamples(){
   data.shelf.forEach(s=>{ haveShelf[s.name] = true; });
   const freshShelf = SHELF_SAMPLES.filter(s=>!haveShelf[s.name])
     .map(s=>({id:uid(), name:s.name, place:s.place, dur:s.dur, note:s.note}));
-  if(!fresh.length && !freshShelf.length){ toast("샘플이 이미 다 들어 있어요"); return; }
+  if(!fresh.length && !freshShelf.length){ toast("예시가 이미 다 들어 있어요"); return; }
   data.drinks = data.drinks.concat(fresh);
   data.shelf = data.shelf.concat(freshShelf);
   persist();

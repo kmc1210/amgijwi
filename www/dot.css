@@ -884,3 +884,18 @@ html.dot #s-set #themeShop .pr .ci svg{width:100%;height:100%;display:block;}
 html.dot #s-set #themeShop .lim{color:var(--d-t2);}
 /* 어두운 테마에서도 생일 고르기 글자가 보이게 */
 html.dot #bdayCard .bdrow select{color:var(--d-t1);background-color:var(--d-surface);}
+
+/* ---------- 예시 레시피 표시 (core.js 의 d.sample) ----------
+   손대지 않은 예시는 목록 · 상세 · 학습 카드에 노란 "예시"를 단다. 목록 맨 위에는 한 번에 지우는 줄 */
+html.dot :is(#s-list, #s-arch) .pill.ex{background:var(--d-warn-bg);color:var(--d-warn-t);font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;padding:3px 7px 2px;}
+html.dot #s-study .front .tag.ex{background:var(--d-warn-bg);color:var(--d-warn-t);box-shadow:0 -2px 0 0 var(--d-warn-t), 0 2px 0 0 var(--d-warn-t), -2px 0 0 0 var(--d-warn-t), 2px 0 0 0 var(--d-warn-t);}
+html.dot #s-list .exbar{display:flex;align-items:center;gap:10px;margin:6px 3px 16px;padding:10px 12px;background:var(--d-warn-bg);color:var(--d-warn-t);font-size:13px;line-height:1.5;
+  box-shadow:0 -3px 0 0 var(--d-line), 0 3px 0 0 var(--d-line), -3px 0 0 0 var(--d-line), 3px 0 0 0 var(--d-line);}
+html.dot #s-list .exbar .exm{flex:0 0 24px;width:24px;height:24px;}
+html.dot #s-list .exbar .exm svg{width:100%;height:100%;display:block;}
+html.dot #s-list .exbar .ext{flex:1;min-width:0;}
+html.dot #s-list .exbar .exdel{flex:0 0 auto;border:0;border-radius:0;background:var(--d-surface);color:var(--d-t1);padding:7px 10px 6px;
+  font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;box-shadow:var(--d-box2);}
+html.dot #s-list .exbar .exdel:active{transform:translate(2px,2px);box-shadow:none;}
+html.dot #sheet .banner.exb{background:var(--d-warn-bg);color:var(--d-warn-t);align-items:center;}
+html.dot #sheet .banner.exb > span svg{width:24px;height:24px;display:block;}

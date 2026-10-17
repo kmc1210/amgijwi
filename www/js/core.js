@@ -137,8 +137,17 @@ const Store = (()=>{
   };
 })();
 
-/* ---------- 샘플 데이터 (설정에서 지울 수 있음) ---------- */
+/* ---------- 예시 레시피 (설정에서 다시 넣고, 레시피 목록에서 지울 수 있음) ----------
+   처음 설치하면 예시 6개가 들어간다(예전에는 15개). 매장 레시피로 착각하지 않게 d.sample 표시를 달아
+   목록 · 상세 · 학습 카드에 "예시"를 보이고, 사용자가 고치면(editor.js 는 레코드를 새로 만든다) 표시가 사라진다.
+   sampleDefs 는 예전 15개 전부 — 이미 쓰던 사람의 손대지 않은 예시를 알아보는 데 쓴다 */
+const SAMPLE_KEEP = ["아메리카노", "카페라떼", "바닐라라떼", "아인슈페너", "자몽에이드", "말차라떼"];
 function seed(){
+  return sampleDefs().filter(d=>SAMPLE_KEEP.indexOf(d.name) >= 0).map(d=>Object.assign(d, {sample:true}));
+}
+/* 예시와 내용까지 같은가(이름 · 온도 · 재료 · 순서) */
+function sampleSig(d){ return JSON.stringify([d.name, d.temp || "", d.ing || [], d.steps || []]); }
+function sampleDefs(){
   const S = (cat,name,en,temp,cup,ing,steps,tip)=>
     ({id:uid(), cat, name, en, temp, cups: cup?[cup]:[], ing, steps, tip, subRefs:[]});
   return [
@@ -275,7 +284,15 @@ data.drinks.forEach(d=>{
   d.at = (typeof d.at === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d.at)) ? d.at : "";
   if(!Array.isArray(d.cups)) d.cups = d.cup ? [String(d.cup)] : [];
   d.arch = !!d.arch;               // 보관한 레시피 — 학습과 목록에서 빠진다
+  d.sample = !!d.sample;           // 손대지 않은 예시 레시피
 });
+/* 1.4 전에 설치한 사람: 예시 표시가 없던 때 들어간 예시 중 손대지 않은 것에 한 번만 표시를 단다 */
+function markOldSamples(root){
+  const sigs = new Set(sampleDefs().map(sampleSig));
+  root.drinks.forEach(d=>{ if(sigs.has(sampleSig(d))) d.sample = true; });
+  root.sampleMarked = 1;
+}
+if(!data.sampleMarked) markOldSamples(data);
 
 /* ---------- 부재료 공용 목록 ----------
    예전에는 부재료를 레시피 안에 하나씩 박아 넣었다. 같은 자몽청을 쓰는 메뉴가 다섯 개면
