@@ -3610,6 +3610,38 @@ const LEGACY = {
     eq("웹에는 iCloud 백업이 없다", r.web, [true, true]);
   }
 
+  // ── 6-10q. 1.4 옷장 효과 미리 보기 ─────────────────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const wait = ms => new Promise(res => setTimeout(res, ms));
+      const backup = JSON.stringify(data);
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      data.closet = cleanCloset({ cheese: 200 }); openCloset("home");
+      tapClosetItem("beret"); r.noBtn = !$("#cFxBtn");                 // 효과 없는 옷엔 버튼이 없다
+      tapClosetItem("cape"); r.btn = !!$("#cFxBtn") && /효과 보기/.test($("#cFxBtn").textContent);
+      $("#cFxBtn").click(); await wait(120);
+      r.running = [!!$("#cRun"), $("#cMouse").style.visibility === "hidden", !!$("#cRun .r svg"), /<svg/.test($("#cRun .fx").innerHTML), $("#cSay").textContent];
+      $("#cFxBtn").click(); r.once = document.querySelectorAll("#cRun").length;      // 뛰는 중엔 또 시작하지 않는다
+      // 다른 옷을 입어 보면(다시 그리면) 달리기를 끊는다
+      tapClosetItem("pumpkin"); r.stopped = [!$("#cRun"), $("#cMouse").style.visibility === ""];
+      // 빛나는 옷은 그 자리에서 번쩍인다
+      $("#cFxBtn").click(); await wait(30); r.lit = [closetStage.lit, /C/.test(dressRows(mouseRows("day"), "stand", closetStageWear(), true).join("")), $("#cSay").textContent];
+      // 옷장을 떠나면 끊긴다
+      tapClosetItem("pumpkin"); tapClosetItem("cape"); $("#cFxBtn").click(); await wait(60); go("home"); await wait(120);
+      r.leave = !$("#cRun");
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      data = JSON.parse(backup); persist(); go("home");
+      return r;
+    });
+    eq("효과 없는 옷엔 효과 보기가 없고, 있는 옷엔 있다", [r.noBtn, r.btn], [true, true]);
+    eq("망토: 무대에서 뛰어 보인다(자락 · 박쥐 그림 · 원래 쥐돌이는 숨김)", r.running, [true, true, true, true, "슝!"]);
+    eq("뛰는 중엔 또 시작하지 않는다", r.once, 1);
+    eq("다른 옷을 입어 보면 달리기를 끊고 쥐돌이를 다시 보인다", r.stopped, [true, true]);
+    eq("호박 바구니: 그 자리에서 번쩍인다", r.lit, [true, true, "번쩍!"]);
+    eq("옷장을 떠나면 달리기가 끊긴다", r.leave, true);
+  }
+
   // ── 6-10x. 1.3 새 버전 알림 ────────────────────────────────────
   {
     const r = await page.evaluate(async () => {

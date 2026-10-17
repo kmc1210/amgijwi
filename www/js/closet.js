@@ -561,6 +561,7 @@ function closetStageWear(){
   return wear;
 }
 function renderCloset(){
+  stopClosetRun();                // 미리 보던 달리기는 끊는다(입어 보는 옷이 바뀌었을 수 있다)
   const c = data.closet;
   if(closetTry && c.own.indexOf(closetTry) >= 0) closetTry = "";      // 이미 가진 것은 입어 볼 게 없다
   if(closetTry && !closetOnSale(closetItem(closetTry))){              // 입어 보는 사이에 판매가 끝났다
@@ -599,8 +600,8 @@ function renderCloset(){
    달리기는 옆모습 그림이라 정면 옷을 얹을 수 없다. 달리기용 덧그림(run)이 있는 옷만 입고 달리고, 나머지는 달리는 동안 벗는다.
    run.rows 는 옆모습 28×40 위의 덧그림(y 행부터). "_" 는 지우는 칸(호박 머리가 귀를 덮는다), cells 가 있으면 그 칸에만 칠한다(망토).
    lit 이면 빛나는 옷(glow)은 빛나는 색으로 — 호박 머리가 달리며 번쩍인다 */
-function runWear(){
-  const w = wornNow();
+function runWear(wear){
+  const w = wear || wornNow();
   return ["body", "hand", "face", "head"].map(s=>closetItem(w[s])).filter(it=>it && it.run);
 }
 function runDress(rows, items, lit){
@@ -654,11 +655,73 @@ function closetBuyBar(){
   const lack = it.price - data.closet.cheese;
   bar.innerHTML = `<div class="cbuy">
       <div class="who"><b>${esc(it.name)}</b><span>${lack > 0 ? "치즈가 " + lack + "개 모자라요" : "입어 보는 중이에요"}</span>
-        ${it.perk ? `<em class="perk">${esc(it.perk)}</em>` : ""}</div>
+        ${it.perk ? `<em class="perk">${esc(it.perk)}</em><button type="button" class="fxb" id="cFxBtn">효과 보기</button>` : ""}</div>
       <button type="button" class="buy" id="cBuyBtn"${lack > 0 ? " disabled" : ""}><span class="ci">${cheeseSVG()}</span>${it.price} 사기</button>
       <button type="button" class="no" id="cBuyNo">그만 보기</button></div>`;
   $("#cBuyBtn").addEventListener("click", buyClosetItem);
+  if($("#cFxBtn")) $("#cFxBtn").addEventListener("click", closetEffect);
   $("#cBuyNo").addEventListener("click", ()=>{ closetTry = ""; closetLock(); closetSay("어때츄?"); haptic("light"); renderCloset(); });
+}
+/* ---------- 효과 미리 보기 (입어 보는 중) ----------
+   달릴 때 효과가 있는 옷(망토 · 호박 머리)은 무대에서 한 바퀴 뛰어 보이고(망토 자락 · 박쥐 · 번쩍임 그대로 — runFxSVG),
+   빛나는 옷(호박 바구니)은 그 자리에서 두 번 번쩍인다. 움직임 줄이기를 켰으면 잠깐 빛나는 모습만 보인다 */
+let closetRunT = null;
+function closetEffect(){
+  const it = closetItem(closetTry);
+  if(!it || closetRunT) return;
+  haptic("light");
+  if(reduceMotion()){
+    if(!it.glow) return;
+    closetStage.lit = true; drawClosetStage();
+    setTimeout(()=>{ closetStage.lit = false; if($("#s-closet").classList.contains("active")) drawClosetStage(); }, 1200);
+    return;
+  }
+  if(it.run){ closetRun(); return; }
+  closetSay("번쩍!");
+  const draw = ()=>{ if($("#s-closet").classList.contains("active")) drawClosetStage(); };
+  clearTimeout(closetGlowT);
+  glowRun(closetStage, draw, ()=>glowRun(closetStage, draw, ()=>{ closetSay("어울리츄?"); scheduleClosetGlow(); }));
+}
+function stopClosetRun(){
+  if(closetRunT){ clearInterval(closetRunT); closetRunT = null; }
+  const layer = $("#cRun"); if(layer) layer.remove();
+  const m = $("#cMouse"); if(m) m.style.visibility = "";
+}
+function closetRun(){
+  const stage = document.querySelector("#s-closet .cstage"), m = $("#cMouse");
+  if(!stage || !m) return;
+  const sr = stage.getBoundingClientRect(), mr = m.getBoundingClientRect();
+  const k = mr.width / 56;                                           // 무대 쥐돌이(140px) ÷ 달리기 그림(56px)
+  const W = Math.round(sr.width / k), H = Math.round(sr.height / k);
+  const home = {x: Math.round((mr.left - sr.left) / k), y: Math.round((mr.top - sr.top) / k)};
+  const wear = runWear(closetStageWear()), cape = wear.filter(it=>it.run.tail)[0];
+  const front = closetStageWear();
+  const bats = cape && cape.run.bats ? [0, 1, 2].map(()=>({x: null, y: null})) : [];
+  /* 제자리에서 오른쪽 끝과 왼쪽 끝을 두 번 오가고(끝에서 정면을 보고 돌아선다) 제자리로 */
+  const plan = [], HOP = [0, 2, 6, 0, 2, 6], STEP = 4, xL = 4, xR = W - 56 - 4;      // 무대가 좁아 잔걸음으로 두 바퀴(3초쯤)
+  let x = home.x, ph = 0;
+  const runTo = to=>{ const right = to > x; while(right ? x < to : x > to){ x = right ? Math.min(to, x + STEP) : Math.max(to, x - STEP); plan.push({rows: RUN_SPR["s" + (ph % 6)], flip: right, x: x, y: home.y - HOP[ph % 6]}); ph++; } };
+  const turn = ()=>[0, 3, 0].forEach(h=>plan.push({rows: RUN_SPR.qf, flip: false, x: x, y: home.y - h}));
+  runTo(xR); turn(); runTo(xL); turn(); runTo(xR); turn(); runTo(xL); turn(); runTo(home.x);
+  runDressMemo.clear();
+  const layer = document.createElement("div");
+  layer.id = "cRun"; layer.className = "crun";
+  layer.innerHTML = `<div class="cw" style="width:${W}px;height:${H}px;transform:scale(${k})"><div class="fx"></div><div class="r"></div></div>`;
+  stage.appendChild(layer);
+  const R = layer.querySelector(".r"), FX = layer.querySelector(".fx");
+  m.style.visibility = "hidden";
+  closetSay("슝!");
+  let i = 0;
+  closetRunT = setInterval(()=>{
+    if(i >= plan.length || !$("#s-closet").classList.contains("active")){ stopClosetRun(); closetSay("어울리츄?"); return; }
+    const f = plan[i], side = f.rows !== RUN_SPR.qf, lit = Math.floor(i / 8) % 3 === 0;
+    const rows = side ? runDressed(f.rows, wear, lit) : dressRows(f.rows, "stand", front, lit);
+    R.innerHTML = rowsSVG(rows, f.flip);
+    R.style.transform = `translate(${f.x}px,${f.y}px)`;
+    const bits = cape ? runFxSVG(cape, f, i, bats, side) : "";
+    FX.innerHTML = bits ? `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" shape-rendering="crispEdges" aria-hidden="true">${bits}</svg>` : "";
+    i++;
+  }, 42);
 }
 /* 아이템을 눌렀다. 가진 것이면 입거나 벗고, 아직 없는 것이면 입어 보기만 한다(사는 것은 buyClosetItem) */
 function tapClosetItem(id){
