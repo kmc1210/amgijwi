@@ -2490,9 +2490,11 @@ const LEGACY = {
       r.wide = [out.length > 20, worn[28][6] === "p", worn[38][3] === "d", worn[26][10] === "J" || worn[26][10] === "K", dressRows(day, "stand", { body:"cape" })[24][13] === "q"];
       const apron = dressRows(day, "stand", { body:"apron" }); let outA = 0; for(let y = 17; y < 37; y++) for(let x = 0; x < 28; x++) if(day[y][x] === "." && apron[y][x] !== ".") outA++;
       r.apronStays = outA;
-      // 깜빡이는 그림에서만 호박이 번쩍인다
-      const open = dressRows(day, "stand", { hand:"pumpkin", head:"pumpkinhead" }).join(""), shut = dressRows(mouseRows("blink"), "blink", { hand:"pumpkin", head:"pumpkinhead" }).join("");
-      r.flash = [open.indexOf("C") < 0, shut.indexOf("C") >= 0, mouseSVGWorn("blink", false, { hand:"pumpkin" }) !== mouseSVGWorn("day", false, { hand:"pumpkin" })];
+      // 호박은 번쩍임(lit)일 때만 빛나고, 눈 깜빡임과는 따로다
+      const pw = { hand:"pumpkin", head:"pumpkinhead" };
+      const open = dressRows(day, "stand", pw).join(""), shut = dressRows(mouseRows("blink"), "blink", pw).join(""), lit = dressRows(day, "stand", pw, true).join("");
+      r.flash = [open.indexOf("C") < 0, shut.indexOf("C") < 0, lit.indexOf("C") >= 0, mouseSVGWorn("day", false, { hand:"pumpkin" }, true) !== mouseSVGWorn("day", false, { hand:"pumpkin" }),
+        wearGlows({ hand:"pumpkin" }), wearGlows({ head:"beret" })];
       // 옷장: 파는 동안 맨 앞 · "핼러윈 · ~11/8" 표시, 가지면 표시를 뗀다
       data.closet = cleanCloset({ cheese:200, own:["beret", "batpin"], wear:{ head:"batpin" } });
       const realOn = closetOnSale; closetOnSale = (it, today) => realOn(it, today || "2026-10-20");      // 오늘이 언제든 파는 기간 안으로
@@ -2551,7 +2553,7 @@ const LEGACY = {
     eq("11월 8일까지 팔고 9일부터는 안 판다(늘 파는 것은 그대로)", r.sale, [true, true, false, true]);
     eq("망토는 몸 바깥까지 퍼지고 앞발 · 발 · 호박 · 끈 매듭은 보인다", r.wide, [true, true, true, true, true]);
     eq("앞치마는 지금처럼 몸 안에만", r.apronStays, 0);
-    eq("호박은 깜빡일 때만 번쩍인다", r.flash, [true, true, true]);
+    eq("호박은 번쩍일 때만 빛나고 눈 깜빡임과는 따로다", r.flash, [true, true, true, true, true, false]);
     eq("옷장: 파는 동안 한정 아이템이 맨 앞, 가진 것에는 한정 표시가 없다", r.grid, ["witchhat,pumpkinhead", "핼러윈 · ~11/8|핼러윈 · ~11/8", false]);
     eq("한정 아이템도 사면 바로 입는다", r.bought, [140, "witchhat"]);
     eq("기간이 지나면 가진 한정 아이템만 남고 표시도 없다", r.after, ["batpin,witchhat", 0]);
@@ -3521,6 +3523,29 @@ const LEGACY = {
       n = saves(); $("#dlgYes").click(); await wait(10);
       r.offerBig = [cloudState().on, on(), /40개짜리/.test($("#dlgM").textContent), saves() === n];
       $("#dlgNo").click();
+      // 처음 열 때 차례: iCloud 답을 기다렸다가 · 백업이 있으면 되살릴지 먼저 · 그다음 가이드 · 이름
+      const order = [];
+      reset(); fresh(); cloud.peeked = false; cloud.peekAt = Date.now(); cloud.after = [];
+      cloudThen(() => order.push("guide")); r.waitPeek = order.length;
+      cloudFoundFromApp(null); r.noBackupGo = order.join();
+      reset(); fresh(); cloud.peeked = false; cloud.peekAt = Date.now(); cloud.after = []; order.length = 0;
+      cloudThen(() => order.push("guide"));
+      cloudFoundFromApp({ at: "2026-10-16T12:12:00.000Z", drinks: 24, mastered: 12, device: "iphone" });
+      r.restoreFirst = [on(), $("#dlgT").textContent, order.length];
+      $("#dlgNo").click(); await wait(10); r.newStartGo = order.join();
+      reset(); fresh(); cloud.peeked = false; cloud.peekAt = Date.now(); cloud.after = []; order.length = 0;
+      cloudThen(() => order.push("guide"));
+      cloudFoundFromApp({ at: "2026-10-16T12:12:00.000Z", drinks: 24, mastered: 12, device: "iphone" });
+      $("#dlgYes").click(); r.loadingWait = [cloud.loading, order.length];
+      cloudLoadedFromApp(JSON.stringify(other)); r.restoredGo = order.join();
+      // 늦게 온 백업: 가이드가 끝난 뒤 이름 묻기보다 되살리기를 먼저
+      reset(); fresh(); cloud.peeked = true; cloud.found = { at: "2026-10-16T12:12:00.000Z", drinks: 24, mastered: 12, device: "iphone" };
+      data.nick = { name: "", free: true, had: false }; data.hints = (data.hints || []).filter(h => h !== NICK_HINT);
+      r.nickDeferred = [openNickAsk(), nickAskOpen()];
+      cloudAsk(); r.lateAsk = on(); $("#dlgNo").click(); await wait(10); r.nickAfter = nickAskOpen(); closeNickAsk();
+      // 답이 늦으면 기다리지 않는다
+      reset(); fresh(); cloud.peeked = false; cloud.peekAt = Date.now() - 2000; cloud.after = []; order.length = 0;
+      cloudThen(() => order.push("guide")); r.timeout = order.join();
       // 웹에서는 카드가 없고 저장하지 않는다
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
       n = saves(); cloudSave(true); renderCloud(); r.web = [saves() === n, getComputedStyle($("#cloudCard")).display === "none"];
@@ -3561,6 +3586,12 @@ const LEGACY = {
     eq("다른 창을 방금 닫았으면 켤지 묻기를 미룬다", r.deferred, false);
     eq("백업하기를 눌러도 더 큰 백업이 있으면 바꾸기 전에 묻는다", r.offerBig, [true, true, true, true]);
     eq("되살리기 뒤 다른 확인창의 취소가 새로 시작 기록을 건드리지 않는다", r.noLeak, true);
+    eq("처음 열 때: iCloud 답을 기다리고, 백업이 없으면 바로 가이드", [r.waitPeek, r.noBackupGo], [0, "guide"]);
+    eq("백업이 있으면 되살릴지 먼저 묻고 가이드는 기다린다", r.restoreFirst, [true, "iCloud에 백업이 있어요", 0]);
+    eq("새로 시작이면 그다음에 가이드", r.newStartGo, "guide");
+    eq("되살리는 동안 기다렸다가 끝나면 이어 간다", [r.loadingWait, r.restoredGo], [[true, 0], "guide"]);
+    eq("늦게 온 백업은 이름 묻기보다 먼저", [r.nickDeferred, r.lateAsk, r.nickAfter], [[false, false], true, true]);
+    eq("iCloud 답이 늦으면 기다리지 않고 시작한다", r.timeout, "guide");
     eq("웹에는 iCloud 백업이 없다", r.web, [true, true]);
   }
 

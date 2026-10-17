@@ -141,6 +141,7 @@ function openNickAsk(){
   const box = $("#nickAsk");
   const g = $("#onboard");
   if(!box || !nickAskDue() || (g && !g.hidden)) return false;      // 가이드를 보는 중이면 가이드가 끝난 뒤에 묻는다
+  if(cloudWaiting()){ cloudThen(openNickAsk); return false; }       // iCloud 백업을 되살릴지가 먼저다(되살리면 이름도 돌아온다 — icloud.js)
   markHint(NICK_HINT);
   $("#nickAskIn").value = ""; $("#nickAskMsg").textContent = "";
   $("#nickAskMouse").innerHTML = mouseSVGWorn("day");

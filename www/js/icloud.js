@@ -12,7 +12,30 @@
    웹 → 앱: amgijwiCloud.postMessage({op:"status"} | {op:"save", json, drinks, mastered} | {op:"peek"} | {op:"load"})
    앱 → 웹: cloudStatusFromApp({account, device, meta}) · cloudSavedFromApp(ok, why, at) · cloudFoundFromApp(meta|null) · cloudLoadedFromApp(json) */
 const CLOUD_MIN_MS = 10 * 60 * 1000, CLOUD_STALE_DAYS = 14;
-const cloud = {account: null, device: "", remote: null, busy: false, asked: false, offered: false, found: null, retryT: null, manual: false, pending: ""};
+const cloud = {account: null, device: "", remote: null, busy: false, asked: false, offered: false, found: null, retryT: null, manual: false, pending: "",
+  peeked: false, after: [], asking: false, loading: false};
+const CLOUD_PEEK_WAIT_MS = 1500;
+/* ---------- 처음 열 때의 차례 ----------
+   새로 깐 앱에서 iCloud 에 백업이 있으면 "되살릴까요?"를 처음 가이드 · 이름 묻기보다 먼저 묻는다.
+   되살리면 이름 · 가이드를 본 기록까지 돌아와 둘 다 건너뛰고, "새로 시작"이면 그다음에 가이드 → 이름 묻기로 간다.
+   iCloud 에 물어본 답이 오기를 잠깐(1.5초) 기다리고, 그 안에 안 오면 그대로 시작한다(늦게 오면 가이드가 끝난 뒤, 이름 묻기 전에 묻는다) */
+function cloudWaiting(){
+  if(!cloudBridge()) return false;
+  if(cloud.asking || cloud.loading) return true;                    // 되살릴지 묻는 중 · 되살리는 중
+  if(cloud.asked) return false;
+  if(!cloudLooksFresh()) return false;
+  if(cloud.found) return true;                                      // 물을 백업이 있다
+  return !cloud.peeked && Date.now() - (cloud.peekAt || 0) < CLOUD_PEEK_WAIT_MS;
+}
+/* 되살릴지 정해진 뒤에 할 일(처음 가이드 · 이름 묻기). 기다릴 게 없으면 바로 한다 */
+function cloudThen(fn){
+  if(cloudWaiting()) cloud.after.push(fn); else fn();
+}
+function cloudFlush(){
+  if(cloudWaiting()) return;
+  const list = cloud.after; cloud.after = [];
+  list.forEach(fn=>{ try{ fn(); }catch(e){} });
+}
 function cloudBridge(){
   const w = window.webkit;
   if(!isDot() || !isNativeApp() || !w || !w.messageHandlers || !w.messageHandlers.amgijwiCloud) return null;
@@ -130,12 +153,14 @@ function cloudChoose(on){
 }
 /* iCloud 에 백업이 있다는 소식(켤 때 물어본 답이거나, 늦게 내려받아진 것) */
 function cloudFoundFromApp(meta){
+  cloud.peeked = true;
   if(meta && meta.at) cloud.remote = meta;
-  if(!meta || !meta.at || cloud.asked) return;
   const c = cloudState();
-  if(c.skip === meta.at || !cloudLooksFresh() || Number(meta.drinks) < 1) return;
-  cloud.found = meta;
-  cloudAsk();
+  if(meta && meta.at && !cloud.asked && c.skip !== meta.at && cloudLooksFresh() && Number(meta.drinks) >= 1){
+    cloud.found = meta;
+    cloudAsk();
+  }
+  cloudFlush();                                                     // 물을 게 없으면 미뤄 둔 가이드 · 이름 묻기를 이제
 }
 /* 기다리던 질문을 지금 할 수 있으면 한다(잠금 · 가이드 · 이름 창 · 다른 창이 끝난 뒤에 다시 불린다 — shell.js 의 go · afterDlg 등).
    iCloud 백업을 되살릴지가 먼저다(어느 화면에서든). 그게 없거나 끝났으면 켤지 묻는다(cloudOffer, 홈에서) */
@@ -144,20 +169,26 @@ function cloudAsk(){
   if(!meta || cloud.asked){ cloudOffer(); return; }
   if(!canInterrupt(false)) return;
   if(!cloudLooksFresh()){ cloudOffer(); return; }                   // 기다리는 사이에 뭔가 넣었으면 되살리기는 묻지 않는다
-  cloud.asked = true;
+  cloud.asked = true; cloud.asking = true;
   const d = new Date(meta.at);
   const when = isNaN(d) ? "" : `${d.getMonth() + 1}월 ${d.getDate()}일 ${alarmClock(d)} 백업 · `;
   confirmBox("iCloud에 백업이 있어요", `${when}레시피 ${meta.drinks}개 · 외운 것 ${Number(meta.mastered) || 0}개. 되살리면 지금 있는 예시 레시피 대신 백업한 내용으로 바뀌어요.`, "되살리기", ()=>{
-    const b = cloudBridge(); if(b) b.postMessage({op: "load"});
-  }, {no: "새로 시작", haptic: "light", go: true, onNo: ()=>{ cloudState().skip = meta.at; persist(); }});
+    const b = cloudBridge();
+    cloud.asking = false;
+    if(!b){ cloudFlush(); return; }
+    cloud.loading = true; b.postMessage({op: "load"});
+    setTimeout(()=>{ if(cloud.loading){ cloud.loading = false; cloudFlush(); } }, 8000);     // 앱이 답하지 않으면 그대로 이어 간다
+  }, {no: "새로 시작", haptic: "light", go: true, onNo: ()=>{ cloud.asking = false; cloudState().skip = meta.at; persist(); cloudFlush(); }});
 }
 function cloudLoadedFromApp(json){
-  if(!json){ toast("iCloud 백업을 불러오지 못했어요"); return; }
-  if(!applyBackup(String(json), true)) return;                     // 못 되살렸으면 아무것도 바꾸지 않는다
+  cloud.loading = false;
+  if(!json){ toast("iCloud 백업을 불러오지 못했어요"); cloudFlush(); return; }
+  if(!applyBackup(String(json), true)){ cloudFlush(); return; }    // 못 되살렸으면 아무것도 바꾸지 않는다
   const c = cloudState();
   if(typeof c.on !== "boolean"){ c.on = true; c.chosen = 1; }       // iCloud 에서 되살렸으니 계속 쓰는 것으로 친다(이 기기에서 끈 것은 그대로)
   c.sig = cloudSig();                                               // 방금 받은 것과 같으니 바로 다시 올리지 않는다
   persist();
+  cloudFlush();                                                     // 가이드 · 이름은 백업에 본 기록이 있어 저절로 건너뛴다
 }
 /* "오늘 오후 3:12" · "3일 전 오전 9:00" */
 function cloudWhen(iso){
@@ -213,5 +244,8 @@ document.addEventListener("visibilitychange", ()=>{
   if(!b) return;
   cloudState();
   b.postMessage({op: "status"});
-  if(cloudLooksFresh()) b.postMessage({op: "peek"});
+  if(cloudLooksFresh()){
+    cloud.peekAt = Date.now(); b.postMessage({op: "peek"});
+    setTimeout(cloudFlush, CLOUD_PEEK_WAIT_MS + 50);               // 답이 늦으면 기다리지 않고 시작한다
+  }
 })();

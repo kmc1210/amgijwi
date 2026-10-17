@@ -112,7 +112,10 @@ document.addEventListener("visibilitychange", ()=>{
 /* 웹뷰 저장소가 비어 있어 앱에 보관해 둔 사본으로 되살렸다. 조용히 넘어가면 무슨 일인지 모르니 알린다 */
 if(restoredFromCopy) setTimeout(()=>toast("앱에 보관해 둔 사본으로 레시피를 되살렸어요"), 1300);
 if(data.pin) openLock("enter");
-/* 앱을 처음 설치해 처음 열었으면 다섯 장짜리 가이드를 한 번 보여준다(웹은 띄우지 않는다) */
-if(guideDue()) openGuide();
-/* 이미 쓰던 사람에게는 앱을 열 때 이름을 한 번 묻는다(가이드를 보는 중이면 가이드가 끝난 뒤에 — guide.js) */
-else if(!data.pin) openNickAsk();
+/* 앱을 처음 설치해 처음 열었으면 다섯 장짜리 가이드를 한 번 보여준다(웹은 띄우지 않는다).
+   이미 쓰던 사람에게는 앱을 열 때 이름을 한 번 묻는다(가이드를 보는 중이면 가이드가 끝난 뒤에 — guide.js).
+   새로 깐 앱에 iCloud 백업이 있으면 되살릴지 먼저 묻고 그 뒤에 한다(icloud.js — 되살리면 둘 다 건너뛴다) */
+cloudThen(()=>{
+  if(guideDue()) openGuide();
+  else if(!data.pin) openNickAsk();
+});
