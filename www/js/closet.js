@@ -147,7 +147,7 @@ const CLOSET_ITEMS = [
       ".....HHHHHHHHHHHHHHHHHH.....",
       "..HHHHHHHHHHHHHHHHHHHHHHHH..",
       "....IIIIIIIIIIIIIIIIIIII...."]},
-  /* 납작한 호박을 머리 위에 얹는다(눈과 겹치지 않게 두 줄 띄운다). 얼굴은 그대로 보이고, 깜빡일 때 새긴 얼굴이 번쩍인다(glow) — 빛나는 아이템이라 더 비싸다 */
+  /* 납작한 호박을 머리 위에 얹는다(눈과 겹치지 않게 두 줄 띄운다). 얼굴은 그대로 보이고, 가끔 새긴 얼굴이 번쩍인다(glow — 눈 깜빡임과 따로) — 빛나는 아이템이라 더 비싸다 */
   {id:"pumpkinhead", slot:"head", name:"호박 머리", price:80, y:0, season:HALLOWEEN, rows:[
       "........._....aA.._.........",
       ".........WWJJWWJJWW.........",
@@ -157,7 +157,7 @@ const CLOSET_ITEMS = [
       "......WJKJKJKJJKJKJKJW......",
       ".......WWWWWWWWWWWWWW......."],
     glow:{K:"C"},
-    perk:"깜빡일 때 번쩍이고, 달릴 때도 써요",
+    perk:"가끔 번쩍이고, 달릴 때도 써요",
     run:{y:0, rows:[
         "........______________......",
         "........___aA_________......",
@@ -276,7 +276,7 @@ const CLOSET_ITEMS = [
           "......................",
           "......................"]],
       bats:true}},
-  /* 두 손으로 드는 호박 바구니. 깜빡일 때 눈 · 입이 번쩍인다(glow) — 빛나는 아이템이라 더 비싸다 */
+  /* 두 손으로 드는 호박 바구니. 가끔 눈 · 입이 번쩍인다(glow — 눈 깜빡임과 따로) — 빛나는 아이템이라 더 비싸다 */
   {id:"pumpkin", slot:"hand", name:"호박 바구니", price:60, y:22, season:HALLOWEEN, rows:[
       "..........ZZZZZZZZ..........",
       ".........Z........Z.........",
@@ -289,7 +289,7 @@ const CLOSET_ITEMS = [
       ".ocwwwddcJJKKKKKKJJcddwwwco.",
       ".........WWWWWWWWWW........."],
     glow:{K:"C"},
-    perk:"깜빡일 때 눈 · 입이 번쩍여요"}
+    perk:"가끔 눈 · 입이 번쩍여요"}
 ];
 /* 치즈: 한 바퀴 +1(하루 10개까지), 7일 연속 접속 +5.
    한 바퀴는 5장 이상이어야 친다 — 한 장짜리 바퀴를 열 번 넘겨 몇 초 만에 하루치를 받던 구멍을 막는다.
@@ -334,10 +334,10 @@ data.closet = cleanCloset(data.closet);
    허리띠는 발 뒤로 지나간다(머그를 들면 옆구리를 돌아 보인다).
    넓은 옷(wide — 뱀파이어 망토)은 몸 바깥의 빈칸 · 테두리(. o)까지 칠해 몸 라인보다 퍼진다. 팔은 망토 안으로 들어가고,
    발 · 앞발 · 손에 든 것(머그 · 호박 바구니)은 망토 앞에 남는다.
-   깜빡이는 그림(mode blink)에서는 빛나는 아이템(glow — 바꿀 색 표)의 색을 바꿔 그린다 — 호박이 깜빡일 때마다 번쩍인다.
+   lit 이면 빛나는 아이템(glow — 바꿀 색 표)의 색을 바꿔 그린다. 번쩍임은 눈 깜빡임과 따로 논다(mascot.js 의 scheduleGlow).
    mode: stand 서 있기 · eat 치즈 먹기 · sip 커피 마시기 · wx 날씨 옷. wear 를 주지 않으면 지금 입은 옷 */
 const CLOSET_BODY_CELLS = "wc", CLOSET_WIDE_CELLS = ".owc";
-function dressRows(rows, mode, wear){
+function dressRows(rows, mode, wear, lit){
   const w = wear || wornNow();
   const g = rows.map(r=>r.split(""));
   ["hand","body","face","head"].forEach(slot=>{
@@ -346,7 +346,7 @@ function dressRows(rows, mode, wear){
     if(mode === "wx" && slot !== "face") return;                         // 우비 · 털모자 위에는 안경만
     if((mode === "eat" || mode === "sip") && slot === "hand") return;    // 치즈 · 커피를 드는 동안 머그는 내려놓는다
     const cells = it.wide ? CLOSET_WIDE_CELLS : CLOSET_BODY_CELLS;
-    const glow = mode === "blink" && it.glow ? it.glow : null;
+    const glow = lit && it.glow ? it.glow : null;
     it.rows.forEach((r, k)=>{
       const y = it.y + k;
       for(let x = 0; x < r.length; x++){
@@ -369,14 +369,20 @@ function wornNow(){
    먹기 · 마시기 · 깜빡임은 0.4초마다 같은 그림을 다시 부르니 표정 · 배 · 입은 옷이 같으면 지난 그림을 쓴다 */
 const wornCache = {};
 let wornCacheN = 0;
-function mouseSVGWorn(mood, puff, wear){
+/* lit: 빛나는 옷이 번쩍이는 그림 */
+function mouseSVGWorn(mood, puff, wear, lit){
   if(!isDot() || mood === "night") return mouseSVG(mood, puff);
   wear = wear || wornNow();
-  const key = mood + (puff ? "+" : "-") + JSON.stringify(wear);
+  const key = mood + (puff ? "+" : "-") + (lit ? "*" : "") + JSON.stringify(wear);
   if(wornCache[key]) return wornCache[key];
   const mode = mood.indexOf("eat") === 0 ? "eat" : (mood.indexOf("sip") === 0 ? "sip" : (mood === "blink" ? "blink" : "stand"));
   if(++wornCacheN > 80){ Object.keys(wornCache).forEach(k=>delete wornCache[k]); wornCacheN = 1; }
-  return (wornCache[key] = rowsSVG(dressRows(mouseRows(mood, puff), mode, wear), false));
+  return (wornCache[key] = rowsSVG(dressRows(mouseRows(mood, puff), mode, wear, lit), false));
+}
+/* 빛나는 옷을 입고 있는가(번쩍임 타이머를 돌릴지) */
+function wearGlows(wear){
+  const w = wear || wornNow();
+  return Object.keys(w).some(s=>{ const it = closetItem(w[s]); return !!(it && it.glow); });
 }
 /* 기쁜 얼굴: 웃으며 감은 눈(∩ ∩)과 발그레한 볼. 입은 원래대로 명암만 둔다. 서 있는 그림의 8~15행을 바꾼다.
    광고 고맙다 창(ads.js), 생일 폭죽이 터지는 동안의 홈(birthday.js), 전부 외운 한 바퀴의 끝(study.js)에 쓴다 */
@@ -587,6 +593,7 @@ function renderCloset(){
   closetBuyBar();
   adButton();                   // 광고 보고 치즈 받기 (ads.js)
   scheduleClosetBlink();
+  scheduleClosetGlow();         // 빛나는 옷의 번쩍임은 깜빡임과 따로 돈다
 }
 /* ---------- 달릴 때 입는 옷 (mascot.js 의 runLane) ----------
    달리기는 옆모습 그림이라 정면 옷을 얹을 수 없다. 달리기용 덧그림(run)이 있는 옷만 입고 달리고, 나머지는 달리는 동안 벗는다.
@@ -707,9 +714,27 @@ function scheduleClosetBlink(){
   closetBlinkT = setTimeout(()=>{
     const m = $("#cMouse");
     if(!m || !$("#s-closet").classList.contains("active")) return;
-    m.innerHTML = mouseSVGWorn("blink", false, closetStageWear());
-    setTimeout(()=>{ if($("#s-closet").classList.contains("active")) m.innerHTML = mouseSVGWorn("day", false, closetStageWear()); scheduleClosetBlink(); }, 160);
-  }, 2400 + Math.random() * 1800);
+    if(closetStage.lit){ scheduleClosetBlink(); return; }           // 번쩍이는 중이면 이번 깜빡임은 건너뛴다
+    closetStage.blink = true; drawClosetStage();
+    setTimeout(()=>{ closetStage.blink = false; if($("#s-closet").classList.contains("active")) drawClosetStage(); scheduleClosetBlink(); }, 160);
+  }, 2400 + Math.random()*3600);
+}
+/* 옷장 무대의 쥐돌이: 눈 깜빡임과 빛나는 옷의 번쩍임은 따로 돈다(같이 하면 둘이 한 몸처럼 보인다) */
+const closetStage = {blink: false, lit: false, glowT: []};
+let closetGlowT = null;
+function drawClosetStage(){
+  const m = $("#cMouse"); if(!m) return;
+  m.innerHTML = mouseSVGWorn(closetStage.blink ? "blink" : "day", false, closetStageWear(), closetStage.lit);
+}
+function scheduleClosetGlow(){
+  clearTimeout(closetGlowT);
+  glowStop(closetStage);
+  closetStage.lit = false;
+  if(reduceMotion() || !wearGlows(closetStageWear())) return;
+  closetGlowT = setTimeout(()=>{
+    if(!$("#s-closet").classList.contains("active")) return;
+    glowRun(closetStage, ()=>{ if($("#s-closet").classList.contains("active")) drawClosetStage(); }, scheduleClosetGlow);       // 홈과 같은 번쩍임(mascot.js)
+  }, 3200 + Math.random()*3800);
 }
 $("#closetClose").addEventListener("click", ()=>go(closetFrom === "result" ? "home" : closetFrom));
 $("#cheeseChip").addEventListener("click", ()=>{ haptic("light"); openCloset("home"); });

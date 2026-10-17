@@ -257,7 +257,7 @@ function runLane(laps){
     /* 옆모습엔 달리기용 덧그림, 정면(폴짝 · 돌아서기 RUN_SPR.qf)엔 옷장 그림을 입힌다. 망토 자락은 옆모습일 때만 */
     const lit = Math.floor(i/8) % 3 === 0, side = f.rows !== RUN_SPR.qf;
     const face = panicFace(f.rows);
-    const rows = !wear.length ? face : side ? runDressed(face, wear, lit) : dressRows(face, lit ? "blink" : "stand", front);
+    const rows = !wear.length ? face : side ? runDressed(face, wear, lit) : dressRows(face, "stand", front, lit);
     R.innerHTML = rowsSVG(rows, f.flip);
     /* 땀은 몇 걸음마다 이마 뒤에서 뒤로 튀고, 먼지는 발이 닿을 때(s0 · s3) 발 뒤에서 인다. 뒤 = 보는 쪽의 반대 */
     if(fx){
@@ -333,7 +333,7 @@ scheduleEmptyBlink();
 /* happy: 기쁜 얼굴(생일 폭죽이 터지는 동안 — birthday.js, 기다리다 풀렸을 때 — waiting.js)
    cheer: 기다리다 풀려서 잠깐 기쁜 얼굴(waiting.js). happy 와 따로 둔다 — 서로의 끝이 상대를 꺼 버리지 않게
    away: 며칠 만에 열어 기다린 얼굴("sulk" · "sad" · "down", 아니면 "" — waiting.js) */
-const mascot = {blink:false, puff:false, happy:false, cheer:false, away:"", awayGap:0, madeUp:false};
+const mascot = {blink:false, lit:false, glowT:[], puff:false, happy:false, cheer:false, away:"", awayGap:0, madeUp:false};
 let blinkTimer = null;
 function currentMood(){ return moodOf(new Date().getHours()); }
 function reduceMotion(){
@@ -345,14 +345,14 @@ function drawMascot(){
   if(sipping) return;                       // 커피 마시는 중엔 건드리지 않는다
   /* 날씨 옷은 밤에는 입히지 않는다. 자고 있는데 우비를 입고 있으면 이상하다.
      날씨 옷을 입은 동안은 깜빡이지 않는다(깜빡임 그림에는 날씨 옷이 없다).
-     옷장 옷은 깜빡임 그림에도 입힌다 — 호박 아이템은 이때 번쩍인다(closet.js 의 glow) */
+     옷장 옷은 깜빡임 그림에도 입힌다. 빛나는 옷(호박 — closet.js 의 glow)의 번쩍임은 깜빡임과 따로 돈다(scheduleGlow) */
   const mood = currentMood(), night = mood === "night";
   const wx = night ? null : wxNow();
   if(wx) el.innerHTML = weatherSVGWorn(wx);                       // 날씨 옷 위에는 안경만(closet.js)
   else if((mascot.happy || mascot.cheer) && !night) el.innerHTML = happyMouseSVG(mood);   // 생일 폭죽이 터지는 동안 · 기다리다 풀렸을 때
   /* 기다린 얼굴인 동안은 깜빡이지 않는다. 깜빡임 그림에는 그 얼굴이 없어 평소 얼굴 · 벗겨 둔 안경이 잠깐 비친다 */
   else if(mascot.away && !night) el.innerHTML = faceMouseSVG(mascot.away, mood);   // 며칠 만에 열었을 때
-  else el.innerHTML = mouseSVGWorn(mascot.blink ? "blink" : mood, mascot.puff);
+  else el.innerHTML = mouseSVGWorn(mascot.blink ? "blink" : mood, mascot.puff, undefined, mascot.lit);
 }
 
 /* 아침에 커피 한 잔 — 한 바퀴만 돌고 원래 모습으로 */
@@ -387,6 +387,7 @@ function scheduleBlink(){
   clearTimeout(blinkTimer);
   if(reduceMotion()) return;
   blinkTimer = setTimeout(()=>{
+    if(mascot.lit){ scheduleBlink(); return; }       // 번쩍이는 중이면 이번 깜빡임은 건너뛴다(둘이 겹치지 않게)
     if(mascotAwake() && currentMood() !== "night"){
       const close = ()=>{ mascot.blink = true; drawMascot(); };
       const open  = ()=>{ mascot.blink = false; drawMascot(); };
@@ -401,6 +402,36 @@ function scheduleBlink(){
     }
     scheduleBlink();
   }, 2600 + Math.random()*4200);
+}
+
+/* 빛나는 옷의 번쩍임. 눈 깜빡임과 다른 박자(더 드물고, 촛불처럼 두세 번 일렁인다)라 둘이 같이 움직여 보이지 않는다.
+   st 는 blink · lit · glowT 를 가진 상태(홈의 mascot, 옷장의 closetStage). 눈을 감고 있으면 뜬 뒤에 시작하고, 다 끝나면 done().
+   새로 시작하면 하던 일렁임은 끊는다(glowStop) */
+function glowRun(st, draw, done){
+  glowStop(st);
+  const go = ()=>{
+    if(st.blink){ st.glowT.push(setTimeout(go, 250)); return; }
+    const steps = Math.random() < 0.5 ? [[true, 0], [false, 220], [true, 380], [false, 640]] : [[true, 0], [false, 300]];
+    steps.forEach(([on, t])=>st.glowT.push(setTimeout(()=>{ st.lit = on; draw(); }, t)));
+    st.glowT.push(setTimeout(done, steps[steps.length - 1][1] + 50));
+  };
+  go();
+}
+function glowStop(st){ (st.glowT || []).forEach(clearTimeout); st.glowT = []; }
+/* 홈 쥐돌이가 옷 입은 평소 그림인가(날씨 옷 · 기쁜 얼굴 · 기다린 얼굴 · 밤에는 번쩍임이 보이지 않는다) */
+function mascotPlain(){
+  return currentMood() !== "night" && !wxNow() && !mascot.happy && !mascot.cheer && !mascot.away;
+}
+let glowTimer = null;
+function scheduleGlow(){
+  clearTimeout(glowTimer);
+  glowStop(mascot);
+  if(mascot.lit){ mascot.lit = false; drawMascot(); }
+  if(reduceMotion() || !wearGlows()) return;
+  glowTimer = setTimeout(()=>{
+    if(!mascotAwake() || sipping || !mascotPlain()){ scheduleGlow(); return; }
+    glowRun(mascot, drawMascot, scheduleGlow);
+  }, 4200 + Math.random()*5200);
 }
 
 function moodOf(hour){
@@ -558,6 +589,7 @@ function renderGreeting(){
   else $("#mbubble").innerHTML = `${c.ico} ${esc(sentenceLines(c.msg))}`;
   drawMascot();
   scheduleBlink();
+  scheduleGlow();                           // 빛나는 옷은 깜빡임과 따로 번쩍인다
 
   /* 오늘 폐기가 있으면 하루 한 번 비상 달리기. 이게 커피보다 급하다 */
   let kill = 0;
