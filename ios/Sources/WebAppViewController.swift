@@ -19,6 +19,7 @@ final class WebAppViewController: UIViewController {
     private let widget = WidgetBridge()
     private let store = StoreBridge()
     private let update = UpdateBridge()
+    private let cloud = CloudBridge()
 
     init() {
         handler = BundleSchemeHandler()
@@ -78,6 +79,9 @@ final class WebAppViewController: UIViewController {
         /// 새 버전 알림 통로. 하루 한 번 앱스토어에 버전만 묻고, 새것이면 웹이 홈에서 한 번 묻는다 (UpdateBridge.swift).
         config.userContentController.add(update, name: UpdateBridge.name)
 
+        /// iCloud 자동 백업 통로. 웹이 만든 백업을 사용자 본인 iCloud 키-값 저장소에 둔다 (CloudBridge.swift).
+        config.userContentController.add(cloud, name: CloudBridge.name)
+
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
         alarms.attach(webView)
@@ -85,6 +89,7 @@ final class WebAppViewController: UIViewController {
         review.attach(host: self)
         share.attach(webView, host: self)
         update.attach(host: self) { [weak self] js in self?.tell(js) }
+        cloud.attach { [weak self] js in self?.tell(js) }
 
         /// 안전 영역까지 페이지가 직접 그린다. index.html 의 viewport-fit=cover 와 짝이다.
         /// 여기서 여백을 자동으로 넣어버리면 노치 대응 CSS 와 이중으로 겹친다.

@@ -25,10 +25,33 @@ final class CloudBridge: NSObject {
         /// 다른 기기에서 올린 백업이 늦게 내려오면(새로 깐 직후) 웹에 다시 알린다. 되살릴지는 웹이 정한다.
         NotificationCenter.default.addObserver(self, selector: #selector(changedExternally(_:)),
                                                name: NSUbiquitousKeyValueStore.didChangeExternallyNotification, object: store)
+        /// iCloud 에 로그인 · 로그아웃하면 웹에 상태를 다시 알린다(로그인하고 돌아왔는데 계속 "로그인하세요"로 남지 않게)
+        NotificationCenter.default.addObserver(self, selector: #selector(accountChanged),
+                                               name: .NSUbiquityIdentityDidChange, object: nil)
         store.synchronize()
     }
 
     private var account: Bool { FileManager.default.ubiquityIdentityToken != nil }
+
+    /// 이 기기(이 설치)를 가리키는 표. 다른 기기가 올린 백업을 이 기기의 작은 데이터로 덮지 않게 웹이 비교한다(icloud.js)
+    private var device: String {
+        let k = "cloudDevice"
+        if let d = UserDefaults.standard.string(forKey: k) { return d }
+        let d = UUID().uuidString
+        UserDefaults.standard.set(d, forKey: k)
+        return d
+    }
+
+    private func status() -> [String: Any] {
+        ["account": account, "device": device, "meta": meta ?? NSNull()]
+    }
+
+    @objc private func accountChanged() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.send("cloudStatusFromApp", [self.status()])
+        }
+    }
 
     private var meta: [String: Any]? {
         guard let m = store.dictionary(forKey: CloudBridge.metaKey), m["at"] is String,
@@ -59,7 +82,7 @@ final class CloudBridge: NSObject {
         guard packed.count <= CloudBridge.maxBytes else { send("cloudSavedFromApp", [false, "toobig", ""]); return }
         let at = ISO8601DateFormatter().string(from: Date())
         let m: [String: Any] = ["at": at, "drinks": body["drinks"] as? Int ?? 0, "mastered": body["mastered"] as? Int ?? 0,
-                                "bytes": packed.count, "v": 1]
+                                "bytes": packed.count, "device": device, "v": 1]
         store.set(packed, forKey: CloudBridge.dataKey)
         store.set(m, forKey: CloudBridge.metaKey)
         store.synchronize()
@@ -86,7 +109,8 @@ extension CloudBridge: WKScriptMessageHandler {
               let body = message.body as? [String: Any], let op = body["op"] as? String else { return }
         switch op {
         case "status":
-            send("cloudStatusFromApp", [["account": account, "at": meta?["at"] as? String ?? ""]])
+            store.synchronize()
+            send("cloudStatusFromApp", [status()])
         case "save":
             save(body)
         case "peek":
