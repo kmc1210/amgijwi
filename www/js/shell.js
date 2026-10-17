@@ -17,10 +17,21 @@ function confirmBox(title, msg, yesLabel, cb, opts){
   onYes = cb; onNo = opts.onNo || null; $("#dlg").classList.toggle("go", !!opts.go); $("#dlg").classList.add("on");
   haptic(opts.haptic || "warning");     // 지우기 · 덮어쓰기처럼 되돌릴 수 없는 일 앞에서 멈칫
 }
+/* 지금 사용자에게 끼어들어도 되는가: 앱이 앞에 있고 · (needHome 이면 홈을 보고 있고) · 잠금 · 이름 묻는 창 · 처음 가이드 ·
+   시트 · 확인창 · 받은 레시피 파일이 없다. 새 버전 알림(update.js) · iCloud 질문(icloud.js)이 같이 쓴다 */
+function canInterrupt(needHome){
+  if(document.hidden || (needHome && !$("#s-home").classList.contains("active"))) return false;
+  const lockEl = $("#lock"), guide = $("#onboard");
+  if((lockEl && lockEl.classList.contains("on")) || nickAskOpen() || (guide && !guide.hidden)) return false;
+  return !$("#sheet").classList.contains("on") && !$("#dlg").classList.contains("on") && recipePendingText === null;
+}
+/* 확인창을 방금 닫았는가 — 묻는 창을 연달아 띄우지 않으려고(iCloud 켤지 묻기는 다음 기회로 미룬다) */
+let dlgClosedAt = 0;
+function justClosedDlg(){ return Date.now() - dlgClosedAt < 1500; }
 /* 확인창 뒤에서 기다리던 받은 레시피 파일 · 새 버전 소식이 있으면 창을 닫은 뒤에 연다 (recipeshare.js · update.js) */
 function afterDlg(){ setTimeout(()=>{ cloudAsk(); recipeGo(); updateGo(); }, 0); }
-$("#dlgNo").addEventListener("click", ()=>{ $("#dlg").classList.remove("on"); onYes=null; const g=onNo; onNo=null; if(g) g(); afterDlg(); });
-$("#dlgYes").addEventListener("click", ()=>{ $("#dlg").classList.remove("on"); onNo=null; if(onYes){ const f=onYes; onYes=null; f(); } afterDlg(); });
+$("#dlgNo").addEventListener("click", ()=>{ $("#dlg").classList.remove("on"); dlgClosedAt = Date.now(); onYes=null; const g=onNo; onNo=null; if(g) g(); afterDlg(); });
+$("#dlgYes").addEventListener("click", ()=>{ $("#dlg").classList.remove("on"); dlgClosedAt = Date.now(); onNo=null; if(onYes){ const f=onYes; onYes=null; f(); } afterDlg(); });
 
 /* ---------- 화면 전환 ---------- */
 function go(name){

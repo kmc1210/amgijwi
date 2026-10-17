@@ -22,6 +22,7 @@ function cloudState(){
   if(!data.cloud || typeof data.cloud !== "object") data.cloud = {};
   const c = data.cloud;
   if(typeof c.on !== "boolean") delete c.on;                     // 정하지 않음 · true 켬 · false 끔
+  if(c.on === true && !c.chosen) delete c.on;                     // 처음부터 켜 두던 예전 빌드(#102)의 켜짐은 고른 게 아니라 다시 묻는다
   c.at = typeof c.at === "string" ? c.at : "";                  // 마지막으로 iCloud 에 저장한 때(ISO)
   c.sig = typeof c.sig === "string" ? c.sig : "";               // 그때 저장한 내용의 지문(바뀐 게 있는지 본다)
   c.err = typeof c.err === "string" ? c.err : "";               // 마지막 저장이 실패한 까닭(toobig · fail · other)
@@ -70,7 +71,7 @@ function cloudSave(force){
 /* "지금 백업하기": iCloud 의 백업을 이 기기의 빈 데이터나 더 작은 데이터로 바꾸게 되면 먼저 묻는다 */
 function cloudSaveNow(){
   const m = cloud.remote;
-  const risky = !!m && Number(m.drinks) > 0 && (cloudLooksFresh() || cloudBiggerElsewhere());
+  const risky = !!m && Number(m.drinks) > 0 && (cloudLooksFresh() || Number(m.drinks) > liveDrinks().length);
   const run = ()=>{ cloud.manual = true; if(!cloudSave(true)) cloud.manual = false; };
   if(!risky){ run(); return; }
   confirmBox("iCloud 백업 바꾸기", `iCloud에 레시피 ${m.drinks}개짜리 백업이 있어요. 이 기기의 레시피 ${liveDrinks().length}개로 바꿀까요? 바꾸면 그 백업은 되살릴 수 없어요.`, "바꾸기", run);
@@ -105,19 +106,27 @@ function cloudStatusFromApp(s){
   if(cloud.account) cloudSave(false);                              // 그사이 바뀐 게 있으면(못 하고 꺼졌던 저장 포함) 지금 저장
   cloudAsk();
 }
-/* iCloud 에 백업할지 한 번 묻는다: 앱이고 · iCloud 에 로그인했고 · 아직 정하지 않았고 · 지킬 데이터가 있을 때.
-   "백업하기"면 켜고 바로 저장, 쥐돌이가 알려 준다. "안 할래요"면 끈다. 설정에서 언제든 바꾼다 */
+/* iCloud 에 백업할지 한 번 묻는다: 앱이고 · iCloud 에 로그인했고 · 아직 정하지 않았고 · 지킬 데이터가 있고 · 홈에서 하던 일이 없을 때.
+   다른 창을 방금 닫았으면 다음 기회(화면 이동 · 다시 꺼내기)로 미룬다. 답할 때까지 켤 때마다 다시 묻는다.
+   "백업하기"면 켜고 저장한다 — iCloud 에 이 기기보다 큰 백업(다른 기기 것이거나 "새로 시작"으로 넘긴 것)이 있으면 바꾸기 전에 묻는다.
+   "안 할래요"면 끈다. 설정에서 언제든 바꾼다 */
 function cloudOffer(){
   const c = cloudState();
   if(!cloudBridge() || cloud.account !== true || typeof c.on === "boolean" || cloud.offered || cloudLooksFresh()) return;
-  if(!cloudQuiet()) return;
+  if(!canInterrupt(true) || justClosedDlg()) return;
   cloud.offered = true;
   confirmBox("iCloud에 백업할까요?", "레시피와 학습 기록을 내 iCloud에 자동으로 백업해요. 앱을 다시 깔거나 새 기기에서도 되살릴 수 있어요. 개발자는 볼 수 없고, 설정에서 언제든 바꿀 수 있어요.", "백업하기", ()=>{
-    const s = cloudState(); s.on = true; persist();
-    cloudSave(false);
-    renderCloud();
-    sayBubble("이제 iCloud에 자동으로 백업되츄!");
-  }, {no: "안 할래요", haptic: "light", go: true, onNo: ()=>{ cloudState().on = false; persist(); renderCloud(); }});
+    cloudChoose(true);
+    const m = cloud.remote;
+    if(m && Number(m.drinks) > liveDrinks().length){ cloudSaveNow(); return; }      // 큰 백업을 저절로 덮지 않는다(바꿀지 묻는다)
+    sayBubble(cloudSave(false) || cloudState().sig === cloudSig() ? "이제 iCloud에 자동으로 백업되츄!" : "iCloud 백업을 켰츄. 곧 저장할게츄!");
+  }, {no: "안 할래요", haptic: "light", go: true, onNo: ()=>cloudChoose(false)});
+}
+/* 켤지 끌지 고른 것을 적는다(고른 적이 있으면 다시 묻지 않는다) */
+function cloudChoose(on){
+  const c = cloudState();
+  c.on = on; c.chosen = 1; cloud.offered = true;
+  persist(); renderCloud();
 }
 /* iCloud 에 백업이 있다는 소식(켤 때 물어본 답이거나, 늦게 내려받아진 것) */
 function cloudFoundFromApp(meta){
@@ -128,18 +137,12 @@ function cloudFoundFromApp(meta){
   cloud.found = meta;
   cloudAsk();
 }
-/* 잠금 · 처음 가이드 · 이름 묻는 창 · 다른 창이 없을 때 묻는다(그것이 끝나면 다시 불린다 — shell.js 의 go · afterDlg) */
-/* 지금 끼어들어도 되는가: 홈이고 잠금 · 처음 가이드 · 이름 묻는 창 · 시트 · 확인창 · 받은 레시피 파일이 없다 */
-function cloudQuiet(){
-  const lockEl = $("#lock"), guide = $("#onboard");
-  if(document.hidden || !$("#s-home").classList.contains("active")) return false;
-  if((lockEl && lockEl.classList.contains("on")) || nickAskOpen() || (guide && !guide.hidden)) return false;
-  return !$("#sheet").classList.contains("on") && !$("#dlg").classList.contains("on") && recipePendingText === null;
-}
+/* 기다리던 질문을 지금 할 수 있으면 한다(잠금 · 가이드 · 이름 창 · 다른 창이 끝난 뒤에 다시 불린다 — shell.js 의 go · afterDlg 등).
+   iCloud 백업을 되살릴지가 먼저다(어느 화면에서든). 그게 없거나 끝났으면 켤지 묻는다(cloudOffer, 홈에서) */
 function cloudAsk(){
   const meta = cloud.found;
   if(!meta || cloud.asked){ cloudOffer(); return; }
-  if(!cloudQuiet()) return;
+  if(!canInterrupt(false)) return;
   if(!cloudLooksFresh()){ cloudOffer(); return; }                   // 기다리는 사이에 뭔가 넣었으면 되살리기는 묻지 않는다
   cloud.asked = true;
   const d = new Date(meta.at);
@@ -150,9 +153,9 @@ function cloudAsk(){
 }
 function cloudLoadedFromApp(json){
   if(!json){ toast("iCloud 백업을 불러오지 못했어요"); return; }
-  applyBackup(String(json), true);
+  if(!applyBackup(String(json), true)) return;                     // 못 되살렸으면 아무것도 바꾸지 않는다
   const c = cloudState();
-  c.on = true;                                                      // iCloud 에서 되살렸으니 계속 쓰는 것으로 친다(다시 묻지 않는다)
+  if(typeof c.on !== "boolean"){ c.on = true; c.chosen = 1; }       // iCloud 에서 되살렸으니 계속 쓰는 것으로 친다(이 기기에서 끈 것은 그대로)
   c.sig = cloudSig();                                               // 방금 받은 것과 같으니 바로 다시 올리지 않는다
   persist();
 }
@@ -194,9 +197,8 @@ function renderCloud(){
 document.querySelectorAll("#cloudBtns .theme-b").forEach(b=>b.addEventListener("click", ()=>{
   const c = cloudState(), on = b.dataset.cloud === "on";
   if(c.on === on) return;
-  c.on = on; cloud.offered = true; persist(); haptic("selection");
+  cloudChoose(on); haptic("selection");
   if(on) cloudSave(false);
-  renderCloud();
 }));
 if($("#cloudNow")) $("#cloudNow").addEventListener("click", cloudSaveNow);
 /* 앱을 내릴 때 바뀐 게 있으면 저장하고, 다시 꺼내면 상태를 묻는다(그사이 iCloud 로그인이 바뀌었을 수 있다) */
