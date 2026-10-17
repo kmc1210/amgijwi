@@ -1,7 +1,9 @@
 /* ---------- iCloud 자동 백업 (1.4 · 앱 전용) ----------
    백업 파일(backupJSON)과 같은 내용을 사용자 본인의 iCloud 에 둔다. 앱(ios/Sources/CloudBridge.swift)이 압축해서
    iCloud 키-값 저장소에 하나 넣고, 같은 Apple 계정의 새 기기 · 다시 깐 앱에서 꺼내 준다. 웹 화면은 여전히 통신하지 않는다.
-   - 켜져 있으면(처음 값 켜짐) 바뀐 게 있을 때 앱을 내리면 저장한다. 마지막 저장 10분 안이면 미뤘다가 다시 저장한다.
+   - 처음에는 정하지 않은 상태다(data.cloud.on 이 없음). iCloud 에 로그인했고 지킬 데이터가 생기면 한 번 "iCloud에 백업할까요?"를
+     묻고(cloudOffer), 답하기 전에는 아무것도 올리지 않는다. iCloud 를 안 쓰면 묻지 않고 기기 안 저장 · 파일 백업 권유가 그대로다.
+   - 켜져 있으면 바뀐 게 있을 때 앱을 내리면 저장한다. 마지막 저장 10분 안이면 미뤘다가 다시 저장한다.
    - 예시만 있는 빈 상태(새로 깐 앱)는 저장하지 않는다 — iCloud 에 있는 진짜 백업을 예시로 덮지 않게.
    - 다른 기기가 올린 더 큰 백업은 저절로 덮지 않는다. "지금 백업하기"로 물어본 뒤에만 바꾼다.
    - 새로 깐 것처럼 비어 있는데 iCloud 에 백업이 있으면 한 번 되살릴지 묻는다.
@@ -10,7 +12,7 @@
    웹 → 앱: amgijwiCloud.postMessage({op:"status"} | {op:"save", json, drinks, mastered} | {op:"peek"} | {op:"load"})
    앱 → 웹: cloudStatusFromApp({account, device, meta}) · cloudSavedFromApp(ok, why, at) · cloudFoundFromApp(meta|null) · cloudLoadedFromApp(json) */
 const CLOUD_MIN_MS = 10 * 60 * 1000, CLOUD_STALE_DAYS = 14;
-const cloud = {account: null, device: "", remote: null, busy: false, asked: false, found: null, retryT: null, manual: false, pending: ""};
+const cloud = {account: null, device: "", remote: null, busy: false, asked: false, offered: false, found: null, retryT: null, manual: false, pending: ""};
 function cloudBridge(){
   const w = window.webkit;
   if(!isDot() || !isNativeApp() || !w || !w.messageHandlers || !w.messageHandlers.amgijwiCloud) return null;
@@ -19,7 +21,7 @@ function cloudBridge(){
 function cloudState(){
   if(!data.cloud || typeof data.cloud !== "object") data.cloud = {};
   const c = data.cloud;
-  c.on = c.on !== false;                                        // 처음 값은 켜짐
+  if(typeof c.on !== "boolean") delete c.on;                     // 정하지 않음 · true 켬 · false 끔
   c.at = typeof c.at === "string" ? c.at : "";                  // 마지막으로 iCloud 에 저장한 때(ISO)
   c.sig = typeof c.sig === "string" ? c.sig : "";               // 그때 저장한 내용의 지문(바뀐 게 있는지 본다)
   c.err = typeof c.err === "string" ? c.err : "";               // 마지막 저장이 실패한 까닭(toobig · fail · other)
@@ -49,7 +51,7 @@ function cloudBiggerElsewhere(){
 /* 저장. force 면(지금 백업하기) 바뀐 게 없어도, 마지막 저장 직후여도 저장한다 */
 function cloudSave(force){
   const b = cloudBridge(), c = cloudState();
-  if(!b || !c.on || cloud.busy || cloud.account === false) return false;
+  if(!b || c.on !== true || cloud.busy || cloud.account === false) return false;
   clearTimeout(cloud.retryT);
   const sig = cloudSig(), last = c.at ? Date.parse(c.at) : 0, now = Date.now();
   if(!force){
@@ -101,6 +103,21 @@ function cloudStatusFromApp(s){
   cloud.remote = s.meta && s.meta.at ? s.meta : null;
   renderCloud();
   if(cloud.account) cloudSave(false);                              // 그사이 바뀐 게 있으면(못 하고 꺼졌던 저장 포함) 지금 저장
+  cloudAsk();
+}
+/* iCloud 에 백업할지 한 번 묻는다: 앱이고 · iCloud 에 로그인했고 · 아직 정하지 않았고 · 지킬 데이터가 있을 때.
+   "백업하기"면 켜고 바로 저장, 쥐돌이가 알려 준다. "안 할래요"면 끈다. 설정에서 언제든 바꾼다 */
+function cloudOffer(){
+  const c = cloudState();
+  if(!cloudBridge() || cloud.account !== true || typeof c.on === "boolean" || cloud.offered || cloudLooksFresh()) return;
+  if(!cloudQuiet()) return;
+  cloud.offered = true;
+  confirmBox("iCloud에 백업할까요?", "레시피와 학습 기록을 내 iCloud에 자동으로 백업해요. 앱을 다시 깔거나 새 기기에서도 되살릴 수 있어요. 개발자는 볼 수 없고, 설정에서 언제든 바꿀 수 있어요.", "백업하기", ()=>{
+    const s = cloudState(); s.on = true; persist();
+    cloudSave(false);
+    renderCloud();
+    sayBubble("이제 iCloud에 자동으로 백업되츄!");
+  }, {no: "안 할래요", haptic: "light", go: true, onNo: ()=>{ cloudState().on = false; persist(); renderCloud(); }});
 }
 /* iCloud 에 백업이 있다는 소식(켤 때 물어본 답이거나, 늦게 내려받아진 것) */
 function cloudFoundFromApp(meta){
@@ -112,13 +129,18 @@ function cloudFoundFromApp(meta){
   cloudAsk();
 }
 /* 잠금 · 처음 가이드 · 이름 묻는 창 · 다른 창이 없을 때 묻는다(그것이 끝나면 다시 불린다 — shell.js 의 go · afterDlg) */
+/* 지금 끼어들어도 되는가: 홈이고 잠금 · 처음 가이드 · 이름 묻는 창 · 시트 · 확인창 · 받은 레시피 파일이 없다 */
+function cloudQuiet(){
+  const lockEl = $("#lock"), guide = $("#onboard");
+  if(document.hidden || !$("#s-home").classList.contains("active")) return false;
+  if((lockEl && lockEl.classList.contains("on")) || nickAskOpen() || (guide && !guide.hidden)) return false;
+  return !$("#sheet").classList.contains("on") && !$("#dlg").classList.contains("on") && recipePendingText === null;
+}
 function cloudAsk(){
   const meta = cloud.found;
-  if(!meta || cloud.asked) return;
-  const lockEl = $("#lock"), guide = $("#onboard");
-  if((lockEl && lockEl.classList.contains("on")) || nickAskOpen() || (guide && !guide.hidden)) return;
-  if($("#sheet").classList.contains("on") || $("#dlg").classList.contains("on")) return;
-  if(!cloudLooksFresh()) return;                                    // 기다리는 사이에 뭔가 넣었으면 묻지 않는다
+  if(!meta || cloud.asked){ cloudOffer(); return; }
+  if(!cloudQuiet()) return;
+  if(!cloudLooksFresh()){ cloudOffer(); return; }                   // 기다리는 사이에 뭔가 넣었으면 되살리기는 묻지 않는다
   cloud.asked = true;
   const d = new Date(meta.at);
   const when = isNaN(d) ? "" : `${d.getMonth() + 1}월 ${d.getDate()}일 ${alarmClock(d)} 백업 · `;
@@ -129,7 +151,9 @@ function cloudAsk(){
 function cloudLoadedFromApp(json){
   if(!json){ toast("iCloud 백업을 불러오지 못했어요"); return; }
   applyBackup(String(json), true);
-  cloudState().sig = cloudSig();                                    // 방금 받은 것과 같으니 바로 다시 올리지 않는다
+  const c = cloudState();
+  c.on = true;                                                      // iCloud 에서 되살렸으니 계속 쓰는 것으로 친다(다시 묻지 않는다)
+  c.sig = cloudSig();                                               // 방금 받은 것과 같으니 바로 다시 올리지 않는다
   persist();
 }
 /* "오늘 오후 3:12" · "3일 전 오전 9:00" */
@@ -141,7 +165,7 @@ function cloudWhen(iso){
    실패가 이어지거나 마지막 백업이 오래됐으면 null 이라 데이터 상태가 원래의 백업 알림을 보인다 (settings.js) */
 function cloudActive(){
   const c = cloudState();
-  if(!cloudBridge() || !c.on || cloud.account === false || !c.at || c.err) return null;
+  if(!cloudBridge() || c.on !== true || cloud.account === false || !c.at || c.err) return null;
   if(dayGap(ymd(new Date(c.at)), ymd(new Date())) >= CLOUD_STALE_DAYS) return null;
   return cloudWhen(c.at);
 }
@@ -151,10 +175,11 @@ function renderCloud(){
   if(!card) return;
   card.style.display = cloudBridge() ? "" : "none";
   const c = cloudState();
-  document.querySelectorAll("#cloudBtns .theme-b").forEach(b=>b.classList.toggle("on", (b.dataset.cloud === "on") === c.on));
+  document.querySelectorAll("#cloudBtns .theme-b").forEach(b=>b.classList.toggle("on", typeof c.on === "boolean" && (b.dataset.cloud === "on") === c.on));
   const st = $("#cloudState"), now = $("#cloudNow");
   let msg;
   if(cloud.account === false) msg = "iPhone 설정에서 iCloud에 로그인하면 쓸 수 있어요.";
+  else if(c.on === undefined) msg = "켜면 내 iCloud에 자동으로 백업해요.";
   else if(!c.on) msg = "꺼져 있어요. 백업은 파일로 직접 내보내 주세요.";
   else if(cloud.busy) msg = "iCloud에 저장하는 중…";
   else if(c.err === "toobig") msg = "데이터가 너무 커서 iCloud에 담지 못했어요. 파일로 내보내 주세요.";
@@ -164,12 +189,12 @@ function renderCloud(){
   else if(cloudLooksFresh()) msg = "레시피를 넣거나 학습하면 iCloud에 백업해요.";
   else msg = "아직 iCloud에 백업한 적이 없어요.";
   if(st) st.textContent = msg;
-  if(now) now.disabled = !c.on || cloud.busy || cloud.account === false;
+  if(now) now.disabled = c.on !== true || cloud.busy || cloud.account === false;
 }
 document.querySelectorAll("#cloudBtns .theme-b").forEach(b=>b.addEventListener("click", ()=>{
   const c = cloudState(), on = b.dataset.cloud === "on";
   if(c.on === on) return;
-  c.on = on; persist(); haptic("selection");
+  c.on = on; cloud.offered = true; persist(); haptic("selection");
   if(on) cloudSave(false);
   renderCloud();
 }));
