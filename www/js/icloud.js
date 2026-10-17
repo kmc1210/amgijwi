@@ -21,12 +21,15 @@ const CLOUD_PEEK_WAIT_MS = 1500;
    iCloud 에 물어본 답이 오기를 잠깐(1.5초) 기다리고, 그 안에 안 오면 그대로 시작한다(늦게 오면 가이드가 끝난 뒤, 이름 묻기 전에 묻는다) */
 function cloudWaiting(){
   if(!cloudBridge()) return false;
+  if(cloud.asking && !cloudAskShown()) cloud.asking = false;       // 다른 창이 질문을 덮어 버렸으면 기다리지 않는다
   if(cloud.asking || cloud.loading) return true;                    // 되살릴지 묻는 중 · 되살리는 중
   if(cloud.asked) return false;
   if(!cloudLooksFresh()) return false;
   if(cloud.found) return true;                                      // 물을 백업이 있다
   return !cloud.peeked && Date.now() - (cloud.peekAt || 0) < CLOUD_PEEK_WAIT_MS;
 }
+/* 되살릴지 묻는 창이 지금 떠 있는가 */
+function cloudAskShown(){ return $("#dlg").classList.contains("on") && $("#dlgT").textContent === "iCloud에 백업이 있어요"; }
 /* 되살릴지 정해진 뒤에 할 일(처음 가이드 · 이름 묻기). 기다릴 게 없으면 바로 한다 */
 function cloudThen(fn){
   if(cloudWaiting()) cloud.after.push(fn); else fn();
@@ -34,7 +37,7 @@ function cloudThen(fn){
 function cloudFlush(){
   if(cloudWaiting()) return;
   const list = cloud.after; cloud.after = [];
-  list.forEach(fn=>{ try{ fn(); }catch(e){} });
+  list.forEach(fn=>{ try{ fn(); }catch(e){ console.error(e); } });
 }
 function cloudBridge(){
   const w = window.webkit;
@@ -168,7 +171,9 @@ function cloudAsk(){
   const meta = cloud.found;
   if(!meta || cloud.asked){ cloudOffer(); return; }
   if(!canInterrupt(false)) return;
-  if(!cloudLooksFresh()){ cloudOffer(); return; }                   // 기다리는 사이에 뭔가 넣었으면 되살리기는 묻지 않는다
+  if(!cloudLooksFresh()){                                           // 기다리는 사이에 뭔가 넣었으면(받은 레시피 파일 등) 되살리기는 묻지 않는다
+    cloud.found = null; cloudFlush(); cloudOffer(); return;         // 미뤄 둔 가이드 · 이름 묻기는 이어 간다
+  }
   cloud.asked = true; cloud.asking = true;
   const d = new Date(meta.at);
   const when = isNaN(d) ? "" : `${d.getMonth() + 1}월 ${d.getDate()}일 ${alarmClock(d)} 백업 · `;
@@ -176,11 +181,13 @@ function cloudAsk(){
     const b = cloudBridge();
     cloud.asking = false;
     if(!b){ cloudFlush(); return; }
-    cloud.loading = true; b.postMessage({op: "load"});
-    setTimeout(()=>{ if(cloud.loading){ cloud.loading = false; cloudFlush(); } }, 8000);     // 앱이 답하지 않으면 그대로 이어 간다
+    cloud.loading = true; cloud.loadGaveUp = false; b.postMessage({op: "load"});
+    /* 앱이 답하지 않으면(이미 받아 둔 칸을 읽을 뿐이라 거의 없다) 포기하고 이어 간다. 그 뒤에 늦게 온 답은 버린다(열린 가이드 밑에서 데이터가 바뀌지 않게) */
+    setTimeout(()=>{ if(cloud.loading){ cloud.loading = false; cloud.loadGaveUp = true; toast("iCloud 백업을 불러오지 못했어요"); cloudFlush(); } }, 20000);
   }, {no: "새로 시작", haptic: "light", go: true, onNo: ()=>{ cloud.asking = false; cloudState().skip = meta.at; persist(); cloudFlush(); }});
 }
 function cloudLoadedFromApp(json){
+  if(cloud.loadGaveUp) return;
   cloud.loading = false;
   if(!json){ toast("iCloud 백업을 불러오지 못했어요"); cloudFlush(); return; }
   if(!applyBackup(String(json), true)){ cloudFlush(); return; }    // 못 되살렸으면 아무것도 바꾸지 않는다

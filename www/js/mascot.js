@@ -333,7 +333,7 @@ scheduleEmptyBlink();
 /* happy: 기쁜 얼굴(생일 폭죽이 터지는 동안 — birthday.js, 기다리다 풀렸을 때 — waiting.js)
    cheer: 기다리다 풀려서 잠깐 기쁜 얼굴(waiting.js). happy 와 따로 둔다 — 서로의 끝이 상대를 꺼 버리지 않게
    away: 며칠 만에 열어 기다린 얼굴("sulk" · "sad" · "down", 아니면 "" — waiting.js) */
-const mascot = {blink:false, lit:false, puff:false, happy:false, cheer:false, away:"", awayGap:0, madeUp:false};
+const mascot = {blink:false, lit:false, glowT:[], puff:false, happy:false, cheer:false, away:"", awayGap:0, madeUp:false};
 let blinkTimer = null;
 function currentMood(){ return moodOf(new Date().getHours()); }
 function reduceMotion(){
@@ -387,7 +387,7 @@ function scheduleBlink(){
   clearTimeout(blinkTimer);
   if(reduceMotion()) return;
   blinkTimer = setTimeout(()=>{
-    if(mascot.lit){ blinkTimer = setTimeout(scheduleBlink, 0); return; }     // 번쩍이는 중이면 이번 깜빡임은 건너뛴다(둘이 겹치지 않게)
+    if(mascot.lit){ scheduleBlink(); return; }       // 번쩍이는 중이면 이번 깜빡임은 건너뛴다(둘이 겹치지 않게)
     if(mascotAwake() && currentMood() !== "night"){
       const close = ()=>{ mascot.blink = true; drawMascot(); };
       const open  = ()=>{ mascot.blink = false; drawMascot(); };
@@ -405,21 +405,32 @@ function scheduleBlink(){
 }
 
 /* 빛나는 옷의 번쩍임. 눈 깜빡임과 다른 박자(더 드물고, 촛불처럼 두세 번 일렁인다)라 둘이 같이 움직여 보이지 않는다.
-   set(on) 으로 켜고 끄고, 다 끝나면 done() */
-function glowFlicker(set, done){
-  const steps = Math.random() < 0.5 ? [[true, 0], [false, 220], [true, 380], [false, 640]] : [[true, 0], [false, 300]];
-  steps.forEach(([on, t])=>setTimeout(()=>set(on), t));
-  setTimeout(done, steps[steps.length - 1][1] + 50);
+   st 는 blink · lit · glowT 를 가진 상태(홈의 mascot, 옷장의 closetStage). 눈을 감고 있으면 뜬 뒤에 시작하고, 다 끝나면 done().
+   새로 시작하면 하던 일렁임은 끊는다(glowStop) */
+function glowRun(st, draw, done){
+  glowStop(st);
+  const go = ()=>{
+    if(st.blink){ st.glowT.push(setTimeout(go, 250)); return; }
+    const steps = Math.random() < 0.5 ? [[true, 0], [false, 220], [true, 380], [false, 640]] : [[true, 0], [false, 300]];
+    steps.forEach(([on, t])=>st.glowT.push(setTimeout(()=>{ st.lit = on; draw(); }, t)));
+    st.glowT.push(setTimeout(done, steps[steps.length - 1][1] + 50));
+  };
+  go();
+}
+function glowStop(st){ (st.glowT || []).forEach(clearTimeout); st.glowT = []; }
+/* 홈 쥐돌이가 옷 입은 평소 그림인가(날씨 옷 · 기쁜 얼굴 · 기다린 얼굴 · 밤에는 번쩍임이 보이지 않는다) */
+function mascotPlain(){
+  return currentMood() !== "night" && !wxNow() && !mascot.happy && !mascot.cheer && !mascot.away;
 }
 let glowTimer = null;
 function scheduleGlow(){
   clearTimeout(glowTimer);
-  mascot.lit = false;
+  glowStop(mascot);
+  if(mascot.lit){ mascot.lit = false; drawMascot(); }
   if(reduceMotion() || !wearGlows()) return;
   glowTimer = setTimeout(()=>{
-    if(!mascotAwake() || currentMood() === "night" || sipping){ scheduleGlow(); return; }
-    const go = ()=>{ if(mascot.blink){ setTimeout(go, 250); return; } glowFlicker(on=>{ mascot.lit = on; drawMascot(); }, scheduleGlow); };
-    go();                                   // 눈을 감고 있으면 뜬 뒤에(둘이 겹치지 않게)
+    if(!mascotAwake() || sipping || !mascotPlain()){ scheduleGlow(); return; }
+    glowRun(mascot, drawMascot, scheduleGlow);
   }, 4200 + Math.random()*5200);
 }
 

@@ -3546,6 +3546,18 @@ const LEGACY = {
       // 답이 늦으면 기다리지 않는다
       reset(); fresh(); cloud.peeked = false; cloud.peekAt = Date.now() - 2000; cloud.after = []; order.length = 0;
       cloudThen(() => order.push("guide")); r.timeout = order.join();
+      // 기다리는 사이에 데이터가 생기면(받은 레시피 파일 등) 되살리기는 건너뛰고 가이드를 이어 간다
+      reset(); fresh(); cloud.peeked = true; cloud.after = []; order.length = 0;
+      cloud.found = { at: "2026-10-16T12:12:00.000Z", drinks: 24, mastered: 12, device: "iphone" };
+      cloudThen(() => order.push("guide")); data.drinks.push(mine()); cloudAsk();
+      r.becameUsed = [order.join(), on()];
+      // 다른 창이 질문을 덮으면 더 기다리지 않는다
+      reset(); fresh(); cloud.peeked = true; cloud.after = []; order.length = 0;
+      cloudFoundFromApp({ at: "2026-10-16T12:12:00.000Z", drinks: 24, mastered: 12, device: "iphone" });
+      confirmBox("다른 창", "m", "확인", null); r.replaced = cloudWaiting(); $("#dlgNo").click();
+      // 포기한 뒤 늦게 온 되살리기는 버린다
+      reset(); fresh(); cloud.loadGaveUp = true; const before = data.drinks.length; cloudLoadedFromApp(JSON.stringify(other));
+      r.lateIgnored = data.drinks.length === before; cloud.loadGaveUp = false;
       // 웹에서는 카드가 없고 저장하지 않는다
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
       n = saves(); cloudSave(true); renderCloud(); r.web = [saves() === n, getComputedStyle($("#cloudCard")).display === "none"];
@@ -3592,6 +3604,9 @@ const LEGACY = {
     eq("되살리는 동안 기다렸다가 끝나면 이어 간다", [r.loadingWait, r.restoredGo], [[true, 0], "guide"]);
     eq("늦게 온 백업은 이름 묻기보다 먼저", [r.nickDeferred, r.lateAsk, r.nickAfter], [[false, false], true, true]);
     eq("iCloud 답이 늦으면 기다리지 않고 시작한다", r.timeout, "guide");
+    eq("기다리는 사이에 데이터가 생기면 되살리기는 건너뛰고 가이드를 이어 간다", r.becameUsed, ["guide", false]);
+    eq("다른 창이 되살리기 질문을 덮으면 더 기다리지 않는다", r.replaced, false);
+    eq("포기한 뒤 늦게 온 되살리기는 버린다", r.lateIgnored, true);
     eq("웹에는 iCloud 백업이 없다", r.web, [true, true]);
   }
 

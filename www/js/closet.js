@@ -720,7 +720,7 @@ function scheduleClosetBlink(){
   }, 2400 + Math.random()*3600);
 }
 /* 옷장 무대의 쥐돌이: 눈 깜빡임과 빛나는 옷의 번쩍임은 따로 돈다(같이 하면 둘이 한 몸처럼 보인다) */
-const closetStage = {blink: false, lit: false};
+const closetStage = {blink: false, lit: false, glowT: []};
 let closetGlowT = null;
 function drawClosetStage(){
   const m = $("#cMouse"); if(!m) return;
@@ -728,11 +728,12 @@ function drawClosetStage(){
 }
 function scheduleClosetGlow(){
   clearTimeout(closetGlowT);
+  glowStop(closetStage);
+  closetStage.lit = false;
   if(reduceMotion() || !wearGlows(closetStageWear())) return;
   closetGlowT = setTimeout(()=>{
     if(!$("#s-closet").classList.contains("active")) return;
-    const go = ()=>{ if(closetStage.blink){ setTimeout(go, 250); return; } glowFlicker(on=>{ closetStage.lit = on; if($("#s-closet").classList.contains("active")) drawClosetStage(); }, scheduleClosetGlow); };
-    go();
+    glowRun(closetStage, ()=>{ if($("#s-closet").classList.contains("active")) drawClosetStage(); }, scheduleClosetGlow);       // 홈과 같은 번쩍임(mascot.js)
   }, 3200 + Math.random()*3800);
 }
 $("#closetClose").addEventListener("click", ()=>go(closetFrom === "result" ? "home" : closetFrom));
