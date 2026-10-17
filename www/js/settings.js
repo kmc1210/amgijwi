@@ -77,6 +77,7 @@ function closeLock(){
   if(lock.mode === "enter") openNickAsk();      // PIN 을 쓰는 사람에게는 잠금을 푼 뒤에 이름을 한 번 묻는다 (nick.js)
   recipeGo();                   // 받은 레시피 파일이 있으면 잠금을 푼 뒤에 연다 (recipeshare.js)
   widgetGo();                   // 위젯을 눌러 들어왔으면 잠금을 푼 뒤에 그 화면으로 간다 (widget.js)
+  cloudAsk();                   // iCloud 백업을 되살릴지 잠금을 푼 뒤에 묻는다 (icloud.js)
   updateGo();                   // 새 버전 소식이 있으면 잠금을 푼 뒤에 묻는다 (update.js)
 }
 $("#lockCancel").addEventListener("click", closeLock);
@@ -363,6 +364,7 @@ function renderSettings(){
   renderSetGroups();            // 먼저 묶어 둔다(아래 칸 중 하나가 실패해도 칸이 한꺼번에 펼쳐지지 않게). 끝에서 상태 줄을 다시 그린다
   closetSettings();             // 맨 위 쥐돌이 옷장 줄 (closet.js)
   nickSettings();               // 내 이름 (nick.js)
+  if(typeof renderCloud === "function") renderCloud();     // iCloud 자동 백업 (icloud.js)
   bdaySettings();               // 내 생일 (birthday.js)
   nudgeSettings();              // 쥐돌이가 부르는 알림 (waiting.js)
   applyTheme();
@@ -415,7 +417,10 @@ function renderStorageCard(){
 
   const b = data.backup;
   const days = b && b.at ? dayGap(b.at, ymd(new Date())) : null;
-  rows.push(days === null
+  /* iCloud 자동 백업이 돌고 있으면 그 줄로 대신한다 (icloud.js) */
+  const cl = app && typeof cloudActive === "function" ? cloudActive() : null;
+  if(cl) rows.push(["ok", "iCloud에 자동 백업 중", `마지막 백업 ${cl}. 앱을 지우거나 기기를 바꿔도 같은 Apple 계정이면 되살릴 수 있어요.`]);
+  else rows.push(days === null
     ? ["warn", "아직 백업한 적이 없어요", `기기를 바꾸거나 ${app ? "앱을 지우면" : "브라우저 데이터를 지우면"} 되돌릴 방법이 없습니다.`]
     : (days >= 14
       ? ["warn", `마지막 백업 ${days}일 전`, "그 뒤로 바뀐 내용은 지금 백업이 없으면 사라집니다."]
@@ -425,8 +430,8 @@ function renderStorageCard(){
   box.innerHTML = `<div class="setcard statuscard ${worst}">
     <h4>데이터 상태</h4>
     ${rows.map(([k, t, d])=>`<p style="margin:0 0 8px"><b>${k === "ok" ? "✓" : "!"} ${esc(t)}</b><br>${esc(d)}</p>`).join("")}
-    <p style="margin:0">${adsOn() ? "레시피는 이 기기 안에만 저장되고 어디로도 보내지 않습니다. 광고 버튼을 눌러 광고를 볼 때만 광고 회사와 통신합니다."
-                                    : "레시피는 이 기기 안에만 저장되고, 서버로 나가는 통신은 없습니다."}</p>
+    <p style="margin:0">${app ? "레시피는 이 기기와, iCloud 자동 백업을 켜 두면 내 iCloud에만 저장되고 개발자에게는 보내지 않습니다." + (adsOn() ? " 광고 버튼을 눌러 광고를 볼 때만 광고 회사와 통신합니다." : "")
+                              : "레시피는 이 기기 안에만 저장되고, 서버로 나가는 통신은 없습니다."}</p>
   </div>`;
 }
 
@@ -490,12 +495,14 @@ $("#impText").addEventListener("click", ()=>{
   if(!t){ toast("붙여넣은 내용이 없어요"); return; }
   applyBackup(t);
 });
-function applyBackup(text){
+/* quiet: 따로 묻고 온 경우(iCloud 되살리기 — icloud.js) 복원 확인창을 다시 띄우지 않는다 */
+function applyBackup(text, quiet){
   let parsed;
   try{ parsed = JSON.parse(text); }catch(e){ toast("백업 형식이 아니에요"); return; }
   const d = parsed && parsed.data ? parsed.data : parsed;
   if(!d || !Array.isArray(d.drinks)){ toast("레시피 데이터를 찾지 못했어요"); return; }
-  confirmBox("백업 복원", `레시피 ${d.drinks.length}개를 불러오고 현재 데이터를 덮어쓸까요?`, "복원", ()=>{
+  const run = ()=>{
+    const keepCloud = data.cloud;        // iCloud 백업을 켰는지는 이 기기 것을 둔다
     const keepMode = (d.mode === "blank" || d.mode === "flip") ? d.mode : data.mode;
     const keepTheme = THEMES.indexOf(d.theme) >= 0 ? d.theme : data.theme;
     const keepSound = ["off","sfx","all"].indexOf(d.sound) >= 0 ? d.sound : data.sound;
@@ -554,8 +561,11 @@ function applyBackup(text){
     liftSubs(data);
     if(!data.sampleMarked) markOldSamples(data);      // 1.4 전 백업: 손대지 않은 예시에 한 번 표시(이미 표시한 백업은 다시 맞춰 보지 않는다)
     data.drinks.forEach(x=>{ x.subRefs = (x.subRefs||[]).filter(id=>data.subs.some(s=>s.id===id)); });
+    data.cloud = keepCloud;
     persist(); syncAlarms(); applyTheme(); applySound(); applyHaptic(); applyWx(); $("#impBox").value=""; toast("복원했어요"); go("home");
-  });
+  };
+  if(quiet) run();
+  else confirmBox("백업 복원", `레시피 ${d.drinks.length}개를 불러오고 현재 데이터를 덮어쓸까요?`, "복원", run);
 }
 const SHELF_SAMPLES = [
   {name:"개봉한 우유",    place:"냉장", dur:"5일",  note:"개봉일 라벨 부착"},

@@ -3416,6 +3416,110 @@ const LEGACY = {
     eq("받은 레시피로 바꾸면 예시 표시가 사라진다", r.imported, false);
   }
 
+  // ── 6-10z. 1.4 iCloud 자동 백업 ────────────────────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const wait = ms => new Promise(res => setTimeout(res, ms));
+      const on = () => $("#dlg").classList.contains("on");
+      const backup = JSON.stringify(data), realWk = window.webkit;
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      const posts = [], saves = () => posts.filter(m => m.op === "save").length;
+      window.webkit = { messageHandlers: Object.assign({}, realWk && realWk.messageHandlers, { amgijwiCloud: { postMessage: m => posts.push(m) } }) };
+      const reset = () => { delete data.cloud; Object.assign(cloud, { account: null, device: "", remote: null, busy: false, asked: false, found: null, manual: false }); clearTimeout(cloud.retryT); };
+      const fresh = () => { data.drinks = seed(); data.events = []; data.memos = []; data.mastered = []; data.needReview = []; data.closet.cheese = 0; };
+      const mine = () => ({ id: uid(), cat: "coffee", name: "우리 매장 라떼 " + uid().slice(0, 4), temp: "ICE", cups: [], ing: [["우유", "200 ml"]], steps: [], tip: "", subRefs: [] });
+      reset(); r.defaultOn = cloudState().on;
+      // 예시만 있는 빈 상태(새로 깐 앱)는 저장하지 않는다 — iCloud 의 진짜 백업을 덮지 않게
+      fresh(); cloudStatusFromApp({ account: true, device: "me", meta: { at: "2026-10-01T00:00:00.000Z", drinks: 40, mastered: 30, device: "old" } });
+      document.dispatchEvent(new Event("visibilitychange")); r.freshNoSave = saves() === 0;
+      // 레시피를 하나 넣으면 저장(백업 파일과 같은 모양, PIN 은 빼고)
+      reset(); fresh(); data.drinks.push(mine());
+      cloudStatusFromApp({ account: true, device: "me", meta: null }); await wait(5);
+      const first = posts.filter(m => m.op === "save").pop();
+      r.firstSave = [saves(), !!first && JSON.parse(first.json).app === "brewnote", !!first && !("pin" in JSON.parse(first.json).data)];
+      cloudSavedFromApp(true, "", "2026-10-17T06:00:00.000Z");
+      r.saved = [cloudState().at, data.backup && data.backup.at === ymd(new Date()), cloudState().sig === cloudSig()];
+      // 바뀐 게 없으면 저장하지 않고, 10분 안이면 미뤘다가, 그 뒤엔 저장
+      let n = saves(); cloudSave(false); r.unchanged = saves() === n;
+      cloudState().at = new Date().toISOString(); data.memos.push({ id: uid(), text: "새 메모", pin: false });
+      n = saves(); cloudSave(false); r.throttled = [saves() === n, !!cloud.retryT];
+      clearTimeout(cloud.retryT); cloudState().at = new Date(Date.now() - 3600e3).toISOString();
+      n = saves(); cloudSave(false); r.afterGap = saves() === n + 1; cloudSavedFromApp(true, "", new Date().toISOString());
+      // 저장하지 못하고 꺼졌으면 다음에 켤 때(상태를 받을 때) 저장한다 — 지문은 마지막으로 저장한 것과 비교
+      data.memos.push({ id: uid(), text: "못 올린 메모", pin: false }); cloudState().at = new Date(Date.now() - 3600e3).toISOString();
+      n = saves(); cloudStatusFromApp({ account: true, device: "me", meta: cloud.remote }); r.relaunch = saves() === n + 1; cloudSavedFromApp(true, "", new Date().toISOString());
+      // 다른 기기의 더 큰 백업은 저절로 덮지 않는다 · 지금 백업하기는 먼저 묻는다
+      data.memos.push({ id: uid(), text: "아이패드 메모", pin: false }); cloudState().at = new Date(Date.now() - 3600e3).toISOString();
+      cloud.remote = { at: "2026-10-17T09:00:00.000Z", drinks: 200, mastered: 150, device: "iphone" };
+      n = saves(); cloudSave(false); r.other = [saves() === n, cloudState().err];
+      go("set"); openSetGroup("data"); renderSettings(); r.otherMsg = /다른 기기의 백업\(레시피 200개\)/.test($("#cloudState").textContent);
+      $("#cloudNow").click(); r.otherAsk = [on(), /200개짜리/.test($("#dlgM").textContent)];
+      $("#dlgYes").click(); r.otherForced = saves() === n + 1; cloudSavedFromApp(true, "", new Date().toISOString());
+      // 설정 카드 · 데이터 상태
+      renderSettings();
+      r.card = [getComputedStyle($("#cloudCard")).display !== "none", /마지막 백업: 오늘/.test($("#cloudState").textContent), /iCloud에 자동 백업 중/.test($("#setStatus").textContent)];
+      // 실패가 이어지거나 오래되면 "자동 백업 중"을 그만 말한다
+      cloudSavedFromApp(false, "toobig", ""); renderStorageCard();
+      r.failed = [cloudActive(), /너무 커서/.test($("#cloudState").textContent), !/iCloud에 자동 백업 중/.test($("#setStatus").textContent)];
+      cloudState().err = ""; cloudState().at = new Date(Date.now() - 20 * 864e5).toISOString(); r.stale = cloudActive();
+      // 로그인이 없으면 알리고, 로그인하고 돌아오면 다시 쓴다
+      cloudSavedFromApp(false, "noaccount", "");
+      r.noAccount = [/로그인하면/.test($("#cloudState").textContent), $("#cloudNow").disabled];
+      cloudStatusFromApp({ account: true, device: "me", meta: null }); r.signedIn = [$("#cloudNow").disabled, !/로그인하면/.test($("#cloudState").textContent)];
+      go("home");
+      // 끄면 저장하지 않는다
+      cloudState().on = false; data.memos.push({ id: uid(), text: "또", pin: false }); n = saves(); cloudSave(true); r.offNoSave = saves() === n; cloudState().on = true;
+      // 새로 깐 것 같으면 되살릴지 묻는다 · "새로 시작"이면 그 백업은 다시 묻지 않는다
+      const meta = { at: "2026-10-16T12:12:00.000Z", drinks: 24, mastered: 12, device: "iphone" };
+      fresh(); cloud.asked = false; cloudState().skip = "";
+      cloudFoundFromApp(meta);
+      r.ask = [on(), $("#dlgT").textContent, /레시피 24개/.test($("#dlgM").textContent), $("#dlgYes").textContent, $("#dlgNo").textContent];
+      $("#dlgNo").click(); await wait(10);
+      r.skip = cloudState().skip; cloud.asked = false; cloudFoundFromApp(meta); r.notAgain = on();
+      // 쓰던 기기(외운 기록 · 치즈가 있음)에서는 묻지 않는다
+      cloudState().skip = ""; cloud.asked = false; data.closet.cheese = 30; cloudFoundFromApp(meta); r.usedNoAsk = on(); data.closet.cheese = 0;
+      // 잠금이 떠 있으면 기다렸다가 풀린 뒤에 묻는다
+      cloud.asked = false; $("#lock").classList.add("on"); cloudFoundFromApp(meta); r.lockWait = on(); closeLock(); r.afterLock = on();
+      // 되살리기: 앱에 load 를 부탁하고, 받은 백업으로 확인창 없이 바꾼다(이 기기의 iCloud 설정은 그대로)
+      $("#dlgYes").click(); r.loadAsked = posts.some(m => m.op === "load");
+      const other = JSON.parse(backupJSON()); other.data.drinks = [{ id: uid(), cat: "coffee", name: "되살린 라떼", temp: "ICE", cups: [], ing: [["우유", "200 ml"]], steps: [], tip: "" }];
+      other.data.cloud = { on: false };
+      cloudLoadedFromApp(JSON.stringify(other)); await wait(10);
+      r.loaded = [data.drinks.map(d => d.name).join(","), on(), cloudState().on, cloudState().sig === cloudSig()];
+      // 되살리기를 고른 뒤의 다른 확인창 취소가 "새로 시작" 기록을 건드리지 않는다
+      const skipBefore = cloudState().skip; confirmBox("t", "m", "삭제", null); $("#dlgNo").click(); r.noLeak = cloudState().skip === skipBefore;
+      // 웹에서는 카드가 없고 저장하지 않는다
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      n = saves(); cloudSave(true); renderCloud(); r.web = [saves() === n, getComputedStyle($("#cloudCard")).display === "none"];
+      window.webkit = realWk; reset();
+      data = JSON.parse(backup); persist(); go("home");
+      return r;
+    });
+    eq("iCloud 자동 백업은 처음에 켜져 있다", r.defaultOn, true);
+    eq("예시만 있는 새 앱은 저장하지 않는다(iCloud 의 백업을 덮지 않게)", r.freshNoSave, true);
+    eq("레시피를 넣으면 저장: 백업 파일과 같은 모양, PIN 은 빼고", r.firstSave, [1, true, true]);
+    eq("저장하면 때 · 지문을 적고 백업한 것으로 친다", r.saved, ["2026-10-17T06:00:00.000Z", true, true]);
+    eq("바뀐 게 없으면 저장하지 않고, 10분 안이면 미뤘다가, 지나면 저장", [r.unchanged, r.throttled, r.afterGap], [true, [true, true], true]);
+    eq("저장하지 못하고 꺼졌으면 다음에 켤 때 저장한다", r.relaunch, true);
+    eq("다른 기기의 더 큰 백업은 저절로 덮지 않는다", r.other, [true, "other"]);
+    ok("그 까닭을 카드에 알린다", r.otherMsg);
+    eq("지금 백업하기로 바꿀 때는 먼저 묻고, 바꾸기를 누르면 저장한다", [r.otherAsk, r.otherForced], [[true, true], true]);
+    eq("설정 카드와 데이터 상태에 iCloud 백업이 보인다", r.card, [true, true, true]);
+    eq("실패하면 자동 백업 중이라고 하지 않는다", r.failed, [null, true, true]);
+    eq("마지막 백업이 오래되면 자동 백업 중이라고 하지 않는다", r.stale, null);
+    eq("iCloud 로그인이 없으면 알리고 지금 백업하기를 막는다", r.noAccount, [true, true]);
+    eq("로그인하고 돌아오면 다시 쓴다", r.signedIn, [false, true]);
+    eq("끄면 저장하지 않는다", r.offNoSave, true);
+    eq("새로 깐 것 같으면 되살릴지 묻는다", r.ask, [true, "iCloud에 백업이 있어요", true, "되살리기", "새로 시작"]);
+    eq("새로 시작을 고른 백업은 다시 묻지 않는다", [r.skip, r.notAgain], ["2026-10-16T12:12:00.000Z", false]);
+    eq("쓰던 기기에서는 묻지 않는다", r.usedNoAsk, false);
+    eq("잠금이 풀린 뒤에 묻는다", [r.lockWait, r.afterLock], [false, true]);
+    eq("되살리기: 앱에 load 를 부탁하고, 확인창 없이 바꾸고, 이 기기의 iCloud 설정은 그대로, 바로 다시 올리지 않는다", [r.loadAsked].concat(r.loaded), [true, "되살린 라떼", false, true, true]);
+    eq("되살리기 뒤 다른 확인창의 취소가 새로 시작 기록을 건드리지 않는다", r.noLeak, true);
+    eq("웹에는 iCloud 백업이 없다", r.web, [true, true]);
+  }
+
   // ── 6-10x. 1.3 새 버전 알림 ────────────────────────────────────
   {
     const r = await page.evaluate(async () => {
