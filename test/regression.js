@@ -3805,8 +3805,14 @@ const LEGACY = {
       // 이듬해에는 다시
       r.next = [earnXmasCheese(new Date(2027, 11, 25)), data.closet.cheese];
       // 생일이 겹치면 "더"
-      data.bday = cleanBday({m: 12, d: 24}); data.closet.xmasGift = "";
-      const realToday = bdayIsToday; window.bdayIsToday = () => true; xmasHome(new Date(2026, 11, 24)); r.both = $("#mbubble").textContent.replace(/\n/g, " "); window.bdayIsToday = realToday;
+      // 생일과 겹치면 한 말풍선으로(홈을 그리는 실제 순서 그대로: 생일 → 크리스마스 → 기다림)
+      const realDate = Date, fake = new realDate(2026, 11, 24, 9).getTime();
+      window.Date = class extends realDate { constructor(...a){ if(a.length) super(...a); else super(fake); } static now(){ return fake; } };
+      data.bday = cleanBday({m: 12, d: 24}); data.closet.xmasGift = ""; mascot.madeUp = true; go("list"); go("home");
+      r.both = [$("#mbubble").textContent.replace(/\n/g, " "), data.closet.cheese, data.bday.gift, data.closet.xmasGift];
+      window.Date = realDate; stopBdayParty();
+      // 숫자로 적힌 해(손으로 고친 백업)도 받은 것으로 친다
+      r.numYear = cleanCloset({xmasGift: 2026}).xmasGift;
       // 웹에는 없다
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
       data.closet.xmasGift = ""; r.web = earnXmasCheese(new Date(2026, 11, 24));
@@ -3819,7 +3825,8 @@ const LEGACY = {
     eq("한 해에 한 번", r.again, [false, 105]);
     eq("예전 백업을 되살려도 올해 받은 것은 남는다", r.restore, "2026");
     eq("이듬해에는 다시 준다", r.next, [true, 205]);
-    eq("생일과 겹치면 \"더\"", r.both, "메리 크리스마스츄! 치즈 100개 더 선물이츄");
+    eq("생일과 겹치면 한 말풍선으로 110개(기다림 말이 덮지 않는다)", r.both, ["생일 축하하고 메리 크리스마스츄! 치즈 110개 선물이츄", 315, "2026", "2026"]);
+    eq("숫자로 적힌 해도 문자로 다듬는다", r.numYear, "2026");
     eq("웹에는 없다", r.web, false);
   }
 

@@ -73,13 +73,15 @@ function earnBdayCheese(now){
   return true;
 }
 /* 홈을 그릴 때마다 부른다(home.js — 치즈 칩을 그리는 closetHome 보다 먼저). 생일이면 선물을 주고 폭죽을 건다.
-   이 치즈가 처음 생긴 치즈면 옷장 안내 말풍선에 붙여서 말한다(따로 말하면 한 번뿐인 안내를 덮어 버린다) */
+   이 치즈가 처음 생긴 치즈면 옷장 안내 말풍선에 붙여서 말한다(따로 말하면 한 번뿐인 안내를 덮어 버린다 — closet.js giftSay).
+   크리스마스 선물도 받을 날(12/24 · 25 생일)이면 여기서 말하지 않고 크리스마스 선물과 한 말풍선으로 말한다(closet.js xmasHome) */
+let bdayHeld = false;
 function bdayHome(){
   const now = new Date();
   if(!bdayIsToday(now)) return;
   if(earnBdayCheese(now)){
-    const said = "생일 축하해츄! 선물로 치즈 " + BDAY_CHEESE + "개 가져왔츄";
-    if(hintSeen("closet")) sayBubble(said); else closetHome(said);
+    if(xmasGiftDue(now)) bdayHeld = true;
+    else giftSay("생일 축하해츄! 선물로 치즈 " + BDAY_CHEESE + "개 가져왔츄");
   }
   bdayPartySoon();
 }
