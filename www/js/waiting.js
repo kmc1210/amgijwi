@@ -39,7 +39,7 @@ let awayCheerT = null;
 function awayHome(){
   if(!mascot.madeUp || !$("#s-home").classList.contains("active")) return;
   mascot.madeUp = false;
-  if(bdayIsToday() || /비상이츄/.test($("#mbubble").textContent)) return;
+  if(bdayIsToday() || /비상이츄|선물이츄/.test($("#mbubble").textContent)) return;      // 생일 · 폐기 비상 · 크리스마스 선물 말을 덮지 않는다
   sayBubble("이제 풀렸츄! 와 줘서 기쁘츄");
   clearTimeout(awayCheerT);
   if(reduceMotion()) return;
