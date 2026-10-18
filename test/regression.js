@@ -3662,7 +3662,12 @@ const LEGACY = {
       startSession([long]); let h = $("#card h2");
       r.front = [one(h), parseFloat(getComputedStyle(h).fontSize) >= CARD_TITLE_MIN, parseFloat(getComputedStyle(h).fontSize) <= 32, h.scrollWidth <= h.clientWidth + 1];
       const longer = mk("longer", "클래식 뱅쇼 히비스커스 티 라지"); data.drinks.push(longer); startSession([longer]); h = $("#card h2");
-      r.shrinks = parseFloat(getComputedStyle(h).fontSize) < 32 && parseFloat(getComputedStyle(h).fontSize) >= CARD_TITLE_MIN && (one(h) || h.style.whiteSpace === "");
+      r.shrinks = parseFloat(getComputedStyle(h).fontSize) < 32 && parseFloat(getComputedStyle(h).fontSize) >= CARD_TITLE_MIN && h.scrollWidth <= h.clientWidth + 1;
+      // 띄어쓰기 없는 아주 긴 이름도 카드 밖으로 나가지 않는다(가장 작게 해도 넘치면 줄을 바꾼다)
+      const nospace = mk("nospace", "클래식뱅쇼히비스커스아이스티라지사이즈프로모션"); data.drinks.push(nospace); startSession([nospace]); h = $("#card h2");
+      r.nospace = [parseFloat(getComputedStyle(h).fontSize) >= CARD_TITLE_MIN, h.scrollWidth <= h.clientWidth + 1];
+      // 다시 맞추면 원래 크기에서 다시 잰다(넓어지면 다시 커진다)
+      startSession([short]); h = $("#card h2"); h.style.fontSize = "19px"; fitCardTitle(); r.regrow = getComputedStyle(h).fontSize;
       startSession([long]);
       state.flipped = true; renderCard(); h = $("#card h2"); r.back = [one(h), h.scrollWidth <= h.clientWidth + 1];
       const cols = [...document.querySelectorAll("#card .ingcols > div")].map(e => e.getBoundingClientRect());
@@ -3675,7 +3680,9 @@ const LEGACY = {
       return r;
     });
     eq("긴 메뉴 이름: 카드 앞면은 글자를 줄여 한 줄(18px 이상)", r.front, [true, true, true, true]);
-    ok("더 긴 이름은 글자를 줄이고(18px 아래로는 안 내림), 그래도 넘치면 낱말 단위로 줄을 바꾼다", r.shrinks);
+    ok("더 긴 이름은 글자를 줄여 카드 안에 맞춘다(18px 아래로는 안 내림)", r.shrinks);
+    eq("띄어쓰기 없는 아주 긴 이름도 18px 이상으로 카드 안에 남는다(넘치면 줄을 바꾼다)", r.nospace, [true, true]);
+    eq("다시 맞추면 원래 크기에서 다시 잰다", r.regrow, "32px");
     eq("긴 메뉴 이름: 카드 뒷면도 한 줄", r.back, [true, true]);
     ok("ICE · HOT 재료는 위아래로", r.stacked);
     eq("짧은 이름은 원래 크기 그대로", r.shortKeeps, "32px");

@@ -333,9 +333,11 @@
   .back{background:var(--surface);padding:24px 22px 26px;}
   .back h2{margin:0 0 2px;font-size:22px;font-weight:800;letter-spacing:-.5px;}
   .back .sub{font-size:12.5px;color:var(--muted);margin-bottom:18px;}
+  /* 메뉴 이름(카드 앞 · 뒷면, 레시피 · 개봉 항목 상세): 낱말 가운데서 끊지 않고, 띄어쓰기 없는 긴 이름만 어쩔 수 없을 때 끊는다.
+     카드 폭을 꽉 채워 둬야 넘치는지 잴 수 있다(study.js 의 fitTitle 이 글자를 줄여 한 줄로 맞춘다) */
+  .front h2, .back h2, #sheetBody > h2{word-break:keep-all;overflow-wrap:break-word;align-self:stretch;width:100%;box-sizing:border-box;}
   .blk{margin-bottom:18px;}
   .blk .lb{font-size:11.5px;font-weight:800;letter-spacing:1.1px;color:var(--accent);margin-bottom:9px;}
-  /* ICE/HOT 재료가 두 벌일 때. 좁으면 한 줄로 떨어지게 auto-fit 을 쓴다 */
   /* ICE · HOT 두 벌은 위아래로(나란히 두면 재료 이름이 길 때 줄이 접혀 읽기 어렵다) */
   .ingcols{display:grid;grid-template-columns:1fr;gap:12px;}
   .ingset{font-size:11.5px;font-weight:800;letter-spacing:1px;color:var(--muted);margin:10px 0 2px;}
