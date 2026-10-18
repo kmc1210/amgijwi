@@ -2477,9 +2477,13 @@ const LEGACY = {
       window.__amgijwiNative = true; document.documentElement.classList.add("dot");
       const hw = CLOSET_ITEMS.filter(i => i.season === HALLOWEEN), xm = CLOSET_ITEMS.filter(i => i.season === XMAS);
       r.xmas = [xm.map(i => i.id).join(","), xm.every(i => i.season.until === "2026-12-31"), xm.reduce((n, i) => n + i.price, 0),
-        xm.filter(i => i.glow).map(i => i.id + ":" + (i.price >= 45) + ":" + !!i.perk).join(","),
-        ["8", "9", "0", "f", "e", "s", "x", "z"].every(k => CLOSET_PAL[k] && MOUSE_PAL[k] === CLOSET_PAL[k]),
-        xm.every(i => i.rows.every(row => row.length === 28) && i.rows.join("").split("").every(ch => ch === "." || ch === "_" || MOUSE_PAL[ch]))];
+        xm.filter(i => i.glow).map(i => i.id + ":" + (i.price > Math.max(...xm.filter(j => !j.glow).map(j => j.price))) + ":" + !!i.perk).join(",")];
+      // 크리스마스는 핼러윈이 끝난 다음 날(11/9)부터 판다. 산타 모자는 모자 밖으로 남는 귀를 지운다. 한정 옷을 입으면 날씨 옷으로 덮지 않는다
+      r.xmasSale = [closetOnSale(closetItem("santahat"), "2026-11-08"), closetOnSale(closetItem("santahat"), "2026-11-09"), closetOnSale(closetItem("santahat"), "2027-01-01")];
+      const hat = dressRows(mouseRows("day"), "stand", { head: "santahat" });
+      r.earsGone = hat.slice(0, 5).every(row => row.slice(6, 23).split("").every(ch => "pP".indexOf(ch) < 0));
+      const keepClosetX = JSON.stringify(data.closet); data.closet = cleanCloset({ own: ["santahat"], wear: { head: "santahat" } }); r.seasonal = wearsSeasonal();
+      data.closet = cleanCloset({ own: ["beret"], wear: { head: "beret" } }); r.notSeasonal = wearsSeasonal(); data.closet = cleanCloset(JSON.parse(keepClosetX));
       r.list = [hw.map(i => i.id).join(","), hw.every(i => i.season.until === "2026-11-08"), hw.reduce((n, i) => n + i.price, 0)];
       // 팔레트 글자가 쥐돌이 · 다른 아이템 색과 겹치지 않고, 빛나는 줄도 같은 크기
       r.pal = ["H", "I", "J", "W", "C", "D"].every(k => CLOSET_PAL[k] && MOUSE_PAL[k] === CLOSET_PAL[k]);
@@ -2499,7 +2503,7 @@ const LEGACY = {
       const open = dressRows(day, "stand", pw).join(""), shut = dressRows(mouseRows("blink"), "blink", pw).join(""), lit = dressRows(day, "stand", pw, true).join("");
       r.flash = [open.indexOf("C") < 0, shut.indexOf("C") < 0, lit.indexOf("C") >= 0, mouseSVGWorn("day", false, { hand:"pumpkin" }, true) !== mouseSVGWorn("day", false, { hand:"pumpkin" }),
         wearGlows({ hand:"pumpkin" }), wearGlows({ head:"beret" })];
-      // 옷장: 파는 동안 맨 앞 · "핼러윈 · ~11/8" 표시, 가지면 표시를 뗀다
+      // 옷장: 파는 동안 맨 앞 · "핼러윈 ~11/8" 표시, 가지면 표시를 뗀다
       data.closet = cleanCloset({ cheese:200, own:["beret", "batpin"], wear:{ head:"batpin" } });
       const realOn = closetOnSale; closetOnSale = (it, today) => realOn(it, today || "2026-10-20");      // 오늘이 언제든 파는 기간 안으로
       openCloset("home"); closetSlot = "head"; renderCloset();
@@ -2546,8 +2550,11 @@ const LEGACY = {
     eq("핼러윈 6개 · 11월 8일까지 · 다 사면 365(빛나는 호박 둘은 더 비싸다)", r.list, ["witchhat,pumpkinhead,batpin,mask,cape,pumpkin", true, 365]);
     ok("핼러윈 색 글자가 팔레트에 들어간다", r.pal);
     eq("번쩍이는 색 표는 호박 둘에, 그림에 있는 색을 있는 색으로 바꾼다", r.glow, "pumpkinhead:true,pumpkin:true");
-    eq("크리스마스 6개 · 12월 31일까지 · 다 사면 270, 빛나는 둘(코 · 트리)은 더 비싸고 효과 설명이 있다, 색 · 그림 칸이 맞다",
-       r.xmas, ["santahat,antler,rednose,scarf,gift,tree", true, 270, "rednose:true:true,tree:true:true", true, true]);
+    eq("크리스마스 6개 · 12월 31일까지 · 다 사면 280, 빛나는 둘(코 · 트리)은 빛나지 않는 것보다 비싸고 효과 설명이 있다",
+       r.xmas, ["santahat,antler,rednose,scarf,gift,tree", true, 280, "rednose:true:true,tree:true:true"]);
+    eq("크리스마스는 11/9 부터 12/31 까지 판다", r.xmasSale, [false, true, false]);
+    ok("산타 모자 밖으로 귀가 남지 않는다", r.earsGone);
+    eq("한정 옷을 입었을 때만 날씨 옷으로 덮지 않는다", [r.seasonal, r.notSeasonal], [true, false]);
     {
       // 옷장 색 글자가 쥐돌이 · 날씨 옷 색(core.js 의 MOUSE_PAL)을 덮어쓰지 않는다
       const core = fs.readFileSync(path.join(jsDir, "core.js"), "utf8"), clo = fs.readFileSync(path.join(jsDir, "closet.js"), "utf8");
@@ -2560,7 +2567,7 @@ const LEGACY = {
     eq("망토는 몸 바깥까지 퍼지고 앞발 · 발 · 호박 · 끈 매듭은 보인다", r.wide, [true, true, true, true, true]);
     eq("앞치마는 지금처럼 몸 안에만", r.apronStays, 0);
     eq("호박은 번쩍일 때만 빛나고 눈 깜빡임과는 따로다", r.flash, [true, true, true, true, true, false]);
-    eq("옷장: 파는 동안 한정 아이템이 맨 앞, 가진 것에는 한정 표시가 없다", r.grid, ["witchhat,pumpkinhead", "핼러윈 · ~11/8|핼러윈 · ~11/8", false]);
+    eq("옷장: 파는 동안 한정 아이템이 맨 앞, 가진 것에는 한정 표시가 없다", r.grid, ["witchhat,pumpkinhead", "핼러윈 ~11/8|핼러윈 ~11/8", false]);
     eq("한정 아이템도 사면 바로 입는다", r.bought, [140, "witchhat"]);
     eq("기간이 지나면 가진 한정 아이템만 남고 표시도 없다", r.after, ["batpin,witchhat", 0]);
     eq("기간이 지나면 입어 볼 수 없다", r.noTry, "");

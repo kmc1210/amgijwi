@@ -347,7 +347,7 @@ function drawMascot(){
      날씨 옷을 입은 동안은 깜빡이지 않는다(깜빡임 그림에는 날씨 옷이 없다).
      옷장 옷은 깜빡임 그림에도 입힌다. 빛나는 옷(호박 — closet.js 의 glow)의 번쩍임은 깜빡임과 따로 돈다(scheduleGlow) */
   const mood = currentMood(), night = mood === "night";
-  const wx = night ? null : wxNow();
+  const wx = night || wearsSeasonal() ? null : wxNow();     // 한정 옷(핼러윈 · 크리스마스)을 입었으면 날씨 옷 대신 그 옷을 보인다
   if(wx) el.innerHTML = weatherSVGWorn(wx);                       // 날씨 옷 위에는 안경만(closet.js)
   else if((mascot.happy || mascot.cheer) && !night) el.innerHTML = happyMouseSVG(mood);   // 생일 폭죽이 터지는 동안 · 기다리다 풀렸을 때
   /* 기다린 얼굴인 동안은 깜빡이지 않는다. 깜빡임 그림에는 그 얼굴이 없어 평소 얼굴 · 벗겨 둔 안경이 잠깐 비친다 */
