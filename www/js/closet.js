@@ -388,7 +388,9 @@ function cleanCloset(c){
     /* 짧은 바퀴에서 모아 둔 장수(0~4) */
     pool: Math.min(CHEESE_ROUND_MIN - 1, Math.max(0, Math.floor(Number(c.pool) || 0))),
     /* 치즈로 산 테마(THEME_SHOP 의 id) */
-    themes: Array.isArray(c.themes) ? c.themes.filter(id=>!!themeShopItem(id)) : []
+    themes: Array.isArray(c.themes) ? c.themes.filter(id=>!!themeShopItem(id)) : [],
+    /* 크리스마스 선물을 받은 해 */
+    xmasGift: /^\d{4}$/.test(c.xmasGift) ? c.xmasGift : ""
   };
 }
 function closetItem(id){ return CLOSET_ITEMS.filter(i=>i.id === id)[0] || null; }
@@ -580,7 +582,27 @@ function restoreCloset(bk){
   if(now.roundDay === today && (c.roundDay !== today || c.roundCount < now.roundCount)){ c.roundDay = today; c.roundCount = now.roundCount; }
   if(now.streakDay === today) c.streakDay = today;
   if(now.adDay === today && (c.adDay !== today || c.adCount < now.adCount)){ c.adDay = today; c.adCount = now.adCount; }
+  if(now.xmasGift > c.xmasGift) c.xmasGift = now.xmasGift;      // 올해 선물을 받았으면 예전 백업을 되살려도 다시 받지 않는다
   return c;
+}
+
+/* ---------- 크리스마스 선물 (1.5) ----------
+   12월 24 · 25일에 홈을 열면 치즈 100개. 한 해에 한 번(받은 해를 data.closet.xmasGift 에 적어 백업을 따라간다).
+   이 치즈가 처음 생긴 치즈면 옷장 안내 말풍선에 붙여서 말한다(생일 선물과 같다) */
+const XMAS_CHEESE = 100;
+function xmasGiftDay(now){ now = now || new Date(); return now.getMonth() === 11 && (now.getDate() === 24 || now.getDate() === 25); }
+function earnXmasCheese(now){
+  now = now || new Date();
+  const y = String(now.getFullYear());
+  if(!isDot() || !xmasGiftDay(now) || data.closet.xmasGift === y) return false;
+  data.closet.xmasGift = y; data.closet.cheese += XMAS_CHEESE;
+  persist();
+  return true;
+}
+function xmasHome(now){
+  if(!earnXmasCheese(now)) return;
+  const said = "메리 크리스마스츄! 치즈 " + XMAS_CHEESE + "개 " + (bdayIsToday(now) ? "더 " : "") + "선물이츄";
+  if(hintSeen("closet")) sayBubble(said); else closetHome(said);
 }
 
 /* ---------- 입구 ---------- */
