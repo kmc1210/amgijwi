@@ -192,6 +192,28 @@ function startSession(customPool){
 function bindActions(){
   document.querySelectorAll("#actions .act").forEach(b=>b.addEventListener("click",()=>action(b.dataset.a)));
 }
+/* 긴 메뉴 이름은 한 줄에 들어가도록 글자를 줄인다. 가장 작게 min px 까지(도트 글꼴은 16px 아래로 내리지 않는다).
+   그래도 넘치면 낱말 단위로 줄을 바꾼다(줄 바꿈 규칙은 style.css). 부를 때마다 원래 크기에서 다시 잰다(돌리거나 넓어지면 다시 커진다) */
+function fitTitle(el, min){
+  if(!el) return;
+  el.style.fontSize = ""; el.style.whiteSpace = "nowrap";
+  if(!el.clientWidth){ el.style.whiteSpace = ""; return; }
+  const full = parseFloat(getComputedStyle(el).fontSize);
+  let size = full;
+  if(el.scrollWidth > el.clientWidth + 1){
+    size = Math.max(min, Math.floor(full * el.clientWidth / el.scrollWidth));     // 한 번에 어림하고
+    el.style.fontSize = size + "px";
+    while(el.scrollWidth > el.clientWidth + 1 && size > min){ size -= 1; el.style.fontSize = size + "px"; }   // 남는 만큼만 한 칸씩
+  }
+  if(el.scrollWidth > el.clientWidth + 1) el.style.whiteSpace = "";            // 가장 작게 해도 넘치면 줄을 바꾼다
+}
+const CARD_TITLE_MIN = 18, SHEET_TITLE_MIN = 18;
+function fitCardTitle(){ fitTitle(document.querySelector("#card h2"), CARD_TITLE_MIN); }
+function fitSheetTitle(){ if($("#sheet").classList.contains("on")) fitTitle($("#sheetBody > h2"), SHEET_TITLE_MIN); }
+function fitTitles(){ if($("#s-study").classList.contains("active")) fitCardTitle(); fitSheetTitle(); }
+window.addEventListener("resize", fitTitles);
+/* 도트 글꼴이 늦게 들어오면 처음에는 다른 글꼴로 잰 크기다 — 들어오면 다시 맞춘다 */
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(fitTitles);
 function renderCard(){
   const d = state.deck[state.idx];
   if(!d){ finish(); return; }
@@ -201,12 +223,14 @@ function renderCard(){
   if(data.mode === "blank"){
     $("#card").classList.remove("full");
     $("#card").innerHTML = blankHTML(d);
+    fitCardTitle();
     bindBlanks(d);
     renderBlankActions(d);
     return;
   }
   $("#card").classList.toggle("full", !state.flipped);
   $("#card").innerHTML = state.flipped ? backHTML(d) : frontHTML(d);
+  fitCardTitle();
   $("#actions").innerHTML = state.flipped
     ? `<button class="act again" data-a="again">다시 볼래요</button><button class="act ok" data-a="ok">외웠어요</button>`
     : `<button class="act flip" data-a="flip">레시피 확인하기</button>`;

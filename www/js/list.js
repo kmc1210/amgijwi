@@ -616,6 +616,7 @@ function openSubSheet(id){
     <button class="cta" id="subEdit">수정하기</button>
     <button class="cta danger" id="subKill">삭제하기</button>`;
   $("#mask").classList.add("on"); $("#sheet").classList.add("on");
+  fitSheetTitle();             // 긴 이름은 글자를 줄여 한 줄로(study.js)
   $("#sheetBody").querySelectorAll("[data-go-id]").forEach(b=>
     b.addEventListener("click", ()=>{ const gid=b.dataset.goId; closeSheet(); setTimeout(()=>openSheet(gid), 220); }));
   $("#subLink").addEventListener("click", ()=>openSubLinkSheet(s.id));
@@ -768,6 +769,7 @@ function openShelfSheet(idx){
   };
   drawPlaces();
   $("#mask").classList.add("on"); $("#sheet").classList.add("on");
+  fitSheetTitle();             // 긴 이름은 글자를 줄여 한 줄로(study.js)
   $("#shSave").addEventListener("click", ()=>{
     const name = $("#sh-name").value.trim();
     const dur  = $("#sh-dur").value.trim();
@@ -832,6 +834,7 @@ function openSheet(id){
     <button class="cta ghost" id="sheetArch">${d.arch ? "보관 해제하기" : "보관하기"}</button>
     <button class="cta danger" id="sheetDel">삭제하기</button>`;
   $("#mask").classList.add("on"); $("#sheet").classList.add("on");
+  fitSheetTitle();             // 긴 이름은 글자를 줄여 한 줄로(study.js)
   $("#sheetEdit").addEventListener("click", ()=>{ closeSheet(); openEditor(d.id); });
   if($("#sheetShare")) $("#sheetShare").addEventListener("click", ()=>sendRecipes([d.id]));      // recipeshare.js
   if($("#sheetStudy")) $("#sheetStudy").addEventListener("click", ()=>{
