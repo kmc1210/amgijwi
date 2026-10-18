@@ -201,7 +201,7 @@ const CHORDS = [
   { root:-24, voice:[-12, -9, -5, 2] }
 ];
 const MELODY = [3, 5, 7, 10, 12, 14, 15, 17];
-const bgm = { on:false, timer:null, bar:0 };
+const bgm = { on:false, timer:null, bar:0, carol:null };
 
 /* 전자 피아노: 사인파로 다른 사인파의 음높이를 흔들고, 흔들림을 빠르게 줄인다 */
 function rhodes(freq, t, dur, vel, panv){
@@ -262,6 +262,8 @@ function kick(t){
 
 function bgmBar(){
   if(!bgm.on) return;
+  if(carolWanted()){ carolBar(); return; }
+  bgm.carol = null;
   const t0 = actx.currentTime + 0.06;
   const c = CHORDS[bgm.bar % CHORDS.length];
   bgm.bar++;
@@ -289,6 +291,89 @@ function bgmBar(){
   }
 
   bgm.timer = setTimeout(bgmBar, BAR * 1000);
+}
+
+/* ---------- 크리스마스 밤 테마의 캐롤 (1.5) ----------
+   크리스마스 밤 테마 + "효과음+배경음"이면 카페 재즈 대신 저작권이 끝난 옛 캐롤 세 곡을 차례로 되풀이한다:
+   징글벨(1857) → We Wish You a Merry Christmas(영국 민요) → 고요한 밤(1818).
+   종소리가 멜로디를 치고, 카페 배경음과 같은 전자 피아노 · 베이스가 화음을 깐다. 징글벨에는 썰매 방울.
+   한 마디씩 이어 그리고(테마를 바꾸면 다음 마디부터 카페 재즈), 마디 시작 시각을 이어 붙여 박자가 밀리지 않게 한다.
+   학습 화면에서는 종소리 멜로디를 쉬고 화음만 깐다(외우는 데 방해가 된다 — 눈도 학습 화면에서는 멈춘다).
+   앱이 뒤로 갔다 오거나 광고 뒤에도 듣던 자리부터 잇는다(처음부터 하면 징글벨만 듣게 된다) */
+const CAROL_CH = {C:[48,[60,64,67]], F:[53,[60,65,69]], G7:[43,[59,62,65]], D7:[50,[60,62,66]], Am:[45,[60,64,69]], E7:[52,[59,62,68]]};
+const CAROLS = [
+  {id:"jingle", bpm:112, beats:4, jingle:true,
+    mel:[[64,1],[64,1],[64,2],[64,1],[64,1],[64,2],[64,1],[67,1],[60,1.5],[62,.5],[64,4],
+         [65,1],[65,1],[65,1.5],[65,.5],[65,1],[64,1],[64,1],[64,.5],[64,.5],[64,1],[62,1],[62,1],[64,1],[62,2],[67,2],
+         [64,1],[64,1],[64,2],[64,1],[64,1],[64,2],[64,1],[67,1],[60,1.5],[62,.5],[64,4],
+         [65,1],[65,1],[65,1.5],[65,.5],[65,1],[64,1],[64,1],[64,.5],[64,.5],[67,1],[67,1],[65,1],[62,1],[60,4]],
+    ch:["C","C","C","C","F","C","D7","G7","C","C","C","C","F","C","G7","C"]},
+  {id:"wish", bpm:104, beats:3, pickup:[[67,1]],
+    mel:[[72,1],[72,.5],[74,.5],[72,.5],[71,.5],[69,1],[69,1],[69,1],[74,1],[74,.5],[76,.5],[74,.5],[72,.5],[71,1],[67,1],[67,1],
+         [76,1],[76,.5],[77,.5],[76,.5],[74,.5],[72,1],[69,1],[67,.5],[67,.5],[69,1],[74,1],[71,1],[72,3]],
+    ch:["C","F","D7","G7","E7","Am","G7","C"]},
+  {id:"silent", bpm:66, beats:3,
+    mel:[[67,1.5],[69,.5],[67,1],[64,3],[67,1.5],[69,.5],[67,1],[64,3],[74,2],[74,1],[71,3],[72,2],[72,1],[67,3],
+         [69,2],[69,1],[72,1.5],[71,.5],[69,1],[67,1.5],[69,.5],[67,1],[64,3],[69,2],[69,1],[72,1.5],[71,.5],[69,1],[67,1.5],[69,.5],[67,1],[64,3],
+         [74,2],[74,1],[77,1.5],[74,.5],[71,1],[72,3],[76,3],[72,1],[67,1],[64,1],[67,1.5],[65,.5],[62,1],[60,6]],
+    ch:["C","C","C","C","G7","G7","C","C","F","F","C","C","F","F","C","C","G7","G7","C","C","C","G7","C","C"]}
+];
+function carolWanted(){ return isDot() && shownTheme() === "xmnight"; }
+function mhz(m){ return shz(m - 69); }
+/* 곡을 마디로 나눈다: [{len(박), chord, notes:[[음, 마디 안 시작 박, 길이]]}]. 못갖춘마디가 있으면 맨 앞 한 마디, 곡 끝에는 쉬는 두 박 */
+function carolBars(song){
+  const pick = (song.pickup || []).reduce((a, n)=>a + n[1], 0), bars = [];
+  if(pick) bars.push({len: pick, chord: null, notes: []});
+  song.ch.forEach(c=>bars.push({len: song.beats, chord: c, notes: []}));
+  let at = 0;
+  (song.pickup || []).concat(song.mel).forEach(n=>{
+    let b = 0, start = 0;
+    while(b < bars.length - 1 && at >= start + bars[b].len - 1e-6){ start += bars[b].len; b++; }
+    if(n[0]) bars[b].notes.push([n[0], at - start, n[1]]);
+    at += n[1];
+  });
+  bars.push({len: 2, chord: null, notes: []});
+  return bars;
+}
+const CAROL_BARS = CAROLS.map(carolBars);
+/* 종소리: 사인파와 배음 둘, 짧게 사라진다 */
+function bell(m, t, dur){
+  [[1, 0.1], [2.01, 0.032], [3.02, 0.014]].forEach(h=>{
+    const o = actx.createOscillator(); o.type = "sine"; o.frequency.value = mhz(m) * h[0];
+    const g = sbus(), end = t + Math.min(2.5, Math.max(0.35, dur * 1.4));      // 긴 음도 2.5초면 사라진다(멈춘 뒤 오래 울리지 않게)
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(h[1], t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, end);
+    o.connect(g); o.start(t); o.stop(end + 0.05);
+  });
+}
+/* 썰매 방울: 잡음 한 조각을 한 번만 만들어 두고 되쓴다 */
+let sleighBuf = null;
+function sleighBell(t){
+  if(!sleighBuf){
+    sleighBuf = actx.createBuffer(1, Math.ceil(actx.sampleRate * 0.12), actx.sampleRate);
+    const d = sleighBuf.getChannelData(0);
+    for(let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3);
+  }
+  const src = actx.createBufferSource(); src.buffer = sleighBuf;
+  const f = actx.createBiquadFilter(); f.type = "highpass"; f.frequency.value = 6500;
+  const g = sbus(); g.gain.value = 0.035;
+  src.connect(f); f.connect(g); src.start(t);
+}
+function carolBar(){
+  if(!bgm.carol) bgm.carol = {song: 0, bar: 0, t: actx.currentTime + 0.06};
+  const st = bgm.carol, song = CAROLS[st.song], bars = CAROL_BARS[st.song], bar = bars[st.bar], B = 60 / song.bpm;
+  const t0 = Math.max(st.t, actx.currentTime + 0.03);
+  if(!$("#s-study").classList.contains("active")) bar.notes.forEach(n=>bell(n[0], t0 + n[1] * B, n[2] * B));
+  if(bar.chord){
+    const c = CAROL_CH[bar.chord];
+    bassNote(mhz(c[0]), t0, B * Math.min(2, song.beats) * 0.95);
+    if(song.beats === 4) bassNote(mhz(c[0] + 7), t0 + 2 * B, B * 1.6);
+    c[1].forEach((m, i)=>rhodes(mhz(m), t0 + srand(0, 0.015), B * song.beats * 0.9, 0.7, (i - 1) * 0.2));
+    if(song.beats === 3) [1, 2].forEach(k=>c[1].forEach(m=>rhodes(mhz(m), t0 + k * B, B * 0.8, 0.4, 0)));
+    if(song.jingle) for(let k = 0; k < song.beats * 2; k++) sleighBell(t0 + k * B / 2);
+  }
+  st.t = t0 + bar.len * B;
+  if(++st.bar >= bars.length){ st.bar = 0; st.song = (st.song + 1) % CAROLS.length; }
+  bgm.timer = setTimeout(bgmBar, Math.max(0, (st.t - actx.currentTime - 0.35) * 1000));      // 다음 마디는 0.35초 앞서 미리 걸어 둔다(화면을 그리느라 늦어도 박자가 밀리지 않게)
 }
 
 function bgmStart(){

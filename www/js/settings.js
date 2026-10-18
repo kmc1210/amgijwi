@@ -245,7 +245,7 @@ $("#themeShop").addEventListener("click", e=>{
   if(!closetOnSale(t)){ renderThemeShop(); return; }
   const c = data.closet;
   if(c.cheese < t.price){ haptic("error"); toast("치즈가 " + (t.price - c.cheese) + "개 모자라요"); return; }
-  confirmBox(t.name + " 테마", `치즈 ${t.price}개로 살까요? 치즈 ${c.cheese}개 → ${c.cheese - t.price}개`, "사기", ()=>{
+  confirmBox(t.name + " 테마", `${t.note ? t.note + " " : ""}치즈 ${t.price}개로 살까요? 치즈 ${c.cheese}개 → ${c.cheese - t.price}개`, "사기", ()=>{
     if(themeOwned(t.id) || c.cheese < t.price || !closetOnSale(t)) return;
     c.cheese -= t.price; c.themes.push(t.id); data.theme = t.id;
     persist(); renderSettings();          // renderSettings 가 applyTheme 을 부른다
