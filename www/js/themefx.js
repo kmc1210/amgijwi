@@ -28,6 +28,7 @@ function themeFxSync(){
   if(cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; }
   fxSpots = null;                 // 자리를 다시 잰다
   if(reduceMotion()){ clearInterval(fxT); fxT = null; themeFxDraw(false); return; }
+  if(snowT){ clearInterval(fxT); fxT = null; themeFxDraw(true); return; }      // 눈이 내리는 중이면 눈의 시계에 맞춰 같이 그린다(시계 하나)
   if(!fxT) fxT = setInterval(()=>{ if(themeFxWanted()) themeFxDraw(true); else themeFxSync(); }, FX_MS);
 }
 /* 자리(위쪽 안전 영역 · 쥐돌이 · 인사말 · "다시 볼" 빈칸)는 8장마다 한 번만 잰다. 스크롤 · 화면 크기가 바뀌면 바로 다시 */
@@ -90,7 +91,7 @@ document.addEventListener("scroll", e=>{
 }, true);
 
 /* ---------- 크리스마스 밤: 꼬마전구 · 트리 · 별 (홈) ---------- */
-const XFX_PAL = {w:"#3E5A50", Y:"#F2C766", y:"#FFF3C4", G:"#3E8E52", g:"#2F6B4F", T:"#7C4E22", r:"#E8504A", b:"#5AA0E0", o:"#F2C766", p:"#5FB86A"};
+const XFX_PAL = {w:"#3E5A50", Y:"#F2C766", y:"#FFF3C4", G:"#3E8E52", g:"#2F6B4F", T:"#7C4E22", r:"#E8504A", b:"#5AA0E0", o:"#F5F0E6", d:"#A8873E"};
 const XFX_BULB = ["#E8504A", "#F2C766", "#5FB86A", "#5AA0E0"];
 const XFX_TREE = ["....Y....", "...YYY...", "....G....", "...GGG...", "..GGrGG..", "..GGGGG..", ".GGbGGGG.", ".GGGGoGG.", "GGrGGGGbG", "GGGGGGGGG", "....T....", "....T...."];
 /* 전구마다 다른 박자: 번호로 정해 두는 어림 난수(켤 때마다 같다) */
@@ -124,7 +125,7 @@ function xmasDraw(ctx, W, H, sp, moving){
       const ch = row[xx]; if(ch === ".") continue;
       const light = "rbo".indexOf(ch) >= 0, star = ch === "Y";
       if(light && !xfxOn(200 + yy * 9 + xx, moving)){ ctx.fillStyle = XFX_PAL.G; }
-      else ctx.fillStyle = star && moving && !xfxOn(555, moving) ? XFX_PAL.o : XFX_PAL[ch];
+      else ctx.fillStyle = star && !xfxOn(555, moving) ? XFX_PAL.d : XFX_PAL[ch];      // 꼭대기 별은 꺼지면 어두운 금색
       ctx.fillRect(tx + xx, ty + yy, 1, 1);
     } });
   }
@@ -151,7 +152,7 @@ function snowSync(){
   if(cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; snowFlakes = null; }
   if(!snowFlakes) snowFlakes = Array.from({length: Math.max(20, Math.round(70 * W * H / (195 * 422)))}, ()=>snowFlake(W, H, true));
   if(reduceMotion()){ clearInterval(snowT); snowT = null; snowDraw(false); return; }
-  if(!snowT) snowT = setInterval(()=>{ if(snowWanted()) snowDraw(true); else snowSync(); }, FX_MS);
+  if(!snowT) snowT = setInterval(()=>{ if(!snowWanted()){ themeFxSync(); return; } snowDraw(true); if(themeFxWanted()) themeFxDraw(true); }, FX_MS);
 }
 function snowDraw(moving){
   const cv = $("#snowFx"), ctx = cv.getContext("2d"), W = cv.width, H = cv.height;

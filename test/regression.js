@@ -2282,7 +2282,8 @@ const LEGACY = {
       // 기간이 지나도 산 테마는 남고, 안 산 사람에게는 사라진다
       closetOnSale = (it, today) => realOn(it, today || "2026-11-09");
       go("set"); renderSettings(); r.keep = !!btn();
-      const own = data.closet.themes; data.closet.themes = []; renderSettings(); r.gone = [!!btn(), !!document.querySelector('#themeShop [data-shop="xmnight"]')]; data.closet.themes = own;
+      const own = data.closet.themes; data.closet.themes = []; renderSettings(); r.gone = [!!btn(), !!document.querySelector('#themeShop [data-shop="xmnight"]')];
+      closetOnSale = (it, today) => realOn(it, today || "2027-01-05"); renderSettings(); r.allGone = $("#themeShop").hidden; data.closet.themes = own;
       // 백업을 되살려도 산 테마는 치즈 · 옷처럼 따라간다
       r.restore = cleanCloset(JSON.parse(JSON.stringify(data.closet))).themes.join(",");
       closetOnSale = realOn;
@@ -2304,6 +2305,7 @@ const LEGACY = {
     eq("홈이 아니면 멈춘다", r.fxList, [true, null]);
     ok("기간이 지나도 산 테마는 고를 수 있다", r.keep);
     eq("기간이 지나면 안 산 사람에게는 핼러윈 칸이 사라진다(그때 파는 크리스마스 칸은 남는다)", r.gone, [false, true]);
+    ok("파는 테마가 하나도 없으면 상점 칸을 숨긴다", r.allGone);
     eq("산 테마는 백업을 따라간다", r.restore, "hwnight");
     eq("앱이 아니면 테마 움직임이 없다", r.webFx, [true]);
   }
@@ -3720,11 +3722,11 @@ const LEGACY = {
       data.closet.themes = ["xmnight"]; applyTheme(); go("home"); renderHome(); await wait(250);
       r.on = [document.body.getAttribute("data-theme"), getComputedStyle(document.body).getPropertyValue("--d-bg").trim().toUpperCase(),
         tabsAre("_xm"),
-        document.body.classList.contains("snowing"), !$("#snowFx").hidden, !$("#themeFx").hidden];
+        document.body.classList.contains("snowing"), !$("#snowFx").hidden, !$("#themeFx").hidden, !!snowT && !fxT];
       go("list"); await wait(150); r.listSnow = [!$("#snowFx").hidden, getComputedStyle($("#s-list")).backgroundColor];
       startSession([data.drinks[0]]); await wait(150); r.studySnow = [$("#snowFx").hidden, getComputedStyle($("#s-study")).backgroundColor !== "rgba(0, 0, 0, 0)"];
       // 전구는 각자 다른 박자(같은 순간에 켜진 것 · 꺼진 것이 섞인다)
-      fxTick = 40; const states = [...Array(12)].map((_, k) => xfxOn(k, true)); r.bulbs = states.some(x => x) && states.some(x => !x);
+      const tick0 = fxTick; fxTick = 40; const states = [...Array(12)].map((_, k) => xfxOn(k, true)); r.bulbs = states.some(x => x) && states.some(x => !x); fxTick = tick0;
       // 다른 테마로 바꾸면 눈 · 탭 아이콘이 돌아온다
       data.theme = "cream"; applyTheme(); go("home"); await wait(100);
       r.off = [document.body.classList.contains("snowing"), $("#snowFx").hidden, tabsAre("")];
@@ -3734,7 +3736,7 @@ const LEGACY = {
     });
     eq("크리스마스 밤: 상점에 치즈 100, 11/9~12/31, 상태 막대 색", r.shop, [true, true, false, true, "#0F1E1A"]);
     eq("안 산 사람에게는 기본 테마로 보인다", r.notOwned, "cream");
-    eq("사면: 크리스마스 색 · 탭 아이콘 · 눈 · 홈 움직임", r.on, ["xmnight", "#0F1E1A", true, true, true, true]);
+    eq("사면: 크리스마스 색 · 탭 아이콘 · 눈 · 홈 움직임(시계는 눈의 것 하나)", r.on, ["xmnight", "#0F1E1A", true, true, true, true, true]);
     eq("레시피 화면에도 눈이 내리고, 화면 바탕을 비워 카드 뒤로 보인다", r.listSnow, [true, "rgba(0, 0, 0, 0)"]);
     eq("학습 화면에서는 눈이 멈추고 바탕은 그대로", r.studySnow, [true, true]);
     ok("꼬마전구는 각자 다른 박자로 깜빡인다", r.bulbs);
