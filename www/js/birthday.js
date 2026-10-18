@@ -98,9 +98,11 @@ function bdayPartySoon(){
   }, 250);
 }
 function bdayHidden(){
-  const home = $("#s-home"), lock = $("#lock"), guide = $("#onboard");
+  const home = $("#s-home"), lock = $("#lock"), guide = $("#onboard"), dlg = $("#dlg");
   return !home || !home.classList.contains("active")
-      || (lock && lock.classList.contains("on")) || (guide && !guide.hidden) || nickAskOpen();      // 이름 묻는 창(nick.js)에 가려 있어도 미룬다
+      || (lock && lock.classList.contains("on")) || (guide && !guide.hidden) || nickAskOpen()      // 이름 묻는 창(nick.js)에 가려 있어도 미룬다
+      || (dlg && dlg.classList.contains("on"))                                                       // 확인창(iCloud 되살리기 등)
+      || xmasFxBusy();                                                                                 // 크리스마스 썰매 장면을 보는 중이거나 곧 띄운다(closet.js)
 }
 
 /* ---------- 폭죽 ---------- */

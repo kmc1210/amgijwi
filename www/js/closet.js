@@ -601,11 +601,33 @@ function earnXmasCheese(now){
 }
 /* 선물 말풍선. 이 치즈가 처음 생긴 치즈면 옷장 안내에 붙여서 말한다(따로 말하면 한 번뿐인 안내를 덮는다) */
 function giftSay(said){ if(hintSeen("closet")) sayBubble(said); else closetHome(said); }
+/* 선물을 받으면 썰매 장면(xmasfx.js)을 띄우고, 닫은 뒤에 말풍선으로 한 번 더 말한다. 치즈는 장면 전에 이미 받는다.
+   앱을 켤 때는 홈을 그린 바로 뒤에 잠금 · 가이드 · 이름 묻기 · iCloud 확인창이 덮으므로, 생일 폭죽처럼 잠깐 쉬고 본다.
+   가려 있으면 미뤄 두었다가 잠금을 풀거나 창을 닫고 홈이 다시 그려질 때 띄운다. 말풍선도 홈이 보일 때 */
+let xmasFxWait = null, xmasSayWait = "", xmasFxT = null;
+function xmasFxBusy(){ return !!xmasFxWait || (typeof xmasFxState === "function" && xmasFxState().running); }
 function xmasHome(now){
   const both = bdayHeld; bdayHeld = false;
-  if(!earnXmasCheese(now)) return;
-  giftSay(both ? "생일 축하하고 메리 크리스마스츄! 치즈 " + (BDAY_CHEESE + XMAS_CHEESE) + "개 선물이츄"
-               : "메리 크리스마스츄! 치즈 " + XMAS_CHEESE + "개 선물이츄");
+  if(earnXmasCheese(now)){
+    const gain = XMAS_CHEESE + (both ? BDAY_CHEESE : 0);
+    xmasFxWait = {gain: gain, said: both ? "생일 축하하고 메리 크리스마스츄! 치즈 " + gain + "개 선물이츄" : "메리 크리스마스츄! 치즈 " + XMAS_CHEESE + "개 선물이츄"};
+  }
+  if(xmasFxWait && typeof xmasFxPlay !== "function"){ xmasSayWait = xmasFxWait.said; xmasFxWait = null; }
+  clearTimeout(xmasFxT);
+  xmasFxT = setTimeout(xmasFxTry, 400);
+}
+function xmasFxTry(){
+  const covered = ()=>{ const w = xmasFxWait; xmasFxWait = null; const h = bdayHidden(); xmasFxWait = w; return h; };     // 기다리는 장면 자신은 가림으로 치지 않는다
+  if(typeof xmasFxState === "function" && xmasFxState().running) return;
+  if(covered()) return;
+  if(xmasSayWait){ const said = xmasSayWait; xmasSayWait = ""; giftSay(said); }
+  if(!xmasFxWait) return;
+  const w = xmasFxWait; xmasFxWait = null;
+  /* 치즈 칸은 지금 가진 치즈까지(미루는 사이 치즈가 바뀌어도 맞게) */
+  xmasFxPlay({from: data.closet.cheese - w.gain, to: data.closet.cheese, done: ()=>{
+    xmasSayWait = w.said; xmasFxTry();      // 닫은 뒤 홈이 보이면 말하고, 아니면 다음에 홈이 보일 때
+    bdayPartySoon();                          // 장면에 가려 미룬 생일 폭죽이 있으면 이제
+  }});
 }
 
 /* ---------- 입구 ---------- */
