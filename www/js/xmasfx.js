@@ -447,23 +447,26 @@ function xmasFxCreate(){
   const MOON = {x: 30, y: 30, r: 7};
   /* 하늘도 같은 카메라로: 기본 카메라에서 보이던 자리를 지금 카메라(쥐돌이 · 선물로 다가가는 줌)로 옮긴다.
      그래서 다가갈수록 달 · 별 · 산등성이도 함께 커지며 화면 밖으로 밀려난다. 낮은 격자 칸 단위 */
-  const skyM = ()=>CAM.f / CAM0.f;
+  const skyM = ()=>1 + (CAM.f / CAM0.f - 1) * .4;      // 먼 하늘은 땅보다 덜 커진다(땅이 두 배일 때 하늘은 1.4배)
+  const skyFade = ()=>Math.min(1, Math.max(0, (CAM.f / CAM0.f - 1) / 1.1));      // 다가갈수록 밤하늘 색으로 옅어진다
+  function skyMix(hex, f){ const a = parseInt(hex.slice(1), 16), b = 0x13261F, ch = s=>Math.round(((a >> s) & 255) * (1 - f) + ((b >> s) & 255) * f); return "#" + ((ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).padStart(6, "0"); }
   function skyAt(xl, yl){ const m = skyM(), x = (xl + .5) * PXW, y = (yl + .5) * PXH; return [Math.round((CAM.cx + m * (x - CAM0.cx)) / PXW - .5), Math.round((CAM.hz + m * (y - CAM0.hz)) / PXH - .5)]; }
   function skyFx(T){
-    const m = skyM(), [mx, my] = skyAt(MOON.x, MOON.y), r = MOON.r * m, R = Math.ceil(r + 9 * m);
-    if(mx + R >= 0 && my + R >= 0 && mx - R < LOW_W && my - R < LOW_H){
+    const m = skyM(), [mx, my] = skyAt(MOON.x, MOON.y), r = MOON.r * m, R = Math.ceil(r + 9 * m), fd = skyFade();
+    const col = h=>fd ? skyMix(h, fd) : h, halo = h=>fd ? skyMix(h, Math.min(1, fd * 1.8)) : h;
+    if(fd < 1 && mx + R >= 0 && my + R >= 0 && mx - R < LOW_W && my - R < LOW_H){
       for(let y = -R; y <= R; y++) for(let x = -R; x <= R; x++){
         const d = Math.hypot(x, y);
-        if(d > r + 1.5 * m && d <= r + 4.5 * m && (x + y) % 2 === 0) lowPx(mx + x, my + y, "#2C4A40");          // 안쪽 달무리
-        else if(d > r + 4.5 * m && d <= r + 8.5 * m && (x + 2 * y) % 4 === 0) lowPx(mx + x, my + y, "#22392F");  // 바깥 달무리
+        if(d > r + 1.5 * m && d <= r + 4.5 * m && (x + y) % 2 === 0) lowPx(mx + x, my + y, halo("#2C4A40"));          // 안쪽 달무리
+        else if(d > r + 4.5 * m && d <= r + 8.5 * m && (x + 2 * y) % 4 === 0) lowPx(mx + x, my + y, halo("#22392F"));  // 바깥 달무리
       }
       const rr = Math.ceil(r);
       for(let y = -rr; y <= rr; y++) for(let x = -rr; x <= rr; x++){
         const d = Math.hypot(x + .5, y + .5); if(d > r) continue;
         const lit = Math.hypot(x + 2.5 * m, y + 2.5 * m) < r * .75;
-        lowPx(mx + x, my + y, d > r - m ? "#E9D8A6" : lit ? "#FFF6D6" : "#F6E6B4");
+        lowPx(mx + x, my + y, col(d > r - m ? "#E9D8A6" : lit ? "#FFF6D6" : "#F6E6B4"));
       }
-      [[2, -2, 2], [-3, 2, 1], [1, 3, 1]].forEach(([x, y, n])=>{ for(let k = 0; k < Math.round(n * m); k++) lowPx(mx + Math.round(x * m) + k, my + Math.round(y * m), "#E2CF98"); });   // 달 무늬
+      [[2, -2, 2], [-3, 2, 1], [1, 3, 1]].forEach(([x, y, n])=>{ for(let k = 0; k < Math.round(n * m); k++) lowPx(mx + Math.round(x * m) + k, my + Math.round(y * m), col("#E2CF98")); });   // 달 무늬
     }
     /* 별똥별: 3.6초마다 한 번, 오른쪽 위에서 왼쪽 아래로 0.6초. 머리는 밝고 꼬리는 점점 어둡게 */
     const per = 3600, ph = (T % per) / 600, n = Math.floor(T / per);
@@ -477,7 +480,7 @@ function xmasFxCreate(){
     L(); c.fillStyle = "#0B1714"; c.fillRect(0, 0, W, H);
     c.fillStyle = "#13261F"; c.fillRect(0, 0, W, CAM.hz);
     skyFx(T);
-    [[62,12],[84,28],[114,10],[132,40],[48,52],[100,60],[36,72],[144,20],[20,30],[76,84]].forEach(([x, y], k)=>{ if((Math.floor(T / 400) + k) % 4){ const q = skyAt(x, y); lowPx(q[0], q[1], "#E9DCC0"); } });
+    [[62,12],[84,28],[114,10],[132,40],[48,52],[100,60],[36,72],[144,20],[20,30],[76,84]].forEach(([x, y], k)=>{ if((Math.floor(T / 400) + k) % 4){ const q = skyAt(x, y); lowPx(q[0], q[1], skyMix("#E9DCC0", skyFade() * .8)); } });
     /* 먼 산등성이도 카메라를 따라 커진다 */
     c.fillStyle = "#1E3B33"; { const m = skyM(); for(let x = 0; x < W; x++){ const xb = CAM0.cx + (x - CAM.cx) / m, h = (4 + Math.round(3 * Math.sin(xb / 13) + 2 * Math.sin(xb / 5.3))) * m; c.fillRect(x, CAM.hz - h, 1, h); } }
     drawSnowField(T);
@@ -685,7 +688,8 @@ function xmasFxCreate(){
       const pop = t < 950 ? 0 : t < 1100 ? lerp(.3, 1.15, (t - 950) / 150) : t < 1250 ? lerp(1.15, 1, (t - 1100) / 150) : 1;
       const happy = t >= 1000, hop = happy && t < 1200 ? .05 * Math.sin((t - 1000) / 200 * Math.PI) : 0;
       const seatY = SEAT0 + rise * STAND_UP + hop, gift = [.42, 0, seatY + .22, pop];
-      zoomTo(lerp(1, 1.9, zA) * lerp(1, 1.12, zB), lerp(118, 140, zB), lerp(65, 52, Math.max(zA * .6, zB)));
+      /* 멈춘 화면 그대로에서 출발해 선물을 서서히 가운데로(첫 순간 카메라가 옆으로 툭 옮겨 가지 않게) */
+      zoomTo(lerp(1, 1.9, zA) * lerp(1, 1.12, zB), lerp(lerp(GIFT_P0.y, 118, zA), 140, zB), lerp(lerp(GIFT_P0.x, 57, zA), 52, zB));
       world(T, 0); snow(.2, false);
       drawGroup(0, legP, false, T, {stand: rise, hop: hop, release: release, happy: happy, blink: !happy && t > 300 && t < 430, gift: t >= 950 ? gift : null, giftPart: "closed", giftHeld: rise >= 1});
       if(t >= 950 && t < 1400){ L(); const gp = giftScreen(), r0 = (t - 950) / 450; c.fillStyle = "rgba(255,243,196," + (1 - r0).toFixed(2) + ")"; for(let i = 0; i < 10; i++){ const a = i / 10 * Math.PI * 2, rr = 8 + r0 * 26; const x = Math.round(gp.x + Math.cos(a) * rr), y = Math.round(gp.y - 4 + Math.sin(a) * rr * .8); c.fillRect(x, y - 1, 1, 3); c.fillRect(x - 1, y, 3, 1); } }
