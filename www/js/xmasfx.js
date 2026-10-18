@@ -732,8 +732,19 @@ function xmasFxCreate(){
     else if(performance.now() - opened > 1500) close();
   });
   skipEl.addEventListener("click", ()=>{ setScene(4); haptic("light"); });
-  window.addEventListener("resize", ()=>{ if(running) fit(); });
-  /* 썰매 방울(소리를 켠 사람만) */
+  const onResize = ()=>{ if(running) fit(); };
+  window.addEventListener("resize", onResize);
+  /* 앱이 뒤로 갔다 오면 멈춰 있던 만큼 시간을 미뤄, 장면이 건너뛰거나 바로 닫히지 않게 */
+  let hiddenAt = 0;
+  const onVis = ()=>{
+    if(!running) return;
+    if(document.hidden){ hiddenAt = performance.now(); return; }
+    if(!hiddenAt) return;
+    const gap = performance.now() - hiddenAt; hiddenAt = 0;
+    sceneStart += gap; appT0 += gap; if(opened) opened += gap; lastT = 0;
+  };
+  document.addEventListener("visibilitychange", onVis);
+  /* 썰매 방울(소리를 켠 사람만). 앱을 켜자마자 뜨면 아직 화면을 누르기 전이라 소리가 안 날 수 있다(브라우저 규칙) — 그때는 열 때의 "츄"만 */
   function jingle(){
     if(!soundOn() || !audio()) return;
     if(actx.state === "suspended") actx.resume();
@@ -749,15 +760,19 @@ function xmasFxCreate(){
     if(reduceMotion()) setScene(4); else { setScene(0); jingle(); }
     raf = requestAnimationFrame(frame);
   }
+  /* 닫으면 그림 · 캔버스 · 창을 모두 놓아준다(한 해에 한 번 쓰는 장면이라 다음에 다시 만든다) */
   function close(){
     if(!running) return;
-    running = false; cancelAnimationFrame(raf); root.hidden = true;
+    running = false; cancelAnimationFrame(raf);
+    window.removeEventListener("resize", onResize); document.removeEventListener("visibilitychange", onVis);
+    root.remove(); xmasFx = null;
     const d = done; done = null; if(d) d();
   }
+
   return {play: play, close: close, skip: ()=>setScene(4), open: openGift, state: ()=>({running: running, scene: scene, opened: !!opened, shown: cheeseN})};
 
 }
 /* 장면 띄우기: {from, to, done} — from → to 는 치즈 칸에 보여 줄 수(이미 받은 뒤의 값이 to). done 은 닫은 뒤에 */
-function xmasFxPlay(opts){ if(!xmasFx) xmasFx = xmasFxCreate(); xmasFx.play(opts); }
+function xmasFxPlay(opts){ if(!isDot()) return; if(!xmasFx) xmasFx = xmasFxCreate(); xmasFx.play(opts); }
 function xmasFxClose(){ if(xmasFx) xmasFx.close(); }
 function xmasFxState(){ return xmasFx ? xmasFx.state() : {running: false}; }

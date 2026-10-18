@@ -3794,13 +3794,14 @@ const LEGACY = {
       const r = {};
       const backup = JSON.stringify(data);
       window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      const wait = ms => new Promise(res => setTimeout(res, ms));
       markHint("closet"); data.bday = cleanBday({}); data.closet.xmasGift = ""; data.closet.cheese = 5;
       r.days = [xmasGiftDay(new Date(2026, 11, 23)), xmasGiftDay(new Date(2026, 11, 24)), xmasGiftDay(new Date(2026, 11, 25)), xmasGiftDay(new Date(2026, 11, 26))];
       r.notDay = earnXmasCheese(new Date(2026, 11, 20));
-      go("home"); xmasHome(new Date(2026, 11, 24, 9));
-      // 치즈는 장면을 띄우기 전에 받고, 썰매 장면이 뜬다. 닫으면 말풍선
+      go("home"); xmasHome(new Date(2026, 11, 24, 9)); r.soon = [data.closet.cheese, xmasFxState().running]; await wait(480);
+      // 치즈는 장면을 띄우기 전에 받고, 잠깐 쉰 뒤(잠금 · 가이드가 덮을 틈) 썰매 장면이 뜬다. 닫으면 말풍선
       r.scene = [data.closet.cheese, data.closet.xmasGift, !$("#xmasFx").hidden, xmasFxState().running];
-      xmasFxClose(); r.first = [$("#xmasFx").hidden, $("#mbubble").textContent.replace(/\n/g, " ")];
+      xmasFxClose(); await wait(20); r.first = [!document.getElementById("xmasFx"), $("#mbubble").textContent.replace(/\n/g, " ")];
       // 다음 날(25일)에 또 열어도 한 번뿐
       r.again = [earnXmasCheese(new Date(2026, 11, 25)), data.closet.cheese];
       // 예전 백업(선물 전)을 되살려도 올해 것은 다시 받지 않는다
@@ -3811,7 +3812,7 @@ const LEGACY = {
       // 생일과 겹치면 한 말풍선으로(홈을 그리는 실제 순서 그대로: 생일 → 크리스마스 → 기다림)
       const realDate = Date, fake = new realDate(2026, 11, 24, 9).getTime();
       window.Date = class extends realDate { constructor(...a){ if(a.length) super(...a); else super(fake); } static now(){ return fake; } };
-      data.bday = cleanBday({m: 12, d: 24}); data.closet.xmasGift = ""; mascot.madeUp = true; go("list"); go("home");
+      data.bday = cleanBday({m: 12, d: 24}); data.closet.xmasGift = ""; mascot.madeUp = true; go("list"); go("home"); await wait(480);
       r.bothScene = [xmasFxState().running, xmasFxState().shown]; xmasFxClose();
       r.both = [$("#mbubble").textContent.replace(/\n/g, " "), data.closet.cheese, data.bday.gift, data.closet.xmasGift];
       window.Date = realDate; stopBdayParty();
@@ -3825,6 +3826,7 @@ const LEGACY = {
     });
     eq("선물 날은 12월 24 · 25일", r.days, [false, true, true, false]);
     eq("다른 날에는 주지 않는다", r.notDay, false);
+    eq("치즈는 바로 받고 장면은 잠깐 뒤에", r.soon, [105, false]);
     eq("24일에 홈을 열면 치즈 100개를 먼저 받고 썰매 장면이 뜬다", r.scene, [105, "2026", true, true]);
     eq("장면을 닫으면 인사 말풍선", r.first, [true, "메리 크리스마스츄! 치즈 100개 선물이츄"]);
     eq("한 해에 한 번", r.again, [false, 105]);
@@ -3854,11 +3856,15 @@ const LEGACY = {
       r.open = [xmasFxState().opened, xmasFxState().shown, $("#xmasFx .xf-cnt").hidden, $("#xmasFx .xf-cap").textContent];
       // 다 받은 뒤 누르면 닫히고 done 이 한 번
       $("#xmasFx .xf-stage").click(); await wait(30);
-      r.closed = [$("#xmasFx").hidden, xmasFxState().running, doneN];
+      r.closed = [!document.getElementById("xmasFx"), xmasFxState().running, doneN];
       // 잠금에 가려 있으면 미뤘다가 잠금이 풀리고 홈을 그릴 때 띄운다
       data.closet.xmasGift = ""; data.bday = cleanBday({}); markHint("closet");
-      $("#lock").classList.add("on"); xmasHome(new Date(2026, 11, 25, 8)); r.locked = [xmasFxState().running, data.closet.xmasGift];
-      $("#lock").classList.remove("on"); xmasHome(new Date(2026, 11, 25, 8)); r.after = xmasFxState().running; xmasFxClose();
+      $("#lock").classList.add("on"); xmasHome(new Date(2026, 11, 25, 8)); await wait(480); r.locked = [xmasFxState().running, data.closet.xmasGift];
+      // 장면을 곧 띄울 참이면 생일 폭죽도 가려진 것으로 친다(장면 밑에서 터져 버리지 않게)
+      r.partyWaits = bdayHidden();
+      $("#lock").classList.remove("on"); xmasHome(new Date(2026, 11, 25, 8)); await wait(480); r.after = xmasFxState().running;
+      // 뒤로 갔다 와도 장면 시간이 밀려 이어진다(건너뛰거나 바로 닫히지 않게)
+      xmasFxClose(); r.closedAfter = [xmasFxState().running, !!document.getElementById("xmasFx")];
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
       data = JSON.parse(backup); data.closet = cleanCloset(data.closet); data.bday = cleanBday(data.bday); persist(); go("home");
       return r;
@@ -3869,6 +3875,8 @@ const LEGACY = {
     eq("다 받은 뒤 누르면 닫히고 끝난 뒤 할 일은 한 번", r.closed, [true, false, 1]);
     eq("잠금에 가려 있으면 치즈만 받고 장면은 미룬다", r.locked, [false, "2026"]);
     ok("잠금이 풀린 뒤 홈을 그리면 미뤄 둔 장면을 띄운다", r.after);
+    ok("장면을 곧 띄울 참이면 생일 폭죽도 미룬다", r.partyWaits);
+    eq("닫으면 장면 창 · 그림을 모두 놓아준다", r.closedAfter, [false, false]);
   }
 
   // ── 6-10x. 1.3 새 버전 알림 ────────────────────────────────────
