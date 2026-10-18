@@ -2369,11 +2369,13 @@ const LEGACY = {
       return [shownTheme(), document.body.getAttribute("data-theme"), document.querySelector('#themeBtns [data-theme="auto"]').classList.contains("on")]; });
     await page.emulateMedia({ colorScheme:"dark" });
     // 느린 CI 에서도 바뀐 뒤에 보도록 바뀔 때까지(최대 2초) 기다린다
-    await page.waitForFunction(() => document.body.getAttribute("data-theme") === "dark", null, { timeout: 2000 }).catch(() => {});
+    await page.waitForFunction(() => document.body.getAttribute("data-theme") === "dark", null, { timeout: 2000 });      // 안 바뀌면 여기서 시간 초과로 실패한다
     const r2 = await page.evaluate(() => [shownTheme(), document.body.getAttribute("data-theme")]);
     const r3 = await page.evaluate(() => { data.theme = "green"; applyTheme(); persist(); return document.body.getAttribute("data-theme"); });
     await page.emulateMedia({ colorScheme:"light" });
-    await page.waitForTimeout(150);
+    // 바뀐 걸 페이지가 받았는지(라이트로 보이는지) 확인한 뒤 두 장면을 더 기다려 본다 — 수동 테마를 덮어쓰지 않아야 한다
+    await page.waitForFunction(() => matchMedia("(prefers-color-scheme: dark)").matches === false, null, { timeout: 2000 });
+    await page.evaluate(() => new Promise(res => requestAnimationFrame(() => requestAnimationFrame(res))));
     const r4 = await page.evaluate(() => [document.body.getAttribute("data-theme"), (Store.load() || {}).theme]);
     await page.evaluate(t => { data.theme = t; applyTheme(); persist(); go("home"); }, theme0);
     eq("자동: 아이폰이 라이트면 기본, 자동 버튼이 켜진다", r1, ["cream", "cream", true]);

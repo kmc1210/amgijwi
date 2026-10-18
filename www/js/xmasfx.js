@@ -449,11 +449,13 @@ function xmasFxCreate(){
      그래서 다가갈수록 달 · 별 · 산등성이도 함께 커지며 화면 밖으로 밀려난다. 낮은 격자 칸 단위 */
   const skyM = ()=>1 + (CAM.f / CAM0.f - 1) * .4;      // 먼 하늘은 땅보다 덜 커진다(땅이 두 배일 때 하늘은 1.4배)
   const skyFade = ()=>Math.min(1, Math.max(0, (CAM.f / CAM0.f - 1) / 1.1));      // 다가갈수록 밤하늘 색으로 옅어진다
-  function skyMix(hex, f){ const a = parseInt(hex.slice(1), 16), b = 0x13261F, ch = s=>Math.round(((a >> s) & 255) * (1 - f) + ((b >> s) & 255) * f); return "#" + ((ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).padStart(6, "0"); }
-  function skyAt(xl, yl){ const m = skyM(), x = (xl + .5) * PXW, y = (yl + .5) * PXH; return [Math.round((CAM.cx + m * (x - CAM0.cx)) / PXW - .5), Math.round((CAM.hz + m * (y - CAM0.hz)) / PXH - .5)]; }
+  /* 화면 가로 x 에 보이는 하늘이 기본 카메라에서 어디였나(산등성이 — skyAt 의 거꾸로) */
+function skyBackX(x, m){ return CAM0.cx + (x - CAM.cx) / m; }
+function skyMix(hex, f){ const a = parseInt(hex.slice(1), 16), b = 0x13261F, ch = s=>Math.round(((a >> s) & 255) * (1 - f) + ((b >> s) & 255) * f); return "#" + ((ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).padStart(6, "0"); }
+  function skyAt(xl, yl, m){ m = m || skyM(); const x = (xl + .5) * PXW, y = (yl + .5) * PXH; return [Math.round((CAM.cx + m * (x - CAM0.cx)) / PXW - .5), Math.round((CAM.hz + m * (y - CAM0.hz)) / PXH - .5)]; }
   function skyFx(T){
-    const m = skyM(), [mx, my] = skyAt(MOON.x, MOON.y), r = MOON.r * m, R = Math.ceil(r + 9 * m), fd = skyFade();
-    const col = h=>fd ? skyMix(h, fd) : h, halo = h=>fd ? skyMix(h, Math.min(1, fd * 1.8)) : h;
+    const m = skyM(), [mx, my] = skyAt(MOON.x, MOON.y, m), r = MOON.r * m, R = Math.ceil(r + 9 * m), fd = skyFade();
+    const memo = {}, col = h=>fd ? (memo[h] || (memo[h] = skyMix(h, fd))) : h, halo = h=>fd ? (memo["~" + h] || (memo["~" + h] = skyMix(h, Math.min(1, fd * 1.8)))) : h;      // 섞은 색은 한 장면에 한 번만
     if(fd < 1 && mx + R >= 0 && my + R >= 0 && mx - R < LOW_W && my - R < LOW_H){
       for(let y = -R; y <= R; y++) for(let x = -R; x <= R; x++){
         const d = Math.hypot(x, y);
@@ -471,18 +473,20 @@ function xmasFxCreate(){
     /* 별똥별: 3.6초마다 한 번, 오른쪽 위에서 왼쪽 아래로 0.6초. 머리는 밝고 꼬리는 점점 어둡게 */
     const per = 3600, ph = (T % per) / 600, n = Math.floor(T / per);
     if(ph < 1){ const sx = 110 + (n * 37) % 40, sy = 8 + (n * 23) % 30, hx = sx - ph * 46, hy = sy + ph * 22;
-      ["#FFFFFF", "#FFFFFF", "#FFF3C4", "#E3ECF3", "#C9D8E6", "#AFC3D5", "#8FA9BF", "#7590A6", "#5E7D93", "#4A6A6A", "#3E5A50", "#2C4A40"].forEach((col, k)=>{ if(ph * 46 - k * 2 < 0) return;
-        const [x0, y0] = skyAt(hx + k * 2, hy - k); lowPx(x0, y0, col); lowPx(x0 + 1, y0, col); });
-      const [hx0, hy0] = skyAt(hx, hy); lowPx(hx0, hy0 + 1, "#C9D8E6"); lowPx(hx0 - 1, hy0, "#C9D8E6"); }
+      ["#FFFFFF", "#FFFFFF", "#FFF3C4", "#E3ECF3", "#C9D8E6", "#AFC3D5", "#8FA9BF", "#7590A6", "#5E7D93", "#4A6A6A", "#3E5A50", "#2C4A40"].forEach((c0, k)=>{ if(ph * 46 - k * 2 < 0) return;
+        const [x0, y0] = skyAt(hx + k * 2, hy - k, m), cc = col(c0); lowPx(x0, y0, cc); lowPx(x0 + 1, y0, cc); });
+      const [hx0, hy0] = skyAt(hx, hy, m); lowPx(hx0, hy0 + 1, col("#C9D8E6")); lowPx(hx0 - 1, hy0, col("#C9D8E6")); }      // 별똥별도 하늘과 함께 옅어진다
   }
 
   function world(T, distNow){
     L(); c.fillStyle = "#0B1714"; c.fillRect(0, 0, W, H);
     c.fillStyle = "#13261F"; c.fillRect(0, 0, W, CAM.hz);
     skyFx(T);
-    [[62,12],[84,28],[114,10],[132,40],[48,52],[100,60],[36,72],[144,20],[20,30],[76,84]].forEach(([x, y], k)=>{ if((Math.floor(T / 400) + k) % 4){ const q = skyAt(x, y); lowPx(q[0], q[1], skyMix("#E9DCC0", skyFade() * .8)); } });
+    /* 별: 달과 같은 빠르기로 옅어진다 */
+    const sm = skyM(), starCol = skyMix("#E9DCC0", skyFade());
+    [[62,12],[84,28],[114,10],[132,40],[48,52],[100,60],[36,72],[144,20],[20,30],[76,84]].forEach(([x, y], k)=>{ if((Math.floor(T / 400) + k) % 4){ const q = skyAt(x, y, sm); lowPx(q[0], q[1], starCol); } });
     /* 먼 산등성이도 카메라를 따라 커진다 */
-    c.fillStyle = "#1E3B33"; { const m = skyM(); for(let x = 0; x < W; x++){ const xb = CAM0.cx + (x - CAM.cx) / m, h = (4 + Math.round(3 * Math.sin(xb / 13) + 2 * Math.sin(xb / 5.3))) * m; c.fillRect(x, CAM.hz - h, 1, h); } }
+    c.fillStyle = "#1E3B33"; { const m = sm; for(let x = 0; x < W; x++){ const xb = skyBackX(x, m), h = (4 + Math.round(3 * Math.sin(xb / 13) + 2 * Math.sin(xb / 5.3))) * m; c.fillRect(x, CAM.hz - h, 1, h); } }
     drawSnowField(T);
     /* 썰매 자국: 썰매가 지나온 길(지금 자리 → 멀리)에 날 두 줄 */
     c.fillStyle = "#98AFC4";
