@@ -336,7 +336,8 @@
   .blk{margin-bottom:18px;}
   .blk .lb{font-size:11.5px;font-weight:800;letter-spacing:1.1px;color:var(--accent);margin-bottom:9px;}
   /* ICE/HOT 재료가 두 벌일 때. 좁으면 한 줄로 떨어지게 auto-fit 을 쓴다 */
-  .ingcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:2px 18px;}
+  /* ICE · HOT 두 벌은 위아래로(나란히 두면 재료 이름이 길 때 줄이 접혀 읽기 어렵다) */
+  .ingcols{display:grid;grid-template-columns:1fr;gap:12px;}
   .ingset{font-size:11.5px;font-weight:800;letter-spacing:1px;color:var(--muted);margin:10px 0 2px;}
   .ingcols > div > .ingset:first-child{margin-top:2px;}
   .ing{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14.5px;}

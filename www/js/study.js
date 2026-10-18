@@ -192,6 +192,19 @@ function startSession(customPool){
 function bindActions(){
   document.querySelectorAll("#actions .act").forEach(b=>b.addEventListener("click",()=>action(b.dataset.a)));
 }
+/* 긴 메뉴 이름은 한 줄에 들어가도록 글자를 줄인다. 가장 작게 min px 까지(도트 글꼴은 16px 아래로 내리지 않는다).
+   그래도 넘치면 낱말 단위로 줄을 바꾼다("히비스 / 커스"처럼 낱말 가운데서 끊지 않게) */
+function fitTitle(el, min){
+  if(!el || !el.clientWidth) return;
+  el.style.whiteSpace = "nowrap"; el.style.wordBreak = "keep-all";
+  el.style.alignSelf = "stretch"; el.style.width = "100%"; el.style.boxSizing = "border-box";     // 가운데 정렬 줄에서는 글자만큼 넓어져 넘치는지 알 수 없다 — 카드 폭에 맞춰 잰다
+  let size = parseFloat(getComputedStyle(el).fontSize);
+  while(el.scrollWidth > el.clientWidth + 1 && size > min){ size -= 1; el.style.fontSize = size + "px"; }
+  if(el.scrollWidth > el.clientWidth + 1) el.style.whiteSpace = "";
+}
+const CARD_TITLE_MIN = 18, SHEET_TITLE_MIN = 18;
+function fitCardTitle(){ fitTitle(document.querySelector("#card h2"), CARD_TITLE_MIN); }
+window.addEventListener("resize", ()=>{ if($("#s-study").classList.contains("active")) fitCardTitle(); });
 function renderCard(){
   const d = state.deck[state.idx];
   if(!d){ finish(); return; }
@@ -201,12 +214,14 @@ function renderCard(){
   if(data.mode === "blank"){
     $("#card").classList.remove("full");
     $("#card").innerHTML = blankHTML(d);
+    fitCardTitle();
     bindBlanks(d);
     renderBlankActions(d);
     return;
   }
   $("#card").classList.toggle("full", !state.flipped);
   $("#card").innerHTML = state.flipped ? backHTML(d) : frontHTML(d);
+  fitCardTitle();
   $("#actions").innerHTML = state.flipped
     ? `<button class="act again" data-a="again">다시 볼래요</button><button class="act ok" data-a="ok">외웠어요</button>`
     : `<button class="act flip" data-a="flip">레시피 확인하기</button>`;

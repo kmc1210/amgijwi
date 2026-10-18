@@ -831,6 +831,7 @@ function openSheet(id){
     ${shareOn() ? `<button class="cta ghost" id="sheetShare">이 레시피 보내기</button>` : ""}
     <button class="cta ghost" id="sheetArch">${d.arch ? "보관 해제하기" : "보관하기"}</button>
     <button class="cta danger" id="sheetDel">삭제하기</button>`;
+  fitTitle($("#sheetBody h2"), SHEET_TITLE_MIN);      // 긴 이름은 한 줄로(study.js)
   $("#mask").classList.add("on"); $("#sheet").classList.add("on");
   $("#sheetEdit").addEventListener("click", ()=>{ closeSheet(); openEditor(d.id); });
   if($("#sheetShare")) $("#sheetShare").addEventListener("click", ()=>sendRecipes([d.id]));      // recipeshare.js

@@ -3631,7 +3631,7 @@ const LEGACY = {
       tapClosetItem("pumpkin"); tapClosetItem("cape"); $("#cFxBtn").click(); await wait(60); go("home"); await wait(120);
       r.leave = !$("#cRun");
       // 치즈가 모자라면 미리 보기 뒤에도 그렇게 말한다
-      data.closet = cleanCloset({ cheese: 10 }); openCloset("home"); tapClosetItem("pumpkin"); $("#cFxBtn").click(); await wait(1200);
+      data.closet = cleanCloset({ cheese: 10 }); openCloset("home"); tapClosetItem("pumpkin"); $("#cFxBtn").click(); await wait(2200);      // 번쩍임 두 번(눈을 감고 있으면 기다렸다가) 끝날 때까지
       r.poorSay = $("#cSay").textContent;
       closetTry = ""; stopClosetRun(); clearTimeout(closetGlowT); glowStop(closetStage); closetStage.lit = false; closetStage.blink = false;
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
@@ -3645,6 +3645,41 @@ const LEGACY = {
     eq("호박 바구니: 그 자리에서 번쩍인다", r.lit, [true, true, "번쩍!"]);
     eq("옷장을 떠나면 달리기가 끊긴다", r.leave, true);
     eq("치즈가 모자라면 미리 보기 뒤에도 그렇게 말한다", r.poorSay, "치즈가 모자라츄…");
+  }
+
+  // ── 6-10p. 1.4 긴 메뉴 이름 · ICE/HOT 위아래 ───────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const wait = ms => new Promise(res => setTimeout(res, ms));
+      const backup = JSON.stringify(data);
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      const mk = (id, name) => ({ id, cat: "tea", name, en: "", temp: "ICE/HOT", cups: [], subRefs: [], steps: [], tip: "",
+        ing: [["뱅쇼믹스", "상단"], ["컵 과일토핑", "5T 1회"]], ingHot: [["뱅쇼믹스 스팀피처", "윗선 xhot"], ["붓기 스팀스푼", "6ml"]] });
+      const long = mk("long", "클래식 뱅쇼 히비스커스 티"), short = mk("short", "라떼");
+      data.drinks.push(long, short); data.mode = "flip";
+      const one = el => { const lh = parseFloat(getComputedStyle(el).lineHeight) || parseFloat(getComputedStyle(el).fontSize) * 1.25; return Math.round(el.getBoundingClientRect().height / lh) === 1; };
+      startSession([long]); let h = $("#card h2");
+      r.front = [one(h), parseFloat(getComputedStyle(h).fontSize) >= CARD_TITLE_MIN, parseFloat(getComputedStyle(h).fontSize) <= 32, h.scrollWidth <= h.clientWidth + 1];
+      const longer = mk("longer", "클래식 뱅쇼 히비스커스 티 라지"); data.drinks.push(longer); startSession([longer]); h = $("#card h2");
+      r.shrinks = parseFloat(getComputedStyle(h).fontSize) < 32 && parseFloat(getComputedStyle(h).fontSize) >= CARD_TITLE_MIN && (one(h) || h.style.whiteSpace === "");
+      startSession([long]);
+      state.flipped = true; renderCard(); h = $("#card h2"); r.back = [one(h), h.scrollWidth <= h.clientWidth + 1];
+      const cols = [...document.querySelectorAll("#card .ingcols > div")].map(e => e.getBoundingClientRect());
+      r.stacked = cols.length === 2 && cols[1].top >= cols[0].bottom - 1 && Math.abs(cols[0].left - cols[1].left) < 2;
+      startSession([short]); r.shortKeeps = getComputedStyle($("#card h2")).fontSize;
+      go("list"); openSheet("long"); await wait(30); h = $("#sheetBody h2"); r.sheet = [one(h), parseFloat(getComputedStyle(h).fontSize) >= SHEET_TITLE_MIN];
+      closeSheet();
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      data = JSON.parse(backup); persist(); go("home");
+      return r;
+    });
+    eq("긴 메뉴 이름: 카드 앞면은 글자를 줄여 한 줄(18px 이상)", r.front, [true, true, true, true]);
+    ok("더 긴 이름은 글자를 줄이고(18px 아래로는 안 내림), 그래도 넘치면 낱말 단위로 줄을 바꾼다", r.shrinks);
+    eq("긴 메뉴 이름: 카드 뒷면도 한 줄", r.back, [true, true]);
+    ok("ICE · HOT 재료는 위아래로", r.stacked);
+    eq("짧은 이름은 원래 크기 그대로", r.shortKeeps, "32px");
+    eq("레시피 상세 제목도 한 줄", r.sheet, [true, true]);
   }
 
   // ── 6-10x. 1.3 새 버전 알림 ────────────────────────────────────
