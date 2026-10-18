@@ -3753,18 +3753,28 @@ const LEGACY = {
       r.bars = CAROLS.map((s, i) => {
         const bars = CAROL_BARS[i], mel = (s.pickup || []).concat(s.mel).reduce((a, n) => a + n[1], 0);
         const chord = bars.filter(b => b.chord).length * s.beats + (s.pickup || []).reduce((a, n) => a + n[1], 0);
-        return [s.id, mel === chord, bars.every(b => b.notes.every(n => n[1] >= 0 && n[1] < b.len))];
+        // 마디를 넘는 음은 마디보다 긴 붙임 음(고요한 밤 끝 음)뿐이다
+        return [s.id, mel === chord, bars.every(b => b.notes.every(n => n[1] >= 0 && (n[1] + n[2] <= b.len + 1e-6 || n[2] > s.beats)))];
       });
       data.sound = "all"; data.closet.themes = ["xmnight"]; data.theme = "cream"; applyTheme();
       r.cafe = carolWanted();
       data.theme = "xmnight"; applyTheme(); r.xmas = carolWanted();
       // 한 마디씩: 마지막 마디를 치면 다음 곡으로, 세 곡 뒤에는 처음으로
+      // 소리는 내지 않고 순서만 본다(테스트 브라우저에 몇 분치 소리를 걸어 두지 않게)
+      const real = {bell, bassNote, rhodes, sleighBell}; const played = [];
+      window.bell = m => played.push(m); window.bassNote = () => {}; window.rhodes = () => {}; window.sleighBell = () => {};
       bgmStop(); bgm.on = true; audio(); bgm.carol = null; carolBar(); r.first = [bgm.carol.song, bgm.carol.bar];
       const total = CAROL_BARS.reduce((a, b) => a + b.length, 0); let songs = new Set();
       for(let k = 1; k < total; k++){ clearTimeout(bgm.timer); carolBar(); songs.add(bgm.carol.song); }
       r.loop = [bgm.carol.song, bgm.carol.bar, songs.size];
+      // 학습 화면에서는 종소리 멜로디를 쉰다
+      startSession([data.drinks[0]]); played.length = 0; clearTimeout(bgm.timer); carolBar(); carolBar(); r.studyMel = played.length; go("home");
+      played.length = 0; clearTimeout(bgm.timer); carolBar(); r.homeMel = played.length > 0;
+      // 멈췄다 다시 켜도 듣던 자리부터
+      const at = [bgm.carol.song, bgm.carol.bar]; bgmStop(); bgmStart(); clearTimeout(bgm.timer); r.resume = JSON.stringify(at) === JSON.stringify([bgm.carol.song, bgm.carol.bar - 1]) || bgm.carol.bar === 0;
+      bgmStop(); Object.assign(window, real);
       // 테마를 바꾸면 다음 마디부터 카페 배경음
-      data.theme = "cream"; applyTheme(); clearTimeout(bgm.timer); bgmBar(); r.back = bgm.carol;
+      data.theme = "cream"; applyTheme(); bgm.on = true; window.rhodes = () => {}; window.bassNote = () => {}; bgmBar(); clearTimeout(bgm.timer); r.back = bgm.carol; Object.assign(window, real);
       bgmStop();
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
       data = JSON.parse(backup); persist(); applyTheme(); go("home");
@@ -3774,6 +3784,8 @@ const LEGACY = {
     eq("크리스마스 밤 테마에서만 캐롤", [r.cafe, r.xmas], [false, true]);
     eq("징글벨 첫 마디부터 시작해 세 곡을 돌고 처음으로", [r.first, r.loop], [[0, 1], [0, 0, 3]]);
     eq("테마를 바꾸면 카페 배경음으로 돌아간다", r.back, null);
+    eq("학습 화면에서는 멜로디를 쉬고, 홈에서는 다시", [r.studyMel, r.homeMel], [0, true]);
+    ok("멈췄다 다시 켜도 듣던 자리부터 잇는다", r.resume);
   }
 
   // ── 6-10x. 1.3 새 버전 알림 ────────────────────────────────────
