@@ -192,7 +192,7 @@ document.querySelectorAll("#enSeg button").forEach(b=>{
 });
 
 /* ---------- 테마 ---------- */
-const THEME_BAR = {cream:"#F7F3EE", dark:"#14110E", green:"#F1F6F1", hwnight:"#1C1424"};
+const THEME_BAR = {cream:"#F7F3EE", dark:"#14110E", green:"#F1F6F1", hwnight:"#1C1424", xmnight:"#0F1E1A"};
 /* 지금 화면에 입힐 테마: 자동이면 아이폰이 다크 모드인지 보고 다크 · 기본 중에 고른다 */
 const darkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
 function shownTheme(){
@@ -216,12 +216,13 @@ function applyTheme(){
 document.querySelectorAll("#themeBtns .theme-b").forEach(b=>{
   b.addEventListener("click", ()=>{ data.theme = b.dataset.theme; persist(); applyTheme(); });
 });
-/* 핼러윈 밤은 탭 아이콘도 핼러윈 모양으로. 앱이 켜질 때 paintIcons 뒤에도 한 번 부른다(boot.js) */
+/* 치즈로 사는 테마는 탭 아이콘도 그 테마 모양으로(core.js 의 ICONS["…_hw"] · ["…_xm"]). 앱이 켜질 때 paintIcons 뒤에도 한 번 부른다(boot.js) */
+const THEME_ICON_SUFFIX = {hwnight:"_hw", xmnight:"_xm"};
 function themeTabIcons(){
-  const hw = shownTheme() === "hwnight";
+  const sfx = THEME_ICON_SUFFIX[shownTheme()] || "";
   document.querySelectorAll("#tabs [data-ico]").forEach(el=>{
     const name = el.getAttribute("data-ico");
-    el.innerHTML = icon(hw && ICONS[name + "_hw"] ? name + "_hw" : name);
+    el.innerHTML = icon(sfx && ICONS[name + sfx] ? name + sfx : name);
   });
 }
 /* 치즈로 사는 테마 버튼(앱만). 산 것은 고르기, 안 산 것은 값과 기간 — 누르면 확인창에서 산다. 기간이 지난 안 산 테마는 숨긴다 */

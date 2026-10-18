@@ -70,6 +70,18 @@ html.dot body[data-theme="hwnight"]{
   --d-dot:#7E6A92; --d-late:#E0736A;
 }
 
+html.dot body[data-theme="xmnight"]{
+  --d-bg:#0F1E1A; --d-surface:#18302A;
+  --d-line:#C9A85A; --d-drop:#000000;
+  --d-t1:#F4EEE2; --d-t2:#BFD3C8;
+  --d-acc:#D23C3C; --d-acc-dark:#7E1E1E; --d-acc-hi:#F06A5A; --d-on-acc:#FFF6EE;
+  --d-hero:#1E3B33; --d-hero-hi:#2C5246; --d-hero-lo:#122620; --d-hero-t:#F4EEE2; --d-hero-t2:#CFE0D6;
+  --d-ring-track:#2C5246; --d-ring-fill:#D23C3C; --d-ring-hi:#F06A5A; --d-ring-lo:#8E2128;
+  --d-warn-bg:#3A2A12; --d-warn-t:#F2C766;
+  --d-tab:#13241F;
+  --d-dot:#6E8A80; --d-late:#F06A5A;
+}
+
 /* 자주 쓰는 도트 외곽선. body 에서 계산되므로 테마마다 --d-line 색을 따라간다 */
 html.dot body{
   --d-box:0 -3px 0 0 var(--d-line), 0 3px 0 0 var(--d-line), -3px 0 0 0 var(--d-line), 3px 0 0 0 var(--d-line);
@@ -914,3 +926,8 @@ html.dot #s-closet .crun .r{position:absolute;left:0;top:0;width:56px;height:80p
 html.dot #s-closet .crun .r svg{width:100%;height:100%;display:block;}
 html.dot #s-closet .crun .fx{position:absolute;left:0;top:0;width:100%;height:100%;}
 html.dot #s-closet .crun .fx svg{display:block;overflow:visible;}
+
+/* ---------- 크리스마스 밤: 눈이 화면 뒤에서 보이게 (themefx.js 의 snowSync 가 body.snowing 을 붙인다) ----------
+   화면 바탕을 비우고 앱 바탕에 같은 색을 칠한다. 카드 · 줄은 제 바탕이 있어 눈이 그 뒤로 지나간다. 학습 화면은 그대로(눈도 멈춘다) */
+html.dot body.snowing .app{background:var(--d-bg);}
+html.dot body.snowing .screen:not(#s-study){background:transparent !important;}

@@ -242,8 +242,8 @@ data.needReview = data.needReview || [];
 if(data.mode !== "blank") data.mode = "flip";
 /* 테마. auto 는 아이폰 라이트 · 다크를 따라간다(settings.js 의 shownTheme). 처음 설치하면 auto 로 시작하고,
    이미 쓰던 사람은 고른 그대로 둔다(예전 데이터에 테마가 없으면 크림이었다) */
-/* hwnight 는 치즈로 사는 테마(closet.js 의 THEME_SHOP). 안 산 테마가 골라져 있으면 applyTheme 이 기본으로 그린다 */
-const THEMES = ["auto", "cream", "dark", "green", "hwnight"];
+/* hwnight · xmnight 는 치즈로 사는 테마(closet.js 의 THEME_SHOP). 안 산 테마가 골라져 있으면 applyTheme 이 기본으로 그린다 */
+const THEMES = ["auto", "cream", "dark", "green", "hwnight", "xmnight"];
 if(THEMES.indexOf(data.theme) < 0) data.theme = freshData ? "auto" : "cream";
 if(["as-is","upper","lower"].indexOf(data.enCase) < 0) data.enCase = "as-is";
 /* 소리는 꺼진 채로 시작한다. 카페 근무 중에 갑자기 울리면 곤란하다 */
@@ -438,6 +438,11 @@ const ICONS = {
   note_hw:["................", "..CCCCCCCC......", "..CWwwwwwC......", "..CwVVVVwC...gg.", "..CwwwwwwC..ggO.", "..CwVVVVwC.gOO..", "..CwwwwwwCCOO...", "..CwVVVVwCOu....", "..CwwwwwwCu.....", "..CwVVwwwC......", "..CwwwwwwC......", "..CCCCCCCC......", "................", "................", "................", "................"],
   calendar_hw:["................", "....K......K....", "....K......K....", "..KKKKKKKKKKKK..", "..KuOOOOOOOOuK..", "..KKKKKKKKKKKK..", "..KwWWWWWWWWwK..", "..KwcwcwcwcwwK..", "..KwwwwwwwgwwK..", "..KwcwcwcOOOwK..", "..KwwwwwwOkOwK..", "..KwcwcwcOOOwK..", "..KKKKKKKKKKKK..", "................", "................", "................"],
   gear_hw:["......vvvv......", "......vVVv......", "..vv.vvVVvv.vv..", "..vvvvVVVVvvvv..", "...vVVVVVVVVv...", "..vvVVVgVVVVvv..", "vvvVVVOOOOVVVvvv", "vVVVVOOkOkOVVVVv", "vVVVVOOOOOOVVVVv", "vvvVVVOkkOVVVvvv", "..vvVVVVVVVVvv..", "...vVVVVVVVVv...", "..vvvvVVVVvvvv..", "..vv.vvVVvv.vv..", "......vVVv......", "......vvvv......"],
+  home_xm:["................",".......WW.......","......WWWW......",".....WrrrrW.....","....WrrrrrrW....","...WrrrrrrrrW...","..WrrrrrrrrrrW..",".WWWWWWWWWWWWWW.","..KccccccccccK..","..KcXXccccXXcK..","..KcXXccccXXcK..","..KccccgggcccK..","..KccccgrgcccK..","..KccccgggcccK..","..KccccgggcccK..","..KKKKKKKKKKKK.."],
+  cards_xm:["................",".....GGGGGGGGGG.",".....GggggggggG.",".....GggggggggG.",".....GggggggggG.",".KKKKKKKKKKgggG.",".KwwwwwwwwKgggG.",".KwwggwggwKgggG.",".KwgggrgggKgggG.",".KwwgrrrgwKGGGG.",".KwwwgwgwwK.....",".KwwwwwwwwK.....",".KwwwwwwwwK.....",".KKKKKKKKKK.....","................","................"],
+  note_xm:["................","..KKKKKKKK..WrW.","..KwwwwwwK.W..r.","..KwccccwK.r..W.","..KwwwwwwK.W....","..KwccccwK.r....","..KwwwwwwK.W....","..KwccccwK.r....","..KwwwwwwK.W....","..KwccwwwK.r....","..KwwwwwwK.W....","..KKKKKKKK......","................","................","................","................"],
+  calendar_xm:["................","....K......K....","....K......K....","..rrrrrrrrrrrr..","..rRRRRRRRRRRr..","..rrrrrrrrrrrr..","..KwWWWWWWWWwK..","..KwcwcwcwYwwK..","..KwwwwwXXXXXK..","..KwcwcwcXXXwK..","..KwwwwwwXwXwK..","..KwcwcwcwcwwK..","..KKKKKKKKKKKK..","................","................","................"],
+  gear_xm:["................",".....gGrggg.....","...ggggGggggG...","..gGrgggGggggG..","..ggGg....grgg..",".gggg......gggg.",".Gggg......Gggg.",".gGg........Ggg.",".ggrg......ggGg.",".gggG......grgG.","..gggG....Gggg..","..gggrGgggrGgg..","...gggrRRrggG...",".....rggGgr.....","......R..R......","................"],
   palette:["................", "....KKKKKKK.....", "..KKwwwwwwwKK...", ".KwwrrwwwYYwwK..", ".KwwrrwwwYYwwK..", "KwwwwwwwwwwwwwK.", "KwEEwwwwwwwggwK.", "KwEEwwKKwwwggwK.", "KwwwwKwwKwwwwwK.", "KwwwwKwwKwwwwK..", ".KwwwwKKwwwwK...", ".KwwwwwwwwwK....", "..KKwwwwwwKK....", "....KKKKKK......", "................", "................"],
   ade:["................","..........gg....",".........ggg....",".....xxxxxx.....","...xxYXXXXYxx...","..xYXYYYYYYXYx..","..xYhYYYYYYYYx..","..xYhYYYYYYYYx..","..xYYYYYYYYYYx..","..xYyYYYYYYyYx..","...xxYyyyyYxx...",".....xxxxxx.....","................","................","................","................"],
   back:["...DDDDDDDDDD...",".DDEEEEEEEEEEDD.","DEEEEEEEEEEEEEED","EEEEEEEEEEhhhEEE","EEEEEEEEEEhhhEEE","EEEEEEEEEEhhhEEE","EEEEEEhEEEhhhEEE","EEEEEhhEEEhhhEEE","EEEEhhhhhhhhhEEE","EEEhhhhhhhhhhEEE","EEEEhhhhhhhhEEEE","EEEEEhhEEEEEEEEE","EEEEEEhEEEEEEEEE","eEEEEEEEEEEEEEEe",".eeEEEEEEEEEEee.","...eeeeeeeeee..."],
