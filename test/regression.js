@@ -2475,7 +2475,11 @@ const LEGACY = {
       const r = {};
       const backup = JSON.stringify(data);
       window.__amgijwiNative = true; document.documentElement.classList.add("dot");
-      const hw = CLOSET_ITEMS.filter(i => i.season);
+      const hw = CLOSET_ITEMS.filter(i => i.season === HALLOWEEN), xm = CLOSET_ITEMS.filter(i => i.season === XMAS);
+      r.xmas = [xm.map(i => i.id).join(","), xm.every(i => i.season.until === "2026-12-31"), xm.reduce((n, i) => n + i.price, 0),
+        xm.filter(i => i.glow).map(i => i.id + ":" + (i.price >= 45) + ":" + !!i.perk).join(","),
+        ["8", "9", "0", "f", "e", "s", "x", "z"].every(k => CLOSET_PAL[k] && MOUSE_PAL[k] === CLOSET_PAL[k]),
+        xm.every(i => i.rows.every(row => row.length === 28) && i.rows.join("").split("").every(ch => ch === "." || ch === "_" || MOUSE_PAL[ch]))];
       r.list = [hw.map(i => i.id).join(","), hw.every(i => i.season.until === "2026-11-08"), hw.reduce((n, i) => n + i.price, 0)];
       // 팔레트 글자가 쥐돌이 · 다른 아이템 색과 겹치지 않고, 빛나는 줄도 같은 크기
       r.pal = ["H", "I", "J", "W", "C", "D"].every(k => CLOSET_PAL[k] && MOUSE_PAL[k] === CLOSET_PAL[k]);
@@ -2500,14 +2504,14 @@ const LEGACY = {
       const realOn = closetOnSale; closetOnSale = (it, today) => realOn(it, today || "2026-10-20");      // 오늘이 언제든 파는 기간 안으로
       openCloset("home"); closetSlot = "head"; renderCloset();
       const grid = [...document.querySelectorAll("#cGrid .citem")];
-      r.grid = [grid.slice(0, 2).map(b => b.dataset.i).join(","), grid.filter(b => b.querySelector(".lim")).map(b => b.querySelector(".lim").textContent).join("|"), !!document.querySelector('#cGrid [data-i="batpin"] .lim')];
+      r.grid = [grid.slice(0, 2).map(b => b.dataset.i).join(","), grid.filter(b => b.querySelector(".lim") && closetItem(b.dataset.i).season === HALLOWEEN).map(b => b.querySelector(".lim").textContent).join("|"), !!document.querySelector('#cGrid [data-i="batpin"] .lim')];
       // 사고 입기
       tapClosetItem("witchhat"); buyClosetItem(); r.bought = [data.closet.cheese, data.closet.wear.head];
       // 기간이 지나면: 안 가진 한정 아이템은 안 보이고 입어 볼 · 살 수도 없다. 가진 것은 그대로 입는다
       closetOnSale = (it, today) => realOn(it, today || "2026-11-09");
       renderCloset();
-      r.after = [[...document.querySelectorAll("#cGrid .citem")].map(b => b.dataset.i).filter(id => closetItem(id).season).sort().join(","),
-                 document.querySelectorAll("#cGrid .lim").length];
+      r.after = [[...document.querySelectorAll("#cGrid .citem")].map(b => b.dataset.i).filter(id => closetItem(id).season === HALLOWEEN).sort().join(","),
+                 [...document.querySelectorAll("#cGrid .citem")].filter(b => closetItem(b.dataset.i).season === HALLOWEEN && b.querySelector(".lim")).length];
       tapClosetItem("pumpkinhead"); r.noTry = closetTry;
       closetOnSale = (it, today) => realOn(it, today || "2026-10-20"); tapClosetItem("mask");
       closetOnSale = (it, today) => realOn(it, today || "2026-11-09"); renderCloset(); r.endedTry = [closetTry, $("#cMsg").textContent];
@@ -2542,6 +2546,8 @@ const LEGACY = {
     eq("핼러윈 6개 · 11월 8일까지 · 다 사면 365(빛나는 호박 둘은 더 비싸다)", r.list, ["witchhat,pumpkinhead,batpin,mask,cape,pumpkin", true, 365]);
     ok("핼러윈 색 글자가 팔레트에 들어간다", r.pal);
     eq("번쩍이는 색 표는 호박 둘에, 그림에 있는 색을 있는 색으로 바꾼다", r.glow, "pumpkinhead:true,pumpkin:true");
+    eq("크리스마스 6개 · 12월 31일까지 · 다 사면 270, 빛나는 둘(코 · 트리)은 더 비싸고 효과 설명이 있다, 색 · 그림 칸이 맞다",
+       r.xmas, ["santahat,antler,rednose,scarf,gift,tree", true, 270, "rednose:true:true,tree:true:true", true, true]);
     {
       // 옷장 색 글자가 쥐돌이 · 날씨 옷 색(core.js 의 MOUSE_PAL)을 덮어쓰지 않는다
       const core = fs.readFileSync(path.join(jsDir, "core.js"), "utf8"), clo = fs.readFileSync(path.join(jsDir, "closet.js"), "utf8");
@@ -2582,7 +2588,7 @@ const LEGACY = {
       const c0 = cleanCloset({ cheese:-3, own:["beret","nope"], wear:{ head:"beret", face:"glasses", body:"mug" } });
       r.clean = [c0.cheese, c0.own.join(","), JSON.stringify(c0.wear)];
       r.items = CLOSET_ITEMS.filter(i => !i.rows.every(row => row.length === 28 && row.split("").every(ch => ch === "." || ch === "_" || MOUSE_PAL[ch]))).map(i => i.id);
-      r.ids = new Set(CLOSET_ITEMS.map(i => i.id)).size === CLOSET_ITEMS.length && CLOSET_ITEMS.length === 19;
+      r.ids = new Set(CLOSET_ITEMS.map(i => i.id)).size === CLOSET_ITEMS.length && CLOSET_ITEMS.length === 25;
       // 그리기 규칙
       data.closet = cleanCloset({ cheese:0, own:["beret","glasses","apron","mug"], wear:{ head:"beret", face:"glasses", body:"apron", hand:"mug" } });
       window.__amgijwiNative = true; document.documentElement.classList.add("dot");
@@ -2706,7 +2712,7 @@ const LEGACY = {
     });
     eq("옷장 정리: 음수 치즈는 0, 없는 아이템 · 안 가진 옷은 뺀다", r.clean, [0, "beret", '{"head":"beret"}']);
     eq("아이템 그림은 모두 28칸 너비이고 색이 정해져 있다", r.items, []);
-    ok("아이템 19개(핼러윈 6개 포함), 이름이 겹치지 않는다", r.ids);
+    ok("아이템 25개(핼러윈 · 크리스마스 6개씩 포함), 이름이 겹치지 않는다", r.ids);
     ok("머그를 들면 허리띠가 옆구리를 돌고, 머그 · 발은 앞치마 앞에 있다", r.beltSides && r.mugInFront && r.beret);
     ok("앞치마만 입으면 허리띠가 발 뒤로 지나간다", r.pawsFront);
     ok("치즈를 먹는 동안: 치즈는 앞치마에 가리지 않고, 머그는 내려놓는다", r.eatKeepsCheese && r.eatNoMug);
