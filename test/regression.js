@@ -1137,7 +1137,7 @@ const LEGACY = {
     data = JSON.parse(backup); persist(); go("home");
     return r;
   });
-  eq("아이콘이 서른여섯 개다(탭바의 홈·학습 카드·설정, 설정 묶음의 팔레트, 핼러윈 탭 아이콘 다섯 포함)", dots.count, 36);
+  eq("아이콘이 마흔한 개다(탭바의 홈·학습 카드·설정, 설정 묶음의 팔레트, 핼러윈 · 크리스마스 탭 아이콘 다섯씩 포함)", dots.count, 41);
   ok("모두 정사각이고 16칸 이상이다", dots.square === true, JSON.stringify(dots.sizes));
   ok("팔레트에 없는 색을 쓰지 않는다", dots.knownColors === true);
   ok("아이콘은 제 팔레트 색만 쓴다", dots.onlyIconPal === true);
@@ -2282,7 +2282,7 @@ const LEGACY = {
       // 기간이 지나도 산 테마는 남고, 안 산 사람에게는 사라진다
       closetOnSale = (it, today) => realOn(it, today || "2026-11-09");
       go("set"); renderSettings(); r.keep = !!btn();
-      const own = data.closet.themes; data.closet.themes = []; renderSettings(); r.gone = [!!btn(), $("#themeShop").hidden]; data.closet.themes = own;
+      const own = data.closet.themes; data.closet.themes = []; renderSettings(); r.gone = [!!btn(), !!document.querySelector('#themeShop [data-shop="xmnight"]')]; data.closet.themes = own;
       // 백업을 되살려도 산 테마는 치즈 · 옷처럼 따라간다
       r.restore = cleanCloset(JSON.parse(JSON.stringify(data.closet))).themes.join(",");
       closetOnSale = realOn;
@@ -2303,7 +2303,7 @@ const LEGACY = {
     eq("설정 묶음 줄에도 핼러윈 밤 테마", r.note, "핼러윈 밤 테마");
     eq("홈이 아니면 멈춘다", r.fxList, [true, null]);
     ok("기간이 지나도 산 테마는 고를 수 있다", r.keep);
-    eq("기간이 지나면 안 산 사람에게는 상점 칸이 사라진다", r.gone, [false, true]);
+    eq("기간이 지나면 안 산 사람에게는 핼러윈 칸이 사라진다(그때 파는 크리스마스 칸은 남는다)", r.gone, [false, true]);
     eq("산 테마는 백업을 따라간다", r.restore, "hwnight");
     eq("앱이 아니면 테마 움직임이 없다", r.webFx, [true]);
   }
@@ -3700,6 +3700,45 @@ const LEGACY = {
     ok("ICE · HOT 재료는 위아래로", r.stacked);
     eq("짧은 이름은 원래 크기 그대로", r.shortKeeps, "32px");
     eq("레시피 상세 제목도 한 줄", r.sheet, [true, true]);
+  }
+
+  // ── 6-10o. 1.5 크리스마스 밤 테마 ──────────────────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const wait = ms => new Promise(res => setTimeout(res, ms));
+      const backup = JSON.stringify(data);
+      // 탭 아이콘이 이 테마 것인가: 같은 방식으로 그린 것과 비교한다
+      const tmp = document.createElement("div");
+      const tabsAre = sfx => [...document.querySelectorAll("#tabs [data-ico]")].every(el => { tmp.innerHTML = icon(el.getAttribute("data-ico") + sfx); return el.innerHTML === tmp.innerHTML; });
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      const t = themeShopItem("xmnight");
+      r.shop = [THEMES.indexOf("xmnight") >= 0, !!t && t.price === 100 && t.season === XMAS, closetOnSale(t, "2026-11-08"), closetOnSale(t, "2026-12-31"), THEME_BAR.xmnight];
+      // 안 산 사람에게는 기본으로 보인다
+      data.closet.themes = []; data.theme = "xmnight"; applyTheme(); r.notOwned = document.body.getAttribute("data-theme");
+      // 사면: 색 · 탭 아이콘 · 눈(학습 화면에서는 멈춤) · 홈의 꼬마전구 · 트리
+      data.closet.themes = ["xmnight"]; applyTheme(); go("home"); renderHome(); await wait(250);
+      r.on = [document.body.getAttribute("data-theme"), getComputedStyle(document.body).getPropertyValue("--d-bg").trim().toUpperCase(),
+        tabsAre("_xm"),
+        document.body.classList.contains("snowing"), !$("#snowFx").hidden, !$("#themeFx").hidden];
+      go("list"); await wait(150); r.listSnow = [!$("#snowFx").hidden, getComputedStyle($("#s-list")).backgroundColor];
+      startSession([data.drinks[0]]); await wait(150); r.studySnow = [$("#snowFx").hidden, getComputedStyle($("#s-study")).backgroundColor !== "rgba(0, 0, 0, 0)"];
+      // 전구는 각자 다른 박자(같은 순간에 켜진 것 · 꺼진 것이 섞인다)
+      fxTick = 40; const states = [...Array(12)].map((_, k) => xfxOn(k, true)); r.bulbs = states.some(x => x) && states.some(x => !x);
+      // 다른 테마로 바꾸면 눈 · 탭 아이콘이 돌아온다
+      data.theme = "cream"; applyTheme(); go("home"); await wait(100);
+      r.off = [document.body.classList.contains("snowing"), $("#snowFx").hidden, tabsAre("")];
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      data = JSON.parse(backup); persist(); applyTheme(); go("home");
+      return r;
+    });
+    eq("크리스마스 밤: 상점에 치즈 100, 11/9~12/31, 상태 막대 색", r.shop, [true, true, false, true, "#0F1E1A"]);
+    eq("안 산 사람에게는 기본 테마로 보인다", r.notOwned, "cream");
+    eq("사면: 크리스마스 색 · 탭 아이콘 · 눈 · 홈 움직임", r.on, ["xmnight", "#0F1E1A", true, true, true, true]);
+    eq("레시피 화면에도 눈이 내리고, 화면 바탕을 비워 카드 뒤로 보인다", r.listSnow, [true, "rgba(0, 0, 0, 0)"]);
+    eq("학습 화면에서는 눈이 멈추고 바탕은 그대로", r.studySnow, [true, true]);
+    ok("꼬마전구는 각자 다른 박자로 깜빡인다", r.bulbs);
+    eq("다른 테마로 바꾸면 눈 · 탭 아이콘이 원래대로", r.off, [false, true, true]);
   }
 
   // ── 6-10x. 1.3 새 버전 알림 ────────────────────────────────────

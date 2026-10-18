@@ -23,7 +23,8 @@ const XMAS = {name:"크리스마스", tag:"성탄", from:"2026-11-09", until:"20
 /* 치즈로 사는 테마. 산 것은 설정 > 화면과 소리 > 테마에서 고른다. 기간 한정은 그 날까지만 팔고, 산 것은 계속 쓴다.
    색은 dot.css 의 body[data-theme="…"], 홈의 움직임은 themefx.js, 탭 아이콘은 core.js 의 ICONS["…_hw"] */
 const THEME_SHOP = [
-  {id:"hwnight", name:"핼러윈 밤", price:100, season:HALLOWEEN, sw:["#1C1424", "#E8822A", "#6A4C86"]}];
+  {id:"hwnight", name:"핼러윈 밤", price:100, season:HALLOWEEN, sw:["#1C1424", "#E8822A", "#6A4C86"]},
+  {id:"xmnight", name:"크리스마스 밤", price:100, season:XMAS, sw:["#0F1E1A", "#D23C3C", "#C9A85A"]}];
 function themeShopItem(id){ return THEME_SHOP.filter(t=>t.id === id)[0] || null; }
 function themeOwned(id){ return data.closet.themes.indexOf(id) >= 0; }
 
