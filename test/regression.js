@@ -3797,7 +3797,10 @@ const LEGACY = {
       markHint("closet"); data.bday = cleanBday({}); data.closet.xmasGift = ""; data.closet.cheese = 5;
       r.days = [xmasGiftDay(new Date(2026, 11, 23)), xmasGiftDay(new Date(2026, 11, 24)), xmasGiftDay(new Date(2026, 11, 25)), xmasGiftDay(new Date(2026, 11, 26))];
       r.notDay = earnXmasCheese(new Date(2026, 11, 20));
-      go("home"); xmasHome(new Date(2026, 11, 24, 9)); r.first = [data.closet.cheese, data.closet.xmasGift, $("#mbubble").textContent.replace(/\n/g, " ")];
+      go("home"); xmasHome(new Date(2026, 11, 24, 9));
+      // 치즈는 장면을 띄우기 전에 받고, 썰매 장면이 뜬다. 닫으면 말풍선
+      r.scene = [data.closet.cheese, data.closet.xmasGift, !$("#xmasFx").hidden, xmasFxState().running];
+      xmasFxClose(); r.first = [$("#xmasFx").hidden, $("#mbubble").textContent.replace(/\n/g, " ")];
       // 다음 날(25일)에 또 열어도 한 번뿐
       r.again = [earnXmasCheese(new Date(2026, 11, 25)), data.closet.cheese];
       // 예전 백업(선물 전)을 되살려도 올해 것은 다시 받지 않는다
@@ -3809,6 +3812,7 @@ const LEGACY = {
       const realDate = Date, fake = new realDate(2026, 11, 24, 9).getTime();
       window.Date = class extends realDate { constructor(...a){ if(a.length) super(...a); else super(fake); } static now(){ return fake; } };
       data.bday = cleanBday({m: 12, d: 24}); data.closet.xmasGift = ""; mascot.madeUp = true; go("list"); go("home");
+      r.bothScene = [xmasFxState().running, xmasFxState().shown]; xmasFxClose();
       r.both = [$("#mbubble").textContent.replace(/\n/g, " "), data.closet.cheese, data.bday.gift, data.closet.xmasGift];
       window.Date = realDate; stopBdayParty();
       // 숫자로 적힌 해(손으로 고친 백업)도 받은 것으로 친다
@@ -3821,13 +3825,50 @@ const LEGACY = {
     });
     eq("선물 날은 12월 24 · 25일", r.days, [false, true, true, false]);
     eq("다른 날에는 주지 않는다", r.notDay, false);
-    eq("24일에 홈을 열면 치즈 100개와 인사", r.first, [105, "2026", "메리 크리스마스츄! 치즈 100개 선물이츄"]);
+    eq("24일에 홈을 열면 치즈 100개를 먼저 받고 썰매 장면이 뜬다", r.scene, [105, "2026", true, true]);
+    eq("장면을 닫으면 인사 말풍선", r.first, [true, "메리 크리스마스츄! 치즈 100개 선물이츄"]);
     eq("한 해에 한 번", r.again, [false, 105]);
     eq("예전 백업을 되살려도 올해 받은 것은 남는다", r.restore, "2026");
     eq("이듬해에는 다시 준다", r.next, [true, 205]);
+    eq("생일과 겹치면 장면의 치즈 칸은 110개 전부터", r.bothScene, [true, 205]);
     eq("생일과 겹치면 한 말풍선으로 110개(기다림 말이 덮지 않는다)", r.both, ["생일 축하하고 메리 크리스마스츄! 치즈 110개 선물이츄", 315, "2026", "2026"]);
     eq("숫자로 적힌 해도 문자로 다듬는다", r.numYear, "2026");
     eq("웹에는 없다", r.web, false);
+  }
+
+  // ── 6-10r. 1.5 크리스마스 선물 장면(썰매) ──────────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const wait = ms => new Promise(res => setTimeout(res, ms));
+      const backup = JSON.stringify(data);
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      let doneN = 0;
+      go("home"); xmasFxPlay({from: 10, to: 110, done: () => doneN++});
+      await wait(300); r.start = [xmasFxState().scene <= 2, !$("#xmasFx .xf-skip").hidden, $("#xmasFx .xf-stage canvas").width];
+      // 건너뛰기 → 선물 앞
+      $("#xmasFx .xf-skip").click(); await wait(80);
+      r.skip = [xmasFxState().scene, $("#xmasFx .xf-cap").textContent, $("#xmasFx .xf-skip").hidden];
+      // 누르면 열리고, 치즈가 치즈 칸으로 다 들어가면 110
+      $("#xmasFx .xf-stage").click(); await wait(1800);
+      r.open = [xmasFxState().opened, xmasFxState().shown, $("#xmasFx .xf-cnt").hidden, $("#xmasFx .xf-cap").textContent];
+      // 다 받은 뒤 누르면 닫히고 done 이 한 번
+      $("#xmasFx .xf-stage").click(); await wait(30);
+      r.closed = [$("#xmasFx").hidden, xmasFxState().running, doneN];
+      // 잠금에 가려 있으면 미뤘다가 잠금이 풀리고 홈을 그릴 때 띄운다
+      data.closet.xmasGift = ""; data.bday = cleanBday({}); markHint("closet");
+      $("#lock").classList.add("on"); xmasHome(new Date(2026, 11, 25, 8)); r.locked = [xmasFxState().running, data.closet.xmasGift];
+      $("#lock").classList.remove("on"); xmasHome(new Date(2026, 11, 25, 8)); r.after = xmasFxState().running; xmasFxClose();
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      data = JSON.parse(backup); data.closet = cleanCloset(data.closet); data.bday = cleanBday(data.bday); persist(); go("home");
+      return r;
+    });
+    eq("장면이 뜨면 달려오는 장면부터, 건너뛰기가 보이고 도트 격자는 가로 156칸", r.start, [true, true, 156]);
+    eq("건너뛰면 선물 앞(열어 보라는 말)", r.skip, [4, "선물을 눌러서 열어봐츄!", true]);
+    eq("열면 치즈가 치즈 칸으로 들어가 110, 받은 말", r.open, [true, 110, false, "치즈 100개 선물이츄!"]);
+    eq("다 받은 뒤 누르면 닫히고 끝난 뒤 할 일은 한 번", r.closed, [true, false, 1]);
+    eq("잠금에 가려 있으면 치즈만 받고 장면은 미룬다", r.locked, [false, "2026"]);
+    ok("잠금이 풀린 뒤 홈을 그리면 미뤄 둔 장면을 띄운다", r.after);
   }
 
   // ── 6-10x. 1.3 새 버전 알림 ────────────────────────────────────

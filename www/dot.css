@@ -931,3 +931,23 @@ html.dot #s-closet .crun .fx svg{display:block;overflow:visible;}
    화면 바탕을 비우고 앱 바탕에 같은 색을 칠한다. 카드 · 줄은 제 바탕이 있어 눈이 그 뒤로 지나간다. 학습 화면은 그대로(눈도 멈춘다) */
 html.dot body.snowing .app{background:var(--d-bg);}
 html.dot body.snowing .screen:not(#s-study){background:transparent !important;}
+
+/* ---------- 크리스마스 선물 장면 (xmasfx.js) ----------
+   앱 위에 덮는 창. 장면은 세로 130 : 230 비율로 가운데에, 남는 곳은 밤하늘 색. 도트가 번지지 않게 캔버스는 pixelated */
+html.dot #xmasFx{position:fixed;inset:0;z-index:9000;background:#0B1714;display:flex;align-items:center;justify-content:center;
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;}
+html.dot #xmasFx[hidden]{display:none;}
+html.dot #xmasFx .xf-stage{position:relative;overflow:hidden;}
+html.dot #xmasFx .xf-stage > canvas{display:block;width:100%;height:100%;image-rendering:pixelated;}
+html.dot #xmasFx .xf-bub{position:absolute;left:50%;top:7%;transform:translateX(-50%);white-space:nowrap;pointer-events:none;
+  background:#FFF9F0;color:#2A1C14;border:3px solid #2A1C14;box-shadow:3px 3px 0 #000;padding:6px 12px;font:16px/1.4 "NeoDGM",monospace;}
+html.dot #xmasFx .xf-cnt{position:absolute;left:50%;top:5%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;pointer-events:none;
+  background:#FFF9F0;color:#2A1C14;border:3px solid #2A1C14;box-shadow:3px 3px 0 #000;padding:4px 14px;font:20px/1.2 "NeoDGM",monospace;}
+html.dot #xmasFx .xf-cnt[hidden], html.dot #xmasFx .xf-bub[hidden], html.dot #xmasFx .xf-skip[hidden]{display:none;}
+html.dot #xmasFx .xf-cnt canvas{width:24px;height:24px;image-rendering:pixelated;}
+html.dot #xmasFx .xf-cnt.pop{animation:xfpop .18s steps(2);}
+@keyframes xfpop{50%{transform:translateX(-50%) scale(1.15);}}
+html.dot #xmasFx .xf-cap{position:absolute;left:0;right:0;bottom:7%;text-align:center;pointer-events:none;padding:0 12px;
+  color:#FFF6EE;text-shadow:2px 2px 0 #000;font:18px/1.4 "NeoDGM",monospace;}
+html.dot #xmasFx .xf-skip{position:absolute;right:10px;top:calc(10px + env(safe-area-inset-top,0px));background:rgba(0,0,0,.45);color:#FFF6EE;
+  border:2px solid #FFF6EE;padding:4px 12px;font:16px "NeoDGM",monospace;}

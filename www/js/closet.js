@@ -601,11 +601,23 @@ function earnXmasCheese(now){
 }
 /* 선물 말풍선. 이 치즈가 처음 생긴 치즈면 옷장 안내에 붙여서 말한다(따로 말하면 한 번뿐인 안내를 덮는다) */
 function giftSay(said){ if(hintSeen("closet")) sayBubble(said); else closetHome(said); }
+/* 선물을 받으면 썰매 장면(xmasfx.js)을 띄우고, 닫은 뒤에 말풍선으로 한 번 더 말한다.
+   잠금 · 가이드 · 이름 묻기 · 확인창에 가려 있으면 장면은 미뤄 두었다가 홈이 다시 그려질 때 띄운다(치즈는 이미 받았다) */
+let xmasFxWait = null;
 function xmasHome(now){
   const both = bdayHeld; bdayHeld = false;
-  if(!earnXmasCheese(now)) return;
-  giftSay(both ? "생일 축하하고 메리 크리스마스츄! 치즈 " + (BDAY_CHEESE + XMAS_CHEESE) + "개 선물이츄"
-               : "메리 크리스마스츄! 치즈 " + XMAS_CHEESE + "개 선물이츄");
+  if(earnXmasCheese(now)){
+    const gain = XMAS_CHEESE + (both ? BDAY_CHEESE : 0);
+    xmasFxWait = {from: data.closet.cheese - gain, to: data.closet.cheese,
+      said: both ? "생일 축하하고 메리 크리스마스츄! 치즈 " + gain + "개 선물이츄" : "메리 크리스마스츄! 치즈 " + XMAS_CHEESE + "개 선물이츄"};
+  }
+  if(!xmasFxWait) return;
+  const w = xmasFxWait;
+  if(typeof xmasFxPlay !== "function"){ xmasFxWait = null; giftSay(w.said); return; }
+  const dlg = $("#dlg");
+  if(bdayHidden() || (dlg && dlg.classList.contains("on"))) return;
+  xmasFxWait = null;
+  xmasFxPlay({from: w.from, to: w.to, done: ()=>giftSay(w.said)});
 }
 
 /* ---------- 입구 ---------- */
