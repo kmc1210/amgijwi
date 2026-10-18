@@ -9,12 +9,17 @@
 const CLOSET_PAL = {"1": "#6B2F2A", "2": "#A8423A", "3": "#C9605A", "P": "#F08AA0", "Q": "#B8455F", "Z": "#3A2C22", "4": "#8A5A3C", "5": "#5E3A24", "6": "#A87452", "7": "#C7BDB1", "O": "#4A423A", "U": "#FCF7F1", "X": "#78543A",
   "A": "#2F6B4F", "a": "#4E9A6E", "K": "#2A2F3A",
   /* 핼러윈(1.2.1): 짙은 보라 · 보라 빛 · 호박 주황 · 짙은 주황 · 번쩍이는 빛 · 망토 주름 */
-  "H": "#3B2A4A", "I": "#6A4C86", "J": "#E8822A", "W": "#B85A16", "C": "#FFF4B8", "D": "#454B5C"};
+  "H": "#3B2A4A", "I": "#6A4C86", "J": "#E8822A", "W": "#B85A16", "C": "#FFF4B8", "D": "#454B5C",
+  /* 크리스마스(1.5): 산타 빨강 · 짙은 빨강 · 밝은 빨강 · 빛나는 코 · 빛나는 전구 · 눈 털 · 트리 초록 · 짙은 초록 */
+  "8": "#D23C3C", "9": "#8E2128", "0": "#F06A5A", "f": "#FFB3A0", "e": "#FFF0B0", "s": "#E9EEF3", "x": "#3E8E52", "z": "#24603A"};
 Object.keys(CLOSET_PAL).forEach(k=>{ MOUSE_PAL[k] = CLOSET_PAL[k]; });
 
 const CLOSET_SLOTS = [["head","머리"],["face","얼굴"],["body","몸"],["hand","손"]];
 /* 기간 한정 아이템(season). 그 날까지만 옷장에 나오고 살 수 있다. 산 것은 기간이 지나도 그대로 입는다 */
 const HALLOWEEN = {name:"핼러윈", until:"2026-11-08"};
+/* from: 그 날부터 판다(핼러윈이 끝난 다음 날 — 한정 아이템이 두 철 섞여 맨 앞을 다 차지하지 않게).
+   tag: 옷장 칸의 좁은 한정 표시에 쓰는 짧은 이름, cls: 그 표시의 색(dot.css) */
+const XMAS = {name:"크리스마스", tag:"성탄", from:"2026-11-09", until:"2026-12-31", cls:"xm"};
 /* 치즈로 사는 테마. 산 것은 설정 > 화면과 소리 > 테마에서 고른다. 기간 한정은 그 날까지만 팔고, 산 것은 계속 쓴다.
    색은 dot.css 의 body[data-theme="…"], 홈의 움직임은 themefx.js, 탭 아이콘은 core.js 의 ICONS["…_hw"] */
 const THEME_SHOP = [
@@ -289,7 +294,71 @@ const CLOSET_ITEMS = [
       ".ocwwwddcJJKKKKKKJJcddwwwco.",
       ".........WWWWWWWWWW........."],
     glow:{K:"C"},
-    perk:"가끔 눈 · 입이 번쩍여요"}
+    perk:"가끔 눈 · 입이 번쩍여요"},
+
+  /* 귀까지 머리 위를 덮고(모자 밖으로 남는 귀는 지운다 "_"), 끝이 오른쪽으로 꺾여 방울이 귀 옆에 달린다. 흰 털 띠는 눈 위(6~7행) */
+  {id:"santahat", slot:"head", name:"산타 모자", price:50, y:0, season:XMAS, rows:[
+      "......______9888_______.....",
+      "......____98888880_____.....",
+      "......___988888888800__.....",
+      "......__98888888888880_.....",
+      "......__988888888888880.ss..",
+      "......_9888888888888889shhs.",
+      "......shhhhshhhhshhhhsh.shs.",
+      "......sshhhhsshhhhsshhhs...."]},
+  /* 귀 바깥쪽에서 뻗은 뿔 */
+  {id:"antler", slot:"head", name:"루돌프 뿔", price:35, y:0, season:XMAS, rows:[
+      ".T..T..................T..T.",
+      ".tT.Tt................tT.Tt.",
+      "..tTt..T............T..tTt..",
+      "...ttTTt............tTTtt...",
+      "....ttt..............ttt....",
+      ".....tt..............tt....."]},
+  /* 원래 코를 덮는 동그란 빨간 코. 가끔 빛난다(glow — 눈 깜빡임과 따로) — 빛나는 아이템이라 더 비싸다 */
+  {id:"rednose", slot:"face", name:"루돌프 코", price:55, y:14, season:XMAS, rows:[
+      ".............88.............",
+      "............8f08............",
+      "............9889............"],
+    glow:{"8":"0", "0":"f"},
+    perk:"가끔 코가 반짝여요"},
+  /* 턱 털 아래(20행)부터 목을 감고, 한쪽 끝이 앞으로 늘어진다 */
+  {id:"scarf", slot:"body", name:"털실 목도리", price:40, y:20, season:XMAS, rows:[
+      "....98888888888888888889....",
+      "...98hh88hh88hh88hh88hh89...",
+      "....99999999999988889999....",
+      "...............98hh89.......",
+      "...............988889.......",
+      "...............98hh89.......",
+      "...............988889.......",
+      "...............h.h.h........"]},
+  /* 두 손으로 드는 선물 상자 */
+  {id:"gift", slot:"hand", name:"선물 상자", price:30, y:22, season:XMAS, rows:[
+      "...........RR..RR...........",
+      "............qRRq............",
+      "..........9998899999........",
+      "owcwww....9880R8889...wwwcwo",
+      ".ocwww....988R8R889...wwwco.",
+      ".owcww.ppcRRRRRRRRcpp.wwcwo.",
+      "ocwwww.ppc988RR889cpp.wwwwco",
+      ".owcww.ppc988RR889cpp.wwcwo.",
+      ".ocwww.ddc988RR889cdd.wwwco.",
+      "..........99999999.........."]},
+  /* 두 손으로 드는 꼬마 트리. 가끔 전구 · 별이 반짝인다(glow) — 빛나는 아이템이라 더 비싸다 */
+  {id:"tree", slot:"hand", name:"꼬마 트리", price:70, y:19, season:XMAS, rows:[
+      ".............RR.............",
+      "............RRRR............",
+      ".............zz.............",
+      "............zxxz............",
+      "...........zx8xxz...........",
+      "..........zxxxxRxz..........",
+      "owcwww.....zxxxxz.....wwwcwo",
+      ".ocwww....zxRxx8xz....wwwco.",
+      ".owcww.ppczxxxxxxzcpp.wwcwo.",
+      "ocwwww.ppcz8xxRxxzcpp.wwwwco",
+      ".owcww.ppczzzzzzzzcpp.wwcwo.",
+      ".ocwww.ddc...TT...cdd.wwwco."],
+    glow:{"8":"f", "R":"e"},
+    perk:"가끔 전구가 반짝여요"}
 ];
 /* 치즈: 한 바퀴 +1(하루 10개까지), 7일 연속 접속 +5.
    한 바퀴는 5장 이상이어야 친다 — 한 장짜리 바퀴를 열 번 넘겨 몇 초 만에 하루치를 받던 구멍을 막는다.
@@ -324,7 +393,12 @@ function cleanCloset(c){
 function closetItem(id){ return CLOSET_ITEMS.filter(i=>i.id === id)[0] || null; }
 /* 지금 옷장에서 팔고 있는가(기간 한정이면 그 날까지). today 는 테스트가 준다.
    기기 시계를 믿는다 — 시계를 되돌리면 다시 살 수 있지만, 통신 없이 기기 안에서만 쓰는 꾸미기라 막지 않는다 */
-function closetOnSale(it, today){ return !!it && (!it.season || (today || ymd(new Date())) <= it.season.until); }
+function closetOnSale(it, today){
+  if(!it) return false;
+  if(!it.season) return true;
+  const d = today || ymd(new Date());
+  return d <= it.season.until && (!it.season.from || d >= it.season.from);
+}
 data.closet = cleanCloset(data.closet);
 
 /* ---------- 입히기 ----------
@@ -378,6 +452,11 @@ function mouseSVGWorn(mood, puff, wear, lit){
   const mode = mood.indexOf("eat") === 0 ? "eat" : (mood.indexOf("sip") === 0 ? "sip" : (mood === "blink" ? "blink" : "stand"));
   if(++wornCacheN > 80){ Object.keys(wornCache).forEach(k=>delete wornCache[k]); wornCacheN = 1; }
   return (wornCache[key] = rowsSVG(dressRows(mouseRows(mood, puff), mode, wear, lit), false));
+}
+/* 기간 한정 옷을 입고 있는가(입었으면 날씨 옷으로 덮지 않는다 — mascot.js 의 drawMascot) */
+function wearsSeasonal(){
+  const w = wornNow();
+  return Object.keys(w).some(s=>{ const it = closetItem(w[s]); return !!(it && it.season); });
 }
 /* 빛나는 옷을 입고 있는가(번쩍임 타이머를 돌릴지) */
 function wearGlows(wear){
@@ -438,7 +517,8 @@ function faceMouseSVG(kind, base){
   const face = MOUSE_FACES[kind] || MOUSE_FACES.happy;
   base = (base === "morning" || base === "evening") ? base : "day";
   const wear = Object.assign({}, isDot() ? wornNow() : {});
-  delete wear.face;
+  const fi = closetItem(wear.face);
+  if(fi && fi.y < 14) delete wear.face;          // 눈 둘레를 덮는 안경 · 가면은 벗긴다(바뀐 눈과 겹친다). 루돌프 코는 그대로
   const key = kind + base + JSON.stringify(wear);
   if(faceCache[key]) return faceCache[key];
   const rows = mouseRows(base);
@@ -583,7 +663,7 @@ function renderCloset(){
       <span class="th"><span style="margin-top:${off}px">${itemPreviewSVG(i.id)}</span></span>
       <span class="nm">${esc(i.name)}</span><span class="pr">${tag}</span>
       ${i.perk && !own ? `<span class="fx">효과</span>` : ""}
-      ${i.season && !own ? `<span class="lim">${esc(i.season.name)} · ~${Number(until[1])}/${Number(until[2])}</span>` : ""}</button>`;
+      ${i.season && !own ? `<span class="lim${i.season.cls ? " " + i.season.cls : ""}">${esc(i.season.tag || i.season.name)} ~${Number(until[1])}/${Number(until[2])}</span>` : ""}</button>`;
   }).join("");
   document.querySelectorAll("#cTabs button").forEach(b=>b.addEventListener("click", ()=>{
     if(closetLocked()) return;
