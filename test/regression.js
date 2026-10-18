@@ -3743,6 +3743,39 @@ const LEGACY = {
     eq("다른 테마로 바꾸면 눈 · 탭 아이콘이 원래대로", r.off, [false, true, true]);
   }
 
+  // ── 6-10p. 1.5 크리스마스 캐롤 배경음 ─────────────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const backup = JSON.stringify(data);
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      // 곡마다 멜로디와 화음의 길이가 같고, 마디를 넘는 음이 없다
+      r.bars = CAROLS.map((s, i) => {
+        const bars = CAROL_BARS[i], mel = (s.pickup || []).concat(s.mel).reduce((a, n) => a + n[1], 0);
+        const chord = bars.filter(b => b.chord).length * s.beats + (s.pickup || []).reduce((a, n) => a + n[1], 0);
+        return [s.id, mel === chord, bars.every(b => b.notes.every(n => n[1] >= 0 && n[1] < b.len))];
+      });
+      data.sound = "all"; data.closet.themes = ["xmnight"]; data.theme = "cream"; applyTheme();
+      r.cafe = carolWanted();
+      data.theme = "xmnight"; applyTheme(); r.xmas = carolWanted();
+      // 한 마디씩: 마지막 마디를 치면 다음 곡으로, 세 곡 뒤에는 처음으로
+      bgmStop(); bgm.on = true; audio(); bgm.carol = null; carolBar(); r.first = [bgm.carol.song, bgm.carol.bar];
+      const total = CAROL_BARS.reduce((a, b) => a + b.length, 0); let songs = new Set();
+      for(let k = 1; k < total; k++){ clearTimeout(bgm.timer); carolBar(); songs.add(bgm.carol.song); }
+      r.loop = [bgm.carol.song, bgm.carol.bar, songs.size];
+      // 테마를 바꾸면 다음 마디부터 카페 배경음
+      data.theme = "cream"; applyTheme(); clearTimeout(bgm.timer); bgmBar(); r.back = bgm.carol;
+      bgmStop();
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      data = JSON.parse(backup); persist(); applyTheme(); go("home");
+      return r;
+    });
+    eq("캐롤 세 곡: 멜로디 · 화음 길이가 맞고 음이 마디 안에 있다", r.bars, [["jingle", true, true], ["wish", true, true], ["silent", true, true]]);
+    eq("크리스마스 밤 테마에서만 캐롤", [r.cafe, r.xmas], [false, true]);
+    eq("징글벨 첫 마디부터 시작해 세 곡을 돌고 처음으로", [r.first, r.loop], [[0, 1], [0, 0, 3]]);
+    eq("테마를 바꾸면 카페 배경음으로 돌아간다", r.back, null);
+  }
+
   // ── 6-10x. 1.3 새 버전 알림 ────────────────────────────────────
   {
     const r = await page.evaluate(async () => {
