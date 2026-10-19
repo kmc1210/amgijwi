@@ -144,8 +144,9 @@ npm test
 Chromium 을 띄워 `www/index.html` 을 열고, 부재료 마이그레이션 · 보관 필터 ·
 참조 무결성 · 저장소 왕복 · 이스케이프 · CSP · 소리를 확인합니다.
 앱 모드(`__amgijwiNative` · `html.dot`)로도 열어 도트 화면 · 일정 알림 · 백업 통로 · 진동 · 가이드를 확인합니다.
-PR 을 올리면 GitHub Actions 가 같은 테스트(`ci.yml`)와 iOS 빌드(`ios.yml`)를 돌리고,
-통과해야 main 에 머지합니다.
+PR 을 올리면 GitHub Actions 가 같은 테스트(`ci.yml`)를 돌리고, 통과해야 main 에 머지합니다.
+iOS 빌드(`ios.yml`)는 `ios/` 가 바뀐 PR 과 main 에 들어갈 때만 돕니다(macOS 러너 시간 아끼기).
+웹만 바꾼 PR 에서 미리 보려면 Actions 에서 손으로 돌립니다.
 
 앱을 눈으로 보려면 `www/` 를 아무 정적 서버로 열면 됩니다(예: `python3 -m http.server -d www`).
 번들러도 트랜스파일러도 없어서 따로 빌드할 것이 없습니다.
