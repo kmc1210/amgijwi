@@ -961,7 +961,7 @@ html.dot #onboard .ob-chip{display:flex;align-items:center;gap:6px;padding:2px 1
 html.dot #onboard .ob-chip .ob-ci, html.dot #onboard .ob-fall{display:block;width:18px;height:18px;}
 html.dot #onboard .ob-fall{position:absolute;left:96px;top:96px;opacity:0;}
 html.dot #onboard .ob-fall.go{animation:obFall .42s steps(6) both;}
-@keyframes obFall{0%{opacity:1;transform:translate(-30px,-110px)}100%{opacity:1;transform:translate(-62px,28px)}}
+@keyframes obFall{0%{opacity:1;transform:translate(-30px,-110px)}85%{opacity:1;transform:translate(-62px,28px)}100%{opacity:0;transform:translate(-62px,28px)}}
 html.dot #onboard #obWays .ob-row.on{color:var(--d-acc);}
 html.dot #onboard #obWays .ob-row.on .ob-ld{background:repeating-linear-gradient(90deg,var(--d-acc) 0 3px,transparent 3px 6px);}
 html.dot #onboard .ob-buy{position:absolute;left:50%;top:-6px;transform:translateX(-50%);white-space:nowrap;opacity:0;
