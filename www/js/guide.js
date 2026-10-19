@@ -1,5 +1,5 @@
 /* 암기쥐 — 첫 실행 가이드 (iOS 앱 · 도트 화면 전용)
-   처음 설치한 사람에게 한 번, 다섯 장짜리 움직이는 도트 가이드를 보여준다.
+   처음 설치한 사람에게 한 번, 여섯 장짜리 움직이는 도트 가이드를 보여준다.
    캡처 이미지 대신 앱 부품(쥐돌이 · 카드 · 전표 · 영수증)으로 그려 화면이 바뀌어도 어긋나지 않는다.
    설정 → 사용법 보기를 누르면 다시 열린다. 웹은 예전 글 시트(openGuideSheet) 그대로다.
    클래스 이름은 전부 ob- 로 시작한다. .card · .face · .tag 같은 이름은 앱에 이미 있어 부딪힌다 */
@@ -53,10 +53,17 @@ function guidePages(){
           <div class="ob-tt">오늘이츄! · 신메뉴 출시</div><div class="ob-bd">라떼 3종 레시피 외우기</div></div></div>
         <div class="ob-tk"><div class="ob-stub"><small>10/2</small><b>D-3</b></div><div class="ob-mt"><b>신메뉴 출시</b><small>라떼 3종 레시피 외우기</small></div></div></div></div>
       <h2>일정과 알림</h2><p>신메뉴 출시 같은 날을 걸어 두면 홈에 전표로 뜨고, 알림을 켜면 그날 쥐돌이가 알려줘요.</p></div>`,
+    `<div class="ob-page"><div class="ob-stage"><div class="ob-ch"><div class="ob-chm"><div class="ob-m" id="obM6">${mouseSVGWorn("day", false, {})}</div>
+          <span class="ob-buy" id="obBuy"></span><i class="ob-fall" id="obFall">${cheeseSVG()}</i></div>
+        <div class="ob-chip ob-box"><span class="ob-ci">${cheeseSVG()}</span><b id="obCn">0</b></div>
+        <div class="ob-rc" id="obWays"><div class="ob-row">카드 5장 외우기(한 바퀴)<i class="ob-ld"></i><span class="ob-v">+1</span></div>
+          <div class="ob-row">7일 연속 들어오기<i class="ob-ld"></i><span class="ob-v">+5</span></div>
+          <div class="ob-row">광고 보기(하루 3번)<i class="ob-ld"></i><span class="ob-v">+5</span></div></div></div></div>
+      <h2>치즈 모아 쥐돌이 꾸미기</h2><p>카드를 한 바퀴(5장 이상) 외우면 치즈가 하나, 짧게 외우면 5장이 모일 때마다 하나 생겨요(하루 10개까지). 모은 치즈로 옷장에서 쥐돌이 옷을 사 입혀 보세요.</p></div>`,
     `<div class="ob-page"><div class="ob-stage"><div class="ob-bk"><div class="ob-m ob-small" id="obM5">${mouseSVG("eat1")}</div>
-        <div class="ob-rc"><div class="ob-row">레시피<i class="ob-ld"></i><span class="ob-v">이 기기 안</span></div><div class="ob-row">서버 · 계정<i class="ob-ld"></i><span class="ob-v">없음</span></div>
-        <div class="ob-row">앱을 지우면<i class="ob-ld"></i><span class="ob-v ob-warn">사라짐</span></div></div></div></div>
-      <h2>백업은 꼭 해 두세요</h2><p>레시피는 이 기기 안에만 있어요. 설정 → 백업 내보내기로 파일을 하나 만들어 두면 기기를 바꿔도 되살릴 수 있어요.</p></div>`
+        <div class="ob-rc"><div class="ob-row">레시피<i class="ob-ld"></i><span class="ob-v">이 기기 안</span></div><div class="ob-row">iCloud 백업<i class="ob-ld"></i><span class="ob-v">켜면 자동</span></div>
+        <div class="ob-row">백업 없이 지우면<i class="ob-ld"></i><span class="ob-v ob-warn">사라짐</span></div></div></div></div>
+      <h2>백업은 꼭 해 두세요</h2><p>레시피는 이 기기 안에만 있어요. iCloud 자동 백업을 켜 두거나 설정 → 백업 내보내기로 파일을 만들어 두면 기기를 바꿔도 되살릴 수 있어요.</p></div>`
   ];
 }
 
@@ -107,7 +114,7 @@ function guideGo(i){
   document.querySelectorAll("#obDots i").forEach((d, k)=>d.classList.toggle("on", k === i));
   $("#obNext").textContent = i === guide.n - 1 ? "시작하기" : "다음";
   const reduce = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
-  [guidePlayHello, guidePlayCard, guidePlayImport, guidePlayAlarm, guidePlayBackup][i](reduce);
+  [guidePlayHello, guidePlayCard, guidePlayImport, guidePlayAlarm, guidePlayCheese, guidePlayBackup][i](reduce);
 }
 
 function guidePlayHello(reduce){
@@ -185,6 +192,37 @@ function guidePlayAlarm(reduce){
     guideLater(cycle, 4200);
   };
   cycle();
+}
+/* 치즈 장면: 모으는 길(한 바퀴 · 연속 · 광고)이 차례로 반짝이며 치즈가 칩으로 떨어지고, 모이면 옷을 하나 사 입는다 */
+const GUIDE_BUYS = ["ribbon", "glasses", "bowtie", "beret"];      // 사 입는 차례(옷장의 진짜 값 · 자리를 쓴다)
+const GUIDE_GAINS = [[0, 1], [0, 1], [0, 1], [1, 5], [2, 5]];      // [반짝일 줄, 치즈]
+/* 가이드의 쥐돌이는 홈의 옷 그림 저장(wornCache)을 쓰지 않고 바로 그린다(가이드에서 입혀 본 조합이 홈 것을 밀어내지 않게) */
+function guideMouse(wear){ return rowsSVG(dressRows(mouseRows("day", false), "stand", wear), false); }
+function guidePlayCheese(reduce){
+  const m = $("#obM6"), cn = $("#obCn"), fall = $("#obFall"), buy = $("#obBuy"), rows = document.querySelectorAll("#obWays .ob-row");
+  const items = GUIDE_BUYS.map(closetItem).filter(Boolean);
+  if(reduce || !items.length){ cn.textContent = "3"; m.innerHTML = guideMouse(items.length ? {[items[0].slot]: items[0].id} : {}); return; }      // 13개 모아 리본(10)을 산 뒤
+  let n = 0, k = 0, wear = {};
+  m.innerHTML = guideMouse(wear);
+  const round = ()=>{
+    if(k >= items.length){ k = 0; n = 0; wear = {}; m.innerHTML = guideMouse(wear); }
+    cn.textContent = String(n);
+    GUIDE_GAINS.forEach(([row, g], j)=>guideLater(()=>{
+      rows.forEach((r, x)=>r.classList.toggle("on", x === row));
+      fall.classList.remove("go"); void fall.offsetWidth; fall.classList.add("go");
+      guideLater(()=>{ n += g; cn.textContent = String(n); }, 420);
+    }, 300 + j * 650));
+    guideLater(()=>{
+      rows.forEach(r=>r.classList.remove("on"));
+      const item = items[k];
+      if(n < item.price) return;      // 아직 모자라면 한 바퀴 더 모은다(치즈가 마이너스가 되지 않게)
+      n -= item.price; wear = Object.assign({}, wear, {[item.slot]: item.id}); k++;
+      cn.textContent = String(n); m.innerHTML = guideMouse(wear);
+      buy.textContent = item.name + " -" + item.price; buy.classList.remove("go"); void buy.offsetWidth; buy.classList.add("go");
+    }, 300 + GUIDE_GAINS.length * 650 + 300);
+    guideLater(round, 300 + GUIDE_GAINS.length * 650 + 1600);
+  };
+  round();
 }
 function guidePlayBackup(reduce){
   const m = $("#obM5");

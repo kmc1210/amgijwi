@@ -951,3 +951,20 @@ html.dot #xmasFx .xf-cap{position:absolute;left:0;right:0;bottom:7%;text-align:c
   color:#FFF6EE;text-shadow:2px 2px 0 #000;font:18px/1.4 "NeoDGM",monospace;}
 html.dot #xmasFx .xf-skip{position:absolute;right:10px;top:calc(10px + env(safe-area-inset-top,0px));background:rgba(0,0,0,.45);color:#FFF6EE;
   border:2px solid #FFF6EE;padding:4px 12px;font:16px "NeoDGM",monospace;}
+
+/* ---------- 첫 실행 가이드: 치즈 모아 쥐돌이 꾸미기 (guide.js guidePlayCheese) ----------
+   치즈가 위에서 칩으로 톡 떨어지고, 모으는 길(줄)이 차례로 반짝, 옷을 사면 이름과 값이 쥐돌이 위로 떠오른다 */
+html.dot #onboard .ob-ch{display:grid;justify-items:center;gap:10px;}
+html.dot #onboard .ob-chm{position:relative;width:84px;height:120px;}
+html.dot #onboard .ob-chm .ob-m{width:84px;height:120px;}
+html.dot #onboard .ob-chip{display:flex;align-items:center;gap:6px;padding:2px 10px;background:var(--d-surface);font-family:"NeoDGM",monospace;font-size:18px;-webkit-font-smoothing:none;}
+html.dot #onboard .ob-chip .ob-ci, html.dot #onboard .ob-fall{display:block;width:18px;height:18px;}
+html.dot #onboard .ob-fall{position:absolute;left:96px;top:96px;opacity:0;}
+html.dot #onboard .ob-fall.go{animation:obFall .42s steps(6) both;}
+@keyframes obFall{0%{opacity:1;transform:translate(-30px,-110px)}85%{opacity:1;transform:translate(-62px,28px)}100%{opacity:0;transform:translate(-62px,28px)}}
+html.dot #onboard #obWays .ob-row.on{color:var(--d-acc);}
+html.dot #onboard #obWays .ob-row.on .ob-ld{background:repeating-linear-gradient(90deg,var(--d-acc) 0 3px,transparent 3px 6px);}
+html.dot #onboard .ob-buy{position:absolute;left:50%;top:-6px;transform:translateX(-50%);white-space:nowrap;opacity:0;
+  font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;color:var(--d-acc);}
+html.dot #onboard .ob-buy.go{animation:obBuy 1.2s steps(8) both;}
+@keyframes obBuy{0%{opacity:0;transform:translate(-50%,8px)}20%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-14px)}}
