@@ -390,7 +390,9 @@ function cleanCloset(c){
     /* 치즈로 산 테마(THEME_SHOP 의 id) */
     themes: Array.isArray(c.themes) ? c.themes.filter(id=>!!themeShopItem(id)) : [],
     /* 크리스마스 선물을 받은 해 */
-    xmasGift: /^\d{4}$/.test(String(c.xmasGift)) ? String(c.xmasGift) : ""
+    xmasGift: /^\d{4}$/.test(String(c.xmasGift)) ? String(c.xmasGift) : "",
+    /* 업데이트 치즈를 받은(본) 버전의 앞 두 자리 */
+    verSeen: /^\d+\.\d+$/.test(String(c.verSeen)) ? String(c.verSeen) : ""
   };
 }
 function closetItem(id){ return CLOSET_ITEMS.filter(i=>i.id === id)[0] || null; }
@@ -604,7 +606,7 @@ function giftSay(said){ if(hintSeen("closet")) sayBubble(said); else closetHome(
 /* 선물을 받으면 썰매 장면(xmasfx.js)을 띄우고, 닫은 뒤에 말풍선으로 한 번 더 말한다. 치즈는 장면 전에 이미 받는다.
    앱을 켤 때는 홈을 그린 바로 뒤에 잠금 · 가이드 · 이름 묻기 · iCloud 확인창이 덮으므로, 생일 폭죽처럼 잠깐 쉬고 본다.
    가려 있으면 미뤄 두었다가 잠금을 풀거나 창을 닫고 홈이 다시 그려질 때 띄운다. 말풍선도 홈이 보일 때 */
-let xmasFxWait = null, xmasSayWait = "", xmasFxT = null;
+let xmasFxWait = null, xmasFxT = null;
 function xmasFxBusy(){ return !!xmasFxWait || (typeof xmasFxState === "function" && xmasFxState().running); }
 function xmasHome(now){
   const both = bdayHeld; bdayHeld = false;
@@ -612,7 +614,7 @@ function xmasHome(now){
     const gain = XMAS_CHEESE + (both ? BDAY_CHEESE : 0);
     xmasFxWait = {gain: gain, said: both ? "생일 축하하고 메리 크리스마스츄! 치즈 " + gain + "개 선물이츄" : "메리 크리스마스츄! 치즈 " + XMAS_CHEESE + "개 선물이츄"};
   }
-  if(xmasFxWait && typeof xmasFxPlay !== "function"){ xmasSayWait = xmasFxWait.said; xmasFxWait = null; }
+  if(xmasFxWait && typeof xmasFxPlay !== "function"){ homeSay(xmasFxWait.said); xmasFxWait = null; }
   clearTimeout(xmasFxT);
   xmasFxT = setTimeout(xmasFxTry, 400);
 }
@@ -620,14 +622,62 @@ function xmasFxTry(){
   const covered = ()=>{ const w = xmasFxWait; xmasFxWait = null; const h = bdayHidden(); xmasFxWait = w; return h; };     // 기다리는 장면 자신은 가림으로 치지 않는다
   if(typeof xmasFxState === "function" && xmasFxState().running) return;
   if(covered()) return;
-  if(xmasSayWait){ const said = xmasSayWait; xmasSayWait = ""; giftSay(said); }
+  homeSayFlush();
   if(!xmasFxWait) return;
   const w = xmasFxWait; xmasFxWait = null;
   /* 치즈 칸은 지금 가진 치즈까지(미루는 사이 치즈가 바뀌어도 맞게) */
   xmasFxPlay({from: data.closet.cheese - w.gain, to: data.closet.cheese, done: ()=>{
-    xmasSayWait = w.said; xmasFxTry();      // 닫은 뒤 홈이 보이면 말하고, 아니면 다음에 홈이 보일 때
+    homeSay(w.said); xmasFxTry();      // 닫은 뒤 홈이 보이면 말하고, 아니면 다음에 홈이 보일 때
     bdayPartySoon();                          // 장면에 가려 미룬 생일 폭죽이 있으면 이제
   }});
+}
+
+/* ---------- 홈 말풍선 차례 ----------
+   선물 말(크리스마스 · 업데이트)은 홈이 보일 때(잠금 · 가이드 · 확인창 · 썰매 장면에 가려 있지 않을 때) 하나씩 말한다.
+   방금 다른 말(생일 · 기다렸다는 말 · 연속 접속 선물 · 옷장 안내)을 했으면 그 말이 3.5초는 보이게 기다린다 */
+let homeSayList = [], homeSayT = null;
+function homeSay(said){ if(said) homeSayList.push(said); }
+function homeSayFlush(){
+  clearTimeout(homeSayT);
+  if(!homeSayList.length || bdayHidden()) return;
+  const since = Date.now() - bubbleSaidAt;
+  if(since < 3500){ homeSayT = setTimeout(homeSayFlush, 3550 - since); return; }
+  giftSay(homeSayList.shift());
+  if(homeSayList.length) homeSayT = setTimeout(homeSayFlush, 3500);
+}
+
+/* ---------- 업데이트 고마워 치즈 (1.5) ----------
+   새 기능이 든 업데이트(앞 두 자리 — 1.5 · 1.6 · 2.0 — 가 바뀔 때)를 받고 처음 열면 치즈 5개. 버그 수정(1.5.1)에는 없다.
+   본 버전(앞 두 자리)을 data.closet.verSeen 에 적어 백업을 따라간다(되살리면 백업의 기록을 따른다 — 치즈도 백업 때로 돌아가니 다시 받아도 늘지 않고,
+   새 기기에 깔고 옛 백업을 되살린 사람도 받는다). 새로 설치한 사람은 업데이트가 아니라서 주지 않는다.
+   그전 버전에는 이 기록이 없어서, 처음 한 번은 이미 쓰던 흔적(안내를 본 적 · 치즈 · 한 바퀴 · 내 레시피)으로 가린다 */
+const VER_CHEESE = 5;
+function verMinor(v){ const m = /^(\d+)\.(\d+)/.exec(String(v || "")); return m ? m[1] + "." + m[2] : ""; }
+function usedBefore(){
+  const c = data.closet;
+  return (data.hints || []).length > 0 || c.cheese > 0 || c.roundCount > 0 || !!c.streakDay || !!c.roundDay || c.own.length > 0 || c.themes.length > 0
+      || data.drinks.some(d=>!d.sample) || (data.events || []).length > 0 || !!(data.nick && data.nick.had) || !!(data.bday && data.bday.m);
+}
+function earnVerCheese(){
+  if(!isDot() || !isNativeApp() || typeof updateMine !== "function") return false;
+  const cur = verMinor(updateMine()), prev = data.closet.verSeen;
+  if(!cur || cur === prev) return false;
+  if(prev && !updateNewer(cur, prev)) return false;      // 기록이 더 새 버전이면(새 버전 백업을 옛 앱에 되살림) 그대로 둔다
+  const give = prev ? true : usedBefore();
+  data.closet.verSeen = cur;
+  if(give) data.closet.cheese += VER_CHEESE;
+  persist();
+  return give;
+}
+let verT = null;
+function verHome(){
+  if(earnVerCheese()){
+    const said = "업데이트해 줘서 고맙츄! 치즈 " + VER_CHEESE + "개 선물이츄";
+    /* 처음 생긴 치즈면 한 번뿐인 옷장 안내에 붙여 바로 말한다(따로 말하면 안내를 덮는다) */
+    if(!hintSeen("closet") && !bdayHidden()) giftSay(said); else homeSay(said);
+  }
+  /* 앱을 켤 때 잠금 · 가이드 · 이름 묻기 · iCloud 확인창이 뜰 틈(iCloud 는 1.5초까지 기다린다)을 두고 본다 */
+  clearTimeout(verT); verT = setTimeout(homeSayFlush, 1800);
 }
 
 /* ---------- 입구 ---------- */

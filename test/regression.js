@@ -3888,6 +3888,52 @@ const LEGACY = {
     eq("닫으면 장면 창 · 그림을 모두 놓아준다", r.closedAfter, [false, false]);
   }
 
+  // ── 6-10s. 1.5 업데이트 고마워 치즈 ──────────────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const wait = ms => new Promise(res => setTimeout(res, ms));
+      const backup = JSON.stringify(data), info0 = window.__amgijwiInfo;
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      r.minor = [verMinor("1.5 (23)"), verMinor("1.5.2"), verMinor("2.0"), verMinor("x")];
+      // 그전 버전에서 올라온 쓰던 사람(기록 없음 + 안내를 본 적 있음): 처음 열면 5개
+      bubbleSaidAt = 0; homeSayList.length = 0;      // 앞 테스트에서 한 말 · 남은 차례가 끼어들지 않게
+      markHint("closet"); data.closet.verSeen = ""; data.closet.cheese = 20; window.__amgijwiInfo = {app: "1.5 (23)"};
+      go("list"); go("home"); r.first = [data.closet.cheese, data.closet.verSeen]; await wait(1900);
+      r.say = $("#mbubble").textContent.replace(/\n/g, " ");
+      // 다시 열어도, 버그 수정(1.5.1)이어도 더 주지 않는다
+      go("list"); go("home"); window.__amgijwiInfo = {app: "1.5.1 (25)"}; go("list"); go("home"); r.patch = [data.closet.cheese, data.closet.verSeen];
+      // 1.6 이 되면 다시
+      window.__amgijwiInfo = {app: "1.6 (30)"}; go("list"); go("home"); r.next = [data.closet.cheese, data.closet.verSeen];
+      // 백업을 되살리면 백업의 기록을 따른다(새 기기에 깔고 옛 백업을 되살린 사람도 받게) · 새 버전 기록이 있는 백업을 옛 앱에 되살리면 다시 주지 않는다
+      r.restore = restoreCloset(cleanCloset({cheese: 3, verSeen: "1.4"})).verSeen;
+      data.closet.verSeen = "1.7"; window.__amgijwiInfo = {app: "1.6 (30)"}; const c0 = data.closet.cheese; go("list"); go("home"); r.older = [data.closet.cheese - c0, data.closet.verSeen];
+      // 새로 설치한 사람(쓴 흔적 없음)은 주지 않고 기록만
+      data.hints = []; data.closet.cheese = 0; data.closet.roundCount = 0; data.closet.verSeen = ""; data.drinks.forEach(d => { d.sample = true; });
+      window.__amgijwiInfo = {app: "1.5 (23)"}; go("list"); go("home"); r.fresh = [data.closet.cheese, data.closet.verSeen];
+      // 방금 다른 말을 했으면 3.5초는 기다렸다 말한다
+      homeSayList.length = 0; markHint("closet"); data.closet.cheese = 1;
+      sayBubble("다른 말이츄"); homeSay("기다린 말이츄"); homeSayFlush(); r.waitOther = $("#mbubble").textContent;
+      await wait(3700); r.afterOther = $("#mbubble").textContent.replace(/\n/g, " ");
+      // 웹 · 버전을 모르면 아무것도 하지 않는다
+      window.__amgijwiInfo = info0; r.unknown = earnVerCheese();
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      data = JSON.parse(backup); data.closet = cleanCloset(data.closet); persist(); go("home");
+      return r;
+    });
+    eq("앞 두 자리만 본다", r.minor, ["1.5", "1.5", "2.0", ""]);
+    eq("쓰던 사람이 새 버전을 처음 열면 치즈 5개", r.first, [25, "1.5"]);
+    eq("홈이 보이면 고맙다고 말한다", r.say, "업데이트해 줘서 고맙츄! 치즈 5개 선물이츄");
+    eq("다시 열어도 · 버그 수정 업데이트여도 더 주지 않는다", r.patch, [25, "1.5"]);
+    eq("앞 두 자리가 바뀌면(1.6) 다시 5개", r.next, [30, "1.6"]);
+    eq("백업을 되살리면 백업의 기록을 따른다", r.restore, "1.4");
+    eq("더 새 버전 기록이면 주지 않고 그대로", r.older, [0, "1.7"]);
+    eq("새로 설치한 사람은 기록만", r.fresh, [0, "1.5"]);
+    eq("버전을 모르면 아무것도 하지 않는다", r.unknown, false);
+    eq("방금 다른 말을 했으면 그 말을 덮지 않는다", r.waitOther, "다른 말이츄");
+    eq("3.5초 뒤에 기다린 말을 한다", r.afterOther, "기다린 말이츄");
+  }
+
   // ── 6-10x. 1.3 새 버전 알림 ────────────────────────────────────
   {
     const r = await page.evaluate(async () => {
