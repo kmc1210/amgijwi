@@ -76,7 +76,7 @@ final class WebAppViewController: UIViewController {
         /// 홈 화면 위젯에 넘길 요약 통로. 받은 것을 위젯과 같이 쓰는 칸에 적는다 (WidgetBridge.swift).
         config.userContentController.add(widget, name: WidgetBridge.name)
 
-        /// 새 버전 알림 통로. 하루 한 번 앱스토어에 버전만 묻고, 새것이면 웹이 홈에서 한 번 묻는다 (UpdateBridge.swift).
+        /// 새 버전 알림 통로. 6시간에 한 번 정도 앱스토어에 버전만 묻고, 새것이면 웹이 홈에서 한 번 묻는다 (UpdateBridge.swift).
         config.userContentController.add(update, name: UpdateBridge.name)
 
         /// iCloud 자동 백업 통로. 웹이 만든 백업을 사용자 본인 iCloud 키-값 저장소에 둔다 (CloudBridge.swift).
@@ -121,7 +121,7 @@ final class WebAppViewController: UIViewController {
             return
         }
         webView.load(URLRequest(url: BundleSchemeHandler.startURL))
-        /// 켤 때와 다시 앞으로 꺼낼 때 새 버전을 확인한다(하루 한 번만 실제로 묻는다)
+        /// 켤 때와 다시 앞으로 꺼낼 때 새 버전을 확인한다(물을 때가 된 때만 실제로 묻는다 — UpdateBridge.swift)
         NotificationCenter.default.addObserver(self, selector: #selector(becameActive),
                                                name: UIApplication.didBecomeActiveNotification, object: nil)
     }

@@ -2,7 +2,8 @@ import UIKit
 import WebKit
 import StoreKit
 
-/// 새 버전 알림. 하루에 한 번(앱을 켜거나 다시 꺼낼 때 — 새 버전이 없다는 답이면 6시간 뒤에 다시) 애플의 앱스토어 검색 주소에 지금 나와 있는 버전만 묻는다.
+/// 새 버전 알림. 앱을 켜거나 다시 꺼낼 때, 물을 때가 됐으면 애플의 앱스토어 검색 주소에 지금 나와 있는 버전만 묻는다.
+/// 새 버전이 없다는 답이면 6시간 뒤에(출시해도 애플의 검색 정보는 몇 시간 늦게 바뀐다), 새 버전을 알았거나 이 앱이 더 새것(TestFlight)이면 하루 뒤에.
 /// 보내는 것은 앱 번호와 나라(kr)뿐이고, 레시피 · 기록 같은 내용은 보내지 않는다(www/privacy.html 3번).
 /// 이 앱보다 새 버전이면 웹(www/js/update.js 의 updateFromApp)에 버전만 알리고, 언제 · 한 번만 물을지는 웹이 정한다.
 /// 웹은 받은 버전을 적어 두므로, 묻기 전에 앱이 꺼져도 하루를 기다리지 않고 다음에 켤 때 묻는다.
@@ -15,10 +16,9 @@ final class UpdateBridge: NSObject {
     static let name = "amgijwiUpdate"
     /// 앱스토어의 암기쥐 번호(README 의 App Store 링크와 같다)
     static let appID = "6817266810"
-    private static let checkedKey = "updateCheckedAt"
+    /// 다음에 물을 때(1970 기준 초). 예전 판의 "updateCheckedAt" 는 더 쓰지 않는다
+    private static let dueKey = "updateDueAt"
     private static let gap: TimeInterval = 24 * 60 * 60
-    /// 앱스토어 답이 "새 버전 없음"이면 6시간 뒤에 다시 묻는다. 출시해도 애플의 검색 정보는 몇 시간 늦게 바뀌어서,
-    /// 하루를 꼬박 기다리면 알림이 하루 넘게 늦을 수 있다
     private static let retryGap: TimeInterval = 6 * 60 * 60
 
     private weak var host: UIViewController?
@@ -32,11 +32,11 @@ final class UpdateBridge: NSObject {
         self.tell = tell
     }
 
-    /// 마지막으로 물은 지 하루가 지났으면 묻는다. 실패하면 적지 않아 다음에 다시 묻는다.
+    /// 물을 때가 됐으면 묻는다(시계를 되돌려 다음 때가 하루보다 멀어졌으면 그것도 지금). 실패하면 적지 않아 다음에 다시 묻는다.
     func checkIfDue() {
-        let last = UserDefaults.standard.double(forKey: UpdateBridge.checkedKey)
+        let due = UserDefaults.standard.double(forKey: UpdateBridge.dueKey)
         let now = Date().timeIntervalSince1970
-        guard !busy, now - last >= UpdateBridge.gap || now < last,
+        guard !busy, now >= due || due - now > UpdateBridge.gap,
               let url = URL(string: "https://itunes.apple.com/lookup?id=\(UpdateBridge.appID)&country=kr") else { return }
         busy = true
         var req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
@@ -49,9 +49,10 @@ final class UpdateBridge: NSObject {
                 guard let found = found else { return }
                 let mine = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
                 let os = UIDevice.current.systemVersion
-                /// 새 버전이 없으면 6시간 뒤에 다시(물은 때를 하루 - 6시간 전으로 적는다), 있으면 하루 뒤에
+                /// 앱스토어가 이 앱과 같은 버전이면(곧 새 버전이 나올 수 있다) 6시간 뒤에, 새 버전을 알았거나 이 앱이 더 새것이면 하루 뒤에
                 let isNewer = UpdateBridge.newer(found.version, than: mine)
-                UserDefaults.standard.set(isNewer ? now : now - (UpdateBridge.gap - UpdateBridge.retryGap), forKey: UpdateBridge.checkedKey)
+                let same = !isNewer && !UpdateBridge.newer(mine, than: found.version)
+                UserDefaults.standard.set(now + (same ? UpdateBridge.retryGap : UpdateBridge.gap), forKey: UpdateBridge.dueKey)
                 /// 이 기기의 iOS 로 받을 수 없는 버전이면 알리지 않는다
                 guard isNewer, !UpdateBridge.newer(found.minOS, than: os) else { return }
                 self.tell?("typeof updateFromApp === 'function' && updateFromApp(\"\(found.version)\")")
