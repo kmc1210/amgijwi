@@ -107,6 +107,8 @@ open Amgijwi.xcodeproj
 맥이 없으면 손댈 필요 없다. `.github/workflows/ios.yml` 이 macOS 러너에서
 빌드하고 시뮬레이터에 올려 실행한 뒤 **화면을 찍어 올려둔다.**
 Actions 실행 결과의 `ios-screenshot` 를 받아 보면 된다.
+PR 에서는 `ios/` 가 바뀔 때만 자동으로 돌고, 웹(`www/`)만 바꾼 PR 은 main 에 들어간 뒤 돈다.
+머지 전에 보고 싶으면 Actions → iOS → Run workflow 에서 그 가지를 골라 손으로 돌린다.
 
 ## 앱 아이콘
 
