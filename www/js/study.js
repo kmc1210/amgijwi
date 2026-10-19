@@ -50,7 +50,10 @@ function bindRows(sel, selectable){
   }));
 }
 /* 마스코트를 누르면 응원 한마디 */
+/* 마지막으로 따로 말한 때(인사말 말고). 선물 말(closet.js homeSay)은 이 말이 3.5초는 보이게 기다렸다 말한다 */
+let bubbleSaidAt = 0;
 function sayBubble(msg){
+  bubbleSaidAt = Date.now();
   $("#mbubble").textContent = sentenceLines(msg);
   popBubble();
 }
