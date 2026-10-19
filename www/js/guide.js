@@ -56,10 +56,10 @@ function guidePages(){
     `<div class="ob-page"><div class="ob-stage"><div class="ob-ch"><div class="ob-chm"><div class="ob-m" id="obM6">${mouseSVGWorn("day", false, {})}</div>
           <span class="ob-buy" id="obBuy"></span><i class="ob-fall" id="obFall">${cheeseSVG()}</i></div>
         <div class="ob-chip ob-box"><span class="ob-ci">${cheeseSVG()}</span><b id="obCn">0</b></div>
-        <div class="ob-rc" id="obWays"><div class="ob-row">카드 한 바퀴(5장 이상)<i class="ob-ld"></i><span class="ob-v">+1</span></div>
+        <div class="ob-rc" id="obWays"><div class="ob-row">카드 5장 외우기(한 바퀴)<i class="ob-ld"></i><span class="ob-v">+1</span></div>
           <div class="ob-row">7일 연속 들어오기<i class="ob-ld"></i><span class="ob-v">+5</span></div>
           <div class="ob-row">광고 보기(하루 3번)<i class="ob-ld"></i><span class="ob-v">+5</span></div></div></div></div>
-      <h2>치즈 모아 쥐돌이 꾸미기</h2><p>카드를 5장 이상 한 바퀴 외우면 치즈가 하나 생겨요(하루 10개까지). 모은 치즈로 옷장에서 쥐돌이 옷을 사 입혀 보세요.</p></div>`,
+      <h2>치즈 모아 쥐돌이 꾸미기</h2><p>카드를 한 바퀴(5장 이상) 외우면 치즈가 하나, 짧게 외우면 5장이 모일 때마다 하나 생겨요(하루 10개까지). 모은 치즈로 옷장에서 쥐돌이 옷을 사 입혀 보세요.</p></div>`,
     `<div class="ob-page"><div class="ob-stage"><div class="ob-bk"><div class="ob-m ob-small" id="obM5">${mouseSVG("eat1")}</div>
         <div class="ob-rc"><div class="ob-row">레시피<i class="ob-ld"></i><span class="ob-v">이 기기 안</span></div><div class="ob-row">iCloud 백업<i class="ob-ld"></i><span class="ob-v">켜면 자동</span></div>
         <div class="ob-row">백업 없이 지우면<i class="ob-ld"></i><span class="ob-v ob-warn">사라짐</span></div></div></div></div>
@@ -194,27 +194,31 @@ function guidePlayAlarm(reduce){
   cycle();
 }
 /* 치즈 장면: 모으는 길(한 바퀴 · 연속 · 광고)이 차례로 반짝이며 치즈가 칩으로 떨어지고, 모이면 옷을 하나 사 입는다 */
-const GUIDE_BUYS = [{slot:"head", id:"ribbon"}, {slot:"face", id:"glasses"}, {slot:"body", id:"bowtie"}, {slot:"head", id:"beret"}];
+const GUIDE_BUYS = ["ribbon", "glasses", "bowtie", "beret"];      // 사 입는 차례(옷장의 진짜 값 · 자리를 쓴다)
 const GUIDE_GAINS = [[0, 1], [0, 1], [0, 1], [1, 5], [2, 5]];      // [반짝일 줄, 치즈]
+/* 가이드의 쥐돌이는 홈의 옷 그림 저장(wornCache)을 쓰지 않고 바로 그린다(가이드에서 입혀 본 조합이 홈 것을 밀어내지 않게) */
+function guideMouse(wear){ return rowsSVG(dressRows(mouseRows("day", false), "stand", wear), false); }
 function guidePlayCheese(reduce){
   const m = $("#obM6"), cn = $("#obCn"), fall = $("#obFall"), buy = $("#obBuy"), rows = document.querySelectorAll("#obWays .ob-row");
-  if(reduce){ cn.textContent = "13"; m.innerHTML = mouseSVGWorn("day", false, {head:"ribbon"}); return; }
+  const items = GUIDE_BUYS.map(closetItem).filter(Boolean);
+  if(reduce || !items.length){ cn.textContent = "3"; m.innerHTML = guideMouse(items.length ? {[items[0].slot]: items[0].id} : {}); return; }      // 13개 모아 리본(10)을 산 뒤
   let n = 0, k = 0, wear = {};
-  const show = ()=>{ cn.textContent = String(n); m.innerHTML = mouseSVGWorn("day", false, wear); };
+  m.innerHTML = guideMouse(wear);
   const round = ()=>{
-    if(k >= GUIDE_BUYS.length){ k = 0; n = 0; wear = {}; }
-    show();
+    if(k >= items.length){ k = 0; n = 0; wear = {}; m.innerHTML = guideMouse(wear); }
+    cn.textContent = String(n);
     GUIDE_GAINS.forEach(([row, g], j)=>guideLater(()=>{
       rows.forEach((r, x)=>r.classList.toggle("on", x === row));
       fall.classList.remove("go"); void fall.offsetWidth; fall.classList.add("go");
-      guideLater(()=>{ n += g; show(); }, 420);
+      guideLater(()=>{ n += g; cn.textContent = String(n); }, 420);
     }, 300 + j * 650));
-    const it = GUIDE_BUYS[k], item = closetItem(it.id);
     guideLater(()=>{
       rows.forEach(r=>r.classList.remove("on"));
-      n -= item.price; wear = Object.assign({}, wear); wear[it.slot] = it.id; show();
+      const item = items[k];
+      if(n < item.price) return;      // 아직 모자라면 한 바퀴 더 모은다(치즈가 마이너스가 되지 않게)
+      n -= item.price; wear = Object.assign({}, wear, {[item.slot]: item.id}); k++;
+      cn.textContent = String(n); m.innerHTML = guideMouse(wear);
       buy.textContent = item.name + " -" + item.price; buy.classList.remove("go"); void buy.offsetWidth; buy.classList.add("go");
-      k++;
     }, 300 + GUIDE_GAINS.length * 650 + 300);
     guideLater(round, 300 + GUIDE_GAINS.length * 650 + 1600);
   };
