@@ -1801,7 +1801,8 @@ const LEGACY = {
       mo1.disconnect(); mo2.disconnect();
       for (let i = 0; i < 3; i++) $("#obNext").click();
       // 치즈 장면: 치즈가 모이고 옷을 하나 사 입는다
-      await new Promise(res => setTimeout(res, 4400));
+      // 처음 옷을 사는 순간(#obBuy 에 이름이 들어올 때)을 기다려 본다 — 시간에 기대지 않게
+      await new Promise(res => { const b = $("#obBuy"); if (b.textContent) return res(); const mo = new MutationObserver(() => { if (b.textContent){ mo.disconnect(); res(); } }); mo.observe(b, { childList:true, characterData:true, subtree:true }); setTimeout(res, 8000); });
       r.cheese = [Number($("#obCn").textContent), $("#obBuy").textContent, $("#obM6").innerHTML.length > 0];
       $("#obNext").click();
       r.lastLabel = $("#obNext").textContent;
