@@ -1800,6 +1800,10 @@ const LEGACY = {
       await new Promise(res => setTimeout(res, 7500));
       mo1.disconnect(); mo2.disconnect();
       for (let i = 0; i < 3; i++) $("#obNext").click();
+      // 치즈 장면: 치즈가 모이고 옷을 하나 사 입는다
+      await new Promise(res => setTimeout(res, 4400));
+      r.cheese = [Number($("#obCn").textContent), $("#obBuy").textContent, $("#obM6").innerHTML.length > 0];
+      $("#obNext").click();
       r.lastLabel = $("#obNext").textContent;
       $("#obNext").click();
       r.closed = $("#onboard").hidden && !guide;
@@ -1816,7 +1820,8 @@ const LEGACY = {
     });
     ok("웹은 처음 와도 가이드를 띄우지 않고, 사용법 보기는 글 시트 그대로다", ob.webDue === false && ob.webSheet === true && ob.webOnboard === false);
     ok("앱을 처음 열면 가이드가 뜨고, 이미 쓰던 사람에게는 뜨지 않는다", ob.appDue === true && ob.backDue === false);
-    eq("가이드는 다섯 장, 점도 다섯 개다", [ob.shown, ob.pages, ob.dots], [true, 5, 5]);
+    eq("가이드는 여섯 장, 점도 여섯 개다", [ob.shown, ob.pages, ob.dots], [true, 6, 6]);
+    eq("치즈 장면: 다섯 번 모아(13) 리본(10)을 사 입는다", ob.cheese, [3, "리본 -10", true]);
     ok("가이드는 탭바 위를 덮는다", Number(ob.cover) > 65, ob.cover);
     eq("가이드의 도트 글꼴도 16px 이상이다", ob.small, []);
     ok("카드는 발바닥이 찍는 순간에 뒤집힌다", ob.flipAtPress.length >= 1 && ob.flipAtPress.every(Boolean), JSON.stringify(ob.flipAtPress));
