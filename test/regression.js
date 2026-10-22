@@ -3862,6 +3862,34 @@ const LEGACY = {
     eq("웹에는 이름 기능이 없다", r.web, ["app", false, false]);
   }
 
+  // 이름을 부르면 인사말이 길어져 접힌다. 좁은 폰에서도 "오 / 후도" 처럼 낱말 가운데가 아니라 빈칸에서 접혀야 한다
+  {
+    const ctx = await browser.newContext({ viewport: { width: 320, height: 700 } });
+    const pg = await ctx.newPage();
+    await pg.addInitScript(() => { window.__amgijwiNative = true; });
+    await pg.goto(APP); await pg.waitForTimeout(400);
+    const r = await pg.evaluate(() => {
+      data.nick = cleanNick({ name: "김민철바리스타" }); data.drinks.forEach(d => { data.mastered = data.mastered.filter(x => x !== d.id); });
+      go("home"); renderHome(); $("#greetT").textContent = nickLead("오후도 힘내요");
+      /* 글자마다 줄이 바뀌는 곳을 찾아, 바뀌기 바로 앞 글자가 빈칸인지 본다 */
+      const breaks = el => {
+        const t = el.firstChild, out = [], rg = document.createRange();
+        let top = null;
+        for (let i = 0; i < t.length; i++) {
+          rg.setStart(t, i); rg.setEnd(t, i + 1);
+          const rc = rg.getClientRects()[0]; if (!rc) continue;
+          if (top !== null && rc.top > top + 4) out.push(t.data[i - 1]);
+          top = rc.top;
+        }
+        return out;
+      };
+      return { greet: breaks($("#greetT")), sub: breaks($("#heroSub")) };
+    });
+    await ctx.close();
+    ok("긴 이름 인사말은 줄을 바꾸되 빈칸에서만 접는다", r.greet.length > 0 && r.greet.every(c => c === " "));
+    ok("진도 카드 설명도 낱말 가운데서 접히지 않는다", r.sub.every(c => c === " "));
+  }
+
   await browser.close();
 
   console.log("");
