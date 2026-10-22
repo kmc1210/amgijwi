@@ -109,7 +109,12 @@ html.dot #s-home{background:var(--d-bg);color:var(--d-t1);}
 
 /* 인사말. 이 글꼴은 같은 px 에서 약 1.2배 넓어 원래 27px 과 폭을 맞춰 22px */
 html.dot #greetT{font-family:"NeoDGM",monospace;font-weight:400;font-size:22px;letter-spacing:0;
-  -webkit-font-smoothing:none;color:var(--d-t1);}
+  -webkit-font-smoothing:none;color:var(--d-t1);
+  /* 이름을 부르면("김민철바리스타님, 오후도 힘내요") 길어져 접힌다. "오 / 후도"처럼 낱말 가운데가 아니라
+     쉼표 뒤 빈칸에서 접히게 한다. 띄어 쓴 곳 없이 긴 영문 이름만 어쩔 수 없이 글자 사이에서 */
+  word-break:keep-all;overflow-wrap:anywhere;}
+/* 진도 카드 설명도 "용 / 량이" 처럼 낱말 가운데서 접히지 않게 */
+html.dot #heroTitle, html.dot #heroSub{word-break:keep-all;overflow-wrap:anywhere;}
 html.dot #greetP{color:var(--d-t2);}
 
 /* 쥐돌이 말풍선. 설계 크기 16px 에 자간 −1px(도트 한 칸) · 줄 높이 24px 로 격자를 맞춘다 */
