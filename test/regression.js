@@ -3868,26 +3868,27 @@ const LEGACY = {
     const pg = await ctx.newPage();
     await pg.addInitScript(() => { window.__amgijwiNative = true; });
     await pg.goto(APP); await pg.waitForTimeout(400);
-    const r = await pg.evaluate(() => {
-      data.nick = cleanNick({ name: "김민철바리스타" }); data.drinks.forEach(d => { data.mastered = data.mastered.filter(x => x !== d.id); });
-      go("home"); renderHome(); $("#greetT").textContent = nickLead("오후도 힘내요");
+    const r = await pg.evaluate(async () => {
+      await document.fonts.ready;                     // 도트 글꼴이 들어온 뒤에 잰다(대신 글꼴은 폭이 달라 접는 곳이 다르다)
+      data.nick = cleanNick({ name: "가나다라마바사아" }); data.mastered = [];   // 8자(가장 긴 이름) · 진도 0 이면 설명이 가장 길다
+      go("home"); renderHome();                       // 앱이 실제로 쓰는 인사말 그대로
       /* 글자마다 줄이 바뀌는 곳을 찾아, 바뀌기 바로 앞 글자가 빈칸인지 본다 */
       const breaks = el => {
-        const t = el.firstChild, out = [], rg = document.createRange();
-        let top = null;
-        for (let i = 0; i < t.length; i++) {
+        const out = [], rg = document.createRange(), w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        let top = null, prev = "";
+        for (let t = w.nextNode(); t; t = w.nextNode()) for (let i = 0; i < t.length; i++) {
           rg.setStart(t, i); rg.setEnd(t, i + 1);
           const rc = rg.getClientRects()[0]; if (!rc) continue;
-          if (top !== null && rc.top > top + 4) out.push(t.data[i - 1]);
-          top = rc.top;
+          if (top !== null && rc.top > top + 4) out.push(prev);
+          top = rc.top; prev = t.data[i];
         }
         return out;
       };
-      return { greet: breaks($("#greetT")), sub: breaks($("#heroSub")) };
+      return { title: $("#greetT").textContent, greet: breaks($("#greetT")), sub: breaks($("#heroSub")) };
     });
     await ctx.close();
-    ok("긴 이름 인사말은 줄을 바꾸되 빈칸에서만 접는다", r.greet.length > 0 && r.greet.every(c => c === " "));
-    ok("진도 카드 설명도 낱말 가운데서 접히지 않는다", r.sub.every(c => c === " "));
+    ok("긴 이름 인사말은 이름을 부르고, 줄을 바꾸되 빈칸에서만 접는다", r.title.indexOf("가나다라마바사아님, ") === 0 && r.greet.length > 0 && r.greet.every(c => c === " "));
+    ok("진도 카드 설명도 줄을 바꾸되 낱말 가운데서 접히지 않는다", r.sub.length > 0 && r.sub.every(c => c === " "));
   }
 
   await browser.close();
