@@ -738,6 +738,9 @@ function closetStageWear(){
   if(it) wear[it.slot] = it.id;
   return wear;
 }
+/* 옷장이 두 칸(왼쪽 무대 · 오른쪽 아이템)으로 놓이는 화면인가. dot.css 의 같은 조건과 맞춘다 */
+const CLOSET_WIDE_Q = "(min-width: 760px) and (min-aspect-ratio: 5/4)";
+function closetWide(){ return isDot() && !!window.matchMedia && window.matchMedia(CLOSET_WIDE_Q).matches; }
 function renderCloset(){
   stopClosetRun();                // 미리 보던 달리기는 끊는다(입어 보는 옷이 바뀌었을 수 있다)
   const c = data.closet;
@@ -918,8 +921,9 @@ function tapClosetItem(id){
     haptic("selection");
     closetLock();
     renderCloset();
-    /* 아래쪽 칸을 눌렀어도 입혀 본 쥐돌이와 사기 버튼이 같이 보이게 무대 위쪽으로 올린다 */
-    if(closetTry){ const sc = document.querySelector("#s-closet .scroll"); if(sc) sc.scrollTop = 0; }
+    /* 아래쪽 칸을 눌렀어도 입혀 본 쥐돌이와 사기 버튼이 같이 보이게 무대 위쪽으로 올린다.
+       두 칸 화면에서는 무대가 옆에 붙어 있으니 고르던 자리 그대로 둔다 */
+    if(closetTry && !closetWide()){ const sc = document.querySelector("#s-closet .scroll"); if(sc) sc.scrollTop = 0; }
     return;
   }
   /* 가진 아이템을 눌렀다. 같은 칸의 것을 입어 보던 중이면 입어 보기만 끝낸다

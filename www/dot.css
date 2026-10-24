@@ -985,3 +985,15 @@ html.dot #s-set .icon-b{display:flex;flex-direction:column;align-items:center;ga
 html.dot #s-set .icon-b .appicon{width:56px;height:56px;border-radius:13px;display:block;}
 html.dot #s-set .icon-b.on{background:var(--d-warn-bg);
   box-shadow:0 -2px 0 0 var(--d-acc), 0 2px 0 0 var(--d-acc), -2px 0 0 0 var(--d-acc), 2px 0 0 0 var(--d-acc);}
+
+/* 옷장 두 칸: 넓고 낮은 화면(iPhone Duo 펼침 · 아이패드 가로)에서만 왼쪽에 무대 · 사기 · 치즈 모으기, 오른쪽에 탭 · 아이템.
+   무대는 아이템을 내려도 옆에 붙어 있다. 폭은 920 까지 넓혀 "핼러윈 ~11/8" 같은 기간 표시가 잘리지 않게(closet.js 의 CLOSET_WIDE_Q 와 같은 조건) */
+@media (min-width: 760px) and (min-aspect-ratio: 5/4){
+  html.dot #s-closet .appbar{max-width:920px;}
+  html.dot #s-closet .scroll{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);column-gap:22px;align-items:start;align-content:start;}
+  html.dot #s-closet .scroll > :is(.cleft, .cright){width:auto;max-width:none;min-width:0;margin-left:0 !important;margin-right:0 !important;}
+  /* 스크롤은 화면 끝까지(손가락이 어디서든 굴리게) 두고, 두 칸은 가운데 920 안에 */
+  html.dot #s-closet .scroll{padding-left:max(var(--pad-l), calc((100% - 920px) / 2));padding-right:max(var(--pad-r), calc((100% - 920px) / 2));}
+  html.dot #s-closet .cleft{position:sticky;top:0;}
+  html.dot #s-closet .cstage{height:min(250px, calc(100vh - 330px));min-height:190px;}
+}
