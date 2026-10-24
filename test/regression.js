@@ -3954,19 +3954,24 @@ const LEGACY = {
       // 11월에는 묻지 않는다
       window.__amgijwiIcon = "default"; at(11, 20); iconAsk(); iconCardSync(); r.nov = [on(), $("#iconCard").style.display];
       // 12월 홈에서 한 번 묻는다: 아이콘 그림 · 바꾸기 / 괜찮아
-      at(12, 5); go("list"); go("home"); await wait(20);
+      at(12, 5); go("list"); go("home"); r.notYet = on(); await wait(2100);   // 홈의 말풍선이 먼저, 2초 뒤에 묻는다
       r.ask = [on(), $("#dlgT").textContent, !!$("#dlgPic svg.appicon"), $("#dlgPic").hidden, $("#dlgYes").textContent, $("#dlgNo").textContent, /26일/.test($("#dlgM").textContent)];
       $("#dlgYes").click(); r.posted = posts.slice();
       iconFromApp("xmas"); r.now = iconNow();
       // 다른 확인창에는 그림이 남지 않는다
       confirmBox("t", "m", "확인", null); r.otherPic = $("#dlgPic").hidden; $("#dlgNo").click();
       // 올해는 다시 묻지 않는다(아이콘을 되돌려도)
-      window.__amgijwiIcon = "default"; go("list"); go("home"); await wait(20); r.again = on();
+      window.__amgijwiIcon = "default"; go("list"); go("home"); await wait(2100); r.again = on();
       // 설정 칸: 기간 안이면 보이고, 지금 아이콘에 표시. 누르면 바꿔 달라고 청한다
       iconCardSync(); posts.length = 0;
       r.card = [$("#iconCard").style.display, [...document.querySelectorAll("#iconBtns .icon-b")].map(b => b.textContent.trim() + (b.classList.contains("on") ? "*" : ""))];
       document.querySelector('#iconBtns [data-icon="xmas"]').click(); r.cardPost = posts.slice();
       iconFromApp("fail"); r.fail = [iconNow(), $("#toast").textContent];
+      // 저절로 되돌리다 못 바꾼 것은 알리지 않는다
+      $("#toast").textContent = ""; window.__amgijwiIcon = "xmas"; at(12, 27); iconRevert(); iconFromApp("fail"); r.quietFail = $("#toast").textContent;
+      // 앱이 알린 지금 아이콘이 크리스마스인데 기간이 지났으면(다시 불린 웹) 되돌린다
+      posts.length = 0; window.__amgijwiIcon = "default"; iconFromApp("xmas"); r.nowRevert = posts.slice();
+      at(12, 5);
       // 26일이 지나 열면 원래대로 되돌린다. 기간이 지나도 크리스마스 아이콘이면 칸은 남아 직접 되돌릴 수 있다
       window.__amgijwiIcon = "xmas"; posts.length = 0; at(12, 26); iconRevert(); iconCardSync();
       r.revert = [posts.slice(), $("#iconCard").style.display];
@@ -3976,9 +3981,11 @@ const LEGACY = {
       // 썰매 장면 · 다른 창이 떠 있으면 묻지 않고 다음 기회로
       try{ localStorage.removeItem(ICON_ASKED_KEY); }catch(e){}
       at(12, 6); confirmBox("t", "m", "확인", null); iconAsk(); r.busy = $("#dlgT").textContent; $("#dlgNo").click();
-      await wait(1600); go("list"); go("home"); await wait(20); r.later = [on(), $("#dlgT").textContent]; $("#dlgNo").click();
+      await wait(1700); r.later = [on(), $("#dlgT").textContent]; $("#dlgNo").click();   // 그 창을 닫고 1.5초 뒤에 묻는다
       // 아이콘 그림: 기본과 크리스마스(산타 모자 빨강 · 밤하늘)
       r.svg = [/#382A21/.test(appIconSVG("default")), /#16223F/.test(appIconSVG("xmas")), /#382A21/.test(appIconSVG("xmas"))];
+      const ids = [...document.querySelectorAll("svg.appicon linearGradient")].map(g => g.id);
+      r.ids = ids.length > 2 && new Set(ids).size === ids.length;
       window.Date = realDate; window.webkit = realWk; delete window.__amgijwiIcon; iconCardSync();
       try{ localStorage.removeItem(ICON_ASKED_KEY); }catch(e){}
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText(); go("home");
@@ -3986,6 +3993,7 @@ const LEGACY = {
     });
     eq("아이콘을 바꿀 수 없는 기기면 묻지도 칸을 보이지도 않는다", r.unsupported, [false, "none", 0]);
     eq("12월이 아니면 묻지 않는다", r.nov, [false, "none"]);
+    eq("홈을 열자마자는 묻지 않는다(말풍선이 먼저)", r.notYet, false);
     eq("12월 홈에서 한 번 묻는다(아이콘 그림 · 바꾸기 / 괜찮아 · 26일에 돌아온다는 말)", r.ask, [true, "크리스마스 아이콘", true, false, "바꾸기", "괜찮아", true]);
     eq("바꾸기를 누르면 앱에 크리스마스 아이콘을 청한다", r.posted, ["xmas"]);
     eq("앱이 바꿨다고 알리면 지금 아이콘이 바뀐다", r.now, "xmas");
@@ -3994,12 +4002,15 @@ const LEGACY = {
     eq("설정 → 앱 아이콘: 기간 안이면 보이고 지금 아이콘에 표시", r.card, ["", ["기본*", "크리스마스"]]);
     eq("설정에서 고르면 앱에 청한다", r.cardPost, ["xmas"]);
     eq("못 바꿨으면 그대로 두고 알려준다", r.fail, ["default", "아이콘을 바꾸지 못했어요"]);
+    eq("저절로 되돌리다 못 바꾼 것은 알리지 않는다", r.quietFail, "");
+    eq("앱이 알린 지금 아이콘이 크리스마스이고 기간이 지났으면 되돌린다", r.nowRevert, ["default"]);
     eq("26일이 지나 열면 원래 아이콘으로 되돌리고, 그때까지는 칸이 남는다", r.revert, [["default"], ""]);
     eq("되돌린 뒤에는 칸을 숨긴다", r.after, "none");
     eq("이미 기본이면 되돌리지 않는다", r.noop, 0);
     eq("다른 창이 떠 있으면 묻지 않는다", r.busy, "t");
-    eq("그 창을 닫고 홈으로 오면 묻는다", r.later, [true, "크리스마스 아이콘"]);
+    eq("그 창을 닫고 조금 뒤에 묻는다", r.later, [true, "크리스마스 아이콘"]);
     eq("아이콘 그림: 기본은 갈색, 크리스마스는 밤하늘", r.svg, [true, true, false]);
+    ok("아이콘 그림마다 배경 id 가 달라 숨은 칸의 같은 id 를 가리키지 않는다", r.ids);
   }
 
   // ── 6-10x. 1.3 새 버전 알림 ────────────────────────────────────

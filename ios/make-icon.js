@@ -16,46 +16,9 @@ const { chromium } = require("playwright");
 const ROOT = path.resolve(__dirname, "..");
 const OUT = path.join(__dirname, "Assets.xcassets", "AppIcon.appiconset", "icon-1024.png");
 
+/* 구도(28칸 × 칸 32 = 896 → 폭의 87%, 위 여백 171 · 아래는 잘림)와 배경색은 앱의 appIconSVG(www/js/appicon.js)에 있다.
+   설정 화면의 미리 보기와 홈 화면 아이콘이 같은 그림이 되게 두 벌 다 거기서 그린다 */
 const SIZE = 1024;
-const CELL = 32;    // 28칸 × 32 = 896 → 아이콘 폭의 87%. 웹 아이콘과 같은 비율
-const TOP = 171;    // 위 여백 17%. 아래는 잘린다. 작게 줄여도 얼굴이 크게 보이는 구도다
-const BG_FROM = "#382A21", BG_TO = "#7D5839";
-
-/* ---------- 도트 원본 읽기 ---------- */
-function sprite(){
-  const core = fs.readFileSync(path.join(ROOT, "www", "js", "core.js"), "utf8");
-  const palStart = core.indexOf("const MOUSE_PAL");
-  const pal = {};
-  core.slice(palStart, core.indexOf("};", palStart))
-      .replace(/([A-Za-z])\s*:\s*"(#[0-9A-Fa-f]{6})"/g, (_, k, v) => { pal[k] = v; return ""; });
-  const rows = /day\s*:\s*\[(.*?)\]/s.exec(core.slice(core.indexOf("const MOUSE = {")))[1]
-    .match(/"[^"]*"/g).map(s => s.slice(1, -1));
-  return { pal, rows };
-}
-
-function svg(){
-  const { pal, rows } = sprite();
-  const w = rows[0].length;
-  const x0 = (SIZE - w * CELL) / 2;
-  let out = "";
-  for(let y = 0; y < rows.length; y++){
-    if(TOP + y * CELL >= SIZE) break;
-    let x = 0;
-    while(x < w){
-      const ch = rows[y][x];
-      if(ch === "."){ x++; continue; }
-      let n = 1;
-      while(x + n < w && rows[y][x + n] === ch) n++;
-      const h = Math.min(CELL, SIZE - (TOP + y * CELL));
-      out += `<rect x="${x0 + x * CELL}" y="${TOP + y * CELL}" width="${n * CELL}" height="${h}" fill="${pal[ch]}"/>`;
-      x += n;
-    }
-  }
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${SIZE}" height="${SIZE}" shape-rendering="crispEdges">`
-    + `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">`
-    + `<stop offset="0" stop-color="${BG_FROM}"/><stop offset="1" stop-color="${BG_TO}"/></linearGradient></defs>`
-    + `<rect width="${SIZE}" height="${SIZE}" fill="url(#g)"/>${out}</svg>`;
-}
 
 /* ---------- 투명도 없는 PNG 로 쓰기 ---------- */
 const CRC = (()=>{ const t = new Int32Array(256);
@@ -97,8 +60,7 @@ function writePNG(file, rgba, w, h){
   ]));
 }
 
-/* 크리스마스 아이콘(AppIcon-Xmas)은 앱의 appIconSVG("xmas") 그대로 그린다 — 앱 안 미리 보기와 같은 그림이 되게.
-   산타 모자 · 털실 목도리 도트는 옷장(closet.js)에 있어 앱을 띄워 입힌다 */
+/* 크리스마스 아이콘(AppIcon-Xmas). 산타 모자 · 털실 목도리 도트는 옷장(closet.js)에 있어 앱을 띄워 입힌다 */
 const XMAS_OUT = path.join(__dirname, "Assets.xcassets", "AppIcon-Xmas.appiconset", "icon-1024.png");
 
 async function raster(page){
@@ -119,15 +81,14 @@ function save(file, rgba){
 
 (async ()=>{
   const browser = await chromium.launch();
-  const page = await (await browser.newContext({ viewport: { width: SIZE, height: SIZE } })).newPage();
-  await page.setContent(`<body style="margin:0">${svg()}</body>`);
-  save(OUT, await raster(page));
-
   const app = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
   await app.addInitScript(() => { window.__amgijwiNative = true; });
   await app.goto("file://" + path.join(ROOT, "www", "index.html"));
-  const xs = await app.evaluate(() => appIconSVG("xmas"));
-  await page.setContent(`<body style="margin:0">${xs}</body>`);
-  save(XMAS_OUT, await raster(page));
+  const page = await (await browser.newContext({ viewport: { width: SIZE, height: SIZE } })).newPage();
+  for(const [kind, file] of [["default", OUT], ["xmas", XMAS_OUT]]){
+    const svg = await app.evaluate(k => appIconSVG(k), kind);
+    await page.setContent(`<body style="margin:0">${svg}</body>`);
+    save(file, await raster(page));
+  }
   await browser.close();
 })();
