@@ -738,9 +738,8 @@ function closetStageWear(){
   if(it) wear[it.slot] = it.id;
   return wear;
 }
-/* 옷장이 두 칸(왼쪽 무대 · 오른쪽 아이템)으로 놓이는 화면인가. dot.css 의 같은 조건과 맞춘다 */
-const CLOSET_WIDE_Q = "(min-width: 760px) and (min-aspect-ratio: 5/4)";
-function closetWide(){ return isDot() && !!window.matchMedia && window.matchMedia(CLOSET_WIDE_Q).matches; }
+/* 옷장이 두 칸(왼쪽 무대 · 오른쪽 아이템)으로 놓였는가. 조건은 dot.css 한 곳에만 두고 여기서는 그 결과(grid)를 본다 */
+function closetWide(){ const sc = document.querySelector("#s-closet .scroll"); return !!sc && getComputedStyle(sc).display === "grid"; }
 function renderCloset(){
   stopClosetRun();                // 미리 보던 달리기는 끊는다(입어 보는 옷이 바뀌었을 수 있다)
   const c = data.closet;
