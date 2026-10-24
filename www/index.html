@@ -249,16 +249,21 @@
       <div class="appbar"><div><h1>쥐돌이 옷장</h1><p id="closetSub"></p></div>
         <span class="cchip" id="cCheese"></span>
         <button class="icon-btn" id="closetClose" style="margin-bottom:4px" aria-label="닫기">✕</button></div>
+      <!-- 넓고 낮은 화면(Duo 펼침 · 아이패드 가로)에서는 왼쪽(무대 · 사기 · 치즈 모으기) · 오른쪽(탭 · 아이템) 두 칸 (dot.css) -->
       <div class="scroll notabs">
+        <div class="cleft">
         <div class="cstage"><div class="say" id="cSay">어때츄?</div><div class="m" id="cMouse"></div><div class="floor"></div></div>
         <!-- 아직 안 산 아이템을 누르면 위 쥐돌이에게 입혀 보이고, 여기 "사기"를 눌러야 산다 (closet.js closetBuyBar) -->
         <div id="cBuy"></div>
         <div class="cearn"><b>치즈 모으기</b><p>한 바퀴(5장 이상) 끝내면 <b>+1</b> · 하루 10개까지 · 7일 연속 접속 <b>+5</b><br>5장보다 짧은 바퀴는 5장이 모일 때마다 <b>+1</b></p>
           <!-- 광고 보고 치즈 받기(광고가 켜진 앱만). ads.js 가 버튼을 채운다. 누르기 전에는 광고가 뜨지 않는다 -->
           <div id="cAd"></div></div>
+        </div>
+        <div class="cright">
         <div class="ctabs" id="cTabs"></div>
         <div class="cgrid" id="cGrid"></div>
         <div class="cmsg" id="cMsg"></div>
+        </div>
       </div>
     </section>
 
