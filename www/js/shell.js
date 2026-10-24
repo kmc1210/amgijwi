@@ -13,6 +13,8 @@ let onYes = null, onNo = null;
 function confirmBox(title, msg, yesLabel, cb, opts){
   opts = opts || {};
   $("#dlgT").textContent = title; $("#dlgM").textContent = msg;
+  /* 그림(앱이 만든 SVG 만 — 크리스마스 아이콘 미리 보기, appicon.js). 없으면 비운다 */
+  const pic = $("#dlgPic"); pic.innerHTML = opts.pic || ""; pic.hidden = !opts.pic;
   $("#dlgYes").textContent = yesLabel || "확인"; $("#dlgNo").textContent = opts.no || "취소";
   onYes = cb; onNo = opts.onNo || null; $("#dlg").classList.toggle("go", !!opts.go); $("#dlg").classList.add("on");
   haptic(opts.haptic || "warning");     // 지우기 · 덮어쓰기처럼 되돌릴 수 없는 일 앞에서 멈칫
@@ -29,7 +31,7 @@ function canInterrupt(needHome){
 let dlgClosedAt = 0;
 function justClosedDlg(){ return Date.now() - dlgClosedAt < 1500; }
 /* 확인창 뒤에서 기다리던 받은 레시피 파일 · 새 버전 소식이 있으면 창을 닫은 뒤에 연다 (recipeshare.js · update.js) */
-function afterDlg(){ setTimeout(()=>{ cloudAsk(); recipeGo(); updateGo(); }, 0); }
+function afterDlg(){ setTimeout(()=>{ cloudAsk(); recipeGo(); updateGo(); }, 0); iconAskSoon(1600); }   // 아이콘은 방금 닫은 창(1.5초)이 지난 뒤 (appicon.js)
 $("#dlgNo").addEventListener("click", ()=>{ $("#dlg").classList.remove("on"); dlgClosedAt = Date.now(); onYes=null; const g=onNo; onNo=null; if(g) g(); afterDlg(); });
 $("#dlgYes").addEventListener("click", ()=>{ $("#dlg").classList.remove("on"); dlgClosedAt = Date.now(); onNo=null; if(onYes){ const f=onYes; onYes=null; f(); } afterDlg(); });
 

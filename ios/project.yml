@@ -64,6 +64,8 @@ targets:
         DEVELOPMENT_TEAM: KC5GYLLW34
         CODE_SIGN_STYLE: Automatic
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # 크리스마스 아이콘(12월에 사용자가 고르면 바꾼다 — IconBridge.swift · www/js/appicon.js)
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: AppIcon-Xmas
         TARGETED_DEVICE_FAMILY: "1,2"     # 아이폰과 아이패드. 태블릿 최대 폭 작업을 이미 해뒀다
         SWIFT_VERSION: "5.0"
         ENABLE_USER_SCRIPT_SANDBOXING: YES
