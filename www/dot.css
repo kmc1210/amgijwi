@@ -938,13 +938,17 @@ html.dot #onboard .ob-buy.go{animation:obBuy 1.2s steps(8) both;}
 @keyframes obBuy{0%{opacity:0;transform:translate(-50%,8px)}20%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-14px)}}
 
 /* 옷장 두 칸: 넓고 낮은 화면(iPhone Duo 펼침 · 아이패드 가로)에서만 왼쪽에 무대 · 사기 · 치즈 모으기, 오른쪽에 탭 · 아이템.
-   무대는 아이템을 내려도 옆에 붙어 있다. 폭은 920 까지 넓혀 "핼러윈 ~11/8" 같은 기간 표시가 잘리지 않게(closet.js 의 CLOSET_WIDE_Q 와 같은 조건) */
-@media (min-width: 760px) and (min-aspect-ratio: 5/4){
-  html.dot #s-closet .appbar{max-width:920px;}
+   무대는 아이템을 내려도 옆에 붙어 있다. 폭은 920 까지 넓혀 "핼러윈 ~11/8" 같은 기간 표시가 잘리지 않게.
+   높이 600 이상만 — 큰 아이폰을 가로로 들면(932×430 등) 왼쪽 칸이 화면보다 길어 사기 줄이 가려지니 위아래 그대로 둔다.
+   두 칸인지는 closet.js 의 closetWide() 가 이 grid 를 보고 안다(조건을 한 곳에만) */
+@media (min-width: 760px) and (min-height: 600px) and (min-aspect-ratio: 5/4){
+  html.dot #s-closet .appbar{max-width:calc(920px + var(--pad-l) + var(--pad-r));}   /* 제목 · 닫기 버튼이 두 칸 가장자리와 맞게 */
   html.dot #s-closet .scroll{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);column-gap:22px;align-items:start;align-content:start;}
   html.dot #s-closet .scroll > :is(.cleft, .cright){width:auto;max-width:none;min-width:0;margin-left:0 !important;margin-right:0 !important;}
   /* 스크롤은 화면 끝까지(손가락이 어디서든 굴리게) 두고, 두 칸은 가운데 920 안에 */
   html.dot #s-closet .scroll{padding-left:max(var(--pad-l), calc((100% - 920px) / 2));padding-right:max(var(--pad-r), calc((100% - 920px) / 2));}
+  /* top:0 이어도 스크롤의 위쪽 여백(10px)만큼 안쪽에 붙어 위쪽 페이드(0~10px)에 걸리지 않는다 */
   html.dot #s-closet .cleft{position:sticky;top:0;}
-  html.dot #s-closet .cstage{height:min(250px, calc(100vh - 330px));min-height:190px;}
+  /* 왼쪽 칸(무대 + 사기 줄 + 치즈 모으기 · 광고 버튼)이 스크롤 영역 안에 들게 무대를 화면 높이에 맞춰 줄인다 */
+  html.dot #s-closet .cstage{height:min(250px, calc(100vh - 420px));min-height:170px;}
 }
