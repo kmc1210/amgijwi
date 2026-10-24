@@ -4180,6 +4180,35 @@ const LEGACY = {
     eq("웹에는 이름 기능이 없다", r.web, ["app", false, false]);
   }
 
+  // 옷장 두 칸: 넓고 낮은 화면(Duo 펼침 · 아이패드 가로)만 왼쪽 무대 · 오른쪽 아이템, 나머지는 위아래 그대로
+  {
+    const look = async (w, h) => {
+      const ctx = await browser.newContext({ viewport: { width: w, height: h } });
+      const pg = await ctx.newPage();
+      await pg.addInitScript(() => { window.__amgijwiNative = true; });
+      await pg.goto(APP); await pg.waitForTimeout(400);
+      const r = await pg.evaluate(async () => {
+        data.closet.cheese = 120; data.closet.own = []; openCloset();
+        const L = document.querySelector("#s-closet .cleft").getBoundingClientRect(), R = document.querySelector("#s-closet .cright").getBoundingClientRect();
+        const sc = document.querySelector("#s-closet .scroll");
+        sc.style.paddingBottom = "2000px"; sc.scrollTop = 150;                // 어느 화면이든 내릴 수 있게 해 두고
+        const its = [...document.querySelectorAll("#cGrid .citem:not(.own)")]; its[its.length - 1].click();   // 보이는 안 가진 것은 파는 중인 것
+        const scH = sc.clientHeight, lH = document.querySelector("#s-closet .cleft").getBoundingClientRect().height;
+        const tags = [...document.querySelectorAll("#cGrid .lim")].filter(t => t.scrollWidth > t.clientWidth + 1).length;
+        return { wide: closetWide(), side: R.left >= L.right - 1 && Math.abs(R.top - L.top) < 4, below: R.top >= L.bottom - 1,
+                 kept: sc.scrollTop, cut: tags, buy: !!$("#cBuyBtn"), fits: lH <= scH };
+      });
+      await ctx.close(); return r;
+    };
+    const duo = await look(951, 669), ipadL = await look(1180, 820), ipadP = await look(820, 1180), phone = await look(390, 844), phoneL = await look(932, 430);
+    eq("Duo 펼침 · 아이패드 가로는 두 칸(무대 옆에 아이템)", [duo.wide, duo.side, ipadL.wide, ipadL.side], [true, true, true, true]);
+    eq("아이폰 · 아이패드 세로는 위아래 그대로", [phone.wide, phone.below, ipadP.wide, ipadP.below], [false, true, false, true]);
+    eq("큰 아이폰을 가로로 들어도(932×430) 위아래 그대로", [phoneL.wide, phoneL.below], [false, true]);
+    eq("두 칸이면 왼쪽 칸(무대 · 사기 줄 · 치즈 모으기)이 스크롤 영역 안에 든다", [duo.fits, ipadL.fits], [true, true]);
+    eq("두 칸에서는 아이템을 눌러도 고르던 자리 그대로, 위아래 화면은 무대로 올린다", [duo.kept, phone.kept], [150, 0]);
+    eq("두 칸에서도 기간 표시가 잘리지 않고 사기 줄이 뜬다", [duo.cut, duo.buy], [0, true]);
+  }
+
   // 이름을 부르면 인사말이 길어져 접힌다. 좁은 폰에서도 "오 / 후도" 처럼 낱말 가운데가 아니라 빈칸에서 접혀야 한다
   {
     const ctx = await browser.newContext({ viewport: { width: 320, height: 700 } });
