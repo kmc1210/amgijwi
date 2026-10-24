@@ -304,7 +304,7 @@ document.querySelectorAll("#wxBtns .theme-b").forEach(b=>{
 /* items: 묶음 줄에 적는 칸 이름과 그 칸. 이 기기에서 안 보이는 칸(웹에 없는 것 · 진동 없는 아이패드)은 줄에서도 뺀다 */
 const SET_GROUPS = [
   {id:"mouse", name:"쥐돌이", ico:"mouse", items:[["옷장", "#closetCard"], ["내 이름", "#nickCard"], ["생일", "#bdayCard"], ["부르는 알림", "#nudgeCard"], ["날씨 옷", "#wxBtns"]]},
-  {id:"screen", name:"화면과 소리", ico:"palette", items:[["테마", "#themeBtns"], ["소리", "#soundBtns"], ["진동", "#hapticCard"], ["영문 이름 표기", "#enSeg"]]},
+  {id:"screen", name:"화면과 소리", ico:"palette", items:[["테마", "#themeBtns"], ["앱 아이콘", "#iconCard"], ["소리", "#soundBtns"], ["진동", "#hapticCard"], ["영문 이름 표기", "#enSeg"]]},
   {id:"recipe", name:"레시피", ico:"note", items:[["카테고리", "#catList"], ["레시피 가져오기", "#rsFile"]]},
   {id:"data", name:"백업과 보안", ico:"box", items:[["백업", "#expFile"], ["불러오기", "#impFile"], ["PIN 잠금", "#pinToggle"], ["데이터 관리", "#wipeAll"]]},
   {id:"help", name:"도움말", ico:"bulb", items:[["사용법", "#openGuide"], ["건의하기", "#feedbackBtn"], ["처리방침", "#privacyLink"]]}];

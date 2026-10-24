@@ -97,21 +97,37 @@ function writePNG(file, rgba, w, h){
   ]));
 }
 
-(async ()=>{
-  const browser = await chromium.launch();
-  const page = await (await browser.newContext({ viewport: { width: SIZE, height: SIZE } })).newPage();
-  await page.setContent(`<body style="margin:0">${svg()}</body>`);
-  const rgba = await page.evaluate(async (size)=>{
+/* 크리스마스 아이콘(AppIcon-Xmas)은 앱의 appIconSVG("xmas") 그대로 그린다 — 앱 안 미리 보기와 같은 그림이 되게.
+   산타 모자 · 털실 목도리 도트는 옷장(closet.js)에 있어 앱을 띄워 입힌다 */
+const XMAS_OUT = path.join(__dirname, "Assets.xcassets", "AppIcon-Xmas.appiconset", "icon-1024.png");
+
+async function raster(page){
+  return page.evaluate(async (size)=>{
     const s = new XMLSerializer().serializeToString(document.querySelector("svg"));
     const img = new Image();
     await new Promise(r => { img.onload = r; img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(s))); });
     const c = document.createElement("canvas"); c.width = c.height = size;
-    const g = c.getContext("2d"); g.drawImage(img, 0, 0);
+    const g = c.getContext("2d"); g.drawImage(img, 0, 0, size, size);
     return Array.from(g.getImageData(0, 0, size, size).data);
   }, SIZE);
-  await browser.close();
+}
+function save(file, rgba){
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  writePNG(file, rgba, SIZE, SIZE);
+  console.log(`아이콘 작성: ${path.relative(ROOT, file)}  ${SIZE}x${SIZE}, 알파 없음, ${fs.statSync(file).size}바이트`);
+}
 
-  fs.mkdirSync(path.dirname(OUT), { recursive: true });
-  writePNG(OUT, rgba, SIZE, SIZE);
-  console.log(`아이콘 작성: ${path.relative(ROOT, OUT)}  ${SIZE}x${SIZE}, 알파 없음, ${fs.statSync(OUT).size}바이트`);
+(async ()=>{
+  const browser = await chromium.launch();
+  const page = await (await browser.newContext({ viewport: { width: SIZE, height: SIZE } })).newPage();
+  await page.setContent(`<body style="margin:0">${svg()}</body>`);
+  save(OUT, await raster(page));
+
+  const app = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+  await app.addInitScript(() => { window.__amgijwiNative = true; });
+  await app.goto("file://" + path.join(ROOT, "www", "index.html"));
+  const xs = await app.evaluate(() => appIconSVG("xmas"));
+  await page.setContent(`<body style="margin:0">${xs}</body>`);
+  save(XMAS_OUT, await raster(page));
+  await browser.close();
 })();

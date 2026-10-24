@@ -7,6 +7,7 @@ function renderHome(){
   bdayHome();                   // 생일이면 선물과 폭죽 (birthday.js)
   xmasHome();                   // 12월 24 · 25일이면 크리스마스 선물 (closet.js)
   verHome();                    // 새 기능 업데이트를 받고 처음 열면 치즈 5개 (closet.js)
+  setTimeout(iconAsk, 2000);    // 12월이면 크리스마스 아이콘으로 바꿀지 한 번 묻는다 — 위 말풍선 · 썰매 장면이 먼저 (appicon.js)
   awayHome();                   // 기다리다 풀렸으면 반긴다 (waiting.js)
   closetHome();                 // 쥐돌이 아래 치즈 칩 (closet.js)
   /* 칩 이름은 그림 + 글자다. 그림이 SVG 라 통째로 esc 하면 안 되고, 글자만 esc 한다 */

@@ -20,6 +20,7 @@ final class WebAppViewController: UIViewController {
     private let store = StoreBridge()
     private let update = UpdateBridge()
     private let cloud = CloudBridge()
+    private let icons = IconBridge()
 
     init() {
         handler = BundleSchemeHandler()
@@ -82,6 +83,9 @@ final class WebAppViewController: UIViewController {
         /// iCloud 자동 백업 통로. 웹이 만든 백업을 사용자 본인 iCloud 키-값 저장소에 둔다 (CloudBridge.swift).
         config.userContentController.add(cloud, name: CloudBridge.name)
 
+        /// 크리스마스 앱 아이콘 통로. 12월에 웹이 묻고, 고르면 iOS 에 바꿔 달라고 청한다 (IconBridge.swift).
+        config.userContentController.add(icons, name: IconBridge.name)
+
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
         alarms.attach(webView)
@@ -90,6 +94,7 @@ final class WebAppViewController: UIViewController {
         share.attach(webView, host: self)
         update.attach(host: self) { [weak self] js in self?.tell(js) }
         cloud.attach { [weak self] js in self?.tell(js) }
+        icons.attach { [weak self] js in self?.tell(js) }
 
         /// 안전 영역까지 페이지가 직접 그린다. index.html 의 viewport-fit=cover 와 짝이다.
         /// 여기서 여백을 자동으로 넣어버리면 노치 대응 CSS 와 이중으로 겹친다.
@@ -130,6 +135,7 @@ final class WebAppViewController: UIViewController {
 
     /// window.__amgijwiHaptics: 진동을 낼 수 있는 기기인지. 아니면 설정의 진동 칸을 숨긴다.
     /// window.__amgijwiInfo: 건의 메일 본문에 붙이는 앱 버전 · 기기 · iOS 버전. 메일은 사용자가 직접 보낸다.
+    /// window.__amgijwiIcon: 지금 홈 화면 아이콘("default" · "xmas"). 바꿀 수 없는 기기면 없다 (IconBridge.swift).
     private static func deviceScript() -> String {
         var haptics = CHHapticEngine.capabilitiesForHardware().supportsHaptics
         #if targetEnvironment(simulator)
@@ -144,6 +150,7 @@ final class WebAppViewController: UIViewController {
         /// 광고가 켜진 빌드인지도 알린다. 꺼져 있으면 웹은 광고 버튼을 그리지 않는다(ads.js).
         return " window.__amgijwiHaptics = \(haptics ? "true" : "false"); window.__amgijwiInfo = \(json);"
              + " window.__amgijwiAds = \(AdBridge.enabled ? "true" : "false");"
+             + IconBridge.startScript()
              + (haptics ? "" : " document.documentElement.classList.add('nohaptic');")
     }
 

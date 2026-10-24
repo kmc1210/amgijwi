@@ -974,3 +974,14 @@ html.dot #onboard .ob-buy{position:absolute;left:50%;top:-6px;transform:translat
   font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;color:var(--d-acc);}
 html.dot #onboard .ob-buy.go{animation:obBuy 1.2s steps(8) both;}
 @keyframes obBuy{0%{opacity:0;transform:translate(-50%,8px)}20%{opacity:1}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-14px)}}
+
+/* 크리스마스 앱 아이콘 (appicon.js). 확인창 위 미리 보기와 설정의 고르기 버튼. 둥근 모서리는 홈 화면 아이콘 모양 */
+html.dot #dlgPic{display:flex;justify-content:center;margin:2px 0 12px;}
+html.dot #dlgPic[hidden]{display:none;}
+html.dot #dlgPic .appicon{width:84px;height:84px;border-radius:19px;display:block;}
+html.dot #s-set #iconBtns{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:6px;}
+html.dot #s-set .icon-b{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px 8px;margin:2px;border:0;border-radius:0;
+  background:var(--d-surface);color:var(--d-t1);box-shadow:var(--d-box2);font:inherit;font-size:16px;}
+html.dot #s-set .icon-b .appicon{width:56px;height:56px;border-radius:13px;display:block;}
+html.dot #s-set .icon-b.on{background:var(--d-warn-bg);
+  box-shadow:0 -2px 0 0 var(--d-acc), 0 2px 0 0 var(--d-acc), -2px 0 0 0 var(--d-acc), 2px 0 0 0 var(--d-acc);}
