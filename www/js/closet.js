@@ -136,15 +136,16 @@ const CLOSET_ITEMS = [
       ".owcww.ppcO666666Ocpp.wwcwo.",
       ".ocwww.ddcO666666Ocdd.wwwco.",
       "..........OOOOOOOO.........."]},
-  /* 귀까지 머리 위를 덮고 끝이 오른쪽으로 꺾인다. 꼭대기를 넓혀 두 귀를 다 덮고, 그래도 남는 왼쪽 귀 끝은 지운다(_) — 귀가 모자 안에 들어간 모양 */
+  /* 귀까지 머리 위를 덮고 끝이 오른쪽으로 꺾인다. 꼭대기를 넓혀 두 귀를 다 덮고, 그래도 남는 왼쪽 귀 끝은 지운다(_) — 귀가 모자 안에 들어간 모양.
+     오른쪽 옆(3~6행)은 예전 폭 그대로 — 아침 쥐돌이 머리 옆 반짝이(22~26열)를 덮지 않게 */
   {id:"witchhat", slot:"head", name:"마녀 모자", price:60, y:0, season:HALLOWEEN, rows:[
       "........._........HHHHHH....",
       "........__HHHHHHHHHIHH.HH...",
       "......._HHHHHHHHHHIHHH..H...",
-      ".......HHHHHHHHHHIHHHHH.....",
-      "......HHHHHHHHHHHIHHHHHH....",
-      "......JJJJJJJJJJJJJJJJJJ....",
-      ".....HHHHHHHHHHHHHHHHHHHH...",
+      ".......HHHHHHHHHHIHHH.......",
+      "......HHHHHHHHHHHIHHHH......",
+      "......JJJJJJJJJJJJJJJJ......",
+      ".....HHHHHHHHHHHHHHHHHH.....",
       ".HHHHHHHHHHHHHHHHHHHHHHHHHH.",
       "...IIIIIIIIIIIIIIIIIIIIIII.."]},
   /* 납작한 호박을 머리 위에 얹는다(눈과 겹치지 않게 두 줄 띄운다). 얼굴은 그대로 보이고, 가끔 새긴 얼굴이 번쩍인다(glow — 눈 깜빡임과 따로) — 빛나는 아이템이라 더 비싸다 */
