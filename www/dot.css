@@ -725,7 +725,8 @@ html.dot .closetrow .ar{font-size:18px;color:var(--d-t2);}
 html.dot #s-closet{background:var(--d-bg);color:var(--d-t1);}
 html.dot #s-closet .appbar h1{font-family:"NeoDGM",monospace;font-weight:400;font-size:22px;letter-spacing:0;-webkit-font-smoothing:none;}
 html.dot #s-closet .appbar p{color:var(--d-t2);}
-html.dot #s-closet .appbar .cchip{align-self:flex-end;margin-bottom:8px;}
+/* 치즈 칩은 닫기 버튼 바로 옆 오른쪽 끝에, 버튼과 같은 높이(34px) · 같은 바닥선으로 */
+html.dot #s-closet .appbar .cchip{align-self:flex-end;height:34px;box-sizing:border-box;padding:0 10px;margin:2px 0 4px auto;}
 html.dot #s-closet .icon-btn{border:0;border-radius:0;background:var(--d-surface);color:var(--d-t1);margin:2px;box-shadow:var(--d-box2);}
 html.dot #s-closet .cstage{position:relative;height:250px;display:flex;align-items:flex-end;justify-content:center;margin:3px 3px 18px;padding-bottom:14px;
   background:var(--d-surface);box-shadow:var(--d-box), var(--d-drop-sh);}

@@ -709,6 +709,8 @@
   border-radius:14px;padding:13px 15px;margin-bottom:8px;position:relative;}
 .evrow .nm{display:block;font-size:14.5px;font-weight:700;color:var(--ink);padding-right:56px;}
 .evrow .nt{display:block;font-size:12.5px;color:var(--ink-2);margin-top:3px;padding-right:56px;}
+/* 메모는 기간 아래 따로, 쓴 대로 줄을 바꾼다(낱말 가운데서 접지 않게). 홈의 다가오는 일정은 요약이라 한 줄 그대로 */
+.evrow .nt.note{white-space:pre-line;word-break:keep-all;overflow-wrap:anywhere;margin-top:6px;}
 .evrow .dd{position:absolute;right:14px;top:13px;font-size:11.5px;font-weight:700;color:var(--accent-ink);}
 .evrow.done .nm,.evrow.done .nt{color:var(--muted);text-decoration:line-through;}
 .evrow.done .dd{color:var(--muted);}

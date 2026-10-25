@@ -4180,6 +4180,35 @@ const LEGACY = {
     eq("웹에는 이름 기능이 없다", r.web, ["app", false, false]);
   }
 
+  // 1.4.3: 옷장 치즈 칩은 닫기 버튼 옆 같은 높이 · 마녀 모자는 귀를 다 덮는다 · 달력 메모는 쓴 대로 줄을 바꾼다
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const pg = await ctx.newPage();
+    await pg.addInitScript(() => { window.__amgijwiNative = true; });
+    await pg.goto(APP); await pg.waitForTimeout(400);
+    const r = await pg.evaluate(() => {
+      const r = {};
+      openCloset();
+      const c = $("#cCheese").getBoundingClientRect(), x = $("#closetClose").getBoundingClientRect();
+      r.chip = [Math.round(c.height) === Math.round(x.height), Math.abs(c.bottom - x.bottom) < 1, x.left - c.right > 0 && x.left - c.right <= 16];
+      /* 모자를 쓰면 위 다섯 줄에 귀(테두리 o · 분홍 p)가 한 칸도 남지 않는다 */
+      r.ears = dressRows(MOUSE.day, "stand", {head: "witchhat"}).slice(0, 5).join("").replace(/[^op]/g, "").length;
+      r.width = closetItem("witchhat").rows.every(row => row.length === 28);
+      const t = ymd(new Date());
+      data.events.push({id: "evnote", title: "신메뉴 교육", date: t, end: "", note: "1. 딸기 라떼 레시피\n2. 시럽 3펌프", remind: 0, alarm: false, done: false});
+      go("cal"); state.calDay = t; renderCalDay();
+      const row = document.querySelector('#calDayList [data-ev="evnote"]'), note = row.querySelector(".nt.note");
+      r.note = [!!note, note && note.textContent, note && getComputedStyle(note).whiteSpace, row.querySelector(".nt").textContent.indexOf("딸기") < 0,
+        note && note.getBoundingClientRect().height >= 1.8 * row.querySelector(".nt").getBoundingClientRect().height];   // 기간 한 줄의 두 배쯤 = 두 줄
+      data.events = data.events.filter(e => e.id !== "evnote");
+      return r;
+    });
+    await ctx.close();
+    eq("옷장 치즈 칩은 닫기 버튼 바로 옆, 같은 높이 · 같은 바닥선", r.chip, [true, true, true]);
+    eq("마녀 모자를 쓰면 귀가 모자 밖으로 나오지 않는다", [r.ears, r.width], [0, true]);
+    eq("달력 날짜 목록의 메모는 기간 아래 따로, 쓴 대로 줄을 바꾼다", r.note, [true, "1. 딸기 라떼 레시피\n2. 시럽 3펌프", "pre-line", true, true]);
+  }
+
   // 옷장 두 칸: 넓고 낮은 화면(Duo 펼침 · 아이패드 가로)만 왼쪽 무대 · 오른쪽 아이템, 나머지는 위아래 그대로
   {
     const look = async (w, h) => {
