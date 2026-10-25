@@ -235,7 +235,7 @@ function renderCalDay(){
   $("#calDayList").innerHTML = list.length
     ? list.map(e=>`<button class="evrow${e.done ? " done" : ""}" data-ev="${esc(e.id)}">
         <span class="nm">${esc(e.title)}</span>
-        <span class="nt">${esc(evRangeText(e))}${e.note ? " · " + esc(e.note) : ""}</span>
+        <span class="nt">${esc(evRangeText(e))}</span>${e.note && e.note.trim() ? `<span class="nt note">${esc(e.note.trim())}</span>` : ""}
         <span class="dd">${e.done ? "끝남" : esc(evStatus(e).text)}</span>
       </button>`).join("")
     : `<p class="calempty">이 날은 비어 있어요.</p>`;
