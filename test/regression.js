@@ -4194,6 +4194,10 @@ const LEGACY = {
       /* 모자를 쓰면 위 다섯 줄에 귀(테두리 o · 분홍 p)가 한 칸도 남지 않는다 */
       r.ears = dressRows(MOUSE.day, "stand", {head: "witchhat"}).slice(0, 5).join("").replace(/[^op]/g, "").length;
       r.width = closetItem("witchhat").rows.every(row => row.length === 28);
+      /* 아침 쥐돌이 머리 옆 반짝이(3~6행, 23열부터 — 22열 한 칸은 예전 모자도 챙 위 한 줄로 덮었다)는 모자를 써도 그대로 */
+      const side = rows => rows.slice(3, 7).map(row => row.slice(23)).join("|");
+      r.sparkle = side(dressRows(MOUSE.morning, "stand", {head: "witchhat"})) === side(MOUSE.morning);
+      r.ears2 = ["morning", "evening"].map(k => dressRows(MOUSE[k], "stand", {head: "witchhat"}).slice(0, 3).join("").replace(/[^op]/g, "").length);
       const t = ymd(new Date());
       data.events.push({id: "evnote", title: "신메뉴 교육", date: t, end: "", note: "1. 딸기 라떼 레시피\n2. 시럽 3펌프", remind: 0, alarm: false, done: false});
       go("cal"); state.calDay = t; renderCalDay();
@@ -4205,7 +4209,8 @@ const LEGACY = {
     });
     await ctx.close();
     eq("옷장 치즈 칩은 닫기 버튼 바로 옆, 같은 높이 · 같은 바닥선", r.chip, [true, true, true]);
-    eq("마녀 모자를 쓰면 귀가 모자 밖으로 나오지 않는다", [r.ears, r.width], [0, true]);
+    eq("마녀 모자를 쓰면 귀가 모자 밖으로 나오지 않는다(낮 · 아침 · 저녁)", [r.ears, r.width, r.ears2], [0, true, [0, 0]]);
+    ok("마녀 모자가 아침 쥐돌이 머리 옆 반짝이를 덮지 않는다", r.sparkle);
     eq("달력 날짜 목록의 메모는 기간 아래 따로, 쓴 대로 줄을 바꾼다", r.note, [true, "1. 딸기 라떼 레시피\n2. 시럽 3펌프", "pre-line", true, true]);
   }
 
