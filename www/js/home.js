@@ -178,22 +178,23 @@ function rowHTML(d, pill, selectable){
   </button>`;
 }
 
-/* 도트 진도 링. 88px 링을 3px 칸 30×30 으로 쪼갠다.
+/* 도트 진도 링. 72px 링을 3px 칸 24×24 로 쪼갠다(dot.css 의 링 크기와 짝 — 칸이 3px 로 떨어져야 도트가 고르다).
    칸 중심까지의 거리로 고리를 골라 두께가 고르고, 12시에서 시계 방향 각도로 진도만큼 채운다.
    바깥 한 겹은 빛, 안쪽 한 겹은 그늘. 0% 여도 원래 링처럼 시작점 한 점은 보인다.
    색은 dot.css 의 --d-ring-* 가 테마마다 정한다 */
+const RING_N = 24;
 function ringPixelSVG(pct){
-  const N = 30, c = 14.5;
+  const N = RING_N, c = (N - 1) / 2, u = N / 30;          // 반지름은 예전 30칸 기준 값을 칸 수에 맞춰 줄인다
   let out = "";
   for(let y = 0; y < N; y++) for(let x = 0; x < N; x++){
     const dx = x - c, dy = y - c, d = Math.sqrt(dx*dx + dy*dy);
-    if(d < 10.9 || d > 14.4) continue;
+    if(d < 10.9 * u || d > c - .1) continue;          // 바깥은 가장자리 칸 중심(c)보다 안쪽만 — 12 · 3 · 6 · 9시에 혹이 붙지 않게
     const a = (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
-    const on = a < pct * 3.6 || ((a < 7 || a > 353) && d > 11.9 && d < 13.6 && y < c);
-    const k = !on ? "track" : (d > 13.4 ? "hi" : (d < 11.9 ? "lo" : "fill"));
+    const on = a < pct * 3.6 || ((a < 7 || a > 353) && d > 11.9 * u && d < 13.6 * u && y < c);
+    const k = !on ? "track" : (d > 13.4 * u ? "hi" : (d < 11.9 * u ? "lo" : "fill"));
     out += '<rect x="' + x + '" y="' + y + '" width="1" height="1" class="rp-' + k + '"/>';
   }
-  return '<svg viewBox="0 0 30 30" shape-rendering="crispEdges">' + out + '</svg>';
+  return '<svg viewBox="0 0 ' + N + ' ' + N + '" shape-rendering="crispEdges">' + out + '</svg>';
 }
 
 /* 도트 화면의 "다시 볼 메뉴" — 카페 주문 대기표 한 장과, 메뉴마다 영수증 한 줄.

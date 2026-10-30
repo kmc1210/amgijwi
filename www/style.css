@@ -181,6 +181,8 @@
   .selactions .share-b{background:var(--accent);color:var(--on-accent);}
   .selactions .share-b[disabled]{opacity:.45;}
   .appbar .gtext{flex:1;min-width:0;}
+  /* 이름을 부르면 "바리스타님," 다음 줄에 인사말(mascot.js 가 넣은 줄바꿈) */
+  #greetT{white-space:pre-line;}
   .mwrap{position:relative;flex:0 0 52px;}
   .mascot{width:56px;height:80px;padding:0;display:block;margin-bottom:2px;}
   .bubblerow{padding:0 var(--pad-r) 4px var(--pad-l);display:flex;justify-content:flex-end;}
