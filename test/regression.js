@@ -4097,7 +4097,7 @@ const LEGACY = {
       // 불러 주는 곳
       const mid = new Date(); mid.setHours(13, 0, 0, 0);
       VISIT = { info:{ kind:"next", gap:1, streak:2, count:5 }, now:mid }; initAway(); go("home");
-      r.greet = $("#greetT").textContent.indexOf("철이님, ") === 0;
+      r.greet = $("#greetT").textContent.indexOf("철이님,\n") === 0;
       VISIT = { info:{ kind:"back", gap:3, streak:1, count:6 }, now:mid }; initAway(); r.away = awayGreeting();
       data.bday = cleanBday({ m:10, d:24 }); r.bdayAlarm = bdayAlarmItem(new Date(2026, 9, 10, 12, 0)).title; data.bday = cleanBday({});
       data.nudge = { on:true }; r.nudge = nudgeAlarmItems(new Date(2026, 9, 12, 10, 0))[0].title; delete data.nudge;
@@ -4268,8 +4268,46 @@ const LEGACY = {
       return { title: $("#greetT").textContent, greet: breaks($("#greetT")), sub: breaks($("#heroSub")) };
     });
     await ctx.close();
-    ok("긴 이름 인사말은 이름을 부르고, 줄을 바꾸되 빈칸에서만 접는다", r.title.indexOf("가나다라마바사아님, ") === 0 && r.greet.length > 0 && r.greet.every(c => c === " "));
+    ok("긴 이름 인사말은 이름을 부르고, 줄을 바꾸되 빈칸에서만 접는다", r.title.indexOf("가나다라마바사아님,\n") === 0 && r.greet.length > 0 && r.greet.every(c => c === " " || c === "\n"));
     ok("진도 카드 설명도 줄을 바꾸되 낱말 가운데서 접히지 않는다", r.sub.length > 0 && r.sub.every(c => c === " "));
+  }
+
+  // 이름은 첫 줄에 따로("바리스타님,"), 인사말은 다음 줄. 이름이 없으면 한 줄 그대로.
+  // 진도 카드는 홈에서 크지 않게(여백 · 링을 줄였다) — 100% 도 링 안쪽에 들어간다
+  {
+    const ctx = await browser.newContext({ viewport: { width: 393, height: 852 } });
+    const pg = await ctx.newPage();
+    await pg.addInitScript(() => { window.__amgijwiNative = true; });
+    await pg.goto(APP); await pg.waitForTimeout(400);
+    const r = await pg.evaluate(async () => {
+      await document.fonts.ready;
+      const t = $("#greetT");
+      const mid = new Date(); mid.setHours(21, 0, 0, 0);
+      const visit0 = VISIT;
+      VISIT = { info:{ kind:"next", gap:1, streak:2, count:5 }, now:mid };
+      data.nick = cleanNick({ name: "바리스타" }); go("home"); renderHome();
+      /* 첫 줄 끝 글자의 위치와 둘째 줄 첫 글자의 위치 */
+      const rg = document.createRange(), tx = t.firstChild, k = tx.data.indexOf("\n");
+      rg.setStart(tx, k - 1); rg.setEnd(tx, k); const a = rg.getClientRects()[0];
+      rg.setStart(tx, k + 1); rg.setEnd(tx, k + 2); const b = rg.getClientRects()[0];
+      const named = { head: tx.data.slice(0, k), split: b.top > a.top + 4, left: Math.abs(b.left - t.getBoundingClientRect().left) < 2 };
+      data.nick = cleanNick({}); go("home"); renderHome();
+      const plain = { nl: t.textContent.indexOf("\n") < 0, one: t.getBoundingClientRect().height < parseFloat(getComputedStyle(t).fontSize) * 2 };
+      VISIT = visit0;
+      data.mastered = liveDrinks().map(d => d.id); renderHome();
+      const hero = document.querySelector("#s-home .hero").getBoundingClientRect();
+      const ring = document.querySelector("#s-home .ring").getBoundingClientRect();
+      const pct = $("#ringPct").getBoundingClientRect();
+      /* 링 안쪽 구멍(지름의 약 72%)에 "100%" 가 들어가는가 */
+      const hole = ring.width * 21.8 / 30;
+      return { named, plain, h: hero.height, ring: ring.width, txt: $("#ringPct").textContent, fits: pct.width <= hole,
+               fs: parseFloat(getComputedStyle($("#ringPct")).fontSize) };
+    });
+    await ctx.close();
+    eq("이름을 부르면 첫 줄은 이름만, 인사말은 다음 줄 맨 앞에서", [r.named.head, r.named.split, r.named.left], ["바리스타님,", true, true]);
+    eq("이름이 없으면 인사말은 한 줄 그대로", [r.plain.nl, r.plain.one], [true, true]);
+    ok("진도 카드는 높이 100 아래로 줄었다(예전 134)", r.h < 100);
+    eq("진도 링은 72 · 숫자는 18px(도트 글꼴 16px 이상) · 100% 가 링 안쪽에 들어간다", [r.ring, r.fs, r.txt, r.fits], [72, 18, "100%", true]);
   }
 
   await browser.close();
