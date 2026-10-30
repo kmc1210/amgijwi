@@ -571,7 +571,9 @@ function renderGreeting(){
   else if(v.kind === "back" && v.gap >= 2) title = v.gap + "일 만이에요!";
   const bd = bdayGreeting(now);             // 생일이면 인사말과 말풍선이 축하로 바뀐다 (birthday.js)
   if(bd) title = bd.title;
-  title = nickLead(title);                  // 이름을 알려 줬으면 "민철님, …" (nick.js)
+  /* 이름을 알려 줬으면 부르고 줄을 내린다: "바리스타님," / "하루 마무리 중이네요" (nick.js · #greetT 는 pre-line) */
+  const call = nickCall();
+  if(call) title = call + ",\n" + title;
 
   const dateTxt = (now.getMonth()+1) + "월 " + now.getDate() + "일 " + DOW[now.getDay()] + "요일";
   // 날짜는 윗줄, 앱 소개는 아랫줄로 나눈다 (한 줄에 담으면 어중간하게 접힌다)

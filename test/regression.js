@@ -1408,7 +1408,7 @@ const LEGACY = {
     eq("웹의 탭은 원래 선 아이콘이다", [look.webTabPx, look.webTabSvg], [0, 5]);
     ok("앱의 인사말은 도트 글꼴이다", look.appGreet.indexOf("NeoDGM") === 0, look.appGreet);
     ok("앱에서는 도트 링이 원래 링을 대신한다", look.ringShown === true && look.ringOldHidden === true);
-    ok("도트 링은 고리 칸으로 그린다", look.ringCells > 200, String(look.ringCells));
+    ok("도트 링은 고리 칸으로 그린다", look.ringCells > 120, String(look.ringCells));
     ok("0% 에도 시작점은 보인다", look.ringOn0 > 0 && look.ringOn0 < 12, String(look.ringOn0));
     eq("앱의 탭은 도트 아이콘 다섯 개다", [look.tabPx, look.tabSvg], [5, 0]);
     eq("탭 아이콘은 원래 뜻을 따른다(학습은 뒤집기 화살표가 아니라 암기 카드)",
@@ -4097,7 +4097,7 @@ const LEGACY = {
       // 불러 주는 곳
       const mid = new Date(); mid.setHours(13, 0, 0, 0);
       VISIT = { info:{ kind:"next", gap:1, streak:2, count:5 }, now:mid }; initAway(); go("home");
-      r.greet = $("#greetT").textContent.indexOf("철이님, ") === 0;
+      r.greet = $("#greetT").textContent.indexOf("철이님,\n") === 0;
       VISIT = { info:{ kind:"back", gap:3, streak:1, count:6 }, now:mid }; initAway(); r.away = awayGreeting();
       data.bday = cleanBday({ m:10, d:24 }); r.bdayAlarm = bdayAlarmItem(new Date(2026, 9, 10, 12, 0)).title; data.bday = cleanBday({});
       data.nudge = { on:true }; r.nudge = nudgeAlarmItems(new Date(2026, 9, 12, 10, 0))[0].title; delete data.nudge;
@@ -4268,8 +4268,49 @@ const LEGACY = {
       return { title: $("#greetT").textContent, greet: breaks($("#greetT")), sub: breaks($("#heroSub")) };
     });
     await ctx.close();
-    ok("긴 이름 인사말은 이름을 부르고, 줄을 바꾸되 빈칸에서만 접는다", r.title.indexOf("가나다라마바사아님, ") === 0 && r.greet.length > 0 && r.greet.every(c => c === " "));
+    ok("긴 이름 인사말은 이름만 첫 줄, 다음 줄 인사말이 더 접혀도 빈칸에서만 접는다", r.title.indexOf("가나다라마바사아님,\n") === 0 && r.greet[0] === "\n" && r.greet.slice(1).every(c => c === " "));
     ok("진도 카드 설명도 줄을 바꾸되 낱말 가운데서 접히지 않는다", r.sub.length > 0 && r.sub.every(c => c === " "));
+  }
+
+  // 이름은 첫 줄에 따로("바리스타님,"), 인사말은 다음 줄. 이름이 없으면 한 줄 그대로.
+  // 진도 카드는 홈에서 크지 않게(여백 · 링을 줄였다) — 100% 도 링 안쪽에 들어간다
+  {
+    const ctx = await browser.newContext({ viewport: { width: 393, height: 852 } });
+    const pg = await ctx.newPage();
+    await pg.addInitScript(() => { window.__amgijwiNative = true; });
+    await pg.goto(APP); await pg.waitForTimeout(400);
+    const r = await pg.evaluate(async () => {
+      await document.fonts.ready;
+      const t = $("#greetT");
+      const mid = new Date(); mid.setHours(21, 0, 0, 0);
+      const visit0 = VISIT;
+      VISIT = { info:{ kind:"next", gap:1, streak:2, count:5 }, now:mid };
+      data.nick = cleanNick({ name: "바리스타" }); go("home"); renderHome();
+      /* 첫 줄 끝 글자의 위치와 둘째 줄 첫 글자의 위치 */
+      const rg = document.createRange(), tx = t.firstChild, k = tx.data.indexOf("\n");
+      rg.setStart(tx, k - 1); rg.setEnd(tx, k); const a = rg.getClientRects()[0];
+      rg.setStart(tx, k + 1); rg.setEnd(tx, k + 2); const b = rg.getClientRects()[0];
+      const named = { head: tx.data.slice(0, k), split: b.top > a.top + 4, left: Math.abs(b.left - t.getBoundingClientRect().left) < 2 };
+      data.nick = cleanNick({}); go("home"); renderHome();
+      const plain = { nl: t.textContent.indexOf("\n") < 0, one: t.getBoundingClientRect().height < parseFloat(getComputedStyle(t).fontSize) * 2 };
+      VISIT = visit0;
+      data.mastered = liveDrinks().map(d => d.id); renderHome();
+      const hero = document.querySelector("#s-home .hero").getBoundingClientRect();
+      const ring = document.querySelector("#s-home .ring").getBoundingClientRect();
+      const pct = $("#ringPct").getBoundingClientRect();
+      /* 링 안쪽 구멍에 "100%" 와 "외운 잔" 이 위아래로 다 들어가는가. 구멍 지름 = 안쪽 반지름(10.9 · 24/30 칸)×2 − 칸 하나 */
+      const hole = ring.width * (2 * 10.9 * RING_N / 30 - 1) / RING_N, lbl = $("#ringLbl").getBoundingClientRect();
+      const svg = $("#ringPx svg").getAttribute("viewBox");
+      return { named, plain, h: hero.height, ring: ring.width, cell: ring.width / RING_N, svg, txt: $("#ringPct").textContent,
+               fits: pct.width <= hole && lbl.width <= hole && lbl.bottom - pct.top <= hole,
+               fs: parseFloat(getComputedStyle($("#ringPct")).fontSize) };
+    });
+    await ctx.close();
+    eq("이름을 부르면 첫 줄은 이름만, 인사말은 다음 줄 맨 앞에서", [r.named.head, r.named.split, r.named.left], ["바리스타님,", true, true]);
+    eq("이름이 없으면 인사말은 한 줄 그대로", [r.plain.nl, r.plain.one], [true, true]);
+    ok("진도 카드는 높이 100 아래로 줄었다(예전 134)", r.h < 100);
+    eq("진도 링은 72 · 숫자는 18px(도트 글꼴 16px 이상) · 100% 와 외운 잔이 링 안쪽에 들어간다", [r.ring, r.fs, r.txt, r.fits], [72, 18, "100%", true]);
+    eq("도트 링 칸은 3px 로 떨어진다(24칸 · 칸이 2.4px 처럼 어중간하면 도트 크기가 들쭉날쭉)", [r.cell, r.svg], [3, "0 0 24 24"]);
   }
 
   await browser.close();
