@@ -4416,6 +4416,15 @@ const LEGACY = {
       out.sum = [s1.todo.items.length, s1.todo.done.length, s1.todo.items[0].days];
       data.pin = "1234"; const s2 = widgetSummary(); data.pin = null;
       out.locked = [s2.todo.items.length, s2.todo.done.length];
+      /* 체크했다가 바로 푼 것으로는 치즈가 없다(다 얹은 뒤에 끝나 있어야 한다) */
+      data.todoDone = []; data.todoAt = {}; data.closet.todoDay = "";
+      const c3 = data.closet.cheese;
+      todoFromWidget([{ id: "w1", d: today, on: true, at: now - 700 }, { id: "w2", d: today, on: true, at: now - 600 }, { id: "w2", d: today, on: false, at: now - 500 }]);
+      out.blip = [todoIsDone(today, "w2"), data.closet.cheese - c3];
+      /* 앱에서 더 나중에 바꾼 칸은 예전 위젯 기록이 덮지 않는다 */
+      todoToggle(today, "w1");                                   // 앱에서 푼다(지금)
+      todoFromWidget([{ id: "w1", d: today, on: true, at: now - 400 }]);
+      out.stale = [todoIsDone(today, "w1"), widgetSummary().todo.at[today + "|w1"] > now - 400];
       delete window.webkit;
 
       /* 백업을 되살려도 할 일이 따라오고, 지난주 체크는 버린다. 오늘 받은 치즈 기록은 지금 것을 남긴다 */
@@ -4446,6 +4455,8 @@ const LEGACY = {
     eq("고치면서 뺀 요일의 이번 주 체크는 지운다", r.edit, ["01234", 5]);
     eq("위젯 기록은 차례대로 얹고, 없는 할 일 · 지난주 것은 버리고, 그날 다 했으면 치즈", r.widget, [true, true, 1, 2]);
     eq("다 받은 뒤 앱에 받은 데까지 알린다", r.take, r.takeWant);
+    eq("체크했다 바로 푼 위젯 기록으로는 치즈가 없다", r.blip, [false, 0]);
+    eq("앱에서 더 나중에 바꾼 칸은 예전 위젯 기록이 덮지 않고, 바꾼 때가 위젯 요약에 실린다", r.stale, [false, true]);
     eq("위젯 요약에 할 일과 이번 주 체크가 실린다", r.sum, [2, 2, [r.sum[2][0]]]);
     eq("PIN 잠금이면 할 일을 위젯에 넘기지 않는다", r.locked, [0, 0]);
     ok("백업을 되살리면 할 일이 따라오고 지난주 체크는 버린다(오늘 받은 치즈 기록은 남긴다)",

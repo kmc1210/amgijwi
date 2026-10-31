@@ -48,8 +48,6 @@ function widgetMemoText(v){
   const chars = Array.from(t);
   return chars.length > WIDGET_MEMO_TEXT ? chars.slice(0, WIDGET_MEMO_TEXT - 1).join("").trim() + "…" : t;
 }
-/* 글자 단위로 자른다. 코드 단위로 자르면 이모지가 반 토막 나고, 그 반 토막 때문에 위젯이 요약을 통째로 못 읽는다 */
-function widgetText(v, n){ return Array.from(String(v === undefined || v === null ? "" : v).replace(/\s+/g, " ").trim()).slice(0, n).join(""); }
 function widgetBoard(){
   if(data.pin) return {locked: true, recipes: [], memos: [], memoMore: 0};
   const recipes = liveDrinks().slice(0, WIDGET_RECIPES).map(d=>({
@@ -75,13 +73,16 @@ function widgetCal(today){
   return evSorted(data.events.filter(e=>e && !e.done && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && evEnd(e) >= from))
     .slice(0, WIDGET_CAL).map(e=>({t: widgetText(e.title, 40), d: e.date, e: evEnd(e)}));
 }
-/* 주간 할 일 위젯(ios/Widget/TodoWidget.swift)에 그릴 것. 할 일 전부와 이번 주 체크("YYYY-MM-DD|id").
+/* 주간 할 일 위젯(ios/Widget/TodoWidget.swift)에 그릴 것. 할 일 전부와 이번 주 체크("YYYY-MM-DD|id"),
+   그리고 앱에서 마지막으로 체크를 바꾼 때(at — 그보다 먼저 위젯에서 누른 기록은 위젯이 얹지 않는다).
    위젯은 이 위에 위젯에서 누른 기록을 얹어 그리고, 누를 때 이 id 를 그대로 쓴다. 잠겨 있으면 넘기지 않는다 */
 function widgetTodo(locked){
-  if(locked) return {items: [], done: []};
+  if(locked) return {items: [], done: [], at: {}};
+  const mon = todoWeek()[0];
   return {
     items: data.todos.map(x=>({id: String(x.id), t: widgetText(x.t, TODO_TITLE), days: x.days.slice()})),
-    done: data.todoDone.filter(k=>k.slice(0, 10) >= todoWeek()[0])
+    done: data.todoDone.filter(k=>k.slice(0, 10) >= mon),
+    at: data.todoAt
   };
 }
 /* 0 이상의 정수로. 위젯 쪽은 수가 아니면 요약을 통째로 못 읽는다 */

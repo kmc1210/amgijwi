@@ -6,7 +6,8 @@
    앱을 열 때 앱(TodoBridge — WidgetBridge.swift)이 todoFromWidget 으로 넘겨 준다. 달력 일정과는 섞지 않는다.
 
    data.todos     [{id, t, days}]  — days 는 0(월) ~ 6(일)
-   data.todoDone  ["YYYY-MM-DD|id"] — 이번 주에 체크한 것만 남긴다 */
+   data.todoDone  ["YYYY-MM-DD|id"] — 이번 주에 체크한 것만 남긴다
+   data.todoAt    {"YYYY-MM-DD|id": ms} — 앱에서 마지막으로 체크를 바꾼 때. 그보다 먼저 위젯에서 누른 기록은 얹지 않는다 */
 
 const TODO_DOW = ["월","화","수","목","금","토","일"];
 const TODO_DAY_MAX = 20, TODO_TITLE = 40, TODO_CHEESE = 1;
@@ -27,7 +28,7 @@ function cleanTodos(root, now){
   root.todos = (Array.isArray(root.todos) ? root.todos : []).map(x=>{
     if(!x || typeof x !== "object") return null;
     const days = (Array.isArray(x.days) ? x.days : []).map(Number).filter(n=>n >= 0 && n <= 6 && Math.floor(n) === n);
-    const t = Array.from(String(x.t || "").replace(/\s+/g, " ").trim()).slice(0, TODO_TITLE).join("");
+    const t = widgetText(x.t, TODO_TITLE);
     let id = String(x.id || "") || uid();
     while(seen[id]) id = uid();
     seen[id] = 1;
@@ -39,16 +40,21 @@ function cleanTodos(root, now){
     const m = /^(\d{4}-\d{2}-\d{2})\|(.+)$/.exec(k);
     return !!m && m[1] >= mon && !!seen[m[2]];
   });
+  const at = (root.todoAt && typeof root.todoAt === "object") ? root.todoAt : {};
+  root.todoAt = {};
+  Object.keys(at).forEach(k=>{ if(k.slice(0, 10) >= mon && seen[k.slice(11)] && Number(at[k]) > 0) root.todoAt[k] = Number(at[k]); });
 }
 cleanTodos(data);
 
 function todoById(id){ return data.todos.filter(x=>x.id === id)[0] || null; }
 function todosOn(key){ const w = todoKeyDow(key); return data.todos.filter(x=>x.days.indexOf(w) >= 0); }
 function todoIsDone(key, id){ return data.todoDone.indexOf(key + "|" + id) >= 0; }
-function todoSet(key, id, on){
+/* at 을 주면(앱에서 바꿀 때) 바꾼 때를 적어 둔다. 위젯 기록을 얹을 때는 주지 않는다 */
+function todoSet(key, id, on, at){
   const k = key + "|" + id, i = data.todoDone.indexOf(k);
   if(on && i < 0) data.todoDone.push(k);
   if(!on && i >= 0) data.todoDone.splice(i, 1);
+  if(at) data.todoAt[k] = at;
 }
 function todoCount(key){
   const list = todosOn(key);
@@ -97,8 +103,11 @@ $("#calSeg").querySelectorAll("button").forEach(b=>b.addEventListener("click", (
 /* 도트 체크 표시(7×7). 칸 하나가 2px 이 되게 14px 로 그린다 */
 const TODO_CHECK = '<svg viewBox="0 0 7 7" shape-rendering="crispEdges" aria-hidden="true"><path fill="currentColor" d="M0 3h1v2H0zM1 4h1v2H1zM2 5h1v2H2zM3 4h1v2H3zM4 3h1v2H4zM5 2h1v2H5zM6 1h1v2H6z"/></svg>';
 
+let todoShownToday = "";       // 할 일 화면을 마지막으로 그린 날. 켜 둔 채 날이 바뀌면 "오늘" 을 따라간다
 function renderTodo(){
   const now = new Date(), today = ymd(now), week = todoWeek(now);
+  if(todoShownToday && todoShownToday !== today && state.todoDay === todoShownToday) state.todoDay = today;
+  todoShownToday = today;
   if(data.todoDone.some(k=>k.slice(0, 10) < week[0])) cleanTodos(data, now);      // 앱을 켜 둔 채 주가 바뀌었다
   if(week.indexOf(state.todoDay) < 0) state.todoDay = today;
   const key = state.todoDay;
@@ -141,7 +150,7 @@ function todoToggle(key, id){
   const now = new Date();
   if(key > ymd(now)){ haptic("warning"); toast("그날이 되면 체크할 수 있어요"); return; }
   const on = !todoIsDone(key, id);
-  todoSet(key, id, on);
+  todoSet(key, id, on, now.getTime());
   const got = on && todoCheese(key, now);
   persist();
   if(got) todoCheeseSaid(); else haptic(on ? "light" : "selection");
@@ -184,7 +193,7 @@ function openTodoSheet(id){
   $("#mask").classList.add("on"); $("#sheet").classList.add("on");
 
   $("#tdSave").addEventListener("click", ()=>{
-    const t = Array.from($("#tdTitle").value.replace(/\s+/g, " ").trim()).slice(0, TODO_TITLE).join("");
+    const t = widgetText($("#tdTitle").value, TODO_TITLE);
     if(!t){ toast("무엇을 할지 적어주세요"); return; }
     if(!days.length){ toast("요일을 하나 이상 골라주세요"); return; }
     /* 한 요일에 스무 개까지. 위젯과 화면이 감당할 만큼만 */
@@ -193,7 +202,7 @@ function openTodoSheet(id){
     if(td){
       td.t = t;
       /* 뺀 요일에 이번 주 해 둔 체크는 지운다(그 요일 할 일이 아니게 됐다) */
-      todoWeek().forEach(k=>{ if(days.indexOf(todoKeyDow(k)) < 0) todoSet(k, td.id, false); });
+      todoWeek().forEach(k=>{ if(days.indexOf(todoKeyDow(k)) < 0) todoSet(k, td.id, false, Date.now()); });
       td.days = days.slice();
     } else data.todos.push({id: uid(), t: t, days: days.slice()});
     /* 빼거나 고치는 바람에 오늘 할 일이 다 끝난 상태가 되어도 치즈는 주지 않는다 — 체크를 해서 끝낸 날에만 준다 */
@@ -207,16 +216,24 @@ function openTodoSheet(id){
     confirmBox("할 일 삭제", `"${td.t}" 을(를) 모든 요일에서 지웁니다.`, "삭제", ()=>{
       data.todos = data.todos.filter(x=>x.id !== td.id);
       data.todoDone = data.todoDone.filter(k=>k.slice(11) !== td.id);
+      Object.keys(data.todoAt).forEach(k=>{ if(k.slice(11) === td.id) delete data.todoAt[k]; });
       persist(); renderTodo(); toast("지웠어요");
     });
   });
 }
 $("#todoAdd").addEventListener("click", ()=>openTodoSheet(null));
+/* 앱을 켜 둔 채 날이 바뀐 뒤 돌아오면 할 일 화면을 오늘로 다시 그린다 */
+document.addEventListener("visibilitychange", ()=>{
+  if(document.hidden || !todoShownToday || todoShownToday === ymd(new Date())) return;
+  if($("#s-cal").classList.contains("active") && state.calView === "todo") renderTodo();
+});
 
 /* ---------- 위젯에서 체크한 것 (앱만) ----------
    위젯(ios/Widget/TodoWidget.swift)은 누른 것을 기록으로 쌓는다: [{id, d, on, at}] — d 는 그 할 일의 날, at 은 누른 때(ms).
-   앱이 켜지거나 앞으로 나올 때 그 기록을 차례대로 넘겨 준다. 적용하고 저장한 뒤(위젯 요약도 바로 새로 쓴다),
-   여기까지 받았다고(upTo) 알리면 앱이 그 기록을 지운다. 이 이름은 WebAppViewController.swift 에도 적혀 있다 */
+   앱이 켜지거나 앞으로 나올 때 아직 받지 않은 기록을 차례대로 넘겨 준다. 적용하고 저장한 뒤(위젯 요약도 바로 새로 쓴다),
+   여기까지 받았다고(upTo) 알리면 앱은 그 표시만 적어 두고, 기록은 위젯이 다음에 누를 때 걷는다(두 쪽이 같은 칸을 고치지 않게).
+   앱에서 그 칸을 더 나중에 바꿨으면(todoAt) 위젯 기록은 버린다 — 마지막에 바꾼 쪽이 남는다.
+   이 이름은 WebAppViewController.swift 에도 적혀 있다 */
 function todoBridge(){
   const w = window.webkit;
   if(!isNativeApp() || !w || !w.messageHandlers || !w.messageHandlers.amgijwiTodo) return null;
@@ -224,18 +241,21 @@ function todoBridge(){
 }
 function todoFromWidget(log){
   if(!Array.isArray(log) || !log.length) return;
-  const now = new Date(), week = todoWeek(now);
-  let upTo = 0, got = false;
+  const now = new Date(), today = ymd(now), week = todoWeek(now);
+  let upTo = 0, checkedToday = false;
   log.forEach(e=>{
     if(!e || typeof e !== "object") return;
     const at = Number(e.at) || 0;
     if(at > upTo) upTo = at;
     const d = String(e.d || ""), id = String(e.id || "");
-    if(week.indexOf(d) < 0 || d > ymd(now) || !todoById(id) || todosOn(d).indexOf(todoById(id)) < 0) return;
+    if(week.indexOf(d) < 0 || d > today || !todoById(id) || todosOn(d).indexOf(todoById(id)) < 0) return;
+    if(at <= (data.todoAt[d + "|" + id] || 0)) return;          // 앱에서 더 나중에 바꿨다
     todoSet(d, id, !!e.on);
-    /* 그날 위젯에서 체크해 오늘 할 일을 끝냈으면 치즈(앱에서 체크한 것과 같다) */
-    if(e.on && at && ymd(new Date(at)) === d && todoCheese(d, now)) got = true;
+    if(e.on && d === today && ymd(new Date(at)) === today) checkedToday = true;
   });
+  /* 오늘 위젯에서 체크한 것이 있고, 다 얹은 뒤에 오늘 할 일이 끝나 있으면 치즈(앱에서 체크한 것과 같다).
+     체크했다가 바로 푼 경우처럼 잠깐 끝났던 것으로는 주지 않는다 */
+  const got = checkedToday && todoCheese(today, now);
   persist();
   flushNativeCopy();                 // 위젯 요약을 먼저 새로 쓴 뒤에 기록을 지운다(사이에 위젯이 옛 상태로 그려지지 않게)
   const b = todoBridge();

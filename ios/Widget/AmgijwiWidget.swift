@@ -8,7 +8,7 @@ import SwiftUI
 /// (Sources/WidgetBridge.swift · www/js/widget.js). 쥐돌이 그림도 요약에 들어 있어, 옷장에서 입힌 옷 그대로 그린다.
 /// 며칠째인지는 그리는 날짜로 스스로 센다. 그래서 앱을 열지 않아도 자정마다 얼굴이 바뀐다. 통신은 없다.
 
-private let group = "group.com.amgijwi.app"     // WidgetBridge.group 과 같아야 한다
+let group = "group.com.amgijwi.app"             // WidgetBridge.group 과 같아야 한다(할 일 위젯 — TodoWidget.swift 도 이것을 쓴다)
 private let key = "summary"
 
 /// 앱이 넘긴 요약. 모양은 www/js/widget.js 의 widgetSummary 와 같다.
@@ -41,6 +41,7 @@ struct Summary: Decodable {
     struct Todo: Decodable {
         var items: [Item] = []
         var done: [String] = []     // 이번 주 체크 "YYYY-MM-DD|id"
+        var at: [String: Double] = [:]  // 앱에서 마지막으로 체크를 바꾼 때(ms). 그보다 먼저 위젯에서 누른 기록은 얹지 않는다
 
         struct Item: Decodable {
             var id: String
@@ -48,12 +49,13 @@ struct Summary: Decodable {
             var days: [Int]         // 0(월) ~ 6(일)
         }
 
-        enum Keys: String, CodingKey { case items, done }
+        enum Keys: String, CodingKey { case items, done, at }
         init() {}
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: Keys.self)
             items = (try? c.decode([Item].self, forKey: .items)) ?? []
             done = (try? c.decode([String].self, forKey: .done)) ?? []
+            at = (try? c.decode([String: Double].self, forKey: .at)) ?? [:]
         }
     }
 

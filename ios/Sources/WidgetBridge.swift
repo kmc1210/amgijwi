@@ -34,8 +34,9 @@ extension WidgetBridge: WKScriptMessageHandler {
     }
 }
 
-/// 할 일 위젯에서 누른 기록(Widget/TodoWidget.swift 의 TodoLog)을 웹에 넘기고, 웹이 다 받았다고 하면 지운다.
-/// 기록은 위젯과 같이 쓰는 칸에 [{id, d, on, at}] 글(JSON)로 쌓여 있다. 앱이 앞으로 나올 때마다 넘긴다(WebAppViewController).
+/// 할 일 위젯에서 누른 기록(Widget/TodoWidget.swift 의 TodoLog)을 웹에 넘기고, 웹이 다 받았다고 하면 어디까지 받았는지 적는다.
+/// 기록은 위젯과 같이 쓰는 칸에 [{id, d, on, at}] 글(JSON)로 쌓여 있다. 앱이 앞으로 나올 때마다 아직 안 받은 것만 넘긴다(WebAppViewController).
+/// 기록 칸은 위젯만 고친다(받은 것은 위젯이 다음에 누를 때 걷는다). 앱도 고치면 두 프로세스가 동시에 고쳐 쓰다 방금 누른 기록을 잃는다.
 ///
 /// 앱 → 웹: todoFromWidget(<기록>)   (www/js/todo.js)
 /// 웹 → 앱: window.webkit.messageHandlers.amgijwiTodo.postMessage({op: "take", upTo: <ms>})
@@ -43,12 +44,17 @@ final class TodoBridge: NSObject {
 
     static let name = "amgijwiTodo"
     static let key = "todoLog"          // TodoLog.key 와 같아야 한다
+    static let takenKey = "todoTaken"   // TodoLog.takenKey 와 같아야 한다
 
-    /// 넘길 기록이 있으면 웹에서 돌릴 글. 없으면 nil.
+    /// 아직 안 받은 기록이 있으면 웹에서 돌릴 글. 없으면 nil.
     static func script() -> String? {
-        guard let text = UserDefaults(suiteName: WidgetBridge.group)?.string(forKey: key),
+        guard let store = UserDefaults(suiteName: WidgetBridge.group),
+              let text = store.string(forKey: key),
               let data = text.data(using: .utf8),
-              let list = try? JSONSerialization.jsonObject(with: data) as? [Any], !list.isEmpty,
+              let all = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return nil }
+        let taken = store.double(forKey: takenKey)
+        let list = all.filter { (($0["at"] as? NSNumber)?.doubleValue ?? 0) > taken }
+        guard !list.isEmpty,
               let clean = try? JSONSerialization.data(withJSONObject: list),
               let json = String(data: clean, encoding: .utf8) else { return nil }
         return "typeof todoFromWidget === 'function' && todoFromWidget(\(json))"
@@ -57,23 +63,14 @@ final class TodoBridge: NSObject {
 
 extension TodoBridge: WKScriptMessageHandler {
 
-    /// 웹이 받은 것(누른 때가 upTo 까지인 것)만 지운다. 그사이 위젯에서 또 누른 것은 남는다.
+    /// 웹이 받은 데까지(누른 때 upTo) 적어 둔다. 기록 칸은 건드리지 않는다.
     func userContentController(_ userContentController: WKUserContentController,
                                didReceive message: WKScriptMessage) {
         guard message.frameInfo.isMainFrame,
               message.frameInfo.request.url?.scheme == BundleSchemeHandler.scheme,
               let body = message.body as? [String: Any], body["op"] as? String == "take",
               let upTo = (body["upTo"] as? NSNumber)?.doubleValue,
-              let store = UserDefaults(suiteName: WidgetBridge.group),
-              let text = store.string(forKey: TodoBridge.key),
-              let data = text.data(using: .utf8),
-              let list = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else { return }
-        let rest = list.filter { (($0["at"] as? NSNumber)?.doubleValue ?? 0) > upTo }
-        if rest.isEmpty {
-            store.removeObject(forKey: TodoBridge.key)
-        } else if let out = try? JSONSerialization.data(withJSONObject: rest), let s = String(data: out, encoding: .utf8) {
-            store.set(s, forKey: TodoBridge.key)
-        }
-        WidgetCenter.shared.reloadTimelines(ofKind: "AmgijwiTodo")
+              let store = UserDefaults(suiteName: WidgetBridge.group) else { return }
+        if upTo > store.double(forKey: TodoBridge.takenKey) { store.set(upTo, forKey: TodoBridge.takenKey) }
     }
 }

@@ -4,17 +4,17 @@ import AppIntents
 
 /// 할 일 위젯(작은 · 중간 크기). 앱의 주간 할 일(www/js/todo.js) 가운데 오늘 요일 것을 보여주고,
 /// iOS 17 부터는 할 일을 눌러 앱을 열지 않고 바로 체크한다. 그 아래 버전에서는 보기만 하고, 누르면 앱이 열린다.
-///   작은 크기: 오늘 할 일 넉 줄까지(안 한 것이 위로) · 다 하면 큰 체크
+///   작은 크기: 오늘 할 일 넉 줄까지(안 한 것이 위로) · 다 하면 "다 했츄!"
 ///   중간 크기: 오늘 할 일 두 줄로 여섯 개까지 + 이번 주 요일마다 한 수(점)
 /// 할 일과 이번 주 체크는 앱이 적어 둔 요약의 todo 에서 읽고, 위젯에서 누른 것은 기록(TodoLog)으로 쌓아 그 위에 얹는다.
-/// 앱을 열면 앱이 그 기록을 가져가 저장하고 지운다(Sources/WidgetBridge.swift 의 TodoBridge).
+/// 앱을 열면 앱이 그 기록을 가져가 저장하고, 어디까지 받았는지(todoTaken)만 적는다(Sources/WidgetBridge.swift 의 TodoBridge).
+/// 기록 칸은 위젯만 고친다 — 받은 것은 다음에 누를 때 위젯이 걷는다. 두 프로세스가 같은 칸을 읽고 고쳐 쓰다 기록을 잃지 않게.
 /// 어느 요일인지 · 이번 주가 언제인지는 그리는 날짜로 정한다. 한 주는 월요일부터다(체크는 날짜로 적혀 있어 새 주엔 저절로 풀린다).
 
-private let group = "group.com.amgijwi.app"     // WidgetBridge.group 과 같아야 한다
-
-/// 위젯에서 누른 기록. 앱(TodoBridge)이 같은 키 · 모양으로 읽고 지운다.
+/// 위젯에서 누른 기록. 앱(TodoBridge)이 같은 키 · 모양으로 읽는다.
 enum TodoLog {
     static let key = "todoLog"
+    static let takenKey = "todoTaken"   // 앱이 어디까지 받았나(누른 때 ms). 앱만 쓴다
     /// 앱을 오래 안 열어도 이만큼만 남긴다(오래된 것부터 버린다).
     static let limit = 300
 
@@ -37,20 +37,23 @@ enum TodoLog {
         UserDefaults(suiteName: group)?.set(text, forKey: key)
     }
 
-    /// 요약의 체크에 기록을 차례대로 얹은 것.
+    /// 요약의 체크에 기록을 차례대로 얹은 것. 앱에서 그 칸을 더 나중에 바꿨으면(todo.at) 그 기록은 얹지 않는다.
     static func done(_ summary: Summary?, _ log: [Entry]) -> Set<String> {
         var set = Set(summary?.todo.done ?? [])
-        for e in log {
+        let at = summary?.todo.at ?? [:]
+        for e in log where e.at > (at[e.d + "|" + e.id] ?? 0) {
             if e.on { set.insert(e.d + "|" + e.id) } else { set.remove(e.d + "|" + e.id) }
         }
         return set
     }
 
-    /// 누른 할 일을 뒤집는다. 앞날 것은 체크하지 않는다(앱도 막는다).
+    /// 누른 할 일을 뒤집는다. 오늘 칸만 — 자정이 막 지나 어제 화면이 아직 떠 있을 때 누른 것은 버린다(누르면 위젯이 다시 그려져 오늘이 된다).
+    /// 앱이 이미 받아 간 기록은 이때 걷는다.
     static func toggle(id: String, day: String) {
-        guard day <= dayFormat.string(from: Date()) else { return }
-        var log = load()
-        let on = !done(Summary.load(), log).contains(day + "|" + id)
+        guard day == dayFormat.string(from: Date()) else { return }
+        let taken = UserDefaults(suiteName: group)?.double(forKey: takenKey) ?? 0
+        var log = load().filter { $0.at > taken }
+        let on = !done(Summary.load(), load()).contains(day + "|" + id)
         log.append(Entry(id: id, d: day, on: on, at: (Date().timeIntervalSince1970 * 1000).rounded()))
         save(log)
     }
@@ -207,7 +210,8 @@ struct TodoWidgetView: View {
                     .lineLimit(1)
                 Spacer(minLength: 4)
                 if entry.note == nil && !rows.isEmpty {
-                    Text("\(done)/\(rows.count)")
+                    /// 다 했으면 칭찬 한마디. 목록은 그대로 둔다 — 잘못 누른 것을 위젯에서 바로 되돌릴 수 있게
+                    Text(done == rows.count ? "다 했츄!" : "\(done)/\(rows.count)")
                         .font(.system(size: 14, weight: .heavy, design: .rounded))
                         .foregroundColor(Ink.accent)
                 }
@@ -222,14 +226,6 @@ struct TodoWidgetView: View {
                     .font(.system(size: 12.5, weight: .medium, design: .rounded))
                     .foregroundColor(Ink.muted)
                 Spacer(minLength: 0)
-            } else if done == rows.count && !medium {
-                VStack(spacing: 8) {
-                    TodoBox(done: true, size: 44)
-                    Text("오늘 다 했츄!")
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .foregroundColor(Ink.muted)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if medium {
                 mediumList(rows)
                 Spacer(minLength: 0)

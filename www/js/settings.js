@@ -531,7 +531,7 @@ function applyBackup(text, quiet){
       /* 일정은 백업을 따라온다. 모양은 core.js 가 불러올 때 다시 다듬는다 */
       events:Array.isArray(d.events) ? d.events : [],
       /* 주간 할 일도 백업을 따라온다. 지난주 체크는 cleanTodos 가 버린다 */
-      todos:d.todos, todoDone:d.todoDone,
+      todos:d.todos, todoDone:d.todoDone, todoAt:d.todoAt,
       wx:d.wx || data.wx,                 /* 날씨 옷도 취향이라 백업을 따라간다 */
       haptic:typeof d.haptic === "boolean" ? d.haptic : data.haptic,
       /* 치즈 · 옷은 백업을 따라간다. 예전 백업(옷장 없음)이면 지금 것을 둔다 */
@@ -618,7 +618,7 @@ $("#wipeAll").addEventListener("click", ()=>{
       nick:data.nick,                                /* 이름도 남긴다 */
       studied:data.studied,                          /* 오늘 한 바퀴 돌았는지(위젯) */
       visit:data.visit, hints:data.hints || [], cats:data.cats,
-      shelf:[], memos:[], subs:[], drinks:[], mastered:[], needReview:[], events:[], todos:[], todoDone:[]};
+      shelf:[], memos:[], subs:[], drinks:[], mastered:[], needReview:[], events:[], todos:[], todoDone:[], todoAt:{}};
     Store.clear(); persist(); syncAlarms(); renderSettings(); toast("모두 삭제했어요"); go("home");   // 지운 일정의 알림도 걷는다
   });
 });
