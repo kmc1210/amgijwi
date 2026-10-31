@@ -67,7 +67,7 @@ function cloudSig(){
 /* 아직 아무것도 하지 않은 상태인가: 레시피가 없거나 손대지 않은 예시뿐이고, 일정 · 메모 · 학습 기록 · 치즈가 없다.
    이 상태는 지킬 게 없어서 저장하지 않고, iCloud 백업을 되살려도 잃을 게 없어서 되살릴지 묻는다 */
 function cloudLooksFresh(){
-  return data.drinks.every(d=>d.sample) && !data.events.length && !data.memos.length
+  return data.drinks.every(d=>d.sample) && !data.events.length && !data.todos.length && !data.memos.length
       && !data.mastered.length && !data.needReview.length && !(data.closet && data.closet.cheese > 0);
 }
 /* 다른 기기가 올린, 이 기기보다 레시피가 많은 백업이 iCloud 에 있는가(저절로 덮지 않는다) */

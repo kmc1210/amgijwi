@@ -4,6 +4,7 @@
    넘기는 것: 레시피 수 · 외운 수 · 연속 접속 · 치즈 · 마지막으로 온 날 · 마지막으로 한 바퀴 돈 날,
              오늘 폐기를 챙길 재료 수 · 끝나지 않은 일정 여섯 개까지(제목과 날짜 — 중간 크기 위젯이 보여준다),
              달력 위젯이 그릴 일정(cal — 이번 달 첫날부터의 끝나지 않은 일정),
+             주간 할 일(todo — 할 일 목록과 이번 주 체크. 위젯이 그리는 날의 요일로 오늘 목록을 고른다),
              그리고 지금 입은 옷 그대로의 쥐돌이 그림 다섯 장(평소 · 기쁨 · 삐침 · 시무룩 · 풀이 죽음)과 색.
    며칠째인지 · 어떤 얼굴인지는 위젯이 그리는 날짜로 스스로 정한다(앱을 열지 않아도 날이 지나면 바뀐다).
    큰 위젯은 고른 레시피나 메모를 보여준다. 그래서 레시피(이름 · 재료와 용량 · 제조 순서)와 메모도 넘긴다.
@@ -74,6 +75,15 @@ function widgetCal(today){
   return evSorted(data.events.filter(e=>e && !e.done && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && evEnd(e) >= from))
     .slice(0, WIDGET_CAL).map(e=>({t: widgetText(e.title, 40), d: e.date, e: evEnd(e)}));
 }
+/* 주간 할 일 위젯(ios/Widget/TodoWidget.swift)에 그릴 것. 할 일 전부와 이번 주 체크("YYYY-MM-DD|id").
+   위젯은 이 위에 위젯에서 누른 기록을 얹어 그리고, 누를 때 이 id 를 그대로 쓴다. 잠겨 있으면 넘기지 않는다 */
+function widgetTodo(locked){
+  if(locked) return {items: [], done: []};
+  return {
+    items: data.todos.map(x=>({id: String(x.id), t: widgetText(x.t, TODO_TITLE), days: x.days.slice()})),
+    done: data.todoDone.filter(k=>k.slice(0, 10) >= todoWeek()[0])
+  };
+}
 /* 0 이상의 정수로. 위젯 쪽은 수가 아니면 요약을 통째로 못 읽는다 */
 function widgetInt(v){ return Math.max(0, Math.floor(Number(v) || 0)); }
 function widgetSummary(){
@@ -95,6 +105,7 @@ function widgetSummary(){
     kill: widgetInt(discardCount()),  // 개봉관리에 기한을 건 재료 수 = 날마다 폐기일을 챙길 것(홈의 "오늘 버릴 게 N개"와 같은 수)
     events: events,
     cal: board.locked ? [] : widgetCal(today),
+    todo: widgetTodo(board.locked),
     locked: board.locked, recipes: board.recipes, memos: board.memos, memoMore: board.memoMore,
     faces: art.faces, pal: art.pal
   };
@@ -111,7 +122,8 @@ function widgetSync(){
 }
 
 /* ---------- 위젯을 눌러 앱을 열었을 때 ----------
-   위젯마다 주소를 달아 두었다(ios/Widget — 레시피 위젯은 보여주던 레시피, 메모 위젯은 메모 탭, 달력 위젯은 일정 탭).
+   위젯마다 주소를 달아 두었다(ios/Widget — 레시피 위젯은 보여주던 레시피, 메모 위젯은 메모 탭, 달력 위젯은 일정 탭,
+   할 일 위젯은 일정 탭의 오늘 할 일).
    앱(SceneDelegate.swift)이 그 주소를 받아 이 함수를 부른다. 이 이름은 WebAppViewController.swift 에도 적혀 있다.
    PIN 잠금 화면 · 이름 묻는 창에 가려 있으면 그것이 닫힌 뒤에 간다. 학습 중이거나 뭔가 적던 중이면 가지 않는다 —
    위젯을 눌렀다고 하던 일을 날리면 안 된다 */
@@ -134,9 +146,10 @@ function widgetGo(){
   if(locked || (guide && !guide.hidden)) return;                                 // 처음 켠 사람은 가이드부터 본다
   const busy = WIDGET_BUSY.some(n=>$("#s-" + n).classList.contains("active"));
   if(busy || $("#sheet").classList.contains("on") || $("#dlg").classList.contains("on")) return;      // 시트 · "지울까요?" 창이 떠 있어도 가지 않는다
-  if(["cal", "memo", "recipe"].indexOf(w.kind) < 0) return;
+  if(["cal", "todo", "memo", "recipe"].indexOf(w.kind) < 0) return;
   if(state.selMode) exitSel();                                                   // 여러 개 고르던 중이었으면 푼다(탭을 누를 때와 같다)
-  if(w.kind === "cal"){ calToday(); go("cal"); return; }
+  if(w.kind === "cal"){ calToday(); state.calView = "cal"; go("cal"); return; }
+  if(w.kind === "todo"){ state.todoDay = ymd(new Date()); state.calView = "todo"; go("cal"); return; }
   if(w.kind === "memo"){ state.listTab = "memo"; go("list"); return; }
   const d = liveDrinks().filter(x=>String(x.id) === w.id)[0];
   $("#q").value = ""; state.listTab = "recipe"; go("list");

@@ -530,6 +530,8 @@ function applyBackup(text, quiet){
       hints:(Array.isArray(d.hints) ? d.hints : data.hints) || [],
       /* 일정은 백업을 따라온다. 모양은 core.js 가 불러올 때 다시 다듬는다 */
       events:Array.isArray(d.events) ? d.events : [],
+      /* 주간 할 일도 백업을 따라온다. 지난주 체크는 cleanTodos 가 버린다 */
+      todos:d.todos, todoDone:d.todoDone,
       wx:d.wx || data.wx,                 /* 날씨 옷도 취향이라 백업을 따라간다 */
       haptic:typeof d.haptic === "boolean" ? d.haptic : data.haptic,
       /* 치즈 · 옷은 백업을 따라간다. 예전 백업(옷장 없음)이면 지금 것을 둔다 */
@@ -561,6 +563,7 @@ function applyBackup(text, quiet){
       })), mastered:Array.isArray(d.mastered)?d.mastered:[], needReview:Array.isArray(d.needReview)?d.needReview:[],
       sampleMarked:d.sampleMarked ? 1 : 0};
     liftSubs(data);
+    cleanTodos(data);
     if(!data.sampleMarked) markOldSamples(data);      // 1.4 전 백업: 손대지 않은 예시에 한 번 표시(이미 표시한 백업은 다시 맞춰 보지 않는다)
     data.drinks.forEach(x=>{ x.subRefs = (x.subRefs||[]).filter(id=>data.subs.some(s=>s.id===id)); });
     data.cloud = keepCloud;
@@ -604,7 +607,7 @@ $("#resetProg").addEventListener("click", ()=>{
   });
 });
 $("#wipeAll").addEventListener("click", ()=>{
-  confirmBox("전체 데이터 삭제", "레시피와 학습 기록, 일정까지 모두 지웁니다. 백업 파일이 없으면 복구할 수 없어요.", "전부 삭제", ()=>{
+  confirmBox("전체 데이터 삭제", "레시피와 학습 기록, 일정 · 할 일까지 모두 지웁니다. 백업 파일이 없으면 복구할 수 없어요.", "전부 삭제", ()=>{
     /* 지우는 건 레시피와 학습 기록이다. 테마·소리 같은 취향과 안내를 본 기록은 그대로 둔다.
        sound 가 빠져 있어 전체 삭제 때마다 소리가 조용히 꺼지던 것도 여기서 바로잡는다 */
     data = {v:1, mode:data.mode, theme:data.theme, sound:data.sound, wx:data.wx, listSort:data.listSort, enCase:data.enCase, pin:data.pin,
@@ -615,7 +618,7 @@ $("#wipeAll").addEventListener("click", ()=>{
       nick:data.nick,                                /* 이름도 남긴다 */
       studied:data.studied,                          /* 오늘 한 바퀴 돌았는지(위젯) */
       visit:data.visit, hints:data.hints || [], cats:data.cats,
-      shelf:[], memos:[], subs:[], drinks:[], mastered:[], needReview:[], events:[]};
+      shelf:[], memos:[], subs:[], drinks:[], mastered:[], needReview:[], events:[], todos:[], todoDone:[]};
     Store.clear(); persist(); syncAlarms(); renderSettings(); toast("모두 삭제했어요"); go("home");   // 지운 일정의 알림도 걷는다
   });
 });

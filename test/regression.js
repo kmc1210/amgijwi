@@ -4313,6 +4313,147 @@ const LEGACY = {
     eq("도트 링 칸은 3px 로 떨어진다(24칸 · 칸이 2.4px 처럼 어중간하면 도트 크기가 들쭉날쭉)", [r.cell, r.svg], [3, "0 0 24 24"]);
   }
 
+  // 주간 할 일(todo.js) — 요일마다 돌아오는 체크 목록. 한 주는 월요일부터, 오늘 할 일을 오늘 다 끝내면 치즈 1개(하루 한 번).
+  // 위젯에서 누른 기록은 앱을 열 때 todoFromWidget 으로 들어온다
+  {
+    const ctx = await browser.newContext({ viewport: { width: 393, height: 852 } });
+    const pg = await ctx.newPage();
+    const errs = [];
+    pg.on("pageerror", e => errs.push(String(e)));
+    /* 앱처럼 문서가 그려지기 전에 표시를 붙인다(WebAppViewController 의 WKUserScript). 빈 문서에도 불리니 문서가 있을 때만 */
+    await pg.addInitScript(() => { window.__amgijwiNative = true; if(document.documentElement) document.documentElement.classList.add("dot"); });
+    await pg.goto(APP); await pg.waitForTimeout(400);
+    const r = await pg.evaluate(async () => {
+      const out = {};
+      markHint("nick"); if(nickAskOpen()) closeNickAsk();
+      if(!$("#onboard").hidden) closeGuide();          // 처음 켠 사람에게 뜨는 가이드가 위젯 주소를 막는다
+      /* 한 주는 월요일부터 */
+      out.weekSun = todoWeek(new Date(2026, 10, 1))[0];       // 11/1 일요일 → 10/26 월요일
+      out.weekMon = todoWeek(new Date(2026, 10, 2))[0];
+      out.weekLen = todoWeek(new Date(2026, 10, 2)).length;
+      /* 모양 다듬기: 빈 제목 · 요일 없음은 버리고, 요일은 겹치지 않게 정렬, 지난주 체크와 없는 할 일의 체크는 버린다 */
+      const wk = todoWeek();
+      const root = { todos: [{ id: "a", t: "  우유   발주 ", days: [5, 0, 5, 9, "2"] }, { id: "b", t: "", days: [1] }, { id: "c", t: "요일 없음", days: [] }, null],
+                     todoDone: ["2020-01-06|a", wk[0] + "|a", wk[0] + "|zz", wk[0] + "|a", 7] };
+      cleanTodos(root);
+      out.clean = [root.todos.map(x => [x.t, x.days]), root.todoDone];
+      out.cleanWant = wk[0] + "|a";
+
+      /* 화면: 달력 / 할 일 전환 */
+      const today = ymd(new Date()), dow = todoKeyDow(today);
+      data.todos = [{ id: "t1", t: "우유 발주 넣기", days: [dow] }, { id: "t2", t: "시럽 펌프 세척", days: [0,1,2,3,4,5,6] }];
+      data.todoDone = []; data.closet.todoDay = ""; persist();
+      go("cal");
+      out.calFirst = !$("#calView").hidden && $("#todoView").hidden;
+      document.querySelector('#calSeg [data-cv="todo"]').click();
+      out.todoShown = $("#calView").hidden && !$("#todoView").hidden && $("#calSub").textContent === "매주 돌아오는 할 일";
+      out.days = Array.from(document.querySelectorAll("#todoWeek .tdday .w")).map(e => e.textContent).join("");
+      out.selToday = document.querySelector("#todoWeek .tdday.sel").dataset.day === today;
+      out.rows = document.querySelectorAll("#todoList .tdrow").length;
+      /* 도트 글꼴은 16px 아래로 내려가지 않는다 */
+      out.fonts = ["#todoWeek .tdday b", "#todoDayTitle span", "#todoAdd", "#calSeg button"].map(s => parseFloat(getComputedStyle(document.querySelector(s)).fontSize));
+
+      /* 체크와 치즈 */
+      const c0 = data.closet.cheese;
+      document.querySelector('#todoList .tdck[data-ck="t1"]').click();
+      out.half = [todoIsDone(today, "t1"), data.closet.cheese - c0];
+      document.querySelector('#todoList .tdck[data-ck="t2"]').click();
+      out.full = [todoIsDone(today, "t2"), data.closet.cheese - c0, data.closet.todoDay === today];
+      out.rowDone = document.querySelectorAll("#todoList .tdrow.done").length;
+      /* 풀었다 다시 해도 같은 날 또 받지 않는다 */
+      document.querySelector('#todoList .tdck[data-ck="t2"]').click();
+      document.querySelector('#todoList .tdck[data-ck="t2"]').click();
+      out.again = data.closet.cheese - c0;
+      /* 앞날은 체크할 수 없다(이번 주 일요일이 오늘이 아니면) */
+      const sun = wk[6];
+      if(sun !== today){ todoToggle(sun, "t2"); out.future = todoIsDone(sun, "t2"); } else out.future = false;
+      /* 지난 요일을 나중에 채우면 치즈는 없다 */
+      data.closet.todoDay = ""; data.todoDone = [];
+      const past = wk.filter(k => k < today)[0];
+      if(past){ const c1 = data.closet.cheese; todoToggle(past, "t2"); out.pastCheese = [todoIsDone(past, "t2"), data.closet.cheese - c1]; }
+      else out.pastCheese = [true, 0];
+
+      /* 넣기 · 고치기 시트 */
+      openTodoSheet(null);
+      $("#tdTitle").value = "개봉 택 정리";
+      document.querySelector('#tdQuick [data-q="주말"]').click();
+      out.quick = Array.from(document.querySelectorAll("#tdDays .pick.on")).map(b => b.textContent).join("");
+      $("#tdSave").click();
+      const added = data.todos.filter(x => x.t === "개봉 택 정리")[0];
+      out.added = added ? added.days : null;
+      /* 한 요일에 스무 개까지 */
+      const n0 = data.todos.length, room = 20 - todosOn(today).length;
+      for(let i = 0; i < 25; i++){ openTodoSheet(null); $("#tdTitle").value = "할 일 " + i; document.querySelector('#tdQuick [data-q="매일"]').click(); $("#tdSave").click(); }
+      out.cap = [todosOn(today).length, data.todos.length - n0 === room];
+      closeSheet();
+      /* 고치면서 뺀 요일의 이번 주 체크는 지운다 */
+      data.todos = [{ id: "e1", t: "마감 청소", days: [0,1,2,3,4,5,6] }];
+      data.todoDone = wk.map(k => k + "|e1");
+      openTodoSheet("e1");
+      document.querySelector('#tdQuick [data-q="평일"]').click();
+      $("#tdSave").click();
+      out.edit = [data.todos[0].days.join(""), data.todoDone.length];
+
+      /* 위젯에서 누른 기록 */
+      const posted = [];
+      window.webkit = { messageHandlers: { amgijwiTodo: { postMessage: m => posted.push(m) }, amgijwiWidget: { postMessage: () => {} } } };
+      data.todos = [{ id: "w1", t: "원두 재고 세기", days: [dow] }, { id: "w2", t: "마감 청소", days: [dow] }];
+      data.todoDone = []; data.closet.todoDay = "";
+      const c2 = data.closet.cheese, now = Date.now();
+      todoFromWidget([
+        { id: "w1", d: today, on: true, at: now - 3000 },
+        { id: "w2", d: today, on: true, at: now - 2000 },
+        { id: "w2", d: today, on: false, at: now - 1500 },
+        { id: "w2", d: today, on: true, at: now - 1000 },
+        { id: "nope", d: today, on: true, at: now - 900 },
+        { id: "w1", d: "2020-01-01", on: true, at: now - 800 }
+      ]);
+      out.widget = [todoIsDone(today, "w1"), todoIsDone(today, "w2"), data.closet.cheese - c2, data.todoDone.length];
+      out.take = posted[posted.length - 1];
+      out.takeWant = { op: "take", upTo: now - 800 };
+      /* 요약에 할 일이 실린다. 잠겨 있으면 비운다 */
+      const s1 = widgetSummary();
+      out.sum = [s1.todo.items.length, s1.todo.done.length, s1.todo.items[0].days];
+      data.pin = "1234"; const s2 = widgetSummary(); data.pin = null;
+      out.locked = [s2.todo.items.length, s2.todo.done.length];
+      delete window.webkit;
+
+      /* 백업을 되살려도 할 일이 따라오고, 지난주 체크는 버린다. 오늘 받은 치즈 기록은 지금 것을 남긴다 */
+      data.closet.todoDay = today;
+      applyBackup(JSON.stringify({ data: { drinks: [], todos: [{ id: "k1", t: "냉장고 정리", days: [2] }], todoDone: ["2020-01-06|k1", wk[2] + "|k1"], closet: { cheese: 3 } } }), true);
+      out.backup = [data.todos.map(x => x.t), data.todoDone, data.closet.todoDay === today];
+
+      /* 할 일 위젯을 눌러 들어오면 오늘 할 일 화면 */
+      go("home");
+      widgetOpenFromApp("todo", "");
+      out.link = $("#s-cal").classList.contains("active") && !$("#todoView").hidden && state.todoDay === today;
+      return out;
+    });
+    await ctx.close();
+    eq("한 주는 월요일부터 일곱 날", [r.weekSun, r.weekMon, r.weekLen], ["2026-10-26", "2026-11-02", 7]);
+    eq("할 일 모양 다듬기: 빈 것은 버리고 요일은 정렬 · 지난주 · 없는 할 일 체크는 버린다", r.clean, [[["우유 발주", [0, 2, 5]]], [r.cleanWant]]);
+    ok("일정 탭은 달력으로 열리고, 할 일로 바꾸면 할 일 화면", r.calFirst && r.todoShown);
+    eq("요일 줄은 월요일부터, 오늘이 골라져 있다", [r.days, r.selToday, r.rows], ["월화수목금토일", true, 2]);
+    ok("할 일 화면의 도트 글꼴은 16px 이상", r.fonts.every(f => f >= 16), JSON.stringify(r.fonts));
+    eq("하나만 하면 치즈 없음", r.half, [true, 0]);
+    eq("오늘 할 일을 다 하면 치즈 1개", r.full, [true, 1, true]);
+    eq("다 한 줄은 체크 표시로 바뀐다", r.rowDone, 2);
+    eq("풀었다 다시 해도 같은 날 치즈는 한 번", r.again, 1);
+    eq("앞날은 체크되지 않는다", r.future, false);
+    eq("지난 요일을 나중에 채우면 체크는 되지만 치즈는 없다", r.pastCheese, [true, 0]);
+    eq("주말 단추는 토 · 일을 고르고 그대로 저장된다", [r.quick, r.added], ["토일", [5, 6]]);
+    eq("한 요일에 스무 개까지", r.cap, [20, true]);
+    eq("고치면서 뺀 요일의 이번 주 체크는 지운다", r.edit, ["01234", 5]);
+    eq("위젯 기록은 차례대로 얹고, 없는 할 일 · 지난주 것은 버리고, 그날 다 했으면 치즈", r.widget, [true, true, 1, 2]);
+    eq("다 받은 뒤 앱에 받은 데까지 알린다", r.take, r.takeWant);
+    eq("위젯 요약에 할 일과 이번 주 체크가 실린다", r.sum, [2, 2, [r.sum[2][0]]]);
+    eq("PIN 잠금이면 할 일을 위젯에 넘기지 않는다", r.locked, [0, 0]);
+    ok("백업을 되살리면 할 일이 따라오고 지난주 체크는 버린다(오늘 받은 치즈 기록은 남긴다)",
+       JSON.stringify(r.backup[0]) === '["냉장고 정리"]' && r.backup[1].length === 1 && r.backup[1][0].slice(11) === "k1" && r.backup[2], JSON.stringify(r.backup));
+    ok("할 일 위젯을 눌러 들어오면 오늘 할 일 화면", r.link);
+    eq("할 일 검사 중 스크립트 오류 없음", errs, []);
+  }
+
   await browser.close();
 
   console.log("");

@@ -77,7 +77,11 @@
 - 달력 위젯(`Widget/CalendarWidget.swift`, 중간 · 큰 크기)은 이번 달 달력에 일정을 표시하고(하루짜리는 점, 기간 일정은 막대)
   다가오는 일정을 적는다. 일정은 요약의 `cal`(이번 달 첫날부터의 끝나지 않은 일정)에서 읽고, 어느 달인지 · 오늘 · D-day 는
   그리는 날짜로 정한다. PIN 잠금을 걸면 일정 제목도 넘기지 않는다(`events` · `cal` 을 비운다).
-- 위젯을 누르면 그 화면이 열린다. 위젯이 주소(`amgijwi-widget://recipe?id=…` · `…://memo` · `…://cal`)를 달고(`WidgetLink`),
+- 할 일 위젯(`Widget/TodoWidget.swift`, 작은 · 중간 크기)은 오늘 요일의 할 일을 보여주고, iOS 17 부터는 할 일을 눌러 바로 체크한다
+  (`ToggleTodoIntent` — 앱을 열지 않는다). 위젯은 앱 저장소를 고칠 수 없어서, 누른 것을 App Group 의 `todoLog` 에 기록으로 쌓고
+  요약의 `todo` 위에 얹어 그린다. 앱이 앞으로 나올 때 `TodoBridge` 가 그 기록을 웹(`todoFromWidget`)에 넘기고, 웹이 저장한 뒤
+  받은 데까지(`upTo`) 알리면 그만큼 지운다. 그날 위젯에서 오늘 할 일을 다 끝냈으면 이때 치즈를 준다. iOS 15 · 16 에서는 보기만 한다.
+- 위젯을 누르면 그 화면이 열린다. 위젯이 주소(`amgijwi-widget://recipe?id=…` · `…://memo` · `…://cal` · `…://todo`)를 달고(`WidgetLink`),
   `SceneDelegate` 가 받아 `WebAppViewController.openWidget` 이 웹의 `widgetOpenFromApp` 을 부른다. 위젯이 넘기는 주소라
   Info.plist 에 URL 스킴을 등록하지 않는다(등록하면 다른 앱 · 웹에서도 열 수 있게 된다). 쥐돌이 위젯은 주소가 없다.
 - App Group(`group.com.amgijwi.app`)과 위젯의 번들 ID(`com.amgijwi.app.widget`)는 애플 개발자 계정에 등록돼 있어야 서명된다.
