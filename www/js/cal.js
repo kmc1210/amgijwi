@@ -371,4 +371,4 @@ function calToday(){
   state.calDay = ymd(n);
 }
 $("#calToday").addEventListener("click", ()=>{ calToday(); renderCal(); });
-$("#calAdd").addEventListener("click", ()=>openEventSheet(null));
+$("#calAdd").addEventListener("click", ()=>{ if(state.calView === "todo") openTodoSheet(null); else openEventSheet(null); });

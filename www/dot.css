@@ -443,6 +443,32 @@ html.dot #s-cal .evrow.done .nm,
 html.dot #s-cal .evrow.done .nt,
 html.dot #s-cal .evrow.done .dd{color:var(--d-t2);}
 html.dot #s-cal .calempty{color:var(--d-t2);}
+/* 주간 할 일 (todo.js). 달력 / 할 일 전환은 레시피 탭의 전환과 같은 모양 */
+html.dot #s-cal .seg{border:0;border-radius:0;background:var(--d-surface);margin:3px 3px 17px;box-shadow:var(--d-box);}
+html.dot #s-cal .seg button{border-radius:0;color:var(--d-t2);
+  font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;letter-spacing:-1px;-webkit-font-smoothing:none;}
+html.dot #s-cal .seg button.on{background:var(--d-t1);color:var(--d-bg);}
+html.dot #s-cal .tdday{border-radius:0;color:var(--d-t2);}
+html.dot #s-cal .tdday b{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;color:var(--d-t1);-webkit-font-smoothing:none;}
+html.dot #s-cal .tdday.today b{color:var(--d-acc);}
+html.dot #s-cal .tdday.sel{background:var(--d-surface);box-shadow:inset 0 0 0 2px var(--d-acc);}
+html.dot #s-cal .tdday .pips i{background:var(--d-drop);}
+html.dot #s-cal .tdday .pips i.f{background:var(--d-acc);}
+html.dot #s-cal .tdday.all .pips i{background:var(--d-acc-hi);}
+html.dot #s-cal .tdsum{color:var(--d-t2);}
+html.dot #s-cal .tdbar{border-radius:0;background:var(--d-drop);}
+html.dot #s-cal .tdbar i{background:var(--d-acc);}
+html.dot #s-cal .tdhead span{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #s-cal .tdhead small{color:var(--d-t2);}
+html.dot #s-cal .tdrow{border:0;border-radius:0;background:var(--d-surface);margin:3px 3px 12px;width:calc(100% - 6px);
+  box-shadow:var(--d-box), var(--d-drop-sh);}
+html.dot #s-cal .tdbox{border:0;border-radius:0;background:var(--d-surface);box-shadow:inset 0 0 0 2px var(--d-line);color:var(--d-on-acc);}
+html.dot #s-cal .tdrow.done .tdbox{background:var(--d-acc);box-shadow:inset 0 0 0 2px var(--d-acc-dark);}
+html.dot #s-cal .tdck:active .tdbox{transform:translate(1px,1px);}
+html.dot #s-cal .tdnm .nm{color:var(--d-t1);}
+html.dot #s-cal .tdnm .nt{color:var(--d-t2);}
+html.dot #s-cal .tdrow.done .nm{color:var(--d-t2);}
+html.dot #s-cal .tdadd{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;color:var(--d-acc);-webkit-font-smoothing:none;}
 
 /* ── 설정 · 편집 화면(레시피 · 부재료 · 사진에서 가져오기) ──────── */
 html.dot :is(#s-set, #s-edit, #s-sub, #s-import){background:var(--d-bg);color:var(--d-t1);}

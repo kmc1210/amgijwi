@@ -55,7 +55,7 @@ function go(name){
   if(name==="home") renderHome();
   if(name==="list") renderList();
   if(name==="arch") renderArch();
-  if(name==="cal") renderCal();
+  if(name==="cal") calViewSet(state.calView);     // 달력이든 할 일이든 보던 쪽 그대로 (todo.js)
   if(name==="set") renderSettings();
   if(name==="closet") renderCloset();
 }

@@ -393,7 +393,9 @@ function cleanCloset(c){
     /* 크리스마스 선물을 받은 해 */
     xmasGift: /^\d{4}$/.test(String(c.xmasGift)) ? String(c.xmasGift) : "",
     /* 업데이트 치즈를 받은(본) 버전의 앞 두 자리 */
-    verSeen: /^\d+\.\d+$/.test(String(c.verSeen)) ? String(c.verSeen) : ""
+    verSeen: /^\d+\.\d+$/.test(String(c.verSeen)) ? String(c.verSeen) : "",
+    /* 주간 할 일을 다 끝내 치즈를 받은 날(하루 한 번 — todo.js) */
+    todoDay: typeof c.todoDay === "string" ? c.todoDay : ""
   };
 }
 function closetItem(id){ return CLOSET_ITEMS.filter(i=>i.id === id)[0] || null; }
@@ -584,6 +586,7 @@ function restoreCloset(bk){
   const c = cleanCloset(bk), now = data.closet, today = ymd(new Date());
   if(now.roundDay === today && (c.roundDay !== today || c.roundCount < now.roundCount)){ c.roundDay = today; c.roundCount = now.roundCount; }
   if(now.streakDay === today) c.streakDay = today;
+  if(now.todoDay === today) c.todoDay = today;
   if(now.adDay === today && (c.adDay !== today || c.adCount < now.adCount)){ c.adDay = today; c.adCount = now.adCount; }
   if(now.xmasGift > c.xmasGift) c.xmasGift = now.xmasGift;      // 올해 선물을 받았으면 예전 백업을 되살려도 다시 받지 않는다
   return c;
