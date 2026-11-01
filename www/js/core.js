@@ -57,6 +57,9 @@ function cleanTagRule(r, fallbackMode){
     num: pal(r.num, TAG_COLORS)
   };
 }
+/* 공백을 하나로 접고 글자 단위로 자른다(위젯 요약 · 주간 할 일 제목). 코드 단위로 자르면 이모지가 반 토막 나고,
+   그 반 토막 때문에 위젯이 요약을 통째로 못 읽는다 */
+function widgetText(v, n){ return Array.from(String(v === undefined || v === null ? "" : v).replace(/\s+/g, " ").trim()).slice(0, n).join(""); }
 function cupList(d){ return Array.isArray(d.cups) ? d.cups.filter(Boolean) : (d.cup ? [d.cup] : []); }
 function cupText(d){ return cupList(d).join(" · "); }
 function catOf(id){ for(let i=0;i<data.cats.length;i++){ if(data.cats[i].id===id) return data.cats[i]; } return null; }

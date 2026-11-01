@@ -8,7 +8,7 @@ import SwiftUI
 /// (Sources/WidgetBridge.swift · www/js/widget.js). 쥐돌이 그림도 요약에 들어 있어, 옷장에서 입힌 옷 그대로 그린다.
 /// 며칠째인지는 그리는 날짜로 스스로 센다. 그래서 앱을 열지 않아도 자정마다 얼굴이 바뀐다. 통신은 없다.
 
-private let group = "group.com.amgijwi.app"     // WidgetBridge.group 과 같아야 한다
+let group = "group.com.amgijwi.app"             // WidgetBridge.group 과 같아야 한다(할 일 위젯 — TodoWidget.swift 도 이것을 쓴다)
 private let key = "summary"
 
 /// 앱이 넘긴 요약. 모양은 www/js/widget.js 의 widgetSummary 와 같다.
@@ -34,6 +34,30 @@ struct Summary: Decodable {
     var recipes: [Recipe] = []
     var memos: [Memo] = []
     var memoMore = 0        // 여기 실리지 않은 메모 수
+    /// 주간 할 일(할 일 위젯 — TodoWidget.swift). 할 일 위젯이 생기기 전의 앱이 적어 둔 요약에는 없다(hasTodo 가 거짓).
+    var todo = Todo()
+    var hasTodo = false
+
+    struct Todo: Decodable {
+        var items: [Item] = []
+        var done: [String] = []     // 이번 주 체크 "YYYY-MM-DD|id"
+        var at: [String: Double] = [:]  // 앱에서 마지막으로 체크를 바꾼 때(ms). 그보다 먼저 위젯에서 누른 기록은 얹지 않는다
+
+        struct Item: Decodable {
+            var id: String
+            var t: String
+            var days: [Int]         // 0(월) ~ 6(일)
+        }
+
+        enum Keys: String, CodingKey { case items, done, at }
+        init() {}
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: Keys.self)
+            items = (try? c.decode([Item].self, forKey: .items)) ?? []
+            done = (try? c.decode([String].self, forKey: .done)) ?? []
+            at = (try? c.decode([String: Double].self, forKey: .at)) ?? [:]
+        }
+    }
 
     struct Recipe: Decodable {
         var id: String
@@ -63,7 +87,7 @@ struct Summary: Decodable {
         var e: String       // 끝나는 날(하루짜리면 d 와 같다)
     }
 
-    enum Keys: String, CodingKey { case total, done, streak, cheese, last, studied, kill, events, cal, faces, pal, locked, recipes, memos, memoMore }
+    enum Keys: String, CodingKey { case total, done, streak, cheese, last, studied, kill, events, cal, faces, pal, locked, recipes, memos, memoMore, todo }
 
     init() {}
 
@@ -87,6 +111,8 @@ struct Summary: Decodable {
         recipes = (try? c.decode([Recipe].self, forKey: .recipes)) ?? []
         memos = (try? c.decode([Memo].self, forKey: .memos)) ?? []
         memoMore = (try? c.decode(Int.self, forKey: .memoMore)) ?? 0
+        hasTodo = c.contains(.todo)
+        todo = (try? c.decode(Todo.self, forKey: .todo)) ?? Todo()
     }
 
     static func load() -> Summary? {
@@ -310,6 +336,9 @@ enum Ink {
     static let line = pair("#4A423A", "#8A7A6A")
     static let alert = pair("#B5453C", "#E0736A")
     static let span = pair("#4A7FC1", "#6F9BD6")        // 달력의 기간 일정 막대
+    static let surface = pair("#FCF7F1", "#2E2721")     // 할 일 위젯의 빈 네모
+    static let accentDark = pair("#5E3412", "#8A4A20")  // 체크한 네모의 테두리
+    static let onAccent = pair("#FCF7F1", "#141210")
 
     private static func pair(_ light: String, _ dark: String) -> Color {
         let l = UIColor(Color(hex: light)!), d = UIColor(Color(hex: dark)!)
@@ -420,12 +449,13 @@ struct ProgressBar: View {
 }
 
 /// 위젯을 눌렀을 때 앱에 넘기는 주소. 앱(Sources/SceneDelegate.swift)이 받아 WebAppViewController.openWidget 이 그 화면을 연다.
-/// 스킴과 종류 이름("recipe" · "memo" · "cal")은 openWidget 과 www/js/widget.js 의 widgetGo 에도 적혀 있다. 바꾸면 세 곳을 같이 바꾼다.
+/// 스킴과 종류 이름("recipe" · "memo" · "cal" · "todo")은 openWidget 과 www/js/widget.js 의 widgetGo 에도 적혀 있다. 바꾸면 세 곳을 같이 바꾼다.
 /// 쥐돌이 위젯은 주소를 달지 않는다(그냥 앱이 열린다).
 enum WidgetLink {
     static let scheme = "amgijwi-widget"
     static let calendar = URL(string: "\(scheme)://cal")
     static let memo = URL(string: "\(scheme)://memo")
+    static let todo = URL(string: "\(scheme)://todo")
     static func recipe(_ id: String?) -> URL? {
         var c = URLComponents()
         c.scheme = scheme
@@ -458,12 +488,14 @@ struct AmgijwiWidget: Widget {
     }
 }
 
-/// 위젯 묶음. 쥐돌이 위젯 · 달력 위젯은 모든 버전에, 레시피 위젯 · 메모 위젯(고르는 화면이 있다)은 iOS 17 부터 낸다.
+/// 위젯 묶음. 쥐돌이 위젯 · 달력 위젯 · 할 일 위젯은 모든 버전에, 레시피 위젯 · 메모 위젯(고르는 화면이 있다)은 iOS 17 부터 낸다.
+/// 할 일 위젯의 바로 체크는 iOS 17 부터 된다(그 아래에서는 보기만 하고, 누르면 앱이 열린다).
 @main
 struct AmgijwiWidgets: WidgetBundle {
     var body: some Widget {
         AmgijwiWidget()
         CalendarWidget()
+        TodoWidget()
         if #available(iOSApplicationExtension 17.0, *) {
             RecipeWidget()
             MemoWidget()

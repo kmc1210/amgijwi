@@ -17,6 +17,7 @@ final class WebAppViewController: UIViewController {
     private let ads = AdBridge()
     private let review = ReviewBridge()
     private let widget = WidgetBridge()
+    private let todo = TodoBridge()
     private let store = StoreBridge()
     private let update = UpdateBridge()
     private let cloud = CloudBridge()
@@ -76,6 +77,8 @@ final class WebAppViewController: UIViewController {
 
         /// 홈 화면 위젯에 넘길 요약 통로. 받은 것을 위젯과 같이 쓰는 칸에 적는다 (WidgetBridge.swift).
         config.userContentController.add(widget, name: WidgetBridge.name)
+        /// 할 일 위젯에서 누른 기록을 웹이 다 받았다고 알리는 통로 (WidgetBridge.swift 의 TodoBridge).
+        config.userContentController.add(todo, name: TodoBridge.name)
 
         /// 새 버전 알림 통로. 6시간에 한 번 정도 앱스토어에 버전만 묻고, 새것이면 웹이 홈에서 한 번 묻는다 (UpdateBridge.swift).
         config.userContentController.add(update, name: UpdateBridge.name)
@@ -131,7 +134,11 @@ final class WebAppViewController: UIViewController {
                                                name: UIApplication.didBecomeActiveNotification, object: nil)
     }
 
-    @objc private func becameActive() { update.checkIfDue() }
+    /// 할 일 위젯에서 누른 것이 있으면 웹에 넘긴다(앱을 켤 때도 이 알림이 온다 — 페이지가 뜨기 전이면 뜬 뒤에 넘긴다).
+    @objc private func becameActive() {
+        update.checkIfDue()
+        if let js = TodoBridge.script() { tell(js) }
+    }
 
     /// window.__amgijwiHaptics: 진동을 낼 수 있는 기기인지. 아니면 설정의 진동 칸을 숨긴다.
     /// window.__amgijwiInfo: 건의 메일 본문에 붙이는 앱 버전 · 기기 · iOS 버전. 메일은 사용자가 직접 보낸다.
@@ -194,11 +201,11 @@ final class WebAppViewController: UIViewController {
 
 extension WebAppViewController: WKNavigationDelegate {
 
-    /// 위젯을 눌러 들어왔을 때(Widget/AmgijwiWidget.swift 의 WidgetLink). "amgijwi-widget://recipe?id=…" · "…://memo" · "…://cal".
+    /// 위젯을 눌러 들어왔을 때(Widget/AmgijwiWidget.swift 의 WidgetLink). "amgijwi-widget://recipe?id=…" · "…://memo" · "…://cal" · "…://todo".
     /// 웹(www/js/widget.js 의 widgetOpenFromApp)에 어느 화면인지만 알린다. 페이지가 아직 안 떴으면 뜬 뒤에 알린다.
     /// 그 밖의 주소는 받지 않는다.
     func openWidget(_ url: URL) {
-        guard url.scheme == "amgijwi-widget", let kind = url.host, ["recipe", "memo", "cal"].contains(kind) else { return }
+        guard url.scheme == "amgijwi-widget", let kind = url.host, ["recipe", "memo", "cal", "todo"].contains(kind) else { return }
         let id = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "id" })?.value ?? ""
         guard let data = try? JSONSerialization.data(withJSONObject: [kind, String(id.prefix(64))]),
               let args = String(data: data, encoding: .utf8) else { return }
