@@ -199,12 +199,12 @@ struct TodoWidgetView: View {
     let entry: TodoEntry
 
     var body: some View {
-        let medium = family == .systemMedium
+        let small = family == .systemSmall
         let rows = entry.today
         let done = rows.filter { $0.done }.count
-        VStack(alignment: .leading, spacing: medium ? 7 : 6) {
+        VStack(alignment: .leading, spacing: small ? 6 : 8) {
             HStack(alignment: .firstTextBaseline) {
-                Text(medium ? "\(TodoEntry.dow[entry.dowIndex])요일 할 일" : "오늘 할 일")
+                Text(!small ? "\(TodoEntry.dow[entry.dowIndex])요일 할 일" : "오늘 할 일")
                     .font(.system(size: 14, weight: .heavy, design: .rounded))
                     .foregroundColor(Ink.text)
                     .lineLimit(1)
@@ -226,13 +226,13 @@ struct TodoWidgetView: View {
                     .font(.system(size: 12.5, weight: .medium, design: .rounded))
                     .foregroundColor(Ink.muted)
                 Spacer(minLength: 0)
-            } else if medium {
-                mediumList(rows)
-                Spacer(minLength: 0)
-                weekRow
-            } else {
+            } else if small {
                 smallList(rows)
                 Spacer(minLength: 0)
+            } else {
+                if family == .systemMedium { mediumList(rows) } else { largeList(rows) }
+                Spacer(minLength: 0)
+                weekRow
             }
         }
         .padding(14)
@@ -243,7 +243,7 @@ struct TodoWidgetView: View {
 
     /// 작은 크기: 안 한 것을 위로, 넉 줄까지(넘치면 석 줄 + "외 N개").
     @ViewBuilder private func smallList(_ rows: [TodoRow]) -> some View {
-        let ordered = rows.filter { !$0.done } + rows.filter { $0.done }
+        let ordered = undoneFirst(rows)
         let shown = ordered.count > 4 ? Array(ordered.prefix(3)) : ordered
         VStack(alignment: .leading, spacing: 7) {
             ForEach(shown) { row($0) }
@@ -251,25 +251,43 @@ struct TodoWidgetView: View {
         }
     }
 
-    /// 중간 크기: 두 줄로 여섯 개까지(넘치면 다섯 개 + "외 N개"). 앱에 적힌 차례 그대로.
+    /// 안 한 것을 위로.
+    private func undoneFirst(_ rows: [TodoRow]) -> [TodoRow] {
+        rows.filter { !$0.done } + rows.filter { $0.done }
+    }
+
+    /// 중간 크기: 누르기 쉬운 큰 줄로 두 줄 × 두 칸, 넷까지(넘치면 셋 + "외 N개").
     @ViewBuilder private func mediumList(_ rows: [TodoRow]) -> some View {
-        let shown = rows.count > 6 ? Array(rows.prefix(5)) : rows
-        let left = Array(shown.prefix(3)), right = Array(shown.dropFirst(3))
-        HStack(alignment: .top, spacing: 12) {
-            VStack(alignment: .leading, spacing: 7) { ForEach(left) { row($0) } }
+        let ordered = undoneFirst(rows)
+        let shown = ordered.count > 4 ? Array(ordered.prefix(3)) : ordered
+        let left = Array(shown.prefix(2)), right = Array(shown.dropFirst(2))
+        HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) { ForEach(left) { bigRow($0, height: 36) } }
                 .frame(maxWidth: .infinity, alignment: .leading)
-            VStack(alignment: .leading, spacing: 7) {
-                ForEach(right) { row($0) }
-                if rows.count > shown.count { more(rows.count - shown.count) }
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(right) { bigRow($0, height: 36) }
+                if ordered.count > shown.count { more(ordered.count - shown.count, big: true) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    private func more(_ n: Int) -> some View {
+    /// 큰 크기: 한 줄씩 여섯 개까지(넘치면 다섯 + "외 N개").
+    @ViewBuilder private func largeList(_ rows: [TodoRow]) -> some View {
+        let ordered = undoneFirst(rows)
+        let shown = ordered.count > 6 ? Array(ordered.prefix(5)) : ordered
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(shown) { bigRow($0, height: 40) }
+            if ordered.count > shown.count { more(ordered.count - shown.count, big: true) }
+        }
+    }
+
+    private func more(_ n: Int, big: Bool = false) -> some View {
         Text("외 \(n)개")
-            .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+            .font(.system(size: big ? 13 : 11.5, weight: .semibold, design: .rounded))
             .foregroundColor(Ink.muted)
+            .padding(.leading, big ? 2 : 0)
+            .padding(.top, big ? 9 : 0)
     }
 
     /// 한 줄. iOS 17 부터는 눌러서 바로 체크한다.
@@ -284,6 +302,28 @@ struct TodoWidgetView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
+        toggle(r, label)
+    }
+
+    /// 중간 · 큰 크기의 한 줄. 줄 전체가 누르는 칸이라 손가락으로 누르기 쉽다.
+    private func bigRow(_ r: TodoRow, height: CGFloat) -> some View {
+        let big = height >= 40
+        let label = HStack(spacing: 10) {
+            TodoBox(done: r.done, size: big ? 24 : 22)
+            Text(r.title)
+                .font(.system(size: big ? 16 : 15, weight: .semibold, design: .rounded))
+                .strikethrough(r.done)
+                .foregroundColor(r.done ? Ink.muted : Ink.text)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .leading)
+        .background(Ink.accent.opacity(0.1))
+        .contentShape(Rectangle())
+        return toggle(r, label)
+    }
+
+    @ViewBuilder private func toggle<L: View>(_ r: TodoRow, _ label: L) -> some View {
         if #available(iOSApplicationExtension 17.0, *) {
             Button(intent: ToggleTodoIntent(id: r.id, day: entry.todayKey)) { label }
                 .buttonStyle(.plain)
@@ -326,7 +366,7 @@ struct TodoWidget: Widget {
         }
         .configurationDisplayName("할 일")
         .description("오늘 할 일과 이번 주 진행을 보여줘요. 할 일을 누르면 바로 체크돼요(iOS 17 이상).")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
         .contentMarginsDisabledIfAvailable()
     }
 }
