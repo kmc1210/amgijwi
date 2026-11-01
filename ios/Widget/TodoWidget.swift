@@ -2,10 +2,12 @@ import WidgetKit
 import SwiftUI
 import AppIntents
 
-/// 할 일 위젯(작은 · 중간 크기). 앱의 주간 할 일(www/js/todo.js) 가운데 오늘 요일 것을 보여주고,
+/// 할 일 위젯(작은 · 중간 · 큰 크기). 앱의 주간 할 일(www/js/todo.js) 가운데 오늘 요일 것을 보여주고,
 /// iOS 17 부터는 할 일을 눌러 앱을 열지 않고 바로 체크한다. 그 아래 버전에서는 보기만 하고, 누르면 앱이 열린다.
 ///   작은 크기: 오늘 할 일 넉 줄까지(안 한 것이 위로) · 다 하면 "다 했츄!"
-///   중간 크기: 오늘 할 일 두 줄로 여섯 개까지 + 이번 주 요일마다 한 수(점)
+///   중간 크기: 누르기 쉬운 큰 줄로 두 줄 × 두 칸, 넷까지 + 이번 주 요일마다 한 수(점)
+///   큰 크기: 큰 줄로 한 줄씩 여섯까지 + 이번 주 점
+///   중간 · 큰 크기는 다 들어가면 앱에 적힌 차례 그대로(누른 줄이 자리를 옮기지 않게), 넘칠 때만 안 한 것을 위로
 /// 할 일과 이번 주 체크는 앱이 적어 둔 요약의 todo 에서 읽고, 위젯에서 누른 것은 기록(TodoLog)으로 쌓아 그 위에 얹는다.
 /// 앱을 열면 앱이 그 기록을 가져가 저장하고, 어디까지 받았는지(todoTaken)만 적는다(Sources/WidgetBridge.swift 의 TodoBridge).
 /// 기록 칸은 위젯만 고친다 — 받은 것은 다음에 누를 때 위젯이 걷는다. 두 프로세스가 같은 칸을 읽고 고쳐 쓰다 기록을 잃지 않게.
@@ -204,7 +206,7 @@ struct TodoWidgetView: View {
         let done = rows.filter { $0.done }.count
         VStack(alignment: .leading, spacing: small ? 6 : 8) {
             HStack(alignment: .firstTextBaseline) {
-                Text(!small ? "\(TodoEntry.dow[entry.dowIndex])요일 할 일" : "오늘 할 일")
+                Text(small ? "오늘 할 일" : "\(TodoEntry.dow[entry.dowIndex])요일 할 일")
                     .font(.system(size: 14, weight: .heavy, design: .rounded))
                     .foregroundColor(Ink.text)
                     .lineLimit(1)
@@ -226,13 +228,20 @@ struct TodoWidgetView: View {
                     .font(.system(size: 12.5, weight: .medium, design: .rounded))
                     .foregroundColor(Ink.muted)
                 Spacer(minLength: 0)
-            } else if small {
-                smallList(rows)
-                Spacer(minLength: 0)
             } else {
-                if family == .systemMedium { mediumList(rows) } else { largeList(rows) }
-                Spacer(minLength: 0)
-                weekRow
+                switch family {
+                case .systemSmall:
+                    smallList(rows)
+                    Spacer(minLength: 0)
+                case .systemMedium:
+                    mediumList(rows)
+                    Spacer(minLength: 0)
+                    weekRow
+                default:
+                    largeList(rows)
+                    Spacer(minLength: 0)
+                    weekRow
+                }
             }
         }
         .padding(14)
@@ -256,17 +265,24 @@ struct TodoWidgetView: View {
         rows.filter { !$0.done } + rows.filter { $0.done }
     }
 
+    /// 큰 줄 목록에 보일 것: 다 들어가면 앱 차례 그대로 — 누른 줄이 움직이면 이어 누를 때 엉뚱한 줄이 눌린다.
+    /// 넘칠 때만 안 한 것을 위로(남은 일이 "외 N개" 뒤에 숨지 않게).
+    private func bigShown(_ rows: [TodoRow], fit: Int) -> (shown: [TodoRow], rest: Int) {
+        if rows.count <= fit { return (rows, 0) }
+        let shown = Array(undoneFirst(rows).prefix(fit - 1))
+        return (shown, rows.count - shown.count)
+    }
+
     /// 중간 크기: 누르기 쉬운 큰 줄로 두 줄 × 두 칸, 넷까지(넘치면 셋 + "외 N개").
     @ViewBuilder private func mediumList(_ rows: [TodoRow]) -> some View {
-        let ordered = undoneFirst(rows)
-        let shown = ordered.count > 4 ? Array(ordered.prefix(3)) : ordered
+        let (shown, rest) = bigShown(rows, fit: 4)
         let left = Array(shown.prefix(2)), right = Array(shown.dropFirst(2))
         HStack(alignment: .top, spacing: 8) {
-            VStack(alignment: .leading, spacing: 6) { ForEach(left) { bigRow($0, height: 36) } }
+            VStack(alignment: .leading, spacing: 6) { ForEach(left) { bigRow($0, large: false) } }
                 .frame(maxWidth: .infinity, alignment: .leading)
             VStack(alignment: .leading, spacing: 6) {
-                ForEach(right) { bigRow($0, height: 36) }
-                if ordered.count > shown.count { more(ordered.count - shown.count, big: true) }
+                ForEach(right) { bigRow($0, large: false) }
+                if rest > 0 { more(rest, big: true) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -274,11 +290,10 @@ struct TodoWidgetView: View {
 
     /// 큰 크기: 한 줄씩 여섯 개까지(넘치면 다섯 + "외 N개").
     @ViewBuilder private func largeList(_ rows: [TodoRow]) -> some View {
-        let ordered = undoneFirst(rows)
-        let shown = ordered.count > 6 ? Array(ordered.prefix(5)) : ordered
+        let (shown, rest) = bigShown(rows, fit: 6)
         VStack(alignment: .leading, spacing: 6) {
-            ForEach(shown) { bigRow($0, height: 40) }
-            if ordered.count > shown.count { more(ordered.count - shown.count, big: true) }
+            ForEach(shown) { bigRow($0, large: true) }
+            if rest > 0 { more(rest, big: true) }
         }
     }
 
@@ -306,18 +321,19 @@ struct TodoWidgetView: View {
     }
 
     /// 중간 · 큰 크기의 한 줄. 줄 전체가 누르는 칸이라 손가락으로 누르기 쉽다.
-    private func bigRow(_ r: TodoRow, height: CGFloat) -> some View {
-        let big = height >= 40
-        let label = HStack(spacing: 10) {
-            TodoBox(done: r.done, size: big ? 24 : 22)
+    /// 높이는 중간 36 · 큰 40 까지 — 위젯이 낮은 기기(SE · 아이패드)에선 요일 점이 잘리지 않게 그보다 줄어든다.
+    private func bigRow(_ r: TodoRow, large: Bool) -> some View {
+        let label = HStack(spacing: 8) {
+            TodoBox(done: r.done, size: large ? 24 : 22)
             Text(r.title)
-                .font(.system(size: big ? 16 : 15, weight: .semibold, design: .rounded))
+                .font(.system(size: large ? 16 : 15, weight: .semibold, design: .rounded))
                 .strikethrough(r.done)
                 .foregroundColor(r.done ? Ink.muted : Ink.text)
                 .lineLimit(1)
+                .minimumScaleFactor(0.85)
         }
-        .padding(.horizontal, 10)
-        .frame(maxWidth: .infinity, minHeight: height, maxHeight: height, alignment: .leading)
+        .padding(.horizontal, 8)
+        .frame(maxWidth: .infinity, minHeight: 26, maxHeight: large ? 40 : 36, alignment: .leading)
         .background(Ink.accent.opacity(0.1))
         .contentShape(Rectangle())
         return toggle(r, label)
