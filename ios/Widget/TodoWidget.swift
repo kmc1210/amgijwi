@@ -282,7 +282,7 @@ struct TodoWidgetView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(right) { bigRow($0, large: false) }
-                if rest > 0 { more(rest, big: true) }
+                if rest > 0 { bigMore(rest, large: false) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -293,16 +293,24 @@ struct TodoWidgetView: View {
         let (shown, rest) = bigShown(rows, fit: 6)
         VStack(alignment: .leading, spacing: 6) {
             ForEach(shown) { bigRow($0, large: true) }
-            if rest > 0 { more(rest, big: true) }
+            if rest > 0 { bigMore(rest, large: true) }
         }
     }
 
-    private func more(_ n: Int, big: Bool = false) -> some View {
+    private func moreText(_ n: Int, size: CGFloat) -> some View {
         Text("외 \(n)개")
-            .font(.system(size: big ? 13 : 11.5, weight: .semibold, design: .rounded))
+            .font(.system(size: size, weight: .semibold, design: .rounded))
             .foregroundColor(Ink.muted)
-            .padding(.leading, big ? 2 : 0)
-            .padding(.top, big ? 9 : 0)
+    }
+
+    private func more(_ n: Int) -> some View { moreText(n, size: 11.5) }
+
+    /// 큰 줄 목록의 "외 N개". 한 줄과 같은 칸에 넣는다 — 중간 크기는 두 칸이 같은 차림이라야 줄이 줄어들 때 양쪽 높이가 같고,
+    /// 큰 크기는 다섯 줄 + "외 N개" 가 여섯 줄과 같은 높이를 차지해야 아래 요일 점 자리가 그대로다.
+    private func bigMore(_ n: Int, large: Bool) -> some View {
+        moreText(n, size: 13)
+            .padding(.horizontal, 8)
+            .bigRowFrame(large: large)
     }
 
     /// 한 줄. iOS 17 부터는 눌러서 바로 체크한다.
@@ -333,7 +341,7 @@ struct TodoWidgetView: View {
                 .minimumScaleFactor(0.85)
         }
         .padding(.horizontal, 8)
-        .frame(maxWidth: .infinity, minHeight: 26, maxHeight: large ? 40 : 36, alignment: .leading)
+        .bigRowFrame(large: large)
         .background(Ink.accent.opacity(0.1))
         .contentShape(Rectangle())
         return toggle(r, label)
@@ -384,5 +392,12 @@ struct TodoWidget: Widget {
         .description("오늘 할 일과 이번 주 진행을 보여줘요. 할 일을 누르면 바로 체크돼요(iOS 17 이상).")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
         .contentMarginsDisabledIfAvailable()
+    }
+}
+
+private extension View {
+    /// 큰 줄 한 칸의 높이. 중간 36 · 큰 40 까지, 위젯이 낮으면 26 까지 줄어든다(bigRow · bigMore 가 같이 쓴다).
+    func bigRowFrame(large: Bool) -> some View {
+        frame(maxWidth: .infinity, minHeight: 26, maxHeight: large ? 40 : 36, alignment: .leading)
     }
 }
