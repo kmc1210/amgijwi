@@ -282,7 +282,7 @@ struct TodoWidgetView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(right) { bigRow($0, large: false) }
-                if rest > 0 { more(rest, big: true) }
+                if rest > 0 { bigMore(rest, large: false) }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -293,16 +293,23 @@ struct TodoWidgetView: View {
         let (shown, rest) = bigShown(rows, fit: 6)
         VStack(alignment: .leading, spacing: 6) {
             ForEach(shown) { bigRow($0, large: true) }
-            if rest > 0 { more(rest, big: true) }
+            if rest > 0 { bigMore(rest, large: true) }
         }
     }
 
-    private func more(_ n: Int, big: Bool = false) -> some View {
+    private func more(_ n: Int) -> some View {
         Text("외 \(n)개")
-            .font(.system(size: big ? 13 : 11.5, weight: .semibold, design: .rounded))
+            .font(.system(size: 11.5, weight: .semibold, design: .rounded))
             .foregroundColor(Ink.muted)
-            .padding(.leading, big ? 2 : 0)
-            .padding(.top, big ? 9 : 0)
+    }
+
+    /// 큰 줄 목록의 "외 N개". 한 줄과 같은 높이 칸에 넣는다 — 두 칸이 같은 차림이라야 줄이 줄어들 때 양쪽 높이가 같다.
+    private func bigMore(_ n: Int, large: Bool) -> some View {
+        Text("외 \(n)개")
+            .font(.system(size: 13, weight: .semibold, design: .rounded))
+            .foregroundColor(Ink.muted)
+            .padding(.horizontal, 2)
+            .frame(maxWidth: .infinity, minHeight: 26, maxHeight: large ? 40 : 36, alignment: .leading)
     }
 
     /// 한 줄. iOS 17 부터는 눌러서 바로 체크한다.
