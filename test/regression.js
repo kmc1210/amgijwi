@@ -550,7 +550,7 @@ const LEGACY = {
     data.events.push({ id:"e4", title:"놓친 일",    date:day(-2), note:"", remind:0, done:false });
 
     const up = evUpcoming().map(e => e.id);
-    r.upcoming = up;                         // e1(기간 안), e4(지남) 만
+    r.upcoming = up;                         // e1(기간 안), e4(지남) 만. 지난 것은 아래로
     r.ddayText = [evDDayText(0), evDDayText(1), evDDayText(3), evDDayText(-2)];
 
     renderHome();
@@ -598,7 +598,7 @@ const LEGACY = {
   ok("일정 탭에서 탭바가 보인다", cal.tabShows === true);
   ok("달력에 날짜 칸이 그려진다", cal.gridDrawn >= 28, String(cal.gridDrawn));
   eq("남은 날을 말로 풀어준다", cal.ddayText, ["오늘", "내일", "D-3", "2일 지남"]);
-  eq("미리 알림 기간에 든 것과 놓친 것만 홈에 올린다", cal.upcoming, ["e4", "e1"]);
+  eq("미리 알림 기간에 든 것과 놓친 것만 홈에 올린다(다가오는 것 위, 지난 것 아래)", cal.upcoming, ["e1", "e4"]);
   ok("홈에 다가오는 일정이 뜬다", cal.homeShown === true);
   eq("홈에 올라온 줄 수가 맞는다", cal.homeRows, 2);
   ok("일정 있는 날에 이름이 든 막대가 그려진다", cal.dotOnDay === true);
@@ -1015,6 +1015,18 @@ const LEGACY = {
 
     r.upcoming = evUpcoming().map(e=>e.id).sort();   // 끝난 지 오래된 s4 는 빠진다
 
+    // 홈 순서는 다가올수록 위: 오늘 · 내일 · D-n, 그다음 전부터 진행 중(끝이 가까운 것부터), 맨 아래 지난 것(최근 것부터)
+    data.events = [
+      { id:"late5", title:"닷새 전", date:day(-5), end:"", remind:0, done:false },
+      { id:"long",  title:"긴 행사", date:day(-3), end:day(20), remind:0, done:false },
+      { id:"d6",    title:"엿새 뒤", date:day(6), end:"", remind:7, done:false },
+      { id:"late1", title:"어제",   date:day(-1), end:"", remind:0, done:false },
+      { id:"short", title:"짧은 행사", date:day(-2), end:day(1), remind:0, done:false },
+      { id:"d1",    title:"내일",   date:day(1), end:"", remind:7, done:false },
+      { id:"d0",    title:"오늘",   date:day(0), end:"", remind:0, done:false }
+    ];
+    r.order = evUpcoming().map(e=>e.id);
+
     // 시작보다 앞선 끝날짜는 불러올 때 버린다
     r.badDropped = (function(){
       const e = { id:"x", title:"뒤집힘", date:day(5), end:day(1), remind:0, done:false };
@@ -1035,6 +1047,7 @@ const LEGACY = {
   ok("기간은 물결로 잇는다", span.rangeText.indexOf("~") > 0, span.rangeText);
   ok("하루짜리는 날짜 하나만 쓴다", span.oneText.indexOf("~") < 0, span.oneText);
   eq("진행 중인 것은 홈에 남고 끝난 지 오랜 것은 빠진다", span.upcoming, ["s1", "s2", "s3"]);
+  eq("홈 일정은 다가올수록 위, 진행 중은 그 아래, 지난 것은 맨 아래", span.order, ["d0", "d1", "d6", "short", "long", "late1", "late5"]);
   ok("끝날짜가 시작보다 앞서면 버린다", span.badDropped === true);
 
   // ── 6-12. 레시피 차례와 새것 표 ─────────────────────────────────
@@ -1513,7 +1526,7 @@ const LEGACY = {
     ok("앱은 메뉴를 잔으로 센다", /^\d+잔$/.test(a.deck) && /잔$/.test(a.chip) && /^\d+잔$/.test(a.revCount) && /잔 외웠어요$/.test(a.hero), [a.deck, a.chip, a.revCount, a.hero].join(" / "));
     ok("쥐돌이도 앱에서는 잔으로 센다", a.cheer.indexOf("개") < 0 || /폐기|버릴/.test(a.cheer), a.cheer);
     eq("웹의 일정은 원래 줄이다", w.tk, 0);
-    eq("앱의 다가오는 일정은 주문 전표다(지난 일은 D+ 로 짧게, 빨간 칸)", [a.tk, a.stubs, a.lateTk], [2, ["D+2", "D-3"], 1]);
+    eq("앱의 다가오는 일정은 주문 전표다(지난 일은 D+ 로 짧게, 빨간 칸, 아래로)", [a.tk, a.stubs, a.lateTk], [2, ["D-3", "D+2"], 1]);
     eq("전표의 떼는 칸이 위아래 끝까지 찬다", a.stubGap, [0, 0]);
     ok("영수증의 개봉일은 월/일로 짧게 쓴다", /^\d{1,2}\/\d{1,2} 개봉$/.test(a.openDay), a.openDay);
     eq("웹의 폐기는 원래 줄이다", w.rlineToday, 0);
