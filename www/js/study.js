@@ -82,8 +82,7 @@ $("#mascot").addEventListener("click", ()=>{
   haptic("soft");
   if(currentMood() === "morning"){ playSip(); return; }
   if(currentMood() !== "night"){          // 말할 때 한 번 깜빡
-    mascot.blink = true; drawMascot();
-    setTimeout(()=>{ mascot.blink = false; drawMascot(); }, 150);
+    runBlink(mascot, drawMascot);
   }
 });
 /* 학습 방식을 고르는 시트.

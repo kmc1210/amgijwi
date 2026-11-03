@@ -352,15 +352,30 @@ function drawMascot(){
   else if((mascot.happy || mascot.cheer) && !night) el.innerHTML = happyMouseSVG(mood);   // 생일 폭죽이 터지는 동안 · 기다리다 풀렸을 때
   /* 기다린 얼굴인 동안은 깜빡이지 않는다. 깜빡임 그림에는 그 얼굴이 없어 평소 얼굴 · 벗겨 둔 안경이 잠깐 비친다 */
   else if(mascot.away && !night) el.innerHTML = faceMouseSVG(mascot.away, mood);   // 며칠 만에 열었을 때
-  else el.innerHTML = mouseSVGWorn(mascot.blink ? "blink" : mood, mascot.puff, undefined, mascot.lit);
+  else el.innerHTML = mouseSVGWorn(mascot.blink ? blinkFrame(mascot.blink) : mood, mascot.puff, undefined, mascot.lit);
 }
 
-/* 아침에 커피 한 잔 — 한 바퀴만 돌고 원래 모습으로 */
-const SIP_SEQ = ["sip1","sip2","sip3","sip4","sip5"];
+/* 깜빡임: 뜬 눈 → 반 눈 → 감은 눈 → 반 눈 → 뜬 눈. 감은 눈 한 장만 끼우면 뚝 끊겨 보인다.
+   blink 상태는 false(뜸) · "half"(반) · true(감음). [상태, 시작 ms]. 두 번이면 반 눈을 거쳐 한 번 더 감는다 */
+const BLINK_ONE = [["half", 0], [true, 50], ["half", 140], [false, 200]];
+const BLINK_TWICE = [["half", 0], [true, 40], ["half", 110], [true, 150], ["half", 220], [false, 270]];
+function blinkFrame(b){ return b === "half" ? "blinkh" : "blink"; }
+/* st 의 blink 를 차례로 바꾸며 draw(). 다 뜨는 데 걸리는 ms 를 돌려준다 */
+function runBlink(st, draw, twice){
+  const steps = twice ? BLINK_TWICE : BLINK_ONE;
+  steps.forEach(s=>setTimeout(()=>{ st.blink = s[0]; draw(); }, s[1]));
+  return steps[steps.length - 1][1];
+}
+
+/* 아침에 커피 한 잔 — 한 번만 마시고 원래 모습으로. [그림, ms]
+   드는 · 내리는 건 빠르게, 홀짝과 다 마신 "하아"는 길게. 끝에 컵이 사라질 때 한 칸 폴짝(기운 났다) */
+const SIP_SEQ = [["sip1", 380], ["sip2", 150], ["sip2b", 130], ["sip3", 820], ["sip3b", 130], ["sip4", 170], ["sip5", 650]];
+const SIP_HOP_MS = 130;
 let sipT = null, sipping = false, sipDoneToday = false;
 function stopSip(){
-  if(sipT){ clearInterval(sipT); sipT = null; }
+  if(sipT){ clearTimeout(sipT); sipT = null; }
   sipping = false;
+  const el = $("#mascot"); if(el) el.style.transform = "";
 }
 function playSip(){
   const el = $("#mascot");
@@ -371,14 +386,21 @@ function playSip(){
   clearTimeout(blinkTimer);
   sipping = true;
   let i = 0;
-  el.innerHTML = mouseSVGWorn(SIP_SEQ[0]);
-  sipT = setInterval(()=>{
-    i++;
-    if(i >= SIP_SEQ.length || !mascotAwake()){
-      stopSip(); drawMascot(); scheduleBlink(); return;
+  const done = ()=>{ stopSip(); drawMascot(); scheduleBlink(); };
+  const step = ()=>{
+    if(!mascotAwake()){ done(); return; }
+    if(i >= SIP_SEQ.length){
+      /* 평소 모습으로 돌아오며 한 칸(그림 높이의 1/40) 떴다가 내려앉는다 */
+      sipping = false; drawMascot();
+      el.style.transform = "translateY(-" + (el.getBoundingClientRect().height / 40).toFixed(2) + "px)";
+      sipT = setTimeout(done, SIP_HOP_MS);
+      return;
     }
-    el.innerHTML = mouseSVGWorn(SIP_SEQ[i]);
-  }, 420);
+    el.innerHTML = mouseSVGWorn(SIP_SEQ[i][0]);
+    sipT = setTimeout(step, SIP_SEQ[i][1]);
+    i++;
+  };
+  step();
 }
 function mascotAwake(){
   return $("#s-home").classList.contains("active") && !document.hidden;
@@ -388,18 +410,7 @@ function scheduleBlink(){
   if(reduceMotion()) return;
   blinkTimer = setTimeout(()=>{
     if(mascot.lit){ scheduleBlink(); return; }       // 번쩍이는 중이면 이번 깜빡임은 건너뛴다(둘이 겹치지 않게)
-    if(mascotAwake() && currentMood() !== "night"){
-      const close = ()=>{ mascot.blink = true; drawMascot(); };
-      const open  = ()=>{ mascot.blink = false; drawMascot(); };
-      close();
-      if(Math.random() < 0.25){        // 가끔 두 번
-        setTimeout(open, 120);
-        setTimeout(close, 260);
-        setTimeout(open, 380);
-      } else {
-        setTimeout(open, 140);
-      }
-    }
+    if(mascotAwake() && currentMood() !== "night") runBlink(mascot, drawMascot, Math.random() < 0.25);    // 가끔 두 번
     scheduleBlink();
   }, 2600 + Math.random()*4200);
 }
