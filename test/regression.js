@@ -550,7 +550,7 @@ const LEGACY = {
     data.events.push({ id:"e4", title:"놓친 일",    date:day(-2), note:"", remind:0, done:false });
 
     const up = evUpcoming().map(e => e.id);
-    r.upcoming = up;                         // e1(기간 안), e4(지남) 만. 지난 것은 아래로
+    r.upcoming = up;                         // e1(기간 안), e4(지남) 만. 다가오는 e1 이 위, 지난 e4 는 아래
     r.ddayText = [evDDayText(0), evDDayText(1), evDDayText(3), evDDayText(-2)];
 
     renderHome();
@@ -1023,7 +1023,9 @@ const LEGACY = {
       { id:"late1", title:"어제",   date:day(-1), end:"", remind:0, done:false },
       { id:"short", title:"짧은 행사", date:day(-2), end:day(1), remind:0, done:false },
       { id:"d1",    title:"내일",   date:day(1), end:"", remind:7, done:false },
-      { id:"d0",    title:"오늘",   date:day(0), end:"", remind:0, done:false }
+      { id:"d0",    title:"오늘",   date:day(0), end:"", remind:0, done:false },
+      { id:"r0",    title:"오늘 시작 행사", date:day(0), end:day(4), remind:0, done:false },
+      { id:"far",   title:"먼 일", date:day(9), end:"", remind:3, done:false }
     ];
     r.order = evUpcoming().map(e=>e.id);
 
@@ -1047,7 +1049,7 @@ const LEGACY = {
   ok("기간은 물결로 잇는다", span.rangeText.indexOf("~") > 0, span.rangeText);
   ok("하루짜리는 날짜 하나만 쓴다", span.oneText.indexOf("~") < 0, span.oneText);
   eq("진행 중인 것은 홈에 남고 끝난 지 오랜 것은 빠진다", span.upcoming, ["s1", "s2", "s3"]);
-  eq("홈 일정은 다가올수록 위, 진행 중은 그 아래, 지난 것은 맨 아래", span.order, ["d0", "d1", "d6", "short", "long", "late1", "late5"]);
+  eq("홈 일정은 다가올수록 위, 진행 중은 그 아래, 지난 것은 맨 아래", span.order, ["d0", "r0", "d1", "d6", "short", "long", "late1", "late5"]);
   ok("끝날짜가 시작보다 앞서면 버린다", span.badDropped === true);
 
   // ── 6-12. 레시피 차례와 새것 표 ─────────────────────────────────

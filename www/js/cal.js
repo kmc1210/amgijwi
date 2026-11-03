@@ -46,20 +46,17 @@ function evDDayText(n){
    순서는 다가올수록 위: 오늘 · 내일 · D-2 … 다음에 전부터 진행 중인 것(끝이 가까운 것부터),
    맨 아래에 지난 것(최근에 지난 것부터). 오래 이어지는 행사나 놓친 일이 내일 일정을 가리지 않게 */
 function evUpcoming(){
-  const today = ymd(new Date());
-  const rank = e=>{
+  const today = ymd(new Date());           // 한 번만 읽는다. 자정 즈음 걸러내기와 순서가 다른 날을 보지 않게
+  const out = [];
+  data.events.forEach(e=>{
+    if(e.done) return;
     const start = dayGap(today, e.date), left = dayGap(today, evEnd(e));
-    if(start >= 0) return [0, start];
-    if(left >= 0) return [1, left];
-    return [2, -left];
-  };
-  return evSorted().filter(e=>{
-    if(e.done) return false;
-    const left = dayGap(today, evEnd(e));
-    if(left < 0) return left >= -7;       // 끝난 것도 이레까지는 보여준다. 놓친 걸 알아야 한다
-    return evDDay(e) <= (e.remind || 0);  // 시작이 코앞이거나 이미 진행 중
-  }).map(e=>({e:e, r:rank(e)}))
-    .sort((a, b)=>a.r[0] - b.r[0] || a.r[1] - b.r[1])
+    if(left < 0){ if(left >= -7) out.push({e:e, g:2, k:-left}); return; }  // 끝난 것도 이레까지는 보여준다. 놓친 걸 알아야 한다
+    if(start >= 0){ if(start <= (e.remind || 0)) out.push({e:e, g:0, k:start}); return; }  // 시작이 코앞
+    out.push({e:e, g:1, k:left});                                           // 이미 진행 중
+  });
+  /* 같은 칸이면 시작이 이른 것부터 */
+  return out.sort((a, b)=>a.g - b.g || a.k - b.k || (a.e.date < b.e.date ? -1 : (a.e.date > b.e.date ? 1 : 0)))
     .map(x=>x.e);
 }
 
