@@ -4034,7 +4034,6 @@ const LEGACY = {
     const r = await page.evaluate(async () => {
       const out = {};
       const day = mouseRows("day"), half = mouseRows("blinkh"), shut = mouseRows("blink");
-      const diff = (a, b) => a.filter((row, y) => row !== b[y]).map((row, y) => y);
       // 반 눈은 눈(9~14행)만 다르고, 눈꺼풀 선이 눈동자 위를 덮는다
       out.halfRows = day.map((row, y) => row !== half[y] ? y : -1).filter(y => y >= 0);
       out.lid = [half[11].slice(8, 13), half[11].slice(15, 20), half[12].slice(8, 13)];
@@ -4057,6 +4056,14 @@ const LEGACY = {
       const cupTop = k => mouseRows(k).findIndex((row, y) => y >= 15 && /og{5,}o|g{7,}/.test(row.slice(7, 21)));
       out.cupTops = SIP_SEQ.map(s => cupTop(s[0]));
       out.sipMs = SIP_SEQ.map(s => s[1]);
+      // 깜빡이는 중에 또 깜빡이면 하던 것을 끊고 새로 시작한다(두 줄이 섞이지 않는다)
+      runBlink(mascot, () => {}, true);
+      const n1 = mascot.blinkT.length;
+      runBlink(mascot, () => {});
+      out.restart = [n1, mascot.blinkT.length];
+      await new Promise(res => setTimeout(res, 260));
+      out.openAfter = mascot.blink;
+      stopSip(); blinkStop(mascot); drawMascot();
       return out;
     });
     eq("반 눈은 눈 줄(9~14행)만 바꾼다", r.halfRows.every(y => y >= 9 && y <= 14), true);
@@ -4069,6 +4076,7 @@ const LEGACY = {
     ok("옷장 안경은 반 눈에도 입힌다", r.dressed);
     eq("커피 컵은 한 장에 두세 칸씩 올라갔다 내려온다", r.cupTops, [22, 19, 17, 15, 18, 21, 22]);
     eq("커피 박자: 드는 · 내리는 건 빠르게, 홀짝 · 하아는 길게", r.sipMs, [380, 150, 130, 820, 130, 170, 650]);
+    eq("깜빡이는 중에 다시 깜빡이면 새로 시작하고 끝엔 뜬 눈", [r.restart, r.openAfter], [[6, 4], false]);
   }
 
   // ── 6-10x. 1.3 새 버전 알림 ────────────────────────────────────

@@ -339,10 +339,10 @@ function currentMood(){ return moodOf(new Date().getHours()); }
 function reduceMotion(){
   return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 }
-function drawMascot(){
+function drawMascot(force){
   const el = $("#mascot");
   if(!el) return;
-  if(sipping) return;                       // 커피 마시는 중엔 건드리지 않는다
+  if(sipping && !force) return;             // 커피 마시는 중엔 건드리지 않는다(force: 다 마시고 폴짝할 때 평소 모습을 그린다)
   /* 날씨 옷은 밤에는 입히지 않는다. 자고 있는데 우비를 입고 있으면 이상하다.
      날씨 옷을 입은 동안은 깜빡이지 않는다(깜빡임 그림에는 날씨 옷이 없다).
      옷장 옷은 깜빡임 그림에도 입힌다. 빛나는 옷(호박 — closet.js 의 glow)의 번쩍임은 깜빡임과 따로 돈다(scheduleGlow) */
@@ -360,12 +360,15 @@ function drawMascot(){
 const BLINK_ONE = [["half", 0], [true, 50], ["half", 140], [false, 200]];
 const BLINK_TWICE = [["half", 0], [true, 40], ["half", 110], [true, 150], ["half", 220], [false, 270]];
 function blinkFrame(b){ return b === "half" ? "blinkh" : "blink"; }
-/* st 의 blink 를 차례로 바꾸며 draw(). 다 뜨는 데 걸리는 ms 를 돌려준다 */
+/* st 의 blink 를 차례로 바꾸며 draw(). 다 뜨는 데 걸리는 ms 를 돌려준다.
+   하던 깜빡임은 끊고 새로 시작한다(자동 깜빡임 중에 쥐돌이를 눌러도 두 줄이 섞이지 않게) */
 function runBlink(st, draw, twice){
   const steps = twice ? BLINK_TWICE : BLINK_ONE;
-  steps.forEach(s=>setTimeout(()=>{ st.blink = s[0]; draw(); }, s[1]));
+  blinkStop(st);
+  st.blinkT = steps.map(s=>setTimeout(()=>{ st.blink = s[0]; draw(); }, s[1]));
   return steps[steps.length - 1][1];
 }
+function blinkStop(st){ (st.blinkT || []).forEach(clearTimeout); st.blinkT = []; st.blink = false; }
 
 /* 아침에 커피 한 잔 — 한 번만 마시고 원래 모습으로. [그림, ms]
    드는 · 내리는 건 빠르게, 홀짝과 다 마신 "하아"는 길게. 끝에 컵이 사라질 때 한 칸 폴짝(기운 났다) */
@@ -375,7 +378,7 @@ let sipT = null, sipping = false, sipDoneToday = false;
 function stopSip(){
   if(sipT){ clearTimeout(sipT); sipT = null; }
   sipping = false;
-  const el = $("#mascot"); if(el) el.style.transform = "";
+  const el = $("#mascot"); if(el) el.style.translate = "";
 }
 function playSip(){
   const el = $("#mascot");
@@ -383,17 +386,17 @@ function playSip(){
   if(currentMood() !== "morning") return;
   if(mascot.happy) return;                  // 생일 폭죽이 터지는 동안에는 마시지 않는다(기쁜 얼굴을 덮어 버린다)
   stopSip();
-  clearTimeout(blinkTimer);
+  clearTimeout(blinkTimer); blinkStop(mascot);
   sipping = true;
   let i = 0;
-  const done = ()=>{ stopSip(); drawMascot(); scheduleBlink(); };
   const step = ()=>{
-    if(!mascotAwake()){ done(); return; }
+    if(!mascotAwake()){ stopSip(); drawMascot(); scheduleBlink(); return; }
     if(i >= SIP_SEQ.length){
-      /* 평소 모습으로 돌아오며 한 칸(그림 높이의 1/40) 떴다가 내려앉는다 */
-      sipping = false; drawMascot();
-      el.style.transform = "translateY(-" + (el.getBoundingClientRect().height / 40).toFixed(2) + "px)";
-      sipT = setTimeout(done, SIP_HOP_MS);
+      /* 평소 모습으로 돌아오며 한 칸(그림 높이의 1/40) 떴다가 내려앉는다. 폴짝하는 동안도 마시는 중으로 친다(번쩍임 · 깜빡임이 끼지 않게).
+         transform 이 아니라 translate 를 써서 누를 때의 .mascot:active 줄어듦과 겹치지 않는다 */
+      drawMascot(true);
+      el.style.translate = "0 -" + (el.clientHeight / 40) + "px";
+      sipT = setTimeout(()=>{ stopSip(); scheduleBlink(); }, SIP_HOP_MS);
       return;
     }
     el.innerHTML = mouseSVGWorn(SIP_SEQ[i][0]);
