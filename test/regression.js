@@ -4079,6 +4079,57 @@ const LEGACY = {
     eq("깜빡이는 중에 다시 깜빡이면 새로 시작하고 끝엔 뜬 눈", [r.restart, r.openAfter], [[6, 4], false]);
   }
 
+  // ── 6-10z. 1.5.1 달리기 몸놀림 ─────────────────────────────────
+  // 웅크렸다 뛰어내리고, 콩콩은 곡선, 벽 앞에서 가감속, 돌아설 때 눌림, 제자리에 내려앉기
+  {
+    const r = await page.evaluate(async () => {
+      const out = {};
+      out.xs = runXs(100, 60, 10, [3, 5, 7, 9]);
+      out.short = runXs(0, 4, 10, [3, 5, 7, 9]).slice(-1)[0];
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot");
+      go("home"); stopPanic();
+      $("#panicLayer").classList.add("on");
+      const plan = lanePlan(2);
+      $("#panicLayer").classList.remove("on");
+      const m = $("#mascot").getBoundingClientRect(), base = $("#panicLayer").getBoundingClientRect();
+      const home = [Math.round(m.left - base.left), Math.round(m.top - base.top)];
+      const side = plan.filter(f => f.rows !== RUN_SPR.qf), top = Math.max.apply(null, side.map(f => f.y));
+      out.hop = side.slice(0, 6).map(f => top - f.y);
+      out.first = [plan[0].sx, plan[0].sy, plan[1].sy < 1, plan[0].x === home[0], plan[0].y === home[1]];
+      const air = plan.slice(3, 13);
+      const minY = Math.min.apply(null, plan.map(f => f.y));
+      out.airUp = home[1] > 18 ? minY < home[1] : minY === home[1];       // 비상등 자리가 있으면 뛰어오르고, 없으면 그대로 떨어진다
+      out.bellSafe = minY - 18 >= Math.min(0, home[1] - 18);
+      const gaps = air.slice(1).map((f, i) => f.y - air[i].y);
+      out.fall = gaps.every((g, i) => i === 0 || g >= gaps[i - 1]);       // 떨어질수록 빨라진다
+      out.slant = plan[13].x !== home[0];
+      out.burst = plan.filter(f => f.burst).length;
+      const steps = side.slice(1).map((f, i) => Math.abs(f.x - side[i].x));
+      out.startStep = steps.slice(0, 3);
+      out.maxStep = Math.max.apply(null, steps);
+      out.last = [plan[plan.length - 1].x, plan[plan.length - 1].y];
+      out.home = home;
+      out.turns = plan.filter(f => f.rows === RUN_SPR.qf && f.sy === .92).length;
+      out.feet = plan.every(f => typeof f.sx === "number" && typeof f.sy === "number");
+      out.origin = getComputedStyle($("#panicRun")).transformOrigin;
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot");
+      return out;
+    });
+    eq("걸음은 3 · 5 · 7 · 9 로 빨라져 벽 앞에서 줄어들고 정확히 멈춘다", [r.xs.slice(0, 3), r.xs[r.xs.length - 1]], [[97, 92, 85], 60]);
+    eq("짧은 거리도 끝점에 멈춘다", r.short, 4);
+    eq("콩콩은 올라갔다 내려오는 곡선", r.hop, [0, 5, 3, 0, 5, 3]);
+    eq("제자리에서 웅크리며 시작한다", r.first, [1.05, .95, true, true, true]);
+    ok("자리가 있으면 뛰어올랐다가 떨어진다", r.airUp);
+    ok("뛰어올라도 비상등이 위로 잘리지 않는다", r.bellSafe);
+    ok("떨어질수록 빨라진다", r.fall);
+    ok("옆으로 비스듬히 내려앉는다", r.slant);
+    eq("내려앉을 때 먼지는 한 번", r.burst, 1);
+    eq("달리기 출발은 천천히, 최대 10pt", [r.startStep, r.maxStep], [[5, 7, 9], 10]);
+    eq("제자리로 돌아와 끝난다", r.last, r.home);
+    eq("돌아서기 세 번마다 멈추며 · 내려앉으며 두 번 눌린다", r.turns, 6);
+    ok("모든 장에 눌림 배율이 있다", r.feet);
+  }
+
   // ── 6-10x. 1.3 새 버전 알림 ────────────────────────────────────
   {
     const r = await page.evaluate(async () => {
