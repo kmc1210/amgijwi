@@ -4028,6 +4028,57 @@ const LEGACY = {
     ok("아이콘 그림마다 배경 id 가 달라 숨은 칸의 같은 id 를 가리키지 않는다", r.ids);
   }
 
+  // ── 6-10y. 1.5.1 깜빡임 · 아침 커피 움직임 ─────────────────────
+  // 깜빡임은 반 눈을 거치고, 커피는 드는 · 내리는 중간 그림과 다른 박자로 마신 뒤 한 칸 폴짝
+  {
+    const r = await page.evaluate(async () => {
+      const out = {};
+      const day = mouseRows("day"), half = mouseRows("blinkh"), shut = mouseRows("blink");
+      // 반 눈은 눈(9~14행)만 다르고, 눈꺼풀 선이 눈동자 위를 덮는다
+      out.halfRows = day.map((row, y) => row !== half[y] ? y : -1).filter(y => y >= 0);
+      out.lid = [half[11].slice(8, 13), half[11].slice(15, 20), half[12].slice(8, 13)];
+      out.between = half.join("") !== day.join("") && half.join("") !== shut.join("");
+      // 순서: 반 → 감음 → 반 → 뜸, 두 번은 반 눈을 거쳐 다시 감는다
+      out.one = BLINK_ONE.map(s => s[0]);
+      out.twice = BLINK_TWICE.map(s => s[0]);
+      out.frame = [blinkFrame("half"), blinkFrame(true)];
+      // 실제로 홈 쥐돌이가 반 눈 → 감은 눈 → 뜬 눈으로 그려진다
+      go("home"); mascot.away = ""; mascot.happy = false; mascot.cheer = false;
+      const seen = [], el = $("#mascot");
+      const realDraw = drawMascot;
+      const ms = runBlink(mascot, () => { realDraw(); seen.push(el.innerHTML); });
+      await new Promise(res => setTimeout(res, ms + 60));
+      out.drawn = seen.length;
+      out.blinkMs = ms;
+      // 안경을 쓰면 반 눈에도 입힌다
+      out.dressed = dressRows(half, "blink", { face:"glasses" }).join("") !== half.join("");
+      // 커피: 중간 그림은 앞뒤 그림 사이에 있다(컵 꼭대기 행이 차례로 올라갔다 내려온다)
+      const cupTop = k => mouseRows(k).findIndex((row, y) => y >= 15 && /og{5,}o|g{7,}/.test(row.slice(7, 21)));
+      out.cupTops = SIP_SEQ.map(s => cupTop(s[0]));
+      out.sipMs = SIP_SEQ.map(s => s[1]);
+      // 깜빡이는 중에 또 깜빡이면 하던 것을 끊고 새로 시작한다(두 줄이 섞이지 않는다)
+      runBlink(mascot, () => {}, true);
+      const n1 = mascot.blinkT.length;
+      runBlink(mascot, () => {});
+      out.restart = [n1, mascot.blinkT.length];
+      await new Promise(res => setTimeout(res, 260));
+      out.openAfter = mascot.blink;
+      stopSip(); blinkStop(mascot); drawMascot();
+      return out;
+    });
+    eq("반 눈은 눈 줄(9~14행)만 바꾼다", r.halfRows.every(y => y >= 9 && y <= 14), true);
+    eq("반 눈은 평평한 눈꺼풀 아래 눈동자 아래 반쪽", r.lid, ["ooooo", "ooooo", "ohkho"]);
+    ok("반 눈은 뜬 눈 · 감은 눈과 다른 그림", r.between);
+    eq("한 번 깜빡: 반 → 감음 → 반 → 뜸", r.one, ["half", true, "half", false]);
+    eq("두 번 깜빡도 반 눈을 거친다", r.twice, ["half", true, "half", true, "half", false]);
+    eq("반 눈 · 감은 눈 그림 이름", r.frame, ["blinkh", "blink"]);
+    eq("깜빡임 한 번에 네 번 그린다(0.2초)", [r.drawn, r.blinkMs], [4, 200]);
+    ok("옷장 안경은 반 눈에도 입힌다", r.dressed);
+    eq("커피 컵은 한 장에 두세 칸씩 올라갔다 내려온다", r.cupTops, [22, 19, 17, 15, 18, 21, 22]);
+    eq("커피 박자: 드는 · 내리는 건 빠르게, 홀짝 · 하아는 길게", r.sipMs, [380, 150, 130, 820, 130, 170, 650]);
+    eq("깜빡이는 중에 다시 깜빡이면 새로 시작하고 끝엔 뜬 눈", [r.restart, r.openAfter], [[6, 4], false]);
+  }
+
   // ── 6-10x. 1.3 새 버전 알림 ────────────────────────────────────
   {
     const r = await page.evaluate(async () => {

@@ -457,7 +457,7 @@ function mouseSVGWorn(mood, puff, wear, lit){
   wear = wear || wornNow();
   const key = mood + (puff ? "+" : "-") + (lit ? "*" : "") + JSON.stringify(wear);
   if(wornCache[key]) return wornCache[key];
-  const mode = mood.indexOf("eat") === 0 ? "eat" : (mood.indexOf("sip") === 0 ? "sip" : (mood === "blink" ? "blink" : "stand"));
+  const mode = mood.indexOf("eat") === 0 ? "eat" : (mood.indexOf("sip") === 0 ? "sip" : (mood.indexOf("blink") === 0 ? "blink" : "stand"));
   if(++wornCacheN > 80){ Object.keys(wornCache).forEach(k=>delete wornCache[k]); wornCacheN = 1; }
   return (wornCache[key] = rowsSVG(dressRows(mouseRows(mood, puff), mode, wear, lit), false));
 }
@@ -969,8 +969,8 @@ function scheduleClosetBlink(){
     const m = $("#cMouse");
     if(!m || !$("#s-closet").classList.contains("active")) return;
     if(closetStage.lit){ scheduleClosetBlink(); return; }           // 번쩍이는 중이면 이번 깜빡임은 건너뛴다
-    closetStage.blink = true; drawClosetStage();
-    setTimeout(()=>{ closetStage.blink = false; if($("#s-closet").classList.contains("active")) drawClosetStage(); scheduleClosetBlink(); }, 160);
+    const ms = runBlink(closetStage, ()=>{ if($("#s-closet").classList.contains("active")) drawClosetStage(); });
+    setTimeout(scheduleClosetBlink, ms);
   }, 2400 + Math.random()*3600);
 }
 /* 옷장 무대의 쥐돌이: 눈 깜빡임과 빛나는 옷의 번쩍임은 따로 돈다(같이 하면 둘이 한 몸처럼 보인다) */
@@ -978,7 +978,7 @@ const closetStage = {blink: false, lit: false, glowT: []};
 let closetGlowT = null;
 function drawClosetStage(){
   const m = $("#cMouse"); if(!m || closetRunT) return;           // 미리 보기로 뛰는 동안엔 숨겨 둔 무대를 다시 그리지 않는다
-  m.innerHTML = mouseSVGWorn(closetStage.blink ? "blink" : "day", false, closetStageWear(), closetStage.lit);
+  m.innerHTML = mouseSVGWorn(closetStage.blink ? blinkFrame(closetStage.blink) : "day", false, closetStageWear(), closetStage.lit);
 }
 function scheduleClosetGlow(){
   clearTimeout(closetGlowT);
