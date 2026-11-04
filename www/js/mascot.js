@@ -173,37 +173,65 @@ function runPanic(laps){
    타원은 칸마다 외곽선이 또렷한 도트 홈에서 글자 · 카드를 밟아 그림이 겹쳐 나온 것처럼 보였고,
    위아래로 갈 때는 서 있는 그림이 미끄러졌다. 좌우만 달리면 옆모습 6포즈로 계속 다리가 움직인다.
    줄은 그때 잰다: 바닥은 진도 카드 윗면(말풍선이 두 줄이면 카드가 내려가고 줄도 따라간다) */
+/* 달리기의 몸놀림 (홈 runLane · 옷장 closetRun). 그림은 그대로 두고 자리 · 박자 · 눌림만 정한다.
+   [가로, 세로, 뜬 높이] 배율. 눌릴 때 가로로 퍼지고 세로로 줄어든다(발을 기준으로 — #panicRun 의 transform-origin) */
+const RUN_HOP = [0, 5, 3, 0, 5, 3];       // 밀어 올렸다 내려앉는다. 맨 위에서 한 장 만에 바닥으로 떨어지지 않게
+const RUN_CROUCH = [[1.05, .95], [1.1, .88], [1.1, .88]];   // 뛰기 전에 웅크린다
+const RUN_LAND = [[1.14, .84], [1.07, .93], [.98, 1.03]];   // 내려앉을 때 납작해졌다 돌아온다
+const RUN_TURN = [[1.08, .92, 0], [1, 1, 3], [.96, 1.05, 5], [1, 1, 3], [1.08, .92, 0], [1, 1, 0]];   // 멈추며 눌렸다가 작게 뛰고 돌아선다
+/* from 에서 to 까지 한 장마다의 x. acc 대로 빨라져 top 으로 달리고, 벽 앞에서는 거꾸로 줄어 멈춘다 */
+function runXs(from, to, top, acc){
+  const dec = acc.slice().reverse(), dir = to < from ? -1 : 1, out = [];
+  const tail = i=>dec.slice(i).reduce((a, b)=>a + b, 0);
+  let x = from, rem = Math.abs(to - from), n = 0;
+  while(rem > 0){
+    let st = n < acc.length ? acc[n] : top;
+    if(rem <= tail(0)){ const i = dec.findIndex((v, k)=>tail(k) <= rem); st = i < 0 ? dec[dec.length - 1] : dec[i]; }
+    st = Math.min(st, rem);
+    x += dir*st; rem -= st; n++;
+    out.push(x);
+  }
+  return out;
+}
 function lanePlan(laps){
   const base = $("#panicLayer").getBoundingClientRect();
   const m = $("#mascot").getBoundingClientRect(), hero = $("#s-home .hero").getBoundingClientRect();
   const W = $("#s-home").clientWidth || 390;
   const floor = Math.round(hero.top - base.top) - 3, top = floor - 80;   // 발이 카드 윗면에 닿는다
   const home = { x:Math.round(m.left - base.left), y:Math.round(m.top - base.top) };
-  const xR = W - 20 - 56, xL = 20, STEP = 10, HOP = [0,2,6,0,2,6];
+  const xR = W - 20 - 56, xL = 20, land = xR - 20;      // 비스듬히 뛰어내리도록 줄 끝에서 조금 안쪽에 내려앉는다
   const out = [];
-  const sh = (x, hop)=>({ x:x + 11, y:floor - 5, s:1 - hop*0.035, o:0.8 - hop*0.05 });
-  /* 제자리와 줄 끝 사이를 포물선으로 폴짝. 그림자는 바닥에 닿을수록 진해진다 */
-  const jump = (x0, y0, x1, y1, down)=>{
-    const n = 7;
+  /* 그림자는 바닥에 가까울수록 크고 진하다 */
+  const shadow = (x, y)=>{ const g = Math.max(0, Math.min(1, 1 - (top - y)/((top - home.y) || 1))); return { x:x + 11, y:floor - 5, s:0.5 + 0.5*g, o:0.8*g }; };
+  const front = (x, y, sx, sy, flip, burst)=>out.push({ rows:RUN_SPR.qf, flip:!!flip, x:x, y:y, sx:sx, sy:sy, burst:!!burst, sh:shadow(x, y) });
+  /* 포물선 폴짝. 시작점 · 끝점 중 높은 쪽보다 peak 만큼 더 올라간다. 올라갈 때 느려지고 떨어질 때 빨라지며, 빠를수록 세로로 늘어난다 */
+  const leap = (x0, y0, x1, y1, peak, n)=>{
+    const d = y1 - y0, up = Math.max(0, -d) + peak, b = -2*up - 2*Math.sqrt(up*(up + d)), a = d - b;
     for(let k = 1; k <= n; k++){
-      const t = k / n, x = Math.round(x0 + (x1 - x0)*t), y = Math.round(y0 + (y1 - y0)*t) - Math.round(Math.sin(t*Math.PI)*18);
-      const g = down ? t : 1 - t;
-      out.push({ rows:RUN_SPR.qf, flip:false, x:x, y:y, sh:{ x:x + 11, y:floor - 5, s:0.5 + 0.5*g, o:0.8*g } });
+      const t = k/n, e = Math.min(1, Math.abs(2*a*t + b)/320)*0.1;
+      front(Math.round(x0 + (x1 - x0)*t), Math.round(y0 + a*t*t + b*t), 1 - e*0.7, 1 + e);
     }
   };
-  jump(home.x, home.y, xR, top, true);
-  let x = xR, ph = 0;
-  for(let p = 0; p < (laps || 2)*2; p++){
-    const left = p % 2 === 0, to = left ? xL : xR;
-    while(left ? x > to : x < to){
-      x = left ? Math.max(to, x - STEP) : Math.min(to, x + STEP);
-      const hop = HOP[ph % 6];
-      out.push({ rows:RUN_SPR["s" + (ph % 6)], flip:!left, x:x, y:top - hop, sh:sh(x, hop) });
+  RUN_CROUCH.forEach(c=>front(home.x, home.y, c[0], c[1]));
+  /* 머리 위 비상등(18pt)이 화면 위로 잘리지 않는 만큼만 뛰어오른다. 위 여백이 없는 기기에서는 그대로 떨어진다 */
+  const room = Math.max(0, home.y - 18);
+  leap(home.x, home.y, land, top, Math.min(12, room), 10);
+  RUN_LAND.forEach((c, k)=>front(land, top, c[0], c[1], false, k === 0));
+  const passes = (laps || 2)*2;
+  let x = land, ph = 0;
+  for(let p = 0; p < passes; p++){
+    const left = p % 2 === 0, last = p === passes - 1, to = last ? land : (left ? xL : xR);
+    runXs(x, to, 10, [3, 5, 7, 9]).forEach(nx=>{
+      const hop = RUN_HOP[ph % 6];
+      out.push({ rows:RUN_SPR["s" + (ph % 6)], flip:!left, x:nx, y:top - hop, sx:1, sy:1, sh:shadow(nx, top - hop) });
       ph++;
-    }
-    [0,3,0].forEach(hop=>out.push({ rows:RUN_SPR.qf, flip:left, x:x, y:top - hop, sh:sh(x, hop) }));   // 끝에서 정면을 한 번 보고 돌아선다
+    });
+    x = to;
+    if(!last) RUN_TURN.forEach(c=>front(x, top - c[2], c[0], c[1], left));   // 끝에서 정면을 한 번 보고 돌아선다
   }
-  jump(xR, top, home.x, home.y, false);
+  RUN_CROUCH.forEach(c=>front(land, top, c[0], c[1]));
+  leap(land, top, home.x, home.y, Math.min(10, room), 11);
+  front(home.x, home.y, 1.1, .9); front(home.x, home.y, 1.04, .96);
   return out;
 }
 /* 달릴 때 얼굴: 놀라서 눈이 휘둥그레(눈동자를 한 칸으로), 털 명암으로 둥근 눈썹(목 줄과 같은 색 c), 이마 뒤 땀 한 방울.
@@ -265,6 +293,7 @@ function runLane(laps){
       const back = f.flip ? -1 : 1;
       if(side && i % 9 === 0) sweat.push({x:f.x + (f.flip ? 20 : 34), y:f.y + 20, vx:3*back, vy:-3, a:10});
       if(f.rows === RUN_SPR.s0 || f.rows === RUN_SPR.s3) dust.push({x:f.x + (f.flip ? 8 : 42), y:f.sh.y - 2, vx:2*back, a:7});
+      if(f.burst) [[-20, -3, 7], [20, 3, 7], [-30, -2, 6], [30, 2, 6]].forEach(d=>dust.push({x:f.x + 28 + d[0], y:f.sh.y - 2, vx:d[1], a:d[2]}));   // 내려앉으면 양쪽으로 인다
       sweat.forEach(s=>{ s.x += s.vx; s.y += s.vy; s.vy += 0.8; s.a--; });
       dust.forEach(d=>{ d.x += d.vx; d.y -= 1; d.a--; });
       for(let k = sweat.length - 1; k >= 0; k--) if(sweat[k].a <= 0) sweat.splice(k, 1);
@@ -273,10 +302,10 @@ function runLane(laps){
       const html = bits ? `<svg width="${fxW}" height="${fxH}" viewBox="0 0 ${fxW} ${fxH}" shape-rendering="crispEdges" aria-hidden="true">${bits}</svg>` : "";
       if(html !== fxLast){ fx.innerHTML = html; fxLast = html; }      // 그릴 게 없거나 같으면 건드리지 않는다
     }
-    R.style.transform = "translate3d(" + f.x + "px," + f.y + "px,0)";
+    R.style.transform = "translate3d(" + f.x + "px," + f.y + "px,0) scale(" + f.sx.toFixed(2) + "," + f.sy.toFixed(2) + ")";
     const k = SIREN_DOT_ROT[Math.floor(i/3) % 4];
     if(k !== rot){ rot = k; B.innerHTML = sirenDotSVG(k); }
-    B.style.transform = "translate3d(" + (f.x + 13) + "px," + (f.y - 18) + "px,0)";
+    B.style.transform = "translate3d(" + (f.x + 13) + "px," + Math.round(f.y - 18 + 80*(1 - f.sy)) + "px,0)";   // 눌리면 머리 위 비상등도 같이 내려간다
     S.style.transform = "translate3d(" + f.sh.x + "px," + f.sh.y + "px,0) scale(" + f.sh.s.toFixed(2) + ")";
     S.style.opacity = String(f.sh.o);
     i++;

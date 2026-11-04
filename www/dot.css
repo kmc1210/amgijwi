@@ -678,6 +678,8 @@ html.dot #onboard .ob-warn{color:var(--d-late);}
 
 /* 비상 달리기의 비상등 (js/mascot.js SIREN_DOT, 15x10 을 한 칸 2px) */
 html.dot #panicBell{width:30px;height:20px;}
+/* 달리기에서 눌리고 늘어나는 건 발을 기준으로 (js/mascot.js lanePlan) */
+html.dot #panicRun{transform-origin:50% 100%;}
 
 /* 앱에서는 길게 눌러도 글자가 선택되거나 "복사 · 찾아보기" 메뉴가 뜨지 않게 한다(웹 페이지처럼 보이는 순간).
    글을 쓰거나 복사해야 하는 칸(입력칸 · 백업 글 칸)만 예외로 둔다 */
@@ -958,7 +960,7 @@ html.dot #cloudCard #cloudNow:disabled{opacity:.5;}
 html.dot #s-closet .cbuy .who .fxb{flex:0 0 auto;background:var(--d-surface);color:var(--d-acc);padding:6px 10px 5px;margin:2px 0 0;}
 html.dot #s-closet .crun{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:1;}
 html.dot #s-closet .crun .cw{position:absolute;left:0;top:0;transform-origin:0 0;}
-html.dot #s-closet .crun .r{position:absolute;left:0;top:0;width:56px;height:80px;image-rendering:pixelated;}
+html.dot #s-closet .crun .r{position:absolute;left:0;top:0;width:56px;height:80px;image-rendering:pixelated;transform-origin:50% 100%;}
 html.dot #s-closet .crun .r svg{width:100%;height:100%;display:block;}
 html.dot #s-closet .crun .fx{position:absolute;left:0;top:0;width:100%;height:100%;}
 html.dot #s-closet .crun .fx svg{display:block;overflow:visible;}

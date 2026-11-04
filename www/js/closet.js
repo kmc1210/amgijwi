@@ -884,13 +884,20 @@ function closetRun(){
   const wear = runWear(closetStageWear()), cape = wear.filter(it=>it.run.tail)[0];
   const front = {}; wear.forEach(it=>{ front[it.slot] = it.id; });  // 돌아설 때도 달리기용 그림이 있는 옷만(홈의 runLane 과 같다)
   const bats = cape && cape.run.bats ? [0, 1, 2].map(()=>({x: null, y: null})) : [];
-  /* 제자리에서 오른쪽 끝과 왼쪽 끝을 두 번 오가고(끝에서 정면을 보고 돌아선다) 제자리로 */
-  const plan = [], HOP = [0, 2, 6, 0, 2, 6], STEP = 4, xL = 4, xR = W - 56 - 4;      // 무대가 좁아 잔걸음으로 두 바퀴(3초쯤)
-  let x = home.x, ph = 0;
-  let wentLeft = false;
-  const runTo = to=>{ const right = to > x; wentLeft = !right; while(right ? x < to : x > to){ x = right ? Math.min(to, x + STEP) : Math.max(to, x - STEP); plan.push({rows: RUN_SPR["s" + (ph % 6)], flip: right, x: x, y: home.y - HOP[ph % 6]}); ph++; } };
-  const turn = ()=>[0, 3, 0].forEach(h=>plan.push({rows: RUN_SPR.qf, flip: wentLeft, x: x, y: home.y - h}));      // 돌아서는 모습은 홈(lanePlan)과 같은 쪽
+  /* 제자리에서 오른쪽 끝과 왼쪽 끝을 두 번 오가고(끝에서 정면을 보고 돌아선다) 제자리로. 무대가 좁아 잔걸음으로 두 바퀴. 몸놀림은 홈(lanePlan)과 같다 */
+  const plan = [], xL = 4, xR = W - 56 - 4;
+  let x = home.x, ph = 0, wentLeft = false;
+  const face = (c, h)=>plan.push({rows: RUN_SPR.qf, flip: wentLeft, x: x, y: home.y - (h || 0), sx: c[0], sy: c[1]});
+  const runTo = to=>{
+    const right = to > x; wentLeft = !right;
+    runXs(x, to, 4, [1, 2, 3]).forEach(nx=>{ plan.push({rows: RUN_SPR["s" + (ph % 6)], flip: right, x: nx, y: home.y - RUN_HOP[ph % 6], sx: 1, sy: 1}); ph++; });
+    x = to;
+  };
+  const turn = ()=>RUN_TURN.forEach(c=>face(c, c[2]));          // 돌아서는 모습은 홈(lanePlan)과 같은 쪽
+  /* 서 있는 그림과 옆모습 사이를 정면 그림으로 잇는다(뚝 바뀌지 않게) */
+  RUN_CROUCH.slice(0, 2).forEach(c=>face(c));
   runTo(xR); turn(); runTo(xL); turn(); runTo(xR); turn(); runTo(xL); turn(); runTo(home.x);
+  RUN_LAND.forEach(c=>face(c));
   runDressMemo.clear();
   const layer = document.createElement("div");
   layer.id = "cRun"; layer.className = "crun";
@@ -906,7 +913,7 @@ function closetRun(){
     const rows = side ? runDressed(f.rows, wear, lit) : dressRows(f.rows, "stand", front, lit);
     const svg = rowsSVG(rows, f.flip);
     if(svg !== rLast){ R.innerHTML = svg; rLast = svg; }                    // 같은 그림이면 건드리지 않는다
-    R.style.transform = `translate(${f.x}px,${f.y}px)`;
+    R.style.transform = `translate(${f.x}px,${f.y}px) scale(${f.sx},${f.sy})`;
     const bits = cape ? runFxSVG(cape, f, i, bats, side) : "";
     const html = bits ? `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" shape-rendering="crispEdges" aria-hidden="true">${bits}</svg>` : "";
     if(html !== fxLast){ FX.innerHTML = html; fxLast = html; }
