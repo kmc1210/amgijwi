@@ -2503,7 +2503,7 @@ const LEGACY = {
       window.__amgijwiNative = true; document.documentElement.classList.add("dot");
       const hw = CLOSET_ITEMS.filter(i => i.season === HALLOWEEN), xm = CLOSET_ITEMS.filter(i => i.season === XMAS);
       r.xmas = [xm.map(i => i.id).join(","), xm.every(i => i.season.until === "2026-12-31"), xm.reduce((n, i) => n + i.price, 0),
-        xm.filter(i => i.glow).map(i => i.id + ":" + (i.price > Math.max(...xm.filter(j => !j.glow).map(j => j.price))) + ":" + !!i.perk).join(",")];
+        xm.filter(i => i.glow).map(i => i.id + ":" + (i.price > Math.max(...xm.filter(j => !j.glow && !j.perk).map(j => j.price))) + ":" + !!i.perk).join(",")];
       // 크리스마스는 핼러윈이 끝난 다음 날(11/9)부터 판다. 산타 모자는 모자 밖으로 남는 귀를 지운다. 한정 옷을 입으면 날씨 옷으로 덮지 않는다
       r.xmasSale = [closetOnSale(closetItem("santahat"), "2026-11-08"), closetOnSale(closetItem("santahat"), "2026-11-09"), closetOnSale(closetItem("santahat"), "2027-01-01")];
       const hat = dressRows(mouseRows("day"), "stand", { head: "santahat" });
@@ -2552,7 +2552,7 @@ const LEGACY = {
       data.closet = cleanCloset({ cheese:0, own:["cape", "pumpkinhead", "beret", "pumpkin"], wear:{ body:"cape", head:"pumpkinhead", hand:"pumpkin" } });
       r.runWear = runWear().map(i => i.id).join(",");
       const side = RUN_SPR.s0, dressed = runDress(side, runWear(), false), litRows = runDress(side, runWear(), true);
-      r.runDress = [dressed.join("") !== side.join(""), dressed[0].slice(8, 22).indexOf("o") < 0, dressed[26].slice(4, 9) === side[26].slice(4, 9), dressed.join("").indexOf("C") < 0, litRows.join("").indexOf("C") >= 0];
+      r.runDress = [dressed.join("") !== side.join(""), dressed[0].slice(8, 22).indexOf("o") < 0, dressed[26].slice(9, 13) === side[26].slice(9, 13), dressed.join("").indexOf("C") < 0, litRows.join("").indexOf("C") >= 0];
       data.closet.wear = { head:"beret" }; r.runNone = runWear().length;
       data.closet.wear = { body:"cape" };
       const bats = [0,1,2].map(() => ({ x:null, y:null }));
@@ -2576,8 +2576,8 @@ const LEGACY = {
     eq("핼러윈 6개 · 11월 8일까지 · 다 사면 365(빛나는 호박 둘은 더 비싸다)", r.list, ["witchhat,pumpkinhead,batpin,mask,cape,pumpkin", true, 365]);
     ok("핼러윈 색 글자가 팔레트에 들어간다", r.pal);
     eq("번쩍이는 색 표는 호박 둘에, 그림에 있는 색을 있는 색으로 바꾼다", r.glow, "pumpkinhead:true,pumpkin:true");
-    eq("크리스마스 6개 · 12월 31일까지 · 다 사면 280, 빛나는 둘(코 · 트리)은 빛나지 않는 것보다 비싸고 효과 설명이 있다",
-       r.xmas, ["santahat,antler,rednose,scarf,gift,tree", true, 280, "rednose:true:true,tree:true:true"]);
+    eq("크리스마스 7개 · 12월 31일까지 · 다 사면 400, 빛나는 둘(코 · 트리)은 빛나지 않는 것보다 비싸고 효과 설명이 있다",
+       r.xmas, ["santahat,antler,rednose,scarf,santasuit,gift,tree", true, 400, "rednose:true:true,tree:true:true"]);
     eq("크리스마스는 11/9 부터 12/31 까지 판다", r.xmasSale, [false, true, false]);
     ok("산타 모자 밖으로 귀가 남지 않는다", r.earsGone);
     eq("한정 옷을 입었을 때만 날씨 옷으로 덮지 않는다", [r.seasonal, r.notSeasonal], [true, false]);
@@ -2621,7 +2621,7 @@ const LEGACY = {
       const c0 = cleanCloset({ cheese:-3, own:["beret","nope"], wear:{ head:"beret", face:"glasses", body:"mug" } });
       r.clean = [c0.cheese, c0.own.join(","), JSON.stringify(c0.wear)];
       r.items = CLOSET_ITEMS.filter(i => !i.rows.every(row => row.length === 28 && row.split("").every(ch => ch === "." || ch === "_" || MOUSE_PAL[ch]))).map(i => i.id);
-      r.ids = new Set(CLOSET_ITEMS.map(i => i.id)).size === CLOSET_ITEMS.length && CLOSET_ITEMS.length === 25;
+      r.ids = new Set(CLOSET_ITEMS.map(i => i.id)).size === CLOSET_ITEMS.length && CLOSET_ITEMS.length === 26;
       // 그리기 규칙
       data.closet = cleanCloset({ cheese:0, own:["beret","glasses","apron","mug"], wear:{ head:"beret", face:"glasses", body:"apron", hand:"mug" } });
       window.__amgijwiNative = true; document.documentElement.classList.add("dot");
@@ -2745,7 +2745,7 @@ const LEGACY = {
     });
     eq("옷장 정리: 음수 치즈는 0, 없는 아이템 · 안 가진 옷은 뺀다", r.clean, [0, "beret", '{"head":"beret"}']);
     eq("아이템 그림은 모두 28칸 너비이고 색이 정해져 있다", r.items, []);
-    ok("아이템 25개(핼러윈 · 크리스마스 6개씩 포함), 이름이 겹치지 않는다", r.ids);
+    ok("아이템 26개(핼러윈 6개 · 크리스마스 7개 포함), 이름이 겹치지 않는다", r.ids);
     ok("머그를 들면 허리띠가 옆구리를 돌고, 머그 · 발은 앞치마 앞에 있다", r.beltSides && r.mugInFront && r.beret);
     ok("앞치마만 입으면 허리띠가 발 뒤로 지나간다", r.pawsFront);
     ok("치즈를 먹는 동안: 치즈는 앞치마에 가리지 않고, 머그는 내려놓는다", r.eatKeepsCheese && r.eatNoMug);
@@ -3688,6 +3688,63 @@ const LEGACY = {
     eq("번쩍일 때 은은한 칸을 거치고 길이는 그대로", r.steps, [true, true, "false,300", "false,640"]);
     eq("달릴 때 번쩍임 박자", r.run, [4, 4, 16, "mid,mid,true,true,true,true,mid,mid", true]);
     eq("달리는 호박 머리에도 은은한 칸", r.runDress, [true, true, true, true, true]);
+  }
+
+  // ── 6-10z3. 크리스마스 옷 달리기 · 산타 옷 ───────────
+  {
+    const r = await page.evaluate(() => {
+      const r = {};
+      const keep = JSON.stringify(data.closet);
+      const hat = closetItem("santahat"), scarf = closetItem("scarf"), suit = closetItem("santasuit");
+      data.closet = cleanCloset({ own:["santahat", "scarf"], wear:{ head:"santahat", body:"scarf" } });
+      r.wear = runWear().map(i => i.id).join(",");
+      // 모자는 머리 폭(21열) 안, 맨 윗줄은 비운다(뛰어오를 때 몸이 늘어나 잘리지 않게), 귀가 남지 않는다
+      const worn = runDress(RUN_SPR.s2, [hat]);
+      r.hat = [hat.run.rows.every(row => row.replace(/_/g, ".").replace(/\.+$/, "").length <= 22), /^[._]+$/.test(hat.run.rows[0]), worn.slice(0, 7).join("").indexOf("p") < 0];
+      // 돌아설 때는 전용 모자로 귀가 삐져나오지 않는다
+      r.qf = dressRows(RUN_SPR.qf, "qf", { head:"santahat" }).slice(0, 6).join("").indexOf("p") < 0;
+      // 손에 들면 목도리 끝이 없고, 안 들면 있다. 커피를 마시는 동안은 손 아이템을 내려놓으니 끝이 보인다
+      const tail = rows => rows.slice(23, 28).join("").indexOf("h") >= 0;
+      r.scarf = [tail(dressRows(mouseRows("day"), "stand", { body:"scarf" })), tail(dressRows(mouseRows("day"), "stand", { body:"scarf", hand:"mug" })), tail(dressRows(mouseRows("sip1"), "sip", { body:"scarf", hand:"mug" }))];
+      // 선물 상자 뚜껑은 좌우 같고, 트리 별은 22행부터
+      const gift = closetItem("gift").rows[2], tree = closetItem("tree");
+      r.gift = gift === gift.split("").reverse().join("");
+      r.tree = [tree.y, tree.rows[0].indexOf("R")];
+      // 달리기 6칸: 40줄 · 28칸, 착지 칸은 두 발이 같은 높이, 공중 칸은 앞 · 뒤 2칸씩 뜬다
+      const foot = (f, a, b) => { for(let y = 30; y < 40; y++){ if(f[y].slice(a, b).indexOf("p") >= 0) return y; } return -1; };
+      const fr = [0, 1, 2, 3, 4, 5].map(n => RUN_SPR["s" + n]);
+      r.size = fr.every(f => f.length === 40 && f.every(l => l.length === 28));
+      const raise = fr.map(f => { const a = foot(f, 0, 13), b = foot(f, 13, 28); return a < b ? "앞" : b < a ? "뒤" : "둘다"; });
+      r.step = raise.join();
+      // 눌림 · 늘어남: 줄 수는 그대로, 발 줄은 그대로
+      const sq = [runSquash(RUN_SPR.s0, RUN_SPR.s0), runSquash(RUN_SPR.s1, RUN_SPR.s1), runSquash(RUN_SPR.s2, RUN_SPR.s2)];
+      r.squash = [sq[0].length, sq[1].length, sq[0][39] === RUN_SPR.s0[39], sq[1][39] === RUN_SPR.s1[39], sq[2] === RUN_SPR.s2, /^\.+$/.test(sq[0][0])];
+      // 산타 옷: 입으면 빨강 · 부츠, 맨 위는 그대로, 높이 40줄, 손 아이템이 몸 칸으로 옷을 덮지 않는다, 달리면 눈송이
+      const st = dressRows(mouseRows("day"), "stand", { body:"santasuit" }), sd = runDress(RUN_SPR.s2, [suit]);
+      r.suit = [st.length, st.every(l => l.length === 28), st.join("").indexOf("8") >= 0, st.slice(36).join("").indexOf("K") >= 0, st.slice(36).join("").indexOf("p") < 0, st.slice(0, 22).join("") === mouseRows("day").slice(0, 22).join(""), sd.length, sd.slice(36).join("").indexOf("p") < 0];
+      const held = dressRows(mouseRows("day"), "stand", { body:"santasuit", hand:"gift" });
+      r.held = [held.slice(24, 34).some(l => l.indexOf("R") >= 0), held.slice(24, 34).every(l => l.indexOf("w") < 0)];
+      // 먹기 · 마시기 · 깜빡임 · 돌아서기도 40줄
+      r.modes = [["eat1", "eat"], ["sip1", "sip"], ["blink", "blink"]].map(m => dressRows(mouseRows(m[0]), m[1], { body:"santasuit" }).length).concat(dressRows(RUN_SPR.qf, "qf", { body:"santasuit" }).length);
+      const flakes = [];
+      for(let i = 0; i < 12; i++) runFxSVG(suit, { x:100, y:100, flip:false, rows:RUN_SPR.s2 }, i, flakes, true);
+      r.snow = [flakes.length > 0, runFxSVG(suit, { x:100, y:100, flip:false, rows:RUN_SPR.s2 }, 12, flakes, true).indexOf("<svg") >= 0, closetCanPreview(suit)];
+      data.closet = JSON.parse(keep);
+      return r;
+    });
+    eq("모자 · 목도리는 달릴 때도 입는다", r.wear, "scarf,santahat");
+    eq("달리는 모자는 머리 폭 안, 맨 윗줄 비움, 귀를 덮는다", r.hat, [true, true, true]);
+    ok("돌아설 때 모자 밖으로 귀가 나오지 않는다", r.qf);
+    eq("목도리 끝은 손에 들 때만 뺀다", r.scarf, [true, false, true]);
+    ok("선물 상자 뚜껑이 좌우 같다", r.gift);
+    eq("꼬마 트리를 내려 별이 코에서 떨어진다", r.tree, [22, 13]);
+    ok("달리기 칸은 40줄 28칸", r.size);
+    eq("두 발이 번갈아 뜨고, 착지 칸은 둘 다 땅에", r.step, "둘다,앞,뒤,둘다,뒤,앞");
+    eq("눌림 · 늘어남은 발을 그대로 둔다", r.squash, [40, 40, true, true, true, true]);
+    eq("산타 옷: 빨강 · 부츠 · 얼굴 그대로 · 40줄", r.suit, [40, true, true, true, true, true, 40, true]);
+    eq("산타 옷에 선물 상자: 상자가 보이고 흰 몸이 드러나지 않는다", r.held, [true, true]);
+    eq("산타 옷은 어느 표정에서도 40줄", r.modes, [40, 40, 40, 40]);
+    eq("산타 옷은 달리면 눈송이, 효과 보기 있음", r.snow, [true, true, true]);
   }
 
   // ── 6-10q. 1.4 옷장 효과 미리 보기 ─────────────────────────────

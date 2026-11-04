@@ -309,7 +309,27 @@ const CLOSET_ITEMS = [
       "......__988888888888880.ss..",
       "......_9888888888888889shhs.",
       "......shhhhshhhhshhhhsh.shs.",
-      "......sshhhhsshhhhsshhhs...."]},
+      "......sshhhhsshhhhsshhhs...."],
+    /* 달리기: 방울까지 머리 폭 안으로. qf 는 돌아설 때(그 그림은 머리가 왼쪽으로 치우쳐 있다). 맨 윗줄은 비운다 — 뛰어오를 때 몸이 한 줄 늘어난다 */
+    run:{y:0, rows:[
+        "........_______________.....",
+        "........____988880_____.....",
+        "........__98888888880__.....",
+        "........_9888888888sss_.....",
+        "........98888888889shs_.....",
+        ".......988888888888sss_.....",
+        "......988888888888889__.....",
+        "......shhhhshhhhshhhhs_.....",
+        ".....sshhhhsshhhhsshhs_....."], qf:[
+        "....___________________.....",
+        "...._______988880______.....",
+        "...._____98888888880___.....",
+        "....____9888888888sss__.....",
+        "....___98888888889shs__.....",
+        "....__988888888888sss__.....",
+        "...._988888888888889___.....",
+        ".....shhhhshhhhshhhhs__.....",
+        "....sshhhhsshhhhsshhs__....."]}},
   /* 귀 바깥쪽에서 뻗은 뿔 */
   {id:"antler", slot:"head", name:"루돌프 뿔", price:35, y:0, season:XMAS, rows:[
       ".T..T..................T..T.",
@@ -334,33 +354,49 @@ const CLOSET_ITEMS = [
       "...............988889.......",
       "...............98hh89.......",
       "...............988889.......",
-      "...............h.h.h........"]},
+      "...............h.h.h........"],
+    /* 손에 뭔가 들면 늘어진 끝이 옆으로 삐져나오니 목만 감는다 */
+    hold:[
+      "....98888888888888888889....",
+      "...98hh88hh88hh88hh88hh89...",
+      "....99999999999999999999...."],
+    run:{y:20, cells:"wc", rows:[
+        "..98888888888888888888889...",
+        "..98hh88hh88hh88hh88hh889...",
+        "..9999999999999999999999...."], tail:[
+      ["....................", "....................", "....................", "......98888hh8889...", "......99988hh8h8h...", "..........99999....."],
+      ["....................", "....................", "..............88hh..", "......9888hh88889.h.", "......999988999.....", "...................."],
+      ["....................", "....................", "....................", "......98888hh889....", "......9999988hh889..", "...........9998h8h.."]]}},
+  /* 몸에 맞춰 칠하는 옷(suit). 그림 행 대신 suitFront · suitSide 가 입은 모습을 만든다. 부츠도 신는다 */
+  {id:"santasuit", slot:"body", name:"산타 옷", price:120, y:22, season:XMAS, suit:true, rows:[],
+    perk:"달리면 눈송이가 따라와요",
+    run:{y:0, rows:[], snow:true}},
   /* 두 손으로 드는 선물 상자 */
   {id:"gift", slot:"hand", name:"선물 상자", price:30, y:22, season:XMAS, rows:[
       "...........RR..RR...........",
       "............qRRq............",
-      "..........9998899999........",
-      "owcwww....9880R8889...wwwcwo",
-      ".ocwww....988R8R889...wwwco.",
+      ".........9999RR9999.........",
+      "owcwww...9808RR8889...wwwcwo",
+      ".ocwww....999RR999....wwwco.",
       ".owcww.ppcRRRRRRRRcpp.wwcwo.",
       "ocwwww.ppc988RR889cpp.wwwwco",
       ".owcww.ppc988RR889cpp.wwcwo.",
       ".ocwww.ddc988RR889cdd.wwwco.",
       "..........99999999.........."]},
   /* 두 손으로 드는 꼬마 트리. 가끔 전구 · 별이 반짝인다(glow) — 빛나는 아이템이라 더 비싸다 */
-  {id:"tree", slot:"hand", name:"꼬마 트리", price:70, y:19, season:XMAS, rows:[
+  {id:"tree", slot:"hand", name:"꼬마 트리", price:70, y:22, season:XMAS, rows:[
       ".............RR.............",
       "............RRRR............",
       ".............zz.............",
-      "............zxxz............",
-      "...........zx8xxz...........",
-      "..........zxxxxRxz..........",
-      "owcwww.....zxxxxz.....wwwcwo",
-      ".ocwww....zxRxx8xz....wwwco.",
-      ".owcww.ppczxxxxxxzcpp.wwcwo.",
-      "ocwwww.ppcz8xxRxxzcpp.wwwwco",
-      ".owcww.ppczzzzzzzzcpp.wwcwo.",
-      ".ocwww.ddc...TT...cdd.wwwco."],
+      "owcwww......zxxz......wwwcwo",
+      ".ocwww.....zx8xxz.....wwwco.",
+      ".owcww....zxxxxRxz....wwcwo.",
+      "ocwwww.....zxxxxz.....wwwwco",
+      ".owcww.ppczxRxx8xzcpp.wwcwo.",
+      ".ocwww.ppczxxxxxxzcpp.wwwco.",
+      ".owcww.ppcz8xxRxxzcpp.wwcwo.",
+      ".......ddczzzzzzzzcdd.......",
+      ".............TT............."],
     glow:{"8":"f", "R":"e"}, glowMid:{"8":"=", "R":"~"},
     perk:"가끔 전구가 반짝여요"}
 ];
@@ -422,21 +458,81 @@ data.closet = cleanCloset(data.closet);
    mode: stand 서 있기 · eat 치즈 먹기 · sip 커피 마시기 · wx 날씨 옷. wear 를 주지 않으면 지금 입은 옷 */
 const CLOSET_BODY_CELLS = "wc", CLOSET_WIDE_CELLS = ".owc";
 function glowMap(it, lit){ return !lit || !it.glow ? null : lit === "mid" ? it.glowMid : it.glow; }
+/* 산타 옷(suit): 행을 덧그리지 않고 몸 그림에 맞춰 칠한다. 깃 · 앞섶 · 벨트 · 밑단 · 소매 · 부츠.
+   서 있을 때는 몸 아래를 닫고 발을 몸 밑으로 내린다(한 줄을 빼서 전체 높이는 40줄 그대로). 돌아서는 그림(qf)은 칠만 한다 */
+const SUIT_FEET = ["....ooccwwwwwwwwwwwwccoo....", "......oocwwwwwwwwwwcoo......", "..oopppppoooooooooopppppoo..", ".oddpppppo........opppppddo.", "..ooooooo..........ooooooo.."];
+const suitFur = x=>x % 3 === 0 ? "s" : "h";
+function suitFront(rows, mode, holding){
+  const base = mode === "qf" ? rows : rows.slice(0, 32).concat(rows.slice(33, 36), SUIT_FEET);
+  let top = -1;
+  for(let y = 24; y < 34 && top < 0; y++) if(base[y].indexOf("p") >= 0) top = y;
+  return base.map((l, y)=>{
+    if(y < 22) return l;
+    if(y >= 36) return l.replace(/p/g, "K").replace(/d/g, "D");
+    const g = l.split(""), belt = y === 30 || y === 31;
+    for(let x = 0; x < 28; x++){
+      const ch = g[x];
+      if(ch === "p" || ch === "d"){
+        if(holding && (x < 6 || x > 21)) g[x] = belt ? "K" : "8";       // 두 손으로 들면 옆으로 내린 팔은 없다
+        else if(ch === "p" && y === top) g[x] = "0";
+        else if(ch === "p" && y === top + 1) g[x] = "h";
+      }
+      else if(ch === "o") g[x] = "9";
+      else if(ch === "w" || ch === "c") g[x] = y < 24 || y >= 34 ? suitFur(x) : belt ? "K" : "8";
+    }
+    if(y > 23 && y < 34 && !belt) [13, 14].forEach(x=>{ if(g[x] === "8") g[x] = y % 2 ? "s" : "h"; });
+    if(belt) [12, 13, 14, 15].forEach((x, i)=>{ if(g[x] === "K") g[x] = i === 0 || i === 3 || y === 30 ? "R" : "q"; });
+    /* 털 그림의 삐죽한 끝은 옷을 입으면 눌린다 */
+    if(g[0] !== "."){ g[0] = "."; g[1] = "9"; }
+    if(g[27] !== "."){ g[27] = "."; g[26] = "9"; }
+    return g.join("");
+  });
+}
+/* 달리는 옆모습은 등이 불룩하고 배가 납작해서, 옷 입은 몸통은 앞뒤로 둥글게 새로 그린다. 앞발은 그 위에 얹는다 */
+const SUIT_SIDE = {23:[4,23], 24:[4,24], 25:[3,25], 26:[3,25], 27:[2,25], 28:[2,25], 29:[2,25], 30:[2,25], 31:[2,25], 32:[3,24], 33:[4,24], 34:[5,23]};
+function suitSide(rows){
+  return rows.map((l, y)=>{
+    if(y < 21) return l;
+    if(y >= 36) return l.replace(/p/g, "K").replace(/d/g, "D");
+    const span = SUIT_SIDE[y];
+    if(!span) return l.split("").map((ch, x)=>ch === "o" ? "9" : ch === "w" || ch === "c" ? suitFur(x) : ch).join("");
+    const L = span[0], R = span[1], g = new Array(28).fill("."), belt = y === 30 || y === 31;
+    for(let x = L + 1; x < R; x++) g[x] = y === 34 ? suitFur(x) : belt ? "K" : "8";
+    g[L] = g[R] = "9";
+    if(belt) [2, 3, 4, 5].forEach((k, i)=>{ g[L + k] = i === 0 || i === 3 || y === 30 ? "R" : "q"; });
+    if(y < 34){
+      const arm = [];
+      l.split("").forEach((ch, x)=>{ if(x < 14 && (ch === "p" || ch === "d")) arm.push([x, ch]); });
+      if(arm.length){
+        const d = Math.max(0, L + 1 - arm[0][0]);
+        arm.forEach(a=>{ g[a[0] + d] = a[1] === "p" && y === 26 ? "0" : a[1] === "p" && y === 27 ? "h" : a[1]; });
+      }
+    }
+    return g.join("");
+  });
+}
 function dressRows(rows, mode, wear, lit){
   const w = wear || wornNow();
-  const g = rows.map(r=>r.split(""));
+  const body = closetItem(w.body), hand = closetItem(w.hand);
+  const holds = !!hand && mode !== "eat" && mode !== "sip" && mode !== "wx";
+  const suit = !!body && !!body.suit && mode !== "wx";
+  const g = (suit ? suitFront(rows, mode, holds) : rows).map(r=>r.split(""));
   ["hand","body","face","head"].forEach(slot=>{
     const it = closetItem(w[slot]);
     if(!it) return;
     if(mode === "wx" && slot !== "face") return;                         // 우비 · 털모자 위에는 안경만
     if((mode === "eat" || mode === "sip") && slot === "hand") return;    // 치즈 · 커피를 드는 동안 머그는 내려놓는다
+    if(it.suit) return;                                                  // 이미 칠했다
     const cells = it.wide ? CLOSET_WIDE_CELLS : CLOSET_BODY_CELLS;
     const glow = glowMap(it, lit);
-    it.rows.forEach((r, k)=>{
+    /* 돌아서는 그림(qf)은 머리가 치우쳐 있어 전용 그림이 있으면 그걸 쓰고, 손에 뭔가 들면 목도리는 목만 감는다 */
+    const src = slot === "body" && it.hold && holds ? it.hold : mode === "qf" && it.run && it.run.qf ? it.run.qf : it.rows;
+    src.forEach((r, k)=>{
       const y = it.y + k;
       for(let x = 0; x < r.length; x++){
         const ch = glow && glow[r[x]] ? glow[r[x]] : r[x];
         if(ch === ".") continue;
+        if(suit && slot === "hand" && "owc".indexOf(ch) >= 0) continue;  // 손 아이템의 몸 칸이 옷을 덮지 않게
         if(ch === "_"){ if(slot !== "body") g[y][x] = "."; continue; }      // 지우는 칸(호박 머리가 귀 끝을 덮는다)
         if(slot === "body" && cells.indexOf(g[y][x]) < 0) continue;
         g[y][x] = ch;
@@ -792,7 +888,7 @@ function runWear(wear){
   return ["body", "hand", "face", "head"].map(s=>closetItem(w[s])).filter(it=>it && it.run);
 }
 function runDress(rows, items, lit){
-  const g = rows.map(r=>r.split(""));
+  const g = (items.some(it=>it.suit) ? suitSide(rows) : rows).map(r=>r.split(""));
   items.forEach(it=>{
     const glow = glowMap(it, lit);
     it.run.rows.forEach((r, k)=>{
@@ -815,15 +911,44 @@ function runDressed(rows, items, lit){
   if(!runDressMemo.has(key)) runDressMemo.set(key, runDress(rows, items, lit));
   return runDressMemo.get(key);
 }
-/* 망토 자락 · 따라오는 박쥐. 달리기 층(#panicLayer) 전체 그림(mascot.js 의 runLane 이 감싼다)에 들어갈 조각. 한 칸 = 2px(쥐돌이 56×80 과 같다).
+/* 착지 칸은 몸이 한 줄 눌리고, 뛰어오르는 칸은 한 줄 늘어난다(발은 그대로). 옷을 입힌 뒤에 해서 옷도 같이 움직인다.
+   src 는 달리기 원본(RUN_SPR.s0 ...). 뛰어오르는 칸은 귀 · 머리 옷이 맨 윗줄을 쓰지 않는다 */
+const RUN_DY = new Map([[RUN_SPR.s0, 1], [RUN_SPR.s1, -1], [RUN_SPR.s3, 1], [RUN_SPR.s4, -1]]);
+const runSquashMemo = new WeakMap();
+function runSquash(rows, src){
+  const dy = RUN_DY.get(src);
+  if(!dy) return rows;
+  if(!runSquashMemo.has(rows)){
+    let o;
+    if(dy > 0){ o = rows.slice(); o.splice(33, 1); o.unshift(".".repeat(rows[0].length)); }
+    else { o = rows.slice(1); o.splice(32, 0, o[32]); }
+    runSquashMemo.set(rows, o);
+  }
+  return runSquashMemo.get(rows);
+}
+const RUN_SNOW = [["..S..", ".ShS.", "ShhhS", ".ShS.", "..S.."], [".S.", "ShS", ".S."]];
+/* 망토 자락 · 목도리 끝 · 따라오는 박쥐 · 떨어지는 눈송이. 달리기 층(#panicLayer) 전체 그림(mascot.js 의 runLane 이 감싼다)에 들어갈 조각. 한 칸 = 2px(쥐돌이 56×80 과 같다).
    bats 는 박쥐 자리(부드럽게 따라오도록 그릴 때마다 조금씩 다가간다) */
 function runFxSVG(it, f, i, bats, side){
   let out = "";
   /* 도트 그림(rowsSVG — 같은 색은 한 줄로 묶는다)을 그 자리 · 크기로 끼워 넣는다 */
   const px = (rows, ox, oy, flip)=>{ out += rowsSVG(rows, flip).replace("<svg ", `<svg x="${ox}" y="${oy}" width="${rows[0].length*2}" height="${rows.length*2}" `); };
   /* 자락: 목 뒤(옆모습 18열 · 18행)에서 뒤로. 오른쪽을 보고 달리면(flip) 거울로 */
-  const t = it.run.tail[Math.floor(i / 2) % it.run.tail.length];
-  if(side !== false) px(t, f.flip ? f.x + (28 - 18 - t[0].length)*2 : f.x + 18*2, f.y + 18*2, f.flip);
+  if(it.run.tail){
+    const t = it.run.tail[Math.floor(i / 2) % it.run.tail.length];
+    if(side !== false) px(t, f.flip ? f.x + (28 - 18 - t[0].length)*2 : f.x + 18*2, f.y + (18 + (RUN_DY.get(f.rows) || 0))*2, f.flip);
+  }
+  /* 눈송이: 달리는 동안 등 뒤에서 생겨 흔들리며 떨어진다. bats 자리에 눈송이 목록을 둔다 */
+  if(it.run.snow){
+    if(side !== false && i % 4 === 0) bats.push({x: f.flip ? f.x - 6 : f.x + 52, y: f.y + 20 + (i*7) % 40, a: 0, big: i % 8 === 0});
+    for(let k = bats.length - 1; k >= 0; k--){
+      const s = bats[k];
+      s.a++; s.y += 1.5; s.x += Math.sin(s.a / 3);
+      if(s.a >= 30) bats.splice(k, 1);
+      else px(RUN_SNOW[s.big ? 0 : 1], Math.round(s.x), Math.round(s.y), false);
+    }
+    return out;
+  }
   const back = f.flip ? -1 : 1;
   bats.forEach((b, k)=>{
     const tx = f.x + 20 + back*(40 + k*24), ty = f.y - 4 + k*16;
@@ -884,7 +1009,7 @@ function closetRun(){
   const k = mr.width / 56;                                           // 무대 쥐돌이(140px) ÷ 달리기 그림(56px)
   const W = Math.round(sr.width / k), H = Math.round(sr.height / k);
   const home = {x: Math.round((mr.left - sr.left) / k), y: Math.round((mr.top - sr.top) / k)};
-  const wear = runWear(closetStageWear()), cape = wear.filter(it=>it.run.tail)[0];
+  const wear = runWear(closetStageWear()), cape = wear.filter(it=>it.run.tail || it.run.snow)[0];
   const front = {}; wear.forEach(it=>{ front[it.slot] = it.id; });  // 돌아설 때도 달리기용 그림이 있는 옷만(홈의 runLane 과 같다)
   const bats = cape && cape.run.bats ? [0, 1, 2].map(()=>({x: null, y: null})) : [];
   /* 제자리에서 오른쪽 끝과 왼쪽 끝을 두 번 오가고(끝에서 정면을 보고 돌아선다) 제자리로. 무대가 좁아 잔걸음으로 두 바퀴. 몸놀림은 홈(lanePlan)과 같다 */
@@ -913,7 +1038,7 @@ function closetRun(){
   closetRunT = setInterval(()=>{
     if(i >= plan.length || !$("#s-closet").classList.contains("active")){ stopClosetRun(); closetTrySay(); return; }
     const f = plan[i], side = f.rows !== RUN_SPR.qf, lit = runGlow(i);
-    const rows = side ? runDressed(f.rows, wear, lit) : dressRows(f.rows, "stand", front, lit);
+    const rows = side ? runSquash(runDressed(f.rows, wear, lit), f.rows) : dressRows(f.rows, "qf", front, lit);
     const svg = rowsSVG(rows, f.flip);
     if(svg !== rLast){ R.innerHTML = svg; rLast = svg; }                    // 같은 그림이면 건드리지 않는다
     R.style.transform = `translate(${f.x}px,${f.y}px) scale(${f.sx},${f.sy})`;
