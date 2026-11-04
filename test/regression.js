@@ -3649,6 +3649,47 @@ const LEGACY = {
     eq("웹에는 iCloud 백업이 없다", r.web, [true, true]);
   }
 
+  // ── 6-10z2. 옷 번쩍임의 은은한 칸 ───────────────────
+  {
+    const r = await page.evaluate(() => {
+      const r = {};
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot");
+      const items = CLOSET_ITEMS.filter(i => i.glow);
+      r.ids = items.map(i => i.id).sort().join(",");
+      // 켜지는 색마다 은은한 색이 있고, 꺼진 색 · 밝은 색과 다르다
+      r.mids = items.every(i => Object.keys(i.glow).join() === Object.keys(i.glowMid).join() && Object.keys(i.glow).every(k => {
+        const m = MOUSE_PAL[i.glowMid[k]]; return /^#[0-9A-F]{6}$/.test(m) && m !== MOUSE_PAL[k] && m !== MOUSE_PAL[i.glow[k]]; }));
+      // 은은한 색 글자는 어떤 옷 그림에도 그대로 쓰이지 않는다
+      r.reserved = CLOSET_ITEMS.every(i => i.rows.join("").split("").every(ch => "i!^=~".indexOf(ch) < 0));
+      // 세 단계 그림이 다 다르고, 같은 칸의 색만 바뀐다
+      const day = mouseRows("day");
+      r.levels = items.map(i => { const w = {}; w[i.slot] = i.id;
+        const a = dressRows(day, "stand", w).join(""), m = dressRows(day, "stand", w, "mid").join(""), b = dressRows(day, "stand", w, true).join("");
+        let same = a.length === m.length; for(let k = 0; k < a.length && same; k++) if(a[k] !== m[k] && !i.glow[a[k]]) same = false;
+        const svg = new Set([mouseSVGWorn("day", false, w), mouseSVGWorn("day", false, w, "mid"), mouseSVGWorn("day", false, w, true)]).size;
+        return a !== m && m !== b && same && svg === 3; });
+      // 켜고 끌 때 은은한 칸을 꼭 거치고, 전체 길이는 예전 그대로(0.3초 · 0.64초)
+      const passes = s => s.every((x, k) => k === 0 ? x[0] === "mid" : (x[0] === "mid") !== (s[k - 1][0] === "mid") && x[1] > s[k - 1][1]);
+      r.steps = [passes(GLOW_ONE), passes(GLOW_TWICE), GLOW_ONE[GLOW_ONE.length - 1].join(), GLOW_TWICE[GLOW_TWICE.length - 1].join()];
+      // 달릴 때도 은은 2 · 밝음 4 · 은은 2 · 꺼짐 16, 1초(24장)마다 되풀이
+      const seq = []; for(let i = 0; i < 24; i++) seq.push(runGlow(i));
+      r.run = [seq.filter(x => x === "mid").length, seq.filter(x => x === true).length, seq.filter(x => x === false).length, seq.slice(0, 8).join(), runGlow(24) === runGlow(0)];
+      // 달리는 옆모습에도 호박 머리의 은은한 칸이 들어가고, 기억해 둔 그림이 섞이지 않는다
+      const head = closetItem("pumpkinhead"); runDressMemo.clear();
+      const f = runDressed(RUN_SPR.s0, [head]).join(""), m = runDressed(RUN_SPR.s0, [head], "mid").join(""), o = runDressed(RUN_SPR.s0, [head], true).join("");
+      r.runDress = [f.indexOf("i") < 0, m.indexOf("i") >= 0, m.indexOf("C") < 0, o.indexOf("C") >= 0, o.indexOf("i") < 0];
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot");
+      return r;
+    });
+    eq("빛나는 옷은 넷", r.ids, "pumpkin,pumpkinhead,rednose,tree");
+    eq("켜지는 색마다 꺼짐 · 밝음과 다른 은은한 색이 있다", r.mids, true);
+    eq("은은한 색 글자는 옷 그림에 쓰지 않는다", r.reserved, true);
+    eq("꺼짐 · 은은함 · 밝음이 다 다르고 빛나는 칸만 바뀐다", r.levels, [true, true, true, true]);
+    eq("번쩍일 때 은은한 칸을 거치고 길이는 그대로", r.steps, [true, true, "false,300", "false,640"]);
+    eq("달릴 때 번쩍임 박자", r.run, [4, 4, 16, "mid,mid,true,true,true,true,mid,mid", true]);
+    eq("달리는 호박 머리에도 은은한 칸", r.runDress, [true, true, true, true, true]);
+  }
+
   // ── 6-10q. 1.4 옷장 효과 미리 보기 ─────────────────────────────
   {
     const r = await page.evaluate(async () => {
@@ -3665,7 +3706,7 @@ const LEGACY = {
       // 다른 옷을 입어 보면(다시 그리면) 달리기를 끊는다
       tapClosetItem("pumpkin"); r.stopped = [!$("#cRun"), $("#cMouse").style.visibility === ""];
       // 빛나는 옷은 그 자리에서 번쩍인다
-      $("#cFxBtn").click(); await wait(30); r.lit = [closetStage.lit, /C/.test(dressRows(mouseRows("day"), "stand", closetStageWear(), true).join("")), $("#cSay").textContent];
+      $("#cFxBtn").click(); await wait(30); r.lit = [closetStage.lit === "mid", /C/.test(dressRows(mouseRows("day"), "stand", closetStageWear(), true).join("")), $("#cSay").textContent];
       // 옷장을 떠나면 끊긴다
       tapClosetItem("pumpkin"); tapClosetItem("cape"); $("#cFxBtn").click(); await wait(60); go("home"); await wait(120);
       r.leave = !$("#cRun");

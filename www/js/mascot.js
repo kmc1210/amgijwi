@@ -179,6 +179,8 @@ const RUN_HOP = [0, 5, 3, 0, 5, 3];       // 밀어 올렸다 내려앉는다. �
 const RUN_CROUCH = [[1.05, .95], [1.1, .88], [1.1, .88]];   // 뛰기 전에 웅크린다
 const RUN_LAND = [[1.14, .84], [1.07, .93], [.98, 1.03]];   // 내려앉을 때 납작해졌다 돌아온다
 const RUN_TURN = [[1.08, .92, 0], [1, 1, 3], [.96, 1.05, 5], [1, 1, 3], [1.08, .92, 0], [1, 1, 0]];   // 멈추며 눌렸다가 작게 뛰고 돌아선다
+/* 달리며 번쩍이는 옷: 한 장 42ms, 24장(1초)마다 은은 2 · 밝음 4 · 은은 2 · 꺼짐 16 */
+function runGlow(i){ const p = i % 24; return p < 2 || (p >= 6 && p < 8) ? "mid" : p < 6; }
 /* from 에서 to 까지 한 장마다의 x. acc 대로 빨라져 top 으로 달리고, 벽 앞에서는 거꾸로 줄어 멈춘다 */
 function runXs(from, to, top, acc){
   const dec = acc.slice().reverse(), dir = to < from ? -1 : 1, out = [];
@@ -283,7 +285,7 @@ function runLane(laps){
     }
     const f = plan[i];
     /* 옆모습엔 달리기용 덧그림, 정면(폴짝 · 돌아서기 RUN_SPR.qf)엔 옷장 그림을 입힌다. 망토 자락은 옆모습일 때만 */
-    const lit = Math.floor(i/8) % 3 === 0, side = f.rows !== RUN_SPR.qf;
+    const lit = runGlow(i), side = f.rows !== RUN_SPR.qf;
     const face = panicFace(f.rows);
     const rows = !wear.length ? face : side ? runDressed(face, wear, lit) : dressRows(face, "stand", front, lit);
     R.innerHTML = rowsSVG(rows, f.flip);
@@ -450,11 +452,13 @@ function scheduleBlink(){
 /* 빛나는 옷의 번쩍임. 눈 깜빡임과 다른 박자(더 드물고, 촛불처럼 두세 번 일렁인다)라 둘이 같이 움직여 보이지 않는다.
    st 는 blink · lit · glowT 를 가진 상태(홈의 mascot, 옷장의 closetStage). 눈을 감고 있으면 뜬 뒤에 시작하고, 다 끝나면 done().
    새로 시작하면 하던 일렁임은 끊는다(glowStop) */
+const GLOW_ONE = [["mid", 0], [true, 70], ["mid", 230], [false, 300]];     // 탁 켜지지 않게 앞뒤로 은은한 칸(dressRows 의 lit)
+const GLOW_TWICE = [["mid", 0], [true, 60], ["mid", 180], [false, 220], ["mid", 380], [true, 440], ["mid", 580], [false, 640]];
 function glowRun(st, draw, done){
   glowStop(st);
   const go = ()=>{
     if(st.blink){ st.glowT.push(setTimeout(go, 250)); return; }
-    const steps = Math.random() < 0.5 ? [[true, 0], [false, 220], [true, 380], [false, 640]] : [[true, 0], [false, 300]];
+    const steps = Math.random() < 0.5 ? GLOW_TWICE : GLOW_ONE;
     steps.forEach(([on, t])=>st.glowT.push(setTimeout(()=>{ st.lit = on; draw(); }, t)));
     st.glowT.push(setTimeout(done, steps[steps.length - 1][1] + 50));
   };

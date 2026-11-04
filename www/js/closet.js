@@ -11,7 +11,9 @@ const CLOSET_PAL = {"1": "#6B2F2A", "2": "#A8423A", "3": "#C9605A", "P": "#F08AA
   /* 핼러윈(1.2.1): 짙은 보라 · 보라 빛 · 호박 주황 · 짙은 주황 · 번쩍이는 빛 · 망토 주름 */
   "H": "#3B2A4A", "I": "#6A4C86", "J": "#E8822A", "W": "#B85A16", "C": "#FFF4B8", "D": "#454B5C",
   /* 크리스마스(1.5): 산타 빨강 · 짙은 빨강 · 밝은 빨강 · 빛나는 코 · 빛나는 전구 · 눈 털 · 트리 초록 · 짙은 초록 */
-  "8": "#D23C3C", "9": "#8E2128", "0": "#F06A5A", "f": "#FFB3A0", "e": "#FFF0B0", "s": "#E9EEF3", "x": "#3E8E52", "z": "#24603A"};
+  "8": "#D23C3C", "9": "#8E2128", "0": "#F06A5A", "f": "#FFB3A0", "e": "#FFF0B0", "s": "#E9EEF3", "x": "#3E8E52", "z": "#24603A",
+  /* 번쩍임의 은은한 칸(glowMid): 호박 눈 · 입의 불씨 · 코 · 코 안쪽 · 전구 · 별. 글자가 다 차서 기호를 쓴다. 호박은 정확한 중간이 칙칙한 회색이라 주황으로 골랐다 */
+  "i": "#A8501C", "!": "#E1534B", "^": "#F88F7D", "=": "#E9786E", "~": "#FADA78"};
 Object.keys(CLOSET_PAL).forEach(k=>{ MOUSE_PAL[k] = CLOSET_PAL[k]; });
 
 const CLOSET_SLOTS = [["head","머리"],["face","얼굴"],["body","몸"],["hand","손"]];
@@ -163,7 +165,7 @@ const CLOSET_ITEMS = [
       "......WJJJJJJKKJJJJJJW......",
       "......WJKJKJKJJKJKJKJW......",
       ".......WWWWWWWWWWWWWW......."],
-    glow:{K:"C"},
+    glow:{K:"C"}, glowMid:{K:"i"},
     perk:"가끔 번쩍이고, 달릴 때도 써요",
     run:{y:0, rows:[
         "........______________......",
@@ -295,7 +297,7 @@ const CLOSET_ITEMS = [
       ".owcwwppcJKJKJKJKJKcppwwcwo.",
       ".ocwwwddcJJKKKKKKJJcddwwwco.",
       ".........WWWWWWWWWW........."],
-    glow:{K:"C"},
+    glow:{K:"C"}, glowMid:{K:"i"},
     perk:"가끔 눈 · 입이 번쩍여요"},
 
   /* 귀까지 머리 위를 덮고(모자 밖으로 남는 귀는 지운다 "_"), 끝이 오른쪽으로 꺾여 방울이 귀 옆에 달린다. 흰 털 띠는 눈 위(6~7행) */
@@ -321,7 +323,7 @@ const CLOSET_ITEMS = [
       ".............88.............",
       "............8f08............",
       "............9889............"],
-    glow:{"8":"0", "0":"f"},
+    glow:{"8":"0", "0":"f"}, glowMid:{"8":"!", "0":"^"},
     perk:"가끔 코가 반짝여요"},
   /* 턱 털 아래(20행)부터 목을 감고, 한쪽 끝이 앞으로 늘어진다 */
   {id:"scarf", slot:"body", name:"털실 목도리", price:40, y:20, season:XMAS, rows:[
@@ -359,7 +361,7 @@ const CLOSET_ITEMS = [
       "ocwwww.ppcz8xxRxxzcpp.wwwwco",
       ".owcww.ppczzzzzzzzcpp.wwcwo.",
       ".ocwww.ddc...TT...cdd.wwwco."],
-    glow:{"8":"f", "R":"e"},
+    glow:{"8":"f", "R":"e"}, glowMid:{"8":"=", "R":"~"},
     perk:"가끔 전구가 반짝여요"}
 ];
 /* 치즈: 한 바퀴 +1(하루 10개까지), 7일 연속 접속 +5.
@@ -416,9 +418,10 @@ data.closet = cleanCloset(data.closet);
    허리띠는 발 뒤로 지나간다(머그를 들면 옆구리를 돌아 보인다).
    넓은 옷(wide — 뱀파이어 망토)은 몸 바깥의 빈칸 · 테두리(. o)까지 칠해 몸 라인보다 퍼진다. 팔은 망토 안으로 들어가고,
    발 · 앞발 · 손에 든 것(머그 · 호박 바구니)은 망토 앞에 남는다.
-   lit 이면 빛나는 아이템(glow — 바꿀 색 표)의 색을 바꿔 그린다. 번쩍임은 눈 깜빡임과 따로 논다(mascot.js 의 scheduleGlow).
+   lit 이면 빛나는 아이템(glow — 바꿀 색 표)의 색을 바꿔 그린다. lit 이 "mid" 면 켜지고 꺼지는 사이의 은은한 색(glowMid). 번쩍임은 눈 깜빡임과 따로 논다(mascot.js 의 scheduleGlow).
    mode: stand 서 있기 · eat 치즈 먹기 · sip 커피 마시기 · wx 날씨 옷. wear 를 주지 않으면 지금 입은 옷 */
 const CLOSET_BODY_CELLS = "wc", CLOSET_WIDE_CELLS = ".owc";
+function glowMap(it, lit){ return !lit || !it.glow ? null : lit === "mid" ? it.glowMid : it.glow; }
 function dressRows(rows, mode, wear, lit){
   const w = wear || wornNow();
   const g = rows.map(r=>r.split(""));
@@ -428,7 +431,7 @@ function dressRows(rows, mode, wear, lit){
     if(mode === "wx" && slot !== "face") return;                         // 우비 · 털모자 위에는 안경만
     if((mode === "eat" || mode === "sip") && slot === "hand") return;    // 치즈 · 커피를 드는 동안 머그는 내려놓는다
     const cells = it.wide ? CLOSET_WIDE_CELLS : CLOSET_BODY_CELLS;
-    const glow = lit && it.glow ? it.glow : null;
+    const glow = glowMap(it, lit);
     it.rows.forEach((r, k)=>{
       const y = it.y + k;
       for(let x = 0; x < r.length; x++){
@@ -455,7 +458,7 @@ let wornCacheN = 0;
 function mouseSVGWorn(mood, puff, wear, lit){
   if(!isDot() || mood === "night") return mouseSVG(mood, puff);
   wear = wear || wornNow();
-  const key = mood + (puff ? "+" : "-") + (lit ? "*" : "") + JSON.stringify(wear);
+  const key = mood + (puff ? "+" : "-") + (lit === "mid" ? "~" : lit ? "*" : "") + JSON.stringify(wear);
   if(wornCache[key]) return wornCache[key];
   const mode = mood.indexOf("eat") === 0 ? "eat" : (mood.indexOf("sip") === 0 ? "sip" : (mood.indexOf("blink") === 0 ? "blink" : "stand"));
   if(++wornCacheN > 80){ Object.keys(wornCache).forEach(k=>delete wornCache[k]); wornCacheN = 1; }
@@ -791,7 +794,7 @@ function runWear(wear){
 function runDress(rows, items, lit){
   const g = rows.map(r=>r.split(""));
   items.forEach(it=>{
-    const glow = lit && it.glow ? it.glow : null;
+    const glow = glowMap(it, lit);
     it.run.rows.forEach((r, k)=>{
       const row = g[it.run.y + k]; if(!row) return;
       for(let x = 0; x < r.length; x++){
@@ -808,7 +811,7 @@ function runDress(rows, items, lit){
 /* 달리는 동안 같은 그림을 다시 만들지 않게 기억해 둔다(달릴 때마다 비운다 — 입은 옷이 바뀌었을 수 있다) */
 const runDressMemo = new Map();
 function runDressed(rows, items, lit){
-  const key = rows.join("") + (lit ? "+" : "-");
+  const key = rows.join("") + "|" + lit;
   if(!runDressMemo.has(key)) runDressMemo.set(key, runDress(rows, items, lit));
   return runDressMemo.get(key);
 }
@@ -909,7 +912,7 @@ function closetRun(){
   let i = 0, rLast = "", fxLast = "";
   closetRunT = setInterval(()=>{
     if(i >= plan.length || !$("#s-closet").classList.contains("active")){ stopClosetRun(); closetTrySay(); return; }
-    const f = plan[i], side = f.rows !== RUN_SPR.qf, lit = Math.floor(i / 8) % 3 === 0;
+    const f = plan[i], side = f.rows !== RUN_SPR.qf, lit = runGlow(i);
     const rows = side ? runDressed(f.rows, wear, lit) : dressRows(f.rows, "stand", front, lit);
     const svg = rowsSVG(rows, f.flip);
     if(svg !== rLast){ R.innerHTML = svg; rLast = svg; }                    // 같은 그림이면 건드리지 않는다
