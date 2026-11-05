@@ -266,7 +266,7 @@ function runLane(laps){
   L.classList.add("on");                    // 켠 뒤에 재야 자리가 나온다
   const plan = lanePlan(laps);
   /* 달리기용 그림이 있는 옷(망토 · 호박 머리)은 입고 달린다. 망토면 자락이 펄럭이고 박쥐 셋이 따라온다 (closet.js) */
-  const wear = runWear(), cape = wear.filter(it=>it.run.tail)[0];
+  const wear = runWear(), cape = wear.filter(it=>it.run.tail || it.run.snow)[0];
   const fx = $("#panicFx"), bats = cape && cape.run.bats ? [0, 1, 2].map(()=>({x:null, y:null})) : [];
   const front = {}; wear.forEach(it=>{ front[it.slot] = it.id; });      // 정면(폴짝 · 돌아서기)에서는 옷장 그림 그대로
   const fxW = L.clientWidth, fxH = L.clientHeight;
@@ -287,7 +287,7 @@ function runLane(laps){
     /* 옆모습엔 달리기용 덧그림, 정면(폴짝 · 돌아서기 RUN_SPR.qf)엔 옷장 그림을 입힌다. 망토 자락은 옆모습일 때만 */
     const lit = runGlow(i), side = f.rows !== RUN_SPR.qf;
     const face = panicFace(f.rows);
-    const rows = !wear.length ? face : side ? runDressed(face, wear, lit) : dressRows(face, "stand", front, lit);
+    const rows = !side ? (wear.length ? dressRows(face, "qf", front, lit) : face) : runSquash(wear.length ? runDressed(face, wear, lit) : face, f.rows);
     R.innerHTML = rowsSVG(rows, f.flip);
     /* 땀은 몇 걸음마다 이마 뒤에서 뒤로 튀고, 먼지는 발이 닿을 때(s0 · s3) 발 뒤에서 인다. 뒤 = 보는 쪽의 반대 */
     if(fx){
