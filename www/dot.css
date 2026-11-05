@@ -767,7 +767,7 @@ html.dot #s-closet .cstage .floor{position:absolute;left:0;right:0;bottom:0;heig
 html.dot #s-closet .cstage .say{position:absolute;top:14px;right:14px;z-index:2;background:var(--d-bg);padding:5px 9px;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;box-shadow:var(--d-box2);}
 html.dot #s-closet .cearn{background:var(--d-surface);padding:12px 14px;margin:3px 3px 18px;box-shadow:var(--d-box);}
 html.dot #s-closet .cearn > b{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
-html.dot #s-closet .cearn p{margin:4px 0 0;font-size:13.5px;color:var(--d-t2);}
+html.dot #s-closet .cearn p{margin:4px 0 0;font-size:13.5px;color:var(--d-t2);word-break:keep-all;}
 html.dot #s-closet .cearn p b{color:var(--d-t1);}
 html.dot #s-closet .ctabs{display:flex;gap:8px;margin:3px 3px 16px;}
 html.dot #s-closet .ctabs button{flex:1;padding:8px 0;border:0;background:var(--d-surface);color:var(--d-t2);

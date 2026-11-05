@@ -9,9 +9,10 @@ const AD_CHEESE = 5, AD_DAY_MAX = 3;
 /* 광고를 불러오는 데 이만큼 기다려도 뜨지 않으면 그만둔다(통신이 느릴 때 버튼이 묶이지 않게).
    광고가 뜬 뒤에는 재지 않는다 — 광고는 30초가 넘기도 하고, 광고를 눌러 App Store 에 다녀오기도 한다 */
 const AD_WAIT_MS = 25000;
-/* 이 날까지는 광고를 부르지 않고 같은 몫(+5 · 하루 3번)을 선물로 준다. 광고 계정이 약 12/4 까지 쉬는 동안의 일이다.
+/* 이 날까지는 광고를 부르지 않고 하루 몫(+5 × 3번)을 한 번에 선물로 준다. 광고 계정이 약 12/4 까지 쉬는 동안의 일이다.
    다음 날(기기 날짜)부터는 저절로 광고 버튼으로 돌아간다. 기기 날짜를 앞당겨도 치즈는 기기 안의 값이라 막지 않는다 */
 let adFreeUntil = "2026-12-04";
+const AD_GIFT_CHEESE = AD_CHEESE * AD_DAY_MAX;
 function adFree(){ return ymd(new Date()) <= adFreeUntil; }
 
 /* 앱이 심어 두는 통로. 이름은 AdBridge.swift 의 name 과 같아야 한다 */
@@ -24,7 +25,7 @@ function adsOn(){ return isDot() && !!adBridge(); }
 /* 오늘 더 볼 수 있는 횟수 */
 function adLeft(){
   const c = data.closet;
-  return Math.max(0, AD_DAY_MAX - (c.adDay === ymd(new Date()) ? c.adCount : 0));
+  return Math.max(0, (adFree() ? 1 : AD_DAY_MAX) - (c.adDay === ymd(new Date()) ? c.adCount : 0));
 }
 
 let adBusy = false, adWaitT = null;
@@ -35,8 +36,8 @@ function adButton(){
   const left = adLeft(), free = adFree();
   const note = free ? `<p class="adfree">12월 4일까지 광고 없이 드려요츄!</p>` : "";
   const btn = id => `<button type="button" class="adbtn" id="${id}"${left < 1 || adBusy ? " disabled" : ""}>
-      <span class="ci">${cheeseSVG()}</span><span>${free ? "치즈 선물 받기 +" + AD_CHEESE : adBusy ? "광고를 불러오는 중…" : "광고 보고 치즈 +" + AD_CHEESE}</span>
-      <span class="left">${left < 1 ? "내일 또 받아요" : "오늘 " + left + "번"}</span></button>`;
+      <span class="ci">${cheeseSVG()}</span><span>${free ? (left < 1 ? "내일 또 드려요츄!" : "치즈 선물 받기 +" + AD_GIFT_CHEESE) : adBusy ? "광고를 불러오는 중…" : "광고 보고 치즈 +" + AD_CHEESE}</span>
+      <span class="left">${free ? "" : left < 1 ? "내일 또 받아요" : "오늘 " + left + "번"}</span></button>`;
   const box = $("#cAd");
   if(box){
     box.innerHTML = adsOn() ? btn("adBtn") + note : "";
@@ -89,7 +90,7 @@ function watchAd(){
 function adGrant(){
   const c = data.closet, today = ymd(new Date());
   if(c.adDay !== today){ c.adDay = today; c.adCount = 0; }
-  c.adCount += 1; c.cheese += AD_CHEESE;
+  c.adCount += 1; c.cheese += adFree() ? AD_GIFT_CHEESE : AD_CHEESE;
   persist();
   if($("#s-closet").classList.contains("active")) renderCloset(); else adButton();
   if(adFrom === "result") closetResultAgain();      // 결과 화면의 치즈 줄("지금 N개")을 다시 그린다 (closet.js)
@@ -154,7 +155,7 @@ function showThanks(){
   $("#thxBubM").textContent = free ? "선물츄!" : "고맙츄!";      // 말풍선 둘이 나란해서 글자 수를 원래 말과 맞춘다
   $("#thxBubC").textContent = free ? "받아라 까악!" : "고맙다 까악!";
   $("#thxLine").textContent = free ? "오늘의 선물이츄!" : "봐 주셔서 고맙츄!";
-  $("#thxGain").textContent = "치즈 +" + AD_CHEESE;
+  $("#thxGain").textContent = "치즈 +" + (free ? AD_GIFT_CHEESE : AD_CHEESE);
   const crowEl = $("#thxCrow");
   let caw = false;
   crowEl.innerHTML = happyCrowSVG("idle");

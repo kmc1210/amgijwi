@@ -2940,15 +2940,13 @@ const LEGACY = {
       adFreeUntil = today;              // 마지막 날도 선물
       r.lastDay = adFree();
       openCloset("home");
-      r.btn = [/치즈 선물 받기 \+5/.test($("#adBtn").textContent), /오늘 3번/.test($("#adBtn").textContent), /12월 4일까지 광고 없이/.test($("#cAd").textContent), /광고 보고/.test($("#adBtn").textContent)];
+      r.btn = [/치즈 선물 받기 \+15/.test($("#adBtn").textContent), /오늘 \d번/.test($("#adBtn").textContent), /12월 4일까지 광고 없이/.test($("#cAd").textContent), /광고 보고/.test($("#adBtn").textContent)];
       $("#adBtn").click();
       r.got = [data.closet.cheese, data.closet.adCount, posts.length, adBusy, $("#thx").hidden, bgmHold];
       r.thx = shown();
       closeThanks(); await new Promise(res => setTimeout(res, 400));
-      $("#adBtn").click(); closeThanks(); await new Promise(res => setTimeout(res, 400));
-      $("#adBtn").click(); closeThanks(); await new Promise(res => setTimeout(res, 400));
       $("#adBtn").click();
-      r.cap = [data.closet.cheese, adLeft(), $("#adBtn").disabled, /내일 또 받아요/.test($("#adBtn").textContent), posts.length];
+      r.cap = [data.closet.cheese, adLeft(), $("#adBtn").disabled, /내일 또 드려요츄/.test($("#adBtn").textContent), posts.length];
       data.closet.adDay = past; data.closet.cheese = 0;
       go("result"); closetResult(1, state.stat);
       r.res = [/치즈 선물 받기/.test($("#resAdBtn").textContent), /12월 4일까지 광고 없이/.test($("#resAd").textContent)];
@@ -2972,10 +2970,10 @@ const LEGACY = {
     });
     eq("선물은 12월 4일까지", r.until, "2026-12-04");
     eq("기한 당일은 아직 선물", r.lastDay, true);
-    eq("선물 기간 버튼: 치즈 선물 받기 +5 · 오늘 3번 · 안내 줄, 광고 말 없음", r.btn, [true, true, true, false]);
-    eq("선물은 앱에 광고를 부탁하지 않고 바로 치즈 +5 · 횟수 +1 · 창, 배경음도 그대로", r.got, [5, 1, 0, false, false, false]);
-    eq("선물 창의 말", r.thx, ["선물츄!", "받아라 까악!", "오늘의 선물이츄!", "치즈 +5"]);
-    eq("선물도 하루 3번까지(치즈 15), 끝나면 잠기고 내일 또", r.cap, [15, 0, true, true, 0]);
+    eq("선물 기간 버튼: 치즈 선물 받기 +15 · 횟수 말 없음 · 안내 줄, 광고 말 없음", r.btn, [true, false, true, false]);
+    eq("선물은 앱에 광고를 부탁하지 않고 바로 치즈 +15 · 횟수 +1 · 창, 배경음도 그대로", r.got, [15, 1, 0, false, false, false]);
+    eq("선물 창의 말", r.thx, ["선물츄!", "받아라 까악!", "오늘의 선물이츄!", "치즈 +15"]);
+    eq("선물은 하루 한 번(치즈 15), 받으면 잠기고 내일 또", r.cap, [15, 0, true, true, 0]);
     eq("학습 결과 화면에도 선물 버튼 · 안내", r.res, [true, true]);
     eq("결과 화면에서 받아도 광고를 부탁하지 않는다", r.resGot, [true, 0, false]);
     eq("기한 다음 날이면 선물이 끝난다", r.after, false);
