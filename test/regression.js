@@ -2925,6 +2925,65 @@ const LEGACY = {
     eq("웹에는 생일 기능이 없다", r.web, [false, null, false]);
   }
 
+  // ── 6-10r2. 광고 계정이 쉬는 동안의 치즈 선물 ─────────────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const backup = JSON.stringify(data), freeUntil = adFreeUntil, realWk = window.webkit;
+      const posts = [], today = ymd(new Date()), past = "2020-01-01";
+      const shown = () => [$("#thxBubM").textContent, $("#thxBubC").textContent, $("#thxLine").textContent, $("#thxGain").textContent];
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      window.webkit = { messageHandlers: Object.assign({}, realWk && realWk.messageHandlers, { amgijwiAd: { postMessage: m => posts.push(m) } }) };
+      window.__amgijwiAds = true;
+      data.closet = cleanCloset({ cheese:0 }); data.bday = cleanBday({});
+      r.until = freeUntil;
+      adFreeUntil = today;              // 마지막 날도 선물
+      r.lastDay = adFree();
+      openCloset("home");
+      r.btn = [/치즈 선물 받기 \+5/.test($("#adBtn").textContent), /오늘 3번/.test($("#adBtn").textContent), /12월 4일까지 광고 없이/.test($("#cAd").textContent), /광고 보고/.test($("#adBtn").textContent)];
+      $("#adBtn").click();
+      r.got = [data.closet.cheese, data.closet.adCount, posts.length, adBusy, $("#thx").hidden, bgmHold];
+      r.thx = shown();
+      closeThanks(); await new Promise(res => setTimeout(res, 400));
+      $("#adBtn").click(); closeThanks(); await new Promise(res => setTimeout(res, 400));
+      $("#adBtn").click(); closeThanks(); await new Promise(res => setTimeout(res, 400));
+      $("#adBtn").click();
+      r.cap = [data.closet.cheese, adLeft(), $("#adBtn").disabled, /내일 또 받아요/.test($("#adBtn").textContent), posts.length];
+      data.closet.adDay = past; data.closet.cheese = 0;
+      go("result"); closetResult(1, state.stat);
+      r.res = [/치즈 선물 받기/.test($("#resAdBtn").textContent), /12월 4일까지 광고 없이/.test($("#resAd").textContent)];
+      $("#resAdBtn").click();
+      r.resGot = [data.closet.cheese > 0, posts.length, $("#thx").hidden];
+      closeThanks(); await new Promise(res => setTimeout(res, 400));
+      /* 기한 다음 날: 저절로 광고로 돌아간다 */
+      adFreeUntil = past;
+      r.after = adFree();
+      data.closet.adDay = past;
+      openCloset("home");
+      r.afterBtn = [/광고 보고 치즈 \+5/.test($("#adBtn").textContent), /광고 없이/.test($("#cAd").textContent)];
+      $("#adBtn").click();
+      r.afterAsk = [JSON.stringify(posts), adBusy];
+      adResultFromApp("rewarded");
+      r.afterThx = shown();
+      closeThanks(); await new Promise(res => setTimeout(res, 400));
+      window.webkit = realWk; delete window.__amgijwiAds; adFreeUntil = freeUntil;
+      data = JSON.parse(backup); data.closet = cleanCloset(data.closet); data.bday = cleanBday(data.bday); persist(); go("home");
+      return r;
+    });
+    eq("선물은 12월 4일까지", r.until, "2026-12-04");
+    eq("기한 당일은 아직 선물", r.lastDay, true);
+    eq("선물 기간 버튼: 치즈 선물 받기 +5 · 오늘 3번 · 안내 줄, 광고 말 없음", r.btn, [true, true, true, false]);
+    eq("선물은 앱에 광고를 부탁하지 않고 바로 치즈 +5 · 횟수 +1 · 창, 배경음도 그대로", r.got, [5, 1, 0, false, false, false]);
+    eq("선물 창의 말", r.thx, ["선물츄!", "받아라 까악!", "오늘의 선물이츄!", "치즈 +5"]);
+    eq("선물도 하루 3번까지(치즈 15), 끝나면 잠기고 내일 또", r.cap, [15, 0, true, true, 0]);
+    eq("학습 결과 화면에도 선물 버튼 · 안내", r.res, [true, true]);
+    eq("결과 화면에서 받아도 광고를 부탁하지 않는다", r.resGot, [true, 0, false]);
+    eq("기한 다음 날이면 선물이 끝난다", r.after, false);
+    eq("기한 뒤에는 광고 버튼으로 돌아가고 안내 줄도 없다", r.afterBtn, [true, false]);
+    eq("기한 뒤에는 앱에 광고를 부탁한다", r.afterAsk, ['[{"op":"show"}]', true]);
+    eq("기한 뒤 고맙다 창은 원래 말로", r.afterThx, ["고맙츄!", "고맙다 까악!", "봐 주셔서 고맙츄!", "치즈 +5"]);
+  }
+
   // ── 6-10r. 1.1 광고 보고 치즈 받기 ─────────────────────────────
   {
     const r = await page.evaluate(async () => {
@@ -2934,6 +2993,8 @@ const LEGACY = {
       const wait = ms => new Promise(res => setTimeout(res, ms));
       window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
       data.closet = cleanCloset({ cheese:0 }); data.bday = cleanBday({});
+      const freeUntil = adFreeUntil;
+      adFreeUntil = "2020-01-01";       // 이 절은 광고 쪽을 본다. 선물 기간은 6-10r2 에서
       // 광고가 꺼진 빌드: 통로가 없거나 앱이 켰다고 알리지 않으면 버튼이 없다
       const posts = [];
       const realWk = window.webkit;
@@ -3013,6 +3074,7 @@ const LEGACY = {
       r.web = [adsOn(), adBridge()];
       go("set"); r.webNote = /서버로 나가는 통신은 없습니다/.test($("#s-set").textContent);
       window.webkit = realWk; delete window.__amgijwiAds;
+      adFreeUntil = freeUntil;
       data = JSON.parse(backup); data.closet = cleanCloset(data.closet); data.bday = cleanBday(data.bday); persist(); go("home");
       return r;
     });

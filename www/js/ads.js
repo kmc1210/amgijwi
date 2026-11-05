@@ -9,6 +9,10 @@ const AD_CHEESE = 5, AD_DAY_MAX = 3;
 /* 광고를 불러오는 데 이만큼 기다려도 뜨지 않으면 그만둔다(통신이 느릴 때 버튼이 묶이지 않게).
    광고가 뜬 뒤에는 재지 않는다 — 광고는 30초가 넘기도 하고, 광고를 눌러 App Store 에 다녀오기도 한다 */
 const AD_WAIT_MS = 25000;
+/* 이 날까지는 광고를 부르지 않고 같은 몫(+5 · 하루 3번)을 선물로 준다. 광고 계정이 약 12/4 까지 쉬는 동안의 일이다.
+   다음 날(기기 날짜)부터는 저절로 광고 버튼으로 돌아간다. 기기 날짜를 앞당겨도 치즈는 기기 안의 값이라 막지 않는다 */
+let adFreeUntil = "2026-12-04";
+function adFree(){ return ymd(new Date()) <= adFreeUntil; }
 
 /* 앱이 심어 두는 통로. 이름은 AdBridge.swift 의 name 과 같아야 한다 */
 function adBridge(){
@@ -28,18 +32,19 @@ let adBusy = false, adWaitT = null;
    옷장은 다 봤으면 "내일 또 받아요"로 남기고, 결과 화면은 버튼을 숨긴다(끝난 뒤마다 못 받는다고 말하지 않는다).
    renderCloset · closetResult 가 그릴 때마다, 광고가 끝날 때마다 부른다 */
 function adButton(){
-  const left = adLeft();
+  const left = adLeft(), free = adFree();
+  const note = free ? `<p class="adfree">12월 4일까지 광고 없이 드려요츄!</p>` : "";
   const btn = id => `<button type="button" class="adbtn" id="${id}"${left < 1 || adBusy ? " disabled" : ""}>
-      <span class="ci">${cheeseSVG()}</span><span>${adBusy ? "광고를 불러오는 중…" : "광고 보고 치즈 +" + AD_CHEESE}</span>
+      <span class="ci">${cheeseSVG()}</span><span>${free ? "치즈 선물 받기 +" + AD_CHEESE : adBusy ? "광고를 불러오는 중…" : "광고 보고 치즈 +" + AD_CHEESE}</span>
       <span class="left">${left < 1 ? "내일 또 받아요" : "오늘 " + left + "번"}</span></button>`;
   const box = $("#cAd");
   if(box){
-    box.innerHTML = adsOn() ? btn("adBtn") : "";
+    box.innerHTML = adsOn() ? btn("adBtn") + note : "";
     if($("#adBtn")) $("#adBtn").addEventListener("click", watchAd);
   }
   const res = $("#resAd");
   if(res){
-    res.innerHTML = adsOn() && left > 0 ? btn("resAdBtn") : "";
+    res.innerHTML = adsOn() && left > 0 ? btn("resAdBtn") + note : "";
     if($("#resAdBtn")) $("#resAdBtn").addEventListener("click", watchAd);
   }
 }
@@ -60,8 +65,14 @@ function adLeave(){
 function watchAd(){
   const b = adBridge();
   if(!b || adBusy || adLeft() < 1 || closetLocked()) return;      // 사기 직후 밀려 올라온 버튼이 잘못 눌리지 않게
-  adBusy = true; adShown = false;
   adFrom = $("#s-result").classList.contains("active") ? "result" : "closet";
+  /* 선물 기간: 앱에 광고를 부탁하지 않으니 광고 SDK 도 깨어나지 않는다 */
+  if(adFree()){
+    $("#cMsg").textContent = ""; $("#resAdMsg").textContent = "";
+    adGrant();
+    return;
+  }
+  adBusy = true; adShown = false;
   /* 광고 소리와 겹치지 않게 배경음을 잠깐 끈다. 끝나면 다시 켠다 */
   bgmHold = true; bgmStop();
   haptic("light");
@@ -74,6 +85,18 @@ function watchAd(){
 }
 /* 앱이 알려줄 때 부른다. 이 이름은 AdBridge.swift 에도 적혀 있다.
    showing 광고가 떴다(아직 끝난 게 아니다) · rewarded 끝까지 봤다 · closed 중간에 닫았다 · failed 광고가 없거나 불러오지 못했다 */
+/* 치즈 +5 를 주고 하루 몫을 센다. 끝까지 본 광고와 선물이 같이 쓴다 */
+function adGrant(){
+  const c = data.closet, today = ymd(new Date());
+  if(c.adDay !== today){ c.adDay = today; c.adCount = 0; }
+  c.adCount += 1; c.cheese += AD_CHEESE;
+  persist();
+  if($("#s-closet").classList.contains("active")) renderCloset(); else adButton();
+  if(adFrom === "result") closetResultAgain();      // 결과 화면의 치즈 줄("지금 N개")을 다시 그린다 (closet.js)
+  adFrom = "";
+  closetHome();
+  showThanks();
+}
 function adResultFromApp(result){
   if(!adBusy) return;               // 부탁한 적이 없거나 이미 끝난 일이다(두 번 받지 않는다)
   if(result === "showing"){ clearTimeout(adWaitT); adShown = true; return; }
@@ -82,18 +105,7 @@ function adResultFromApp(result){
   bgmHold = false; armBgm();
   const msg = adMsg();
   /* 끝까지 봤으면 준다. 하루 몫은 누를 때 이미 확인했다 */
-  if(result === "rewarded"){
-    const c = data.closet, today = ymd(new Date());
-    if(c.adDay !== today){ c.adDay = today; c.adCount = 0; }
-    c.adCount += 1; c.cheese += AD_CHEESE;
-    persist();
-    if($("#s-closet").classList.contains("active")) renderCloset(); else adButton();
-    if(adFrom === "result") closetResultAgain();      // 결과 화면의 치즈 줄("지금 N개")을 다시 그린다 (closet.js)
-    adFrom = "";
-    closetHome();
-    showThanks();
-    return;
-  }
+  if(result === "rewarded"){ adGrant(); return; }
   if(msg) msg.textContent = result === "closed" ? "광고를 끝까지 봐야 치즈를 받아요."
                                                 : "지금은 볼 수 있는 광고가 없어요. 잠시 뒤에 다시 해 보세요.";
   if(result !== "closed") haptic("error");
@@ -102,7 +114,7 @@ function adResultFromApp(result){
 }
 
 /* ---------- 고맙다 창 ----------
-   광고를 끝까지 보면 쥐돌이와 까룩이가 기쁜 얼굴로 엇갈려 폴짝 뛰며 고맙다고 한다.
+   광고를 끝까지 보면(선물 기간에는 선물을 받으면) 쥐돌이와 까룩이가 기쁜 얼굴로 엇갈려 폴짝 뛰며 고맙다고 한다.
    6초 뒤 저절로 닫히고, 눌러도 닫힌다 */
 
 /* 까룩이의 기쁜 얼굴: 웃으며 감은 눈(∩ ∩)과 발그레한 볼. 11~16행을 바꾼다. 쥐돌이 쪽은 closet.js 의 MOUSE_HAPPY */
@@ -138,12 +150,16 @@ function showThanks(){
     bits += `<i style="left:${8 + (i * 53) % 84}%;--d:${700 + (i % 4) * 120 + Math.floor(i / 4) * 260}ms;--rise:${70 + (i % 4) * 16}px">${cheeseSVG()}</i>`;
   }
   $("#thxBits").innerHTML = bits;
+  const free = adFree();
+  $("#thxBubM").textContent = free ? "선물츄!" : "고맙츄!";      // 말풍선 둘이 나란해서 글자 수를 원래 말과 맞춘다
+  $("#thxBubC").textContent = free ? "받아라 까악!" : "고맙다 까악!";
+  $("#thxLine").textContent = free ? "오늘의 선물이츄!" : "봐 주셔서 고맙츄!";
   $("#thxGain").textContent = "치즈 +" + AD_CHEESE;
   const crowEl = $("#thxCrow");
   let caw = false;
   crowEl.innerHTML = happyCrowSVG("idle");
   if(!reduceMotion()) thxCrowT = setInterval(()=>{ caw = !caw; crowEl.innerHTML = happyCrowSVG(caw ? "caw" : "idle"); }, 300);
-  closetSay("고맙츄!");
+  closetSay(free ? "선물이츄!" : "고맙츄!");
   sfx("chu"); haptic("success");
   t.classList.remove("out");
   t.hidden = false;

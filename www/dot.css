@@ -811,6 +811,8 @@ html.dot :is(#s-closet, #s-result) .adbtn .left{margin-left:auto;font-family:inh
 html.dot :is(#s-closet, #s-result) .adbtn:active{transform:translate(2px,2px);}
 html.dot :is(#s-closet, #s-result) .adbtn:disabled{background:var(--d-surface);color:var(--d-t2);}
 html.dot #s-result .adbtn{margin:0 3px;}
+/* 선물 기간 안내(ads.js adFree). 버튼 바로 아래 한 줄 */
+html.dot :is(#s-closet, #s-result) .adfree{margin:6px 3px 0;font-size:13.5px;color:var(--d-t2);text-align:center;}
 html.dot .thx{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(36,31,26,.35);}
 html.dot .thx[hidden]{display:none;}
 html.dot .thx.out{animation:thxfade .35s steps(3) forwards;}
