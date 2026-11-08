@@ -53,7 +53,7 @@ function themeFxDraw(moving){
   /* 별: 맨 위 가장자리에 몇 점, 차례로 반짝 */
   [[0.08, 6], [0.2, 3], [0.33, 9], [0.47, 2], [0.6, 7]].forEach(([fx, y], k)=>{
     if(moving && (Math.floor(fxTick / 12) + k) % 4 === 0) return;
-    ctx.fillStyle = FX_PAL.s; ctx.globalAlpha = .7; ctx.fillRect(Math.round(W * fx), top + y - 6, 1, 1); ctx.globalAlpha = 1;
+    ctx.fillStyle = FX_PAL.s; ctx.globalAlpha = .7; ctx.fillRect(Math.round(W * fx), Math.max(1, top + y - 6), 1, 1); ctx.globalAlpha = 1;
   });
   /* 달: 쥐돌이 왼쪽 위. 인사말과 쥐돌이 사이에 자리가 있을 때만(글자 위에 그리지 않는다) */
   const m = sp.mouse, g = sp.greet;
@@ -66,7 +66,7 @@ function themeFxDraw(moving){
   if(moving){
     /* 박쥐 떼: 7~10초마다 두세 마리가 맨 위를 오른쪽에서 왼쪽으로 */
     if(--fxNextBat <= 0){
-      const y0 = top - 4 + Math.random() * 4;
+      const y0 = Math.max(1, top - 4 + Math.random() * 4);   // 캔버스 위로 넘어가 잘리지 않게
       fxBats = [0, 1, 2].slice(0, Math.random() < .5 ? 3 : 2).map(k=>({x: W + 8 + k * 14, y: y0 + k * 3, ph: k * 2}));
       fxNextBat = 85 + Math.floor(Math.random() * 35);      // 7~10초(한 장 84ms)
     }

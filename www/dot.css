@@ -105,6 +105,9 @@ html.dot #s-home .row:active{
 }
 
 /* ── 홈 ─────────────────────────────────── */
+/* 위쪽 안전 영역이 없는 화면(iPhone Duo 처럼 카메라가 옆에 있는 기기)에서도 맨 위에 숨 쉴 틈을 둔다.
+   테마의 박쥐 · 꼬마전구가 이 틈에 그려진다(js/themefx.js). 다이내믹 아일랜드 기기는 안전 영역이 더 커서 그대로다 */
+html.dot .screen{padding-top:max(env(safe-area-inset-top,0px), 28px);}
 html.dot #s-home{background:var(--d-bg);color:var(--d-t1);}
 
 /* 인사말. 이 글꼴은 같은 px 에서 약 1.2배 넓어 원래 27px 과 폭을 맞춰 22px */
