@@ -22,11 +22,11 @@ const HALLOWEEN = {name:"핼러윈", until:"2026-11-08"};
 /* from: 그 날부터 판다(핼러윈이 끝난 다음 날 — 한정 아이템이 두 철 섞여 맨 앞을 다 차지하지 않게).
    tag: 옷장 칸의 좁은 한정 표시에 쓰는 짧은 이름, cls: 그 표시의 색(dot.css) */
 const XMAS = {name:"크리스마스", tag:"성탄", from:"2026-11-09", until:"2026-12-31", cls:"xm"};
-/* 치즈로 사는 테마. 산 것은 설정 > 화면과 소리 > 테마에서 고른다. 기간 한정은 그 날까지만 팔고, 산 것은 계속 쓴다.
+/* 치즈로 사는 테마. 옷장 "테마" 칸에서 미리 보고 사고 고른다. 기간 한정은 그 날까지만 팔고, 산 것은 계속 쓴다.
    색은 dot.css 의 body[data-theme="…"], 홈의 움직임은 themefx.js, 탭 아이콘은 core.js 의 ICONS["…_hw"] */
 const THEME_SHOP = [
-  {id:"hwnight", name:"핼러윈 밤", price:100, season:HALLOWEEN, sw:["#1C1424", "#E8822A", "#6A4C86"]},
-  {id:"xmnight", name:"크리스마스 밤", price:100, note:"눈이 내리고, 배경음을 켜 두면 캐롤이 흘러요.", season:XMAS, sw:["#0F1E1A", "#D23C3C", "#C9A85A"]}];
+  {id:"hwnight", name:"핼러윈 밤", price:100, season:HALLOWEEN},
+  {id:"xmnight", name:"크리스마스 밤", price:100, note:"눈이 내리고, 배경음을 켜 두면 캐롤이 흘러요.", season:XMAS}];
 /* 옷장 "테마" 칸(1.5.3): 무료 테마도 같이 보이고, 누르면 바로 바뀐다. 치즈 테마는 사기 전에 옷장 · 홈에서 미리 본다.
    카드의 작은 홈 그림 색: 바탕 · 진도 카드 · 탭 줄 · 외곽선 · 강조 (dot.css 의 각 테마 팔레트에서) */
 const THEME_FREE = [{id:"auto", name:"자동"}, {id:"cream", name:"기본"}, {id:"dark", name:"다크"}, {id:"green", name:"그린"}];
@@ -982,7 +982,7 @@ function closetBuyBar(){
     const short = th.price - data.closet.cheese;
     bar.innerHTML = `<div class="cbuy">
       <div class="who"><b>${esc(th.name)}</b><span>${short > 0 ? "치즈가 " + short + "개 모자라요" : "미리 보는 중 · 옷장을 닫으면 원래대로"}</span>
-        <button type="button" class="fxb" id="cThemeHome">홈에서 보기</button></div>
+        ${th.note ? `<em class="perk">${esc(th.note)}</em>` : ""}<button type="button" class="fxb" id="cThemeHome">홈에서 보기</button></div>
       <button type="button" class="buy" id="cBuyBtn"${short > 0 ? " disabled" : ""}><span class="ci">${cheeseSVG()}</span>${th.price} 사기</button>
       <button type="button" class="no" id="cBuyNo">그만 보기</button></div>`;
     $("#cBuyBtn").addEventListener("click", ()=>buyTheme(th.id));
