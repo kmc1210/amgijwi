@@ -2271,40 +2271,65 @@ const LEGACY = {
     ok("건의하기는 앱에만 보인다", r.btn === true && r.webBtn === false);
   }
 
-  // ── 6-10w. 1.3 테마 상점 · 핼러윈 밤 ─────────────────────────────
+  // ── 6-10w. 1.3 테마 상점 · 핼러윈 밤 → 1.5.3 옷장 "테마" 칸 · 미리 보기 ──────
   {
     const r = await page.evaluate(async () => {
       const r = {}, wait = ms => new Promise(res => setTimeout(res, ms));
       const backup = JSON.stringify(data);
       window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
       const realOn = closetOnSale; closetOnSale = (it, today) => realOn(it, today || "2026-10-20");
-      data.closet = cleanCloset({ cheese:40 }); data.theme = "cream"; applyTheme(); go("set"); renderSettings();
-      const btn = () => document.querySelector('#themeShop [data-shop="hwnight"]');
-      r.shop = [!!btn(), /100/.test(btn().textContent), /~11\/8/.test(btn().textContent)];
+      data.closet = cleanCloset({ cheese:40 }); data.theme = "cream"; applyTheme();
+      const card = id => document.querySelector('#cGrid [data-t="' + id + '"]');
+      const closetUnlock = () => { closetLockUntil = 0; };
+      const body = () => document.body.getAttribute("data-theme");
+      // 설정엔 옷장으로 가는 한 줄. 누르면 옷장 "테마" 칸이 열린다
+      go("set"); renderSettings();
+      r.setLine = [!!$("#themeGo"), !$("#themeShop").hidden, !document.querySelector("#themeShop [data-shop]")];
+      $("#themeGo").click();
+      r.opened = [$("#s-closet").classList.contains("active"), document.querySelector("#cTabs .on").textContent, !!card("hwnight"), !!card("auto") && !!card("green")];
+      r.shop = [/100/.test(card("hwnight").textContent), /~11\/8/.test(card("hwnight").textContent), $("#cGrid").firstElementChild === card("hwnight")];
       // 안 산 테마가 골라져 있으면 기본으로 그린다
-      data.theme = "hwnight"; applyTheme(); r.notOwned = [shownTheme(), btn().classList.contains("on")]; data.theme = "cream"; applyTheme();
-      // 치즈가 모자라면 사지 않는다
-      btn().click(); r.poor = [$("#dlg").classList.contains("on"), /60개 모자라요/.test($("#toast").textContent), data.closet.themes.length];
-      // 사기: 확인창 → 치즈가 줄고 바로 입는다 · 탭 아이콘도 핼러윈
-      data.closet.cheese = 150; renderSettings(); btn().click();
-      r.ask = [$("#dlg").classList.contains("on"), /150개 → 50개/.test($("#dlgM").textContent)];
-      $("#dlgYes").click();
-      r.bought = [data.closet.cheese, data.closet.themes.join(","), data.theme, document.body.getAttribute("data-theme"), btn().classList.contains("on"), /100/.test(btn().textContent)];
+      data.theme = "hwnight"; applyTheme(); r.notOwned = [shownTheme(), card("hwnight").classList.contains("wear")]; data.theme = "cream"; applyTheme(); renderCloset();
+      // 안 산 테마를 누르면 미리 보기: 화면만 바뀌고 저장은 안 한다. 치즈가 모자라면 사기는 잠기고 몇 개 모자란지
+      card("hwnight").click();
+      r.tryOn = [themeTry, body(), data.theme, !!$("#cBuyBtn") && $("#cBuyBtn").disabled, /60개 모자라요/.test($("#cBuy").textContent), card("hwnight").classList.contains("try")];
+      // 홈에서 보기: 홈도 그 테마 · 맨 위 줄. 다른 탭으로 가면 원래대로
+      closetUnlock(); $("#cThemeHome").click();
+      r.peek = [$("#s-home").classList.contains("active"), !$("#tPeek").hidden, body(), /모자라요/.test($("#tPeek").textContent), $("#tPeekBuy").disabled];
+      go("list");
+      r.peekEnd = [themeTry, body(), $("#tPeek").hidden, data.theme];
+      // 홈 맨 위 줄의 "옷장으로"는 미리 보기를 이어 간다
+      openCloset("home", "theme"); closetUnlock(); card("hwnight").click(); closetUnlock(); $("#cThemeHome").click(); $("#tPeekBack").click();
+      r.back = [$("#s-closet").classList.contains("active"), themeTry, body(), $("#tPeek").hidden];
+      // 옷장을 닫으면 원래대로
+      $("#closetClose").click(); r.closeEnd = [themeTry, body()];
+      // 사기: 옷장 줄에서 → 치즈가 줄고 바로 쓴다 · 탭 아이콘도 핼러윈
+      data.closet.cheese = 150; openCloset("home", "theme"); closetUnlock(); card("hwnight").click(); $("#cBuyBtn").click();
+      r.bought = [data.closet.cheese, data.closet.themes.join(","), data.theme, body(), card("hwnight").classList.contains("wear"), /사용 중/.test(card("hwnight").textContent), themeTry];
       const hwInk = () => /#3B2A4A/i.test($("#tabs [data-ico=home]").innerHTML);      // 핼러윈 탭 아이콘의 짙은 보라
       r.icons = hwInk();
-      // 다른 테마로 바꿨다가 산 테마를 다시 고르면 치즈 없이
-      document.querySelector('#themeBtns [data-theme="dark"]').click(); r.other = [document.body.getAttribute("data-theme"), !hwInk()];
-      btn().click(); r.again = [data.theme, data.closet.cheese, $("#dlg").classList.contains("on")];
+      // 무료 테마는 누르면 바로 바뀐다. 산 테마를 다시 고르면 치즈 없이
+      closetUnlock(); card("dark").click(); r.other = [data.theme, body(), !hwInk()];
+      closetUnlock(); card("hwnight").click(); r.again = [data.theme, data.closet.cheese, themeTry];
+      // 홈 맨 위 줄에서 사기(크리스마스 밤, 11/9 이후)
+      closetOnSale = (it, today) => realOn(it, today || "2026-11-20");
+      data.closet.cheese = 120; renderCloset(); closetUnlock(); card("xmnight").click(); closetUnlock(); $("#cThemeHome").click(); $("#tPeekBuy").click();
+      r.peekBuy = [data.closet.cheese, data.theme, body(), $("#tPeek").hidden, $("#s-home").classList.contains("active"), $("#cheeseN").textContent];
+      data.theme = "hwnight"; applyTheme(); closetOnSale = (it, today) => realOn(it, today || "2026-10-20");
       // 홈 움직임: 홈 · 핼러윈 밤에서만
       go("home"); await wait(60); r.fxHome = [!$("#themeFx").hidden, !!fxT];
-      window.__amgijwiSetAll = false; go("set"); openSetGroup(""); renderSettings(); r.note = document.querySelector('#setGroups [data-g="screen"] .gn').textContent.trim(); window.__amgijwiSetAll = true; renderSettings(); go("home"); await wait(60);
+      window.__amgijwiSetAll = false; go("set"); openSetGroup(""); renderSettings(); r.note = document.querySelector('#setGroups [data-g="screen"] .gn').textContent.trim(); window.__amgijwiSetAll = true; renderSettings();
+      r.setUsing = /핼러윈 밤 쓰는 중/.test($("#themeGo").textContent);
+      go("home"); await wait(60);
       go("list"); await wait(60); r.fxList = [$("#themeFx").hidden, fxT];
       go("home"); await wait(60);
       // 기간이 지나도 산 테마는 남고, 안 산 사람에게는 사라진다
       closetOnSale = (it, today) => realOn(it, today || "2026-11-09");
-      go("set"); renderSettings(); r.keep = !!btn();
-      const own = data.closet.themes; data.closet.themes = []; renderSettings(); r.gone = [!!btn(), !!document.querySelector('#themeShop [data-shop="xmnight"]')];
-      closetOnSale = (it, today) => realOn(it, today || "2027-01-05"); renderSettings(); r.allGone = $("#themeShop").hidden; data.closet.themes = own;
+      openCloset("home", "theme"); r.keep = !!card("hwnight");
+      const own = data.closet.themes; data.closet.themes = []; renderCloset(); r.gone = [!!card("hwnight"), !!card("xmnight")];
+      closetOnSale = (it, today) => realOn(it, today || "2027-01-05"); renderCloset();
+      r.allGone = [...document.querySelectorAll("#cGrid [data-t]")].map(b => b.dataset.t).join(","); data.closet.themes = own;
+      go("home");
       // 백업을 되살려도 산 테마는 치즈 · 옷처럼 따라간다
       r.restore = cleanCloset(JSON.parse(JSON.stringify(data.closet))).themes.join(",");
       closetOnSale = realOn;
@@ -2313,21 +2338,28 @@ const LEGACY = {
       r.webFx = [$("#themeFx").hidden];
       return r;
     });
-    eq("테마 상점: 핼러윈 밤 · 치즈 100 · ~11/8", r.shop, [true, true, true]);
-    eq("안 산 테마가 골라져 있으면 기본으로 그리고, 상점 버튼도 골라진 것처럼 안 보인다", r.notOwned, ["cream", false]);
-    eq("치즈가 모자라면 확인창 없이 몇 개 모자란지 알린다", r.poor, [false, true, 0]);
-    eq("사기 전에 확인창(쓰는 치즈 · 남는 치즈)", r.ask, [true, true]);
-    eq("사면 치즈가 줄고 바로 입는다, 값은 사라진다", r.bought, [50, "hwnight", "hwnight", "hwnight", true, false]);
+    eq("설정엔 옷장으로 가는 한 줄만(테마 사기 버튼은 없다)", r.setLine, [true, true, true]);
+    eq("한 줄을 누르면 옷장 테마 칸, 무료 테마도 같이", r.opened, [true, "테마", true, true]);
+    eq("테마 칸: 핼러윈 밤 · 치즈 100 · ~11/8 · 파는 한정은 맨 앞", r.shop, [true, true, true]);
+    eq("안 산 테마가 골라져 있으면 기본으로 그리고, 카드도 사용 중이 아니다", r.notOwned, ["cream", false]);
+    eq("안 산 테마를 누르면 미리 보기(저장 안 함), 치즈가 모자라면 사기를 잠그고 알린다", r.tryOn, ["hwnight", "hwnight", "cream", true, true, true]);
+    eq("홈에서 보기: 홈도 그 테마, 맨 위 줄(모자라면 사기 잠금)", r.peek, [true, true, "hwnight", true, true]);
+    eq("미리 보는 홈에서 다른 탭으로 가면 원래대로", r.peekEnd, ["", "cream", true, "cream"]);
+    eq("맨 위 줄 옷장으로: 미리 보기는 이어 가고 줄은 내린다", r.back, [true, "hwnight", "hwnight", true]);
+    eq("옷장을 닫으면 원래대로", r.closeEnd, ["", "cream"]);
+    eq("사면 치즈가 줄고 바로 쓴다, 카드는 사용 중", r.bought, [50, "hwnight", "hwnight", "hwnight", true, true, ""]);
     ok("핼러윈 밤이면 탭 아이콘도 핼러윈", r.icons);
-    eq("다른 테마로 바꾸면 탭 아이콘도 원래대로", r.other, ["dark", true]);
-    eq("산 테마는 다시 고를 때 치즈가 안 든다", r.again, ["hwnight", 50, false]);
+    eq("무료 테마는 누르면 바로, 탭 아이콘도 원래대로", r.other, ["dark", "dark", true]);
+    eq("산 테마는 다시 고를 때 치즈가 안 든다", r.again, ["hwnight", 50, ""]);
+    eq("홈 맨 위 줄에서도 산다(홈 치즈 수도 바뀐다)", r.peekBuy, [20, "xmnight", "xmnight", true, true, "20"]);
     eq("홈에서 핼러윈 밤이면 움직인다", r.fxHome, [true, true]);
     eq("설정 묶음 줄에도 핼러윈 밤 테마", r.note, "핼러윈 밤 테마");
+    ok("설정 한 줄에 쓰는 중인 치즈 테마 이름", r.setUsing);
     eq("홈이 아니면 멈춘다", r.fxList, [true, null]);
     ok("기간이 지나도 산 테마는 고를 수 있다", r.keep);
     eq("기간이 지나면 안 산 사람에게는 핼러윈 칸이 사라진다(그때 파는 크리스마스 칸은 남는다)", r.gone, [false, true]);
-    ok("파는 테마가 하나도 없으면 상점 칸을 숨긴다", r.allGone);
-    eq("산 테마는 백업을 따라간다", r.restore, "hwnight");
+    eq("파는 테마가 하나도 없으면 무료 테마만", r.allGone, "auto,cream,dark,green");
+    eq("산 테마는 백업을 따라간다", r.restore, "hwnight,xmnight");
     eq("앱이 아니면 테마 움직임이 없다", r.webFx, [true]);
   }
 
@@ -2704,7 +2736,7 @@ const LEGACY = {
       data.closet.cheese = 40; tapClosetItem("crown"); go("home"); openCloset("home"); r.forget = closetTry; data.closet.cheese = 5;
       tapClosetItem("beret"); r.swap = data.closet.wear.head;                   // 가진 베레모로 바꿔 입기
       tapClosetItem("beret"); r.off = data.closet.wear.head || null;            // 다시 누르면 벗기
-      r.tabs = document.querySelectorAll("#cTabs button").length;
+      r.tabs = [...document.querySelectorAll("#cTabs button")].map(b => b.textContent).join(",");
       r.labels = [...document.querySelectorAll("#cGrid .pr")].map(e => e.textContent.trim());
       const seen = el => !!el && el.getClientRects().length > 0;
       await new Promise(res => setTimeout(res, 350));
@@ -2794,7 +2826,7 @@ const LEGACY = {
     eq("옷장을 나갔다 오면 입어 보던 것은 잊는다", r.forget, "");
     eq("같은 칸의 다른 아이템을 사면 바꿔 입는다", r.afterRibbon, [5, "ribbon"]);
     ok("가진 것은 눌러서 바꿔 입고, 다시 누르면 벗는다", r.swap === "beret" && r.off === null);
-    eq("칸은 머리 · 얼굴 · 몸 · 손 네 개(배경 없음)", r.tabs, 4);
+    eq("칸은 머리 · 얼굴 · 몸 · 손 · 테마(옷 배경은 없고, 화면 분위기는 테마가 맡는다)", r.tabs, "머리,얼굴,몸,손,테마");
     eq("라벨은 보유중 · 착용중", r.labels.filter(t => /보유중|착용중/.test(t)).sort(), ["보유중", "보유중"]);
     eq("옷장 화면의 도트 글꼴도 16px 이상", r.small, []);
     eq("닫으면 들어온 곳(홈)으로", r.back, "s-home");
@@ -3814,6 +3846,7 @@ const LEGACY = {
       const wait = ms => new Promise(res => setTimeout(res, ms));
       const backup = JSON.stringify(data);
       window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      const realOn = closetOnSale; closetOnSale = (it, today) => realOn(it, today || "2026-10-20");      // 핼러윈 옷을 파는 날로 고정
       data.closet = cleanCloset({ cheese: 200 }); openCloset("home");
       tapClosetItem("beret"); r.noBtn = !$("#cFxBtn");                 // 효과 없는 옷엔 버튼이 없다
       tapClosetItem("cape"); r.btn = !!$("#cFxBtn") && /효과 보기/.test($("#cFxBtn").textContent);
@@ -3832,6 +3865,7 @@ const LEGACY = {
       r.poorSay = $("#cSay").textContent;
       closetTry = ""; stopClosetRun(); clearTimeout(closetGlowT); glowStop(closetStage); closetStage.lit = false; closetStage.blink = false;
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      closetOnSale = realOn;
       data = JSON.parse(backup); persist(); go("home");
       return r;
     });

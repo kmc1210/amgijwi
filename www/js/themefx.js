@@ -37,7 +37,7 @@ function themeFxSpots(){
   fxSpotAge = 0;
   const home = $("#s-home").getBoundingClientRect();
   const at = el=>{ const r = el && el.getBoundingClientRect(); return r && r.width ? {x:(r.left - home.left) / 2, y:(r.top - home.top) / 2, w:r.width / 2, h:r.height / 2, r:(r.right - home.left) / 2} : null; };
-  const bar = at($("#s-home .appbar"));
+  const bar = at($("#tPeek")) || at($("#s-home .appbar"));      // 테마를 미리 보는 줄이 떠 있으면 그 위부터(줄 위에 전구가 걸치지 않게)
   return (fxSpots = {top: bar ? Math.max(0, bar.y - 6) : 0, mouse: at($("#mascot")), greet: at($("#greetT")), empty: at(document.querySelector("#reviewList .empty"))});
 }
 function fxSpr(ctx, rows, x, y, a){

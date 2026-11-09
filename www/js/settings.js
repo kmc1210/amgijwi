@@ -197,6 +197,8 @@ const THEME_BAR = {cream:"#F7F3EE", dark:"#14110E", green:"#F1F6F1", hwnight:"#1
 /* 지금 화면에 입힐 테마: 자동이면 아이폰이 다크 모드인지 보고 다크 · 기본 중에 고른다 */
 const darkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
 function shownTheme(){
+  /* 옷장에서 미리 보는 치즈 테마(closet.js 의 themeTry). 저장하지 않고 화면에만 */
+  if(typeof themeTry === "string" && themeTry && isDot() && themeShopItem(themeTry)) return themeTry;
   if(data.theme === "auto") return darkQuery && darkQuery.matches ? "dark" : "cream";
   /* 치즈로 사는 테마는 산 사람만, 그리고 도트 화면(앱)에서만. 아니면 기본 */
   if(themeShopItem(data.theme) && !(isDot() && themeOwned(data.theme))) return "cream";
@@ -226,32 +228,18 @@ function themeTabIcons(){
     el.innerHTML = icon(sfx && ICONS[name + sfx] ? name + sfx : name);
   });
 }
-/* 치즈로 사는 테마 버튼(앱만). 산 것은 고르기, 안 산 것은 값과 기간 — 누르면 확인창에서 산다. 기간이 지난 안 산 테마는 숨긴다 */
+/* 치즈로 사는 테마는 옷장 "테마" 칸에서 미리 보고 사고 고른다(closet.js). 설정엔 그리로 가는 한 줄만(앱만).
+   가진 치즈 테마를 쓰는 중이면 그 이름을 같이 보여 준다(위 무료 테마 버튼은 하나도 켜지지 않으므로) */
 function renderThemeShop(){
   const box = $("#themeShop"); if(!box) return;
-  if(!isDot() || !isNativeApp()){ box.innerHTML = ""; return; }
-  const list = THEME_SHOP.filter(t=>themeOwned(t.id) || closetOnSale(t));
-  box.innerHTML = list.map(t=>{
-    const own = themeOwned(t.id), until = t.season ? t.season.until.split("-") : null;
-    return `<button type="button" class="theme-b shop${own && data.theme === t.id ? " on" : ""}" data-shop="${t.id}">
-      <span class="sw">${t.sw.map(c=>`<i style="background:${c}"></i>`).join("")}</span>${esc(t.name)}
-      ${own ? "" : `<small class="pr"><span class="ci">${cheeseSVG()}</span>${t.price}</small>${until ? `<small class="lim">~${Number(until[1])}/${Number(until[2])}</small>` : ""}`}</button>`;
-  }).join("");
-  box.hidden = !list.length;
+  if(!isDot() || !isNativeApp()){ box.innerHTML = ""; box.hidden = true; return; }
+  const cur = themeShopItem(data.theme), using = cur && themeOwned(cur.id) ? cur.name + " 쓰는 중 · " : "";
+  box.innerHTML = `<button type="button" class="tgo" id="themeGo"><span>${esc(using)}치즈 테마는 옷장에서 볼 수 있어요</span><b>옷장 →</b></button>`;
+  box.hidden = false;
 }
 $("#themeShop").addEventListener("click", e=>{
-  const b = e.target.closest("[data-shop]"); if(!b) return;
-  const t = themeShopItem(b.dataset.shop); if(!t) return;
-  if(themeOwned(t.id)){ data.theme = t.id; persist(); applyTheme(); haptic("selection"); return; }
-  if(!closetOnSale(t)){ renderThemeShop(); return; }
-  const c = data.closet;
-  if(c.cheese < t.price){ haptic("error"); toast("치즈가 " + (t.price - c.cheese) + "개 모자라요"); return; }
-  confirmBox(t.name + " 테마", `${t.note ? t.note + " " : ""}치즈 ${t.price}개로 살까요? 치즈 ${c.cheese}개 → ${c.cheese - t.price}개`, "사기", ()=>{
-    if(themeOwned(t.id) || c.cheese < t.price || !closetOnSale(t)) return;
-    c.cheese -= t.price; c.themes.push(t.id); data.theme = t.id;
-    persist(); renderSettings();          // renderSettings 가 applyTheme 을 부른다
-    sfx("chu"); haptic("success"); toast(t.name + " 테마를 샀어요");
-  });
+  if(!e.target.closest("#themeGo")) return;
+  haptic("light"); openCloset("set", "theme");
 });
 /* 자동이면 아이폰 설정이 바뀔 때(밤에 저절로 어두워지는 것 포함) 바로 따라간다 */
 if(darkQuery){

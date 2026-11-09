@@ -43,6 +43,7 @@ function go(name){
   setTimeout(recipeGo, 0);      // 하던 일이 끝나 기다리던 레시피 파일이 있으면 이제 연다 (recipeshare.js)
   setTimeout(cloudAsk, 0);      // iCloud 백업을 되살릴지 묻기를 기다리고 있으면 이제 묻는다 (icloud.js)
   setTimeout(updateGo, 0);      // 홈으로 돌아왔고 새 버전 소식이 기다리고 있으면 이제 묻는다 (update.js)
+  if(typeof themeTryGo === "function") themeTryGo(name);      // 옷장에서 미리 보던 테마는 옷장 · 미리 보는 홈 밖으로 가면 끝 (closet.js)
   setTimeout(themeFxSync, 0);   // 홈이면 테마 움직임을 켜고, 아니면 멈춘다 (themefx.js)
   if(name !== "result"){ stopEat(); stopCaw(); }
   if(name !== "home"){ stopSip(); stopPanic(); }
