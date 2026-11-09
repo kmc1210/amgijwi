@@ -22,11 +22,20 @@ const HALLOWEEN = {name:"핼러윈", until:"2026-11-08"};
 /* from: 그 날부터 판다(핼러윈이 끝난 다음 날 — 한정 아이템이 두 철 섞여 맨 앞을 다 차지하지 않게).
    tag: 옷장 칸의 좁은 한정 표시에 쓰는 짧은 이름, cls: 그 표시의 색(dot.css) */
 const XMAS = {name:"크리스마스", tag:"성탄", from:"2026-11-09", until:"2026-12-31", cls:"xm"};
-/* 치즈로 사는 테마. 산 것은 설정 > 화면과 소리 > 테마에서 고른다. 기간 한정은 그 날까지만 팔고, 산 것은 계속 쓴다.
+/* 치즈로 사는 테마. 옷장 "테마" 칸에서 미리 보고 사고 고른다. 기간 한정은 그 날까지만 팔고, 산 것은 계속 쓴다.
    색은 dot.css 의 body[data-theme="…"], 홈의 움직임은 themefx.js, 탭 아이콘은 core.js 의 ICONS["…_hw"] */
 const THEME_SHOP = [
-  {id:"hwnight", name:"핼러윈 밤", price:100, season:HALLOWEEN, sw:["#1C1424", "#E8822A", "#6A4C86"]},
-  {id:"xmnight", name:"크리스마스 밤", price:100, note:"눈이 내리고, 배경음을 켜 두면 캐롤이 흘러요.", season:XMAS, sw:["#0F1E1A", "#D23C3C", "#C9A85A"]}];
+  {id:"hwnight", name:"핼러윈 밤", price:100, season:HALLOWEEN},
+  {id:"xmnight", name:"크리스마스 밤", price:100, note:"눈이 내리고, 배경음을 켜 두면 캐롤이 흘러요.", season:XMAS}];
+/* 옷장 "테마" 칸(1.5.3): 무료 테마도 같이 보이고, 누르면 바로 바뀐다. 치즈 테마는 사기 전에 옷장 · 홈에서 미리 본다.
+   카드의 작은 홈 그림 색: 바탕 · 진도 카드 · 탭 줄 · 외곽선 · 강조 (dot.css 의 각 테마 팔레트에서) */
+const THEME_FREE = [{id:"auto", name:"자동"}, {id:"cream", name:"기본"}, {id:"dark", name:"다크"}, {id:"green", name:"그린"}];
+const THEME_MINI = {
+  cream:   ["#F3E9DC", "#5A4132", "#FCF7F1", "#4A423A", "#A65E2E"],
+  dark:    ["#141210", "#43301F", "#1B1714", "#8A7A6A", "#C97F4B"],
+  green:   ["#E3EDE4", "#1B5B3C", "#F6FAF5", "#23503A", "#1E6B45"],
+  hwnight: ["#1C1424", "#3B2A4A", "#221A2B", "#9A7FB5", "#E8822A"],
+  xmnight: ["#0F1E1A", "#1E3B33", "#13241F", "#C9A85A", "#D23C3C"]};
 function themeShopItem(id){ return THEME_SHOP.filter(t=>t.id === id)[0] || null; }
 function themeOwned(id){ return data.closet.themes.indexOf(id) >= 0; }
 
@@ -785,7 +794,11 @@ function verHome(){
 
 /* ---------- 입구 ---------- */
 let closetFrom = "home";
-function openCloset(from){ closetFrom = from || "home"; closetTry = ""; closetSay("어때츄?"); go("closet"); }
+function openCloset(from, slot){
+  closetFrom = from || "home"; closetTry = ""; closetSay("어때츄?");
+  if(slot) closetSlot = slot;
+  themeTryStop(); go("closet");
+}
 /* 홈: 쥐돌이 아래 치즈 칩. 처음 치즈가 생긴 뒤 한 번만 말풍선으로 알려준다.
    lead 는 그 말풍선 앞에 붙일 말(연속 접속 보너스로 처음 치즈가 생긴 날) */
 function closetHome(lead){
@@ -853,9 +866,9 @@ function renderCloset(){
   $("#closetSub").textContent = "치즈 " + c.cheese + "개";
   $("#cCheese").innerHTML = `<span class="ci">${cheeseSVG()}</span><span>${c.cheese}</span>`;
   $("#cMouse").innerHTML = mouseSVGWorn("day", false, closetStageWear());
-  $("#cTabs").innerHTML = CLOSET_SLOTS.map(([s, name])=>`<button type="button" data-s="${s}" class="${s === closetSlot ? "on" : ""}">${name}</button>`).join("");
+  $("#cTabs").innerHTML = CLOSET_SLOTS.concat([["theme", "테마"]]).map(([s, name])=>`<button type="button" data-s="${s}" class="${s === closetSlot ? "on" : ""}">${name}</button>`).join("");
   /* 기간 한정은 파는 동안 맨 앞에. 기간이 지나면 가진 것만 남는다 */
-  const shown = CLOSET_ITEMS.filter(i=>i.slot === closetSlot && (c.own.indexOf(i.id) >= 0 || closetOnSale(i)));
+  const shown = closetSlot === "theme" ? [] : CLOSET_ITEMS.filter(i=>i.slot === closetSlot && (c.own.indexOf(i.id) >= 0 || closetOnSale(i)));
   const lim = i=>!!i.season && c.own.indexOf(i.id) < 0;
   $("#cGrid").innerHTML = shown.filter(lim).concat(shown.filter(i=>!lim(i))).map(i=>{
     const own = c.own.indexOf(i.id) >= 0, wear = c.wear[i.slot] === i.id, trying = closetTry === i.id;
@@ -867,13 +880,15 @@ function renderCloset(){
       <span class="nm">${esc(i.name)}</span><span class="pr">${tag}</span>
       ${i.perk && !own ? `<span class="fx">효과</span>` : ""}
       ${i.season && !own ? `<span class="lim${i.season.cls ? " " + i.season.cls : ""}">${esc(i.season.tag || i.season.name)} ~${Number(until[1])}/${Number(until[2])}</span>` : ""}</button>`;
-  }).join("");
+  }).join("") + (closetSlot === "theme" ? themeCards() : "");
+  $("#cGrid").classList.toggle("themes", closetSlot === "theme");
   document.querySelectorAll("#cTabs button").forEach(b=>b.addEventListener("click", ()=>{
     if(closetLocked()) return;
     if(closetSlot !== b.dataset.s) haptic("selection");
     closetSlot = b.dataset.s; renderCloset();
   }));
-  document.querySelectorAll("#cGrid .citem").forEach(b=>b.addEventListener("click", ()=>{ if(!closetLocked()) tapClosetItem(b.dataset.i); }));
+  document.querySelectorAll("#cGrid .citem[data-i]").forEach(b=>b.addEventListener("click", ()=>{ if(!closetLocked()) tapClosetItem(b.dataset.i); }));
+  document.querySelectorAll("#cGrid .citem[data-t]").forEach(b=>b.addEventListener("click", ()=>{ if(!closetLocked()) tapTheme(b.dataset.t); }));
   closetBuyBar();
   adButton();                   // 광고 보고 치즈 받기 (ads.js)
   scheduleClosetBlink();
@@ -962,7 +977,19 @@ function runFxSVG(it, f, i, bats, side){
 /* 입어 보는 중일 때 무대 아래에 뜨는 줄: 이름 · 값 · 사기 · 그만 보기. 치즈가 모자라면 몇 개 모자란지 알려주고 사기는 잠근다 */
 function closetBuyBar(){
   const bar = $("#cBuy"); if(!bar) return;
-  const it = closetItem(closetTry);
+  const it = closetItem(closetTry), th = themeShopItem(themeTry);
+  if(th){
+    const short = th.price - data.closet.cheese;
+    bar.innerHTML = `<div class="cbuy">
+      <div class="who"><b>${esc(th.name)}</b><span>${short > 0 ? "치즈가 " + short + "개 모자라요" : "미리 보는 중 · 옷장을 닫으면 원래대로"}</span>
+        ${th.note ? `<em class="perk">${esc(th.note)}</em>` : ""}<button type="button" class="fxb" id="cThemeHome">홈에서 보기</button></div>
+      <button type="button" class="buy" id="cBuyBtn"${short > 0 ? " disabled" : ""}><span class="ci">${cheeseSVG()}</span>${th.price} 사기</button>
+      <button type="button" class="no" id="cBuyNo">그만 보기</button></div>`;
+    $("#cBuyBtn").addEventListener("click", ()=>buyTheme(th.id));
+    $("#cThemeHome").addEventListener("click", themePeekHome);
+    $("#cBuyNo").addEventListener("click", ()=>{ themeTryStop(); closetLock(); closetSay("어때츄?"); haptic("light"); renderCloset(); });
+    return;
+  }
   if(!it){ bar.innerHTML = ""; return; }
   const lack = it.price - data.closet.cheese;
   bar.innerHTML = `<div class="cbuy">
@@ -1053,6 +1080,7 @@ function tapClosetItem(id){
   const c = data.closet, it = closetItem(id), msg = $("#cMsg");
   if(!it || (c.own.indexOf(id) < 0 && !closetOnSale(it))) return;      // 기간이 지난 한정 아이템은 입어 볼 수도 없다
   if(c.own.indexOf(id) < 0){
+    themeTryStop();
     closetTry = closetTry === id ? "" : id;
     msg.textContent = "";
     closetSay(closetTry ? (c.cheese < it.price ? "치즈가 모자라츄…" : "어울리츄?") : "어때츄?");
@@ -1125,6 +1153,97 @@ function scheduleClosetGlow(){
     glowRun(closetStage, ()=>{ if($("#s-closet").classList.contains("active")) drawClosetStage(); }, scheduleClosetGlow);       // 홈과 같은 번쩍임(mascot.js)
   }, 3200 + Math.random()*3800);
 }
+/* ---------- 옷장 "테마" 칸 (1.5.3) ----------
+   무료 테마(자동 · 기본 · 다크 · 그린)와 가진 치즈 테마는 누르면 바로 바뀐다. 아직 안 산 치즈 테마(파는 동안만 보인다)는
+   누르면 미리 보기: 저장은 하지 않고 화면만 그 테마로 그린다(settings.js 의 shownTheme 이 themeTry 를 먼저 본다).
+   "홈에서 보기"를 누르면 홈도 그 테마로 열린다(맨 위 줄에서 사기 · 옷장으로). 옷장 · 미리 보는 홈 밖으로 가거나
+   앱이 뒤로 가면 원래 테마로 돌아온다 */
+let themeTry = "", themePeek = false;
+function themeTryStop(){
+  if(!themeTry && !themePeek) return;
+  themeTry = ""; themePeek = false;
+  applyTheme(); themePeekBar();
+}
+/* 화면을 옮길 때(shell.js 의 go): 옷장 안, 또는 "홈에서 보기"로 연 홈이면 미리 보기를 이어 간다 */
+function themeTryGo(name){
+  if(!themeTry) return;
+  if(name === "closet"){ themePeek = false; themePeekBar(); return; }
+  if(name === "home" && themePeek) return;
+  themeTryStop();
+}
+function themeMini(id){
+  const c = id === "auto" ? null : THEME_MINI[id];
+  const bg = c ? c[0] : "linear-gradient(135deg, #F3E9DC 50%, #141210 50%)";
+  const p = c || THEME_MINI.cream;
+  return `<span class="tmini" style="background:${bg};box-shadow:0 0 0 2px ${p[3]}">
+    <i class="tl" style="background:${id === "xmnight" ? "repeating-linear-gradient(90deg,#E8504A 0 4px,#F2C766 4px 8px,#5FB86A 8px 12px,#5AA0E0 12px 16px)" : p[4]}"></i>
+    <i class="tc" style="background:${p[1]};box-shadow:0 0 0 2px ${p[3]}"></i><i class="tt" style="background:${p[2]};box-shadow:0 -2px 0 0 ${p[3]}"></i></span>`;
+}
+function themeCards(){
+  const shop = THEME_SHOP.filter(t=>themeOwned(t.id) || closetOnSale(t));
+  const lim = t=>!!t.season && !themeOwned(t.id);
+  const list = shop.filter(lim).concat(THEME_FREE, shop.filter(t=>!lim(t)));      // 파는 중인 한정 테마는 맨 앞에
+  return list.map(t=>{
+    const paid = !!themeShopItem(t.id), own = !paid || themeOwned(t.id), on = data.theme === t.id, trying = themeTry === t.id;
+    const tag = on ? "사용 중" : (own ? (paid ? "보유중" : "무료") : `<span class="ci">${cheeseSVG()}</span>${t.price}`);
+    const until = t.season ? t.season.until.split("-") : [];
+    return `<button type="button" class="citem${own ? " own" : ""}${on ? " wear" : ""}${trying ? " try" : ""}" data-t="${t.id}">
+      <span class="th">${themeMini(t.id)}</span><span class="nm">${esc(t.name)}</span><span class="pr">${tag}</span>
+      ${lim(t) ? `<span class="lim${t.season.cls ? " " + t.season.cls : ""}">${esc(t.season.tag || t.season.name)} ~${Number(until[1])}/${Number(until[2])}</span>` : ""}</button>`;
+  }).join("");
+}
+function tapTheme(id){
+  const t = themeShopItem(id), msg = $("#cMsg");
+  if(t && !themeOwned(id)){
+    if(!closetOnSale(t)) return;
+    closetTry = "";
+    themeTry = themeTry === id ? "" : id;
+    msg.textContent = "";
+    closetSay(themeTry ? (data.closet.cheese < t.price ? "치즈가 모자라츄…" : "어떤 것 같츄?") : "어때츄?");
+    haptic("selection"); closetLock();
+    applyTheme(); renderCloset();
+    if(themeTry && !closetWide()){ const sc = document.querySelector("#s-closet .scroll"); if(sc) sc.scrollTop = 0; }
+    return;
+  }
+  if(!t && !THEME_FREE.some(f=>f.id === id)) return;
+  themeTry = ""; closetTry = "";
+  if(data.theme !== id){ data.theme = id; persist(); haptic("selection"); }
+  applyTheme();
+  msg.textContent = (t ? t.name : THEME_FREE.filter(f=>f.id === id)[0].name) + " 테마로 바꿨어요";
+  closetSay("이걸로 바꿨츄!");
+  renderCloset();
+}
+function buyTheme(id){
+  const t = themeShopItem(id), c = data.closet;
+  if(!t || themeOwned(id)) return;
+  if(!closetOnSale(t)){ haptic("error"); themeTryStop(); if($("#s-closet").classList.contains("active")) renderCloset(); return; }
+  if(c.cheese < t.price){ haptic("error"); toast("치즈가 " + (t.price - c.cheese) + "개 모자라요"); return; }
+  c.cheese -= t.price; c.themes.push(id); data.theme = id;
+  themeTry = ""; themePeek = false;
+  persist(); applyTheme(); themePeekBar(); closetHome();
+  sfx("chu"); haptic("success"); toast(t.name + " 테마를 샀어요");
+  if($("#s-closet").classList.contains("active")){ closetLock(); $("#cMsg").textContent = t.name + " 테마를 샀어요"; closetSay("고맙츄!"); renderCloset(); }
+}
+/* "홈에서 보기": 미리 보는 테마 그대로 홈을 연다. 맨 위 줄(#tPeek)에서 사거나 옷장으로 돌아간다 */
+function themePeekHome(){
+  if(!themeShopItem(themeTry)) return;
+  themePeek = true; haptic("light");
+  go("home"); themePeekBar();
+}
+function themePeekBar(){
+  const bar = $("#tPeek"); if(!bar) return;
+  const t = themePeek ? themeShopItem(themeTry) : null;
+  bar.hidden = !t;
+  if(!t){ bar.innerHTML = ""; return; }
+  const short = t.price - data.closet.cheese;
+  bar.innerHTML = `<span class="t"><b>${esc(t.name)}</b> ${short > 0 ? "치즈가 " + short + "개 모자라요" : "미리 보는 중이츄"}</span>
+    <button type="button" id="tPeekBack">옷장으로</button>
+    <button type="button" class="buy" id="tPeekBuy"${short > 0 ? " disabled" : ""}><span class="ci">${cheeseSVG()}</span>${t.price}</button>`;
+  $("#tPeekBack").addEventListener("click", ()=>{ haptic("light"); go("closet"); });
+  $("#tPeekBuy").addEventListener("click", ()=>buyTheme(t.id));
+}
+/* 앱이 뒤로 가면 미리 보기는 끝(다시 켰을 때 산 줄 알지 않게) */
+document.addEventListener("visibilitychange", ()=>{ if(document.hidden) themeTryStop(); });
 $("#closetClose").addEventListener("click", ()=>go(closetFrom === "result" ? "home" : closetFrom));
 $("#cheeseChip").addEventListener("click", ()=>{ haptic("light"); openCloset("home"); });
 $("#closetBtn").addEventListener("click", ()=>openCloset("result"));

@@ -927,17 +927,35 @@ html.dot .setgrp .ga{color:var(--d-t2);}
 html.dot .setgrp:active{transform:translate(3px,3px);box-shadow:var(--d-box2);}
 html.dot .setback{color:var(--d-t1);}
 html.dot .setback b{font-family:"NeoDGM",monospace;font-weight:400;font-size:20px;-webkit-font-smoothing:none;}
-/* 치즈로 사는 테마 버튼(settings.js 의 renderThemeShop) */
-html.dot #s-set #themeShop{display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:6px;margin-top:8px;}
+/* 치즈 테마는 옷장 "테마" 칸으로 가는 한 줄(settings.js 의 renderThemeShop) */
+html.dot #s-set #themeShop{margin-top:10px;}
 html.dot #s-set #themeShop[hidden]{display:none;}
-html.dot #s-set #themeShop .theme-b{min-width:0;padding-left:4px;padding-right:4px;}
-html.dot #s-set #themeShop .sw{justify-content:center;gap:2px;}
-html.dot #s-set #themeShop .sw i{width:12px;height:12px;}
-html.dot #s-set #themeShop small{display:flex;align-items:center;justify-content:center;gap:3px;font-size:12px;margin-top:2px;}
-html.dot #s-set #themeShop .pr{color:var(--d-acc);font-weight:700;}
-html.dot #s-set #themeShop .pr .ci{width:12px;height:12px;display:inline-block;}
-html.dot #s-set #themeShop .pr .ci svg{width:100%;height:100%;display:block;}
-html.dot #s-set #themeShop .lim{color:var(--d-t2);}
+html.dot #s-set #themeShop .tgo{display:flex;align-items:center;gap:10px;width:calc(100% - 4px);margin:2px;border:0;padding:10px 12px;text-align:left;
+  background:var(--d-surface);color:var(--d-t2);font-size:13.5px;box-shadow:var(--d-box2);}
+html.dot #s-set #themeShop .tgo span{flex:1;min-width:0;word-break:keep-all;}
+html.dot #s-set #themeShop .tgo b{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;color:var(--d-acc);-webkit-font-smoothing:none;white-space:nowrap;}
+html.dot #s-set #themeShop .tgo:active{transform:translate(2px,2px);}
+
+/* 옷장 "테마" 칸의 작은 홈 그림(closet.js 의 themeMini): 맨 위 줄 · 진도 카드 · 탭 줄 */
+html.dot #s-closet .citem .tmini{position:relative;display:block;width:62px;height:48px;margin:4px auto 0;overflow:hidden;}
+html.dot #s-closet .citem .tmini i{position:absolute;left:0;right:0;display:block;}
+html.dot #s-closet .citem .tmini .tl{top:5px;left:6px;right:6px;height:3px;opacity:.85;}
+html.dot #s-closet .citem .tmini .tc{top:15px;left:8px;right:8px;height:14px;}
+html.dot #s-closet .citem .tmini .tt{bottom:0;height:8px;}
+
+/* 홈: "홈에서 보기"로 치즈 테마를 미리 볼 때 맨 위 줄(closet.js 의 themePeekBar) */
+html.dot #s-home .tpeek{display:flex;align-items:center;gap:8px;margin:6px var(--pad-r, 16px) 4px var(--pad-l, 16px);padding:8px 10px;
+  background:var(--d-warn-bg);color:var(--d-t1);box-shadow:var(--d-box);position:relative;z-index:3;}
+html.dot #s-home .tpeek[hidden]{display:none;}
+html.dot #s-home .tpeek .t{flex:1;min-width:0;font-size:13px;color:var(--d-t2);word-break:keep-all;}
+html.dot #s-home .tpeek .t b{display:block;font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;color:var(--d-t1);-webkit-font-smoothing:none;}
+html.dot #s-home .tpeek button{border:0;padding:7px 10px;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;
+  background:var(--d-surface);color:var(--d-t1);box-shadow:var(--d-box2);margin:2px;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;}
+html.dot #s-home .tpeek .buy{background:var(--d-acc);color:var(--d-on-acc, #FCF7F1);}
+html.dot #s-home .tpeek .buy:disabled{background:var(--d-surface);color:var(--d-t2);}
+html.dot #s-home .tpeek .ci{display:inline-block;width:16px;height:16px;image-rendering:pixelated;}
+html.dot #s-home .tpeek .ci svg{width:100%;height:100%;display:block;}
+html.dot #s-home .tpeek button:active{transform:translate(2px,2px);}
 /* 어두운 테마에서도 생일 고르기 글자가 보이게 */
 html.dot #bdayCard .bdrow select{color:var(--d-t1);background-color:var(--d-surface);}
 
