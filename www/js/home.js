@@ -132,7 +132,7 @@ function renderListSub(){
   }
   if(state.listTab === "sub"){
     const used = data.drinks.filter(d=>(d.subRefs||[]).length).length;
-    el.textContent = "부재료 " + data.subs.length + "개"
+    el.textContent = "부재료 " + liveSubs().length + "개"
       + (used ? " · 메뉴 " + used + "곳에 사용" : "");
     return;
   }

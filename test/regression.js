@@ -4774,6 +4774,94 @@ const LEGACY = {
     eq("할 일 검사 중 스크립트 오류 없음", errs, []);
   }
 
+  // 레시피를 보관할 때 그 레시피만 쓰는 부재료도 같이 보관할지 묻는다(1.5.4)
+  {
+    const ctx = await browser.newContext({ viewport: { width: 393, height: 852 } });
+    const pg = await ctx.newPage();
+    const errs = [];
+    pg.on("pageerror", e => errs.push(String(e)));
+    await pg.goto(APP); await pg.waitForTimeout(400);
+    const r = await pg.evaluate(() => {
+      const out = {};
+      markHint("nick"); if(nickAskOpen()) closeNickAsk();
+      if(!$("#onboard").hidden) closeGuide();
+      const sub = (id, name) => ({ id, name, ing: [["자몽", "1kg"]], steps: [], tip: "", place: "", dur: "" });
+      data.subs = [sub("s1", "자몽청"), sub("s2", "바닐라 크림"), sub("s3", "레몬청")];
+      data.drinks = [
+        { id: "a", name: "자몽 블랙티", cat: "tea", ing: [["자몽청", "60g"]], steps: [], subRefs: ["s1", "s2"] },
+        { id: "b", name: "바닐라 라떼", cat: "tea", ing: [["우유", "200ml"]], steps: [], subRefs: ["s2"] },
+        { id: "c", name: "레몬 에이드", cat: "ade", ing: [["레몬청", "60g"]], steps: [], subRefs: ["s3"] }];
+      persist();
+      const ids = a => a.map(x => x.id).join(",");
+      out.solo = [ids(soloSubs(["a"])), ids(soloSubs(["a", "b"])), ids(soloSubs(["b"]))];
+      /* 상세에서 보관하기 → 처음 확인 → 부재료 확인 → 같이 보관 */
+      go("list"); openSheet("a"); $("#sheetArch").click();
+      out.first = $("#dlgT").textContent;
+      $("#dlgYes").click();
+      out.ask = [$("#dlgT").textContent, $("#dlgM").textContent.indexOf("“자몽청”") >= 0, $("#dlgYes").textContent, $("#dlgNo").textContent, $("#dlg").classList.contains("on")];
+      $("#dlgYes").click();
+      out.both = [subById("a") === null, data.drinks[0].arch, !!subById("s1").arch, !!subById("s2").arch];
+      out.lists = [ids(liveSubs()), ids(archSubs())];
+      state.listTab = "sub"; renderList();
+      out.subTab = Array.from(document.querySelectorAll("#subBody .row")).map(r => r.dataset.id).join(",");
+      out.btn = [$("#archBtn").style.display, $("#archCnt").textContent];
+      openArch();
+      out.arch = [Array.from(document.querySelectorAll("#archBody .grp")).map(g => g.textContent).join("|"),
+        Array.from(document.querySelectorAll("#archBody [data-sub]")).map(r => r.dataset.sub).join(",")];
+      $("#archQ").value = "자몽청"; renderArch();
+      out.archQ = document.querySelectorAll("#archBody [data-sub]").length;
+      $("#archQ").value = ""; renderArch();
+      /* 보관함의 부재료 줄을 누르면 부재료 상세, 보관 해제 버튼이 있다 */
+      document.querySelector("#archBody [data-sub]").click();
+      out.subSheet = [!!$("#subArch"), $("#subArch") && $("#subArch").textContent, $("#sheetBody").textContent.indexOf("보관 중인 부재료") >= 0];
+      closeSheet();
+      /* 레시피만: 바닐라 라떼는 보관하지만 바닐라 크림은 남긴다(자몽 블랙티가 보관돼 이제 이 메뉴만 쓴다) */
+      go("list"); state.listTab = "recipe"; openSheet("b"); $("#sheetArch").click(); $("#dlgYes").click();
+      out.onlyAsk = $("#dlgT").textContent;
+      $("#dlgNo").click();
+      out.only = [data.drinks[1].arch, !!subById("s2").arch, $("#dlg").classList.contains("on")];
+      /* 쓰는 메뉴가 남은 부재료 상세에는 보관하기가 없고, 다 보관됐으면 있다 */
+      openSubSheet("s3"); out.liveBtn = !!$("#subArch"); closeSheet();
+      openSubSheet("s2"); out.deadBtn = $("#subArch") && $("#subArch").textContent; closeSheet();
+      /* 여러 개 골라 보관해도 같은 확인 */
+      data.drinks[1].arch = false; persist();
+      out.multi = ids(soloSubs(["b", "c"]));
+      /* 레시피를 꺼내면 같이 보관했던 부재료도 나온다 */
+      out.back = [setArch("a", false), subById("s1").arch];
+      /* 보관한 부재료를 보관 안 된 레시피에 이으면 저장할 때 꺼내진다 */
+      subById("s3").arch = true; persist();
+      out.fix = subById("s3").arch;
+      /* 홈의 부재료 개수는 보관 안 된 것만 */
+      setSubArch("s3", false); setArch("c", true, ["s3"]);
+      state.listTab = "sub"; renderList();
+      renderListSub(); out.count = $("#listSub").textContent;
+      /* 레시피 보내기에는 보관 상태가 실리지 않는다 */
+      out.pack = recipePack(["c"]).drinks[0].subs.map(x => "arch" in x);
+      setArch("c", false); state.listTab = "recipe"; go("home");
+      return out;
+    });
+    await ctx.close();
+    eq("이 레시피들만 쓰는 부재료만 고른다(다른 보관 안 된 메뉴가 쓰면 빠진다)", r.solo, ["s1", "s1,s2", ""]);
+    eq("보관하기는 먼저 지금과 같은 확인", r.first, "레시피 보관");
+    eq("그 다음 부재료도 보관할지 묻는다", r.ask, ["부재료도 보관할까요?", true, "같이 보관", "레시피만", true]);
+    eq("같이 보관: 레시피와 혼자 쓰던 부재료만 보관, 같이 쓰는 부재료는 남는다", r.both, [true, true, true, false]);
+    eq("보관한 부재료는 부재료 목록에서 빠지고 보관 목록에 들어간다", r.lists, ["s2,s3", "s1"]);
+    eq("부재료 탭에도 안 나온다(이름순)", r.subTab, "s3,s2");
+    eq("보관함 버튼은 부재료 탭에서도 보이고 부재료까지 센다", r.btn, ["flex", "2"]);
+    eq("보관함에 레시피 · 부재료 칸이 따로 생긴다", r.arch, ["레시피 1|부재료 1", "s1"]);
+    eq("보관함 검색은 부재료 이름도 찾는다", r.archQ, 1);
+    eq("보관함의 부재료를 누르면 상세가 열리고 보관 해제할 수 있다", r.subSheet, [true, "보관 해제하기", true]);
+    eq("레시피만: 다른 메뉴가 보관돼 혼자 남은 부재료도 묻는다", r.onlyAsk, "부재료도 보관할까요?");
+    eq("레시피만을 고르면 부재료는 그대로", r.only, [true, false, false]);
+    eq("쓰는 메뉴가 남은 부재료엔 보관하기가 없고, 없으면 있다", [r.liveBtn, r.deadBtn], [false, "보관하기"]);
+    eq("여러 개 골라 보관할 때도 각 메뉴만 쓰는 부재료를 모은다", r.multi, "s2,s3");
+    eq("레시피를 꺼내면 같이 보관한 부재료도 꺼낸다", r.back, [1, false]);
+    eq("보관 안 된 레시피가 쓰는 부재료는 보관 상태로 남지 않는다", r.fix, false);
+    ok("부재료 탭 개수는 보관 안 된 것만 센다", /부재료 2개/.test(r.count), r.count);
+    eq("레시피 보내기에는 부재료 보관 상태가 실리지 않는다", r.pack, [false]);
+    eq("부재료 보관 검사 중 스크립트 오류 없음", errs, []);
+  }
+
   await browser.close();
 
   console.log("");

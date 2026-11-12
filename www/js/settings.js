@@ -503,7 +503,7 @@ function applyBackup(text, quiet){
       id:String(s.id||uid()), name:String(s.name||""),
       ing:Array.isArray(s.ing)?s.ing.map(p=>[String(p[0]||""),String(p[1]||"")]):[],
       steps:Array.isArray(s.steps)?s.steps.map(String):[], tip:String(s.tip||""),
-      place:String(s.place||""), dur:String(s.dur||"")
+      place:String(s.place||""), dur:String(s.dur||""), arch:!!s.arch
     });
     const keepEn = ["as-is","upper","lower"].indexOf(d.enCase) >= 0 ? d.enCase : data.enCase;
     const keepShelf = Array.isArray(d.shelf) ? d.shelf.map(s=>({
