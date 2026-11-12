@@ -4,30 +4,59 @@
 /* ---------- 보관함 ----------
    외울 필요가 없어진 레시피를 지우지 않고 빼두는 곳. 내용은 그대로 남고
    학습 덱·레시피 목록·진도율에서만 빠진다. 언제든 되돌릴 수 있다. */
-function setArch(ids, on){
+/* subIds: 같이 보관할 부재료(레시피를 보관할 때만). 돌려주는 값은 레시피를 꺼내면서 같이 꺼낸 부재료 개수 */
+function setArch(ids, on, subIds){
   const list = Array.isArray(ids) ? ids : [ids];
   list.forEach(id=>{
     const d = data.drinks.find(x=>x.id===id);
     if(d) d.arch = !!on;
   });
+  if(on) (subIds||[]).forEach(id=>{ const s = subById(id); if(s) s.arch = true; });
+  const back = subArchFix();
+  persist();
+  return back;
+}
+/* 부재료 하나만 보관 · 해제 (부재료 상세의 버튼) */
+function setSubArch(id, on){
+  const s = subById(id); if(!s) return;
+  s.arch = !!on;
   persist();
 }
+/* 보관하기 확인 뒤: 이 레시피들만 쓰는 부재료가 있으면 같이 보관할지 한 번 더 묻는다. done(같이 보관한 부재료 수) */
+function archWithSubs(ids, done){
+  const solo = soloSubs(ids);
+  if(!solo.length){ setArch(ids, true); done(0); return; }
+  const names = solo.slice(0, 3).map(s=>s.name).join(" · ") + (solo.length > 3 ? " 외" : "");
+  const what = solo.length === 1 ? `“${solo[0].name}”는` : `부재료 ${solo.length}개(${names})는`;
+  const only = ids.length === 1 ? "이 메뉴에서만" : "고른 메뉴에서만";
+  confirmBox("부재료도 보관할까요?",
+    `${what} ${only} 써요. 같이 보관하면 부재료 탭에서 빠지고 보관함으로 가요.`,
+    "같이 보관", ()=>{ setArch(ids, true, solo.map(s=>s.id)); done(solo.length); },
+    {no:"레시피만", onNo:()=>{ setArch(ids, true); done(0); }, haptic:"light"});
+}
 function renderArchBtn(){
-  const n = archDrinks().length;
-  $("#archBtn").style.display = (n && state.listTab === "recipe" && !state.selMode) ? "flex" : "none";
+  const n = archDrinks().length + archSubs().length;
+  $("#archBtn").style.display = (n && (state.listTab === "recipe" || state.listTab === "sub") && !state.selMode) ? "flex" : "none";
   $("#archCnt").textContent = n;
 }
 function renderArch(){
   const q = ($("#archQ").value||"").trim().toLowerCase();
-  const all = archDrinks();
+  const all = archDrinks(), subs = archSubs();
   const hit = all.filter(d=>textHit(d.name+" "+(d.en||"")+" "+ingNames(d), q));
-  $("#archSub").textContent = all.length
-    ? all.length + "개 · 학습과 레시피 목록에서 빠져 있어요"
+  const subHit = subs.filter(s=>subMatch(s, q));         // list.js
+  const n = all.length + subs.length;
+  $("#archSub").textContent = n
+    ? n + "개 · 학습과 레시피 목록에서 빠져 있어요"
     : "비어 있어요";
-  $("#archBody").innerHTML = all.length
-    ? (hit.length
-        ? hit.map(d=>rowHTML(d, "보관")).join("")
-        : noResultHTML(q, "레시피가"))
+  const recipes = hit.map(d=>rowHTML(d, "보관")).join("");
+  const subRows = subHit.map(subRowHTML).join("");       // list.js
+  $("#archBody").innerHTML = n
+    ? ((hit.length || subHit.length)
+        ? (subs.length
+            ? (hit.length ? `<div class="grp">레시피 ${hit.length}</div>` + recipes : "")
+              + (subHit.length ? `<div class="grp">부재료 ${subHit.length}</div>` + subRows : "")
+            : recipes)
+        : noResultHTML(q, "보관한 것이"))
     : `<div class="empty" style="padding:26px 18px 22px">
         ${emptyMouse(2)}
         <b style="display:block;font-size:15px;color:var(--ink);margin-bottom:8px">보관함이 비어 있어요</b>
@@ -45,6 +74,7 @@ $("#archQ").addEventListener("input", renderArch);
 
 function bindRows(sel, selectable){
   document.querySelectorAll(sel+" .row").forEach(r=>r.addEventListener("click",()=>{
+    if(r.dataset.sub){ openSubSheet(r.dataset.sub); return; }      // 보관함의 부재료 줄 (list.js)
     if(selectable && state.selMode){ toggleSel(r.dataset.id); return; }
     openSheet(r.dataset.id);
   }));

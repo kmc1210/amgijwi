@@ -355,6 +355,7 @@ data.subs.forEach(s=>{
   if(typeof s.tip !== "string") s.tip = "";
   if(typeof s.place !== "string") s.place = "";
   if(typeof s.dur !== "string") s.dur = "";
+  s.arch = !!s.arch;               // 보관한 부재료 — 부재료 탭에서 빠지고 보관함에 나온다
 });
 const subById = id => data.subs.find(x=>x.id===id) || null;
 const subsOf  = d => (d.subRefs||[]).map(subById).filter(Boolean);
@@ -367,7 +368,16 @@ const state = {filter:"all", deck:[], idx:0, flipped:false, stat:{ok:0,again:0,t
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-const persist = ()=>{ Store.save(data); };
+/* 보관한 부재료를 보관 안 된 레시피가 쓰고 있으면 꺼낸다. 레시피를 보관 해제하거나 · 다시 이어 주거나 ·
+   받은 레시피가 같은 부재료를 쓰는 경우를 저장할 때 한 곳에서 맞춘다. 돌려주는 값은 꺼낸 개수 */
+function subArchFix(){
+  let n = 0;
+  data.subs.forEach(s=>{
+    if(s.arch && data.drinks.some(d=>!d.arch && (d.subRefs||[]).indexOf(s.id)>=0)){ s.arch = false; n++; }
+  });
+  return n;
+}
+const persist = ()=>{ subArchFix(); Store.save(data); };
 
 /* ---------- 한 번만 보여주는 안내 ----------
    튜토리얼을 앞에 세우는 대신, 막히는 그 자리에서 한 줄만 알려준다.
@@ -401,6 +411,16 @@ if(_lift.moved) persist();          // 부재료를 공용 목록으로 옮긴 �
 /* 보관한 레시피는 학습·목록·진도율 어디에도 끼지 않는다. 지운 게 아니라 잠시 빼둔 것 */
 const liveDrinks = () => data.drinks.filter(d=>!d.arch);
 const archDrinks = () => data.drinks.filter(d=>d.arch);
+const liveSubs = () => data.subs.filter(s=>!s.arch);
+const archSubs = () => data.subs.filter(s=>s.arch);
+/* 고른 레시피들만 쓰는 부재료 — 이 레시피들을 보관하면 쓸 메뉴가 하나도 안 남는 것. 같이 보관할지 묻는다 */
+function soloSubs(ids){
+  const pick = new Set(ids);
+  const mine = new Set();
+  data.drinks.forEach(d=>{ if(pick.has(d.id)) (d.subRefs||[]).forEach(id=>mine.add(id)); });
+  return data.subs.filter(s=>mine.has(s.id) && !s.arch &&
+    !data.drinks.some(d=>!pick.has(d.id) && !d.arch && (d.subRefs||[]).indexOf(s.id)>=0));
+}
 const drinksOf = c => c==="all" ? liveDrinks() : liveDrinks().filter(d=>d.cat===c);
 const has = (arr,id) => arr.indexOf(id)>=0;
 const add = (arr,id) => { if(!has(arr,id)) arr.push(id); };

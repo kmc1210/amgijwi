@@ -404,11 +404,10 @@ $("#selArchive").addEventListener("click", ()=>{
   const label = ids.length === 1 ? `“${first?first.name:""}”를` : `선택한 ${ids.length}개를`;
   confirmBox("레시피 보관",
     `${label} 보관할까요? 내용은 그대로 남고 학습과 목록에서만 빠집니다.`,
-    "보관", ()=>{
-      setArch(ids, true);
-      toast(`${ids.length}개를 보관함으로 옮겼어요`);
+    "보관", ()=>archWithSubs(ids, n=>{                 // study.js — 이 메뉴들만 쓰는 부재료는 같이 보관할지 묻는다
+      toast(`${ids.length}개를 보관함으로 옮겼어요` + (n ? ` · 부재료 ${n}개도 같이` : ""));
       exitSel(); renderHome();
-    });
+    }));
 });
 $("#selDelete").addEventListener("click", ()=>{
   const ids = Array.from(state.sel);
@@ -564,7 +563,7 @@ $("#s-list").addEventListener("click", e=>{
 
 /* ---------- 부재료 (한 번 등록해서 여러 메뉴가 나눠 쓴다) ---------- */
 function subsSorted(){
-  return data.subs.slice().sort((a,b)=>String(a.name).localeCompare(String(b.name),"ko"));
+  return liveSubs().sort((a,b)=>String(a.name).localeCompare(String(b.name),"ko"));
 }
 function subMatch(s, q){
   return textHit([s.name, usesOf(s.id).map(d=>d.name).join(" "),
@@ -575,20 +574,27 @@ function renderSubTab(){
   const hit = subsSorted().filter(s=>subMatch(s,q));
   const box = $("#subBody");
   box.innerHTML = hit.length
-    ? hit.map(s=>{
-        const uses = usesOf(s.id);
-        return `<button class="row" data-id="${esc(s.id)}">
-          <span class="subb">부재료</span>
-          <span class="meta"><b>${esc(s.name)}</b><span>${uses.length
-            ? uses.map(d=>esc(d.name) + (d.arch ? " " + icon("box") : "")).join(" · ")
-            : "아직 연결된 메뉴가 없어요"}</span></span>
-          ${uses.length > 1 ? `<span class="pill done">${uses.length}곳</span>` : ""}
-        </button>`;
-      }).join("")
+    ? hit.map(subRowHTML).join("")
     : (q ? noResultHTML(q, "부재료가")
          : `<div class="empty" style="padding-bottom:18px">${emptyMouse(2)}등록된 부재료가 없어요.<br>오른쪽 위 <b>+</b> 로 자몽청처럼 따로 만들어 두는 재료를<br>한 번만 등록해 두고 여러 메뉴에 연결할 수 있어요.</div>`);
   box.querySelectorAll(".row").forEach(b=>
     b.addEventListener("click", ()=>openSubSheet(b.dataset.id)));
+}
+/* 부재료 한 줄 — 부재료 탭과 보관함(data-sub 로 상세를 연다, study.js bindRows)이 같이 쓴다 */
+function subRowHTML(s){
+  const uses = usesOf(s.id);
+  return `<button class="row" data-id="${esc(s.id)}" data-sub="${esc(s.id)}">
+    <span class="subb">부재료</span>
+    <span class="meta"><b>${esc(s.name)}</b><span>${uses.length
+      ? uses.map(d=>esc(d.name) + (d.arch ? " " + icon("box") : "")).join(" · ")
+      : "아직 연결된 메뉴가 없어요"}</span></span>
+    ${uses.length > 1 ? `<span class="pill done">${uses.length}곳</span>` : ""}
+  </button>`;
+}
+/* 부재료를 바꾼 뒤 보이는 목록을 다시 그린다(보관함에서 열었을 수도 있다) */
+function subRefresh(){
+  renderList();
+  if($("#s-arch").classList.contains("active")) renderArch();
 }
 function subDetailHTML(s){
   const tag = [s.place, s.dur].filter(Boolean).join(" ");
@@ -602,10 +608,12 @@ function subDetailHTML(s){
 function openSubSheet(id){
   const s = subById(id); if(!s) return;
   const uses = usesOf(s.id);
+  const live = uses.filter(d=>!d.arch).length;
   const body = subDetailHTML(s);
   $("#sheetBody").innerHTML = `
     <h2 style="margin:0 0 2px;font-size:23px;font-weight:800;letter-spacing:-.5px">${esc(s.name)}</h2>
     <div style="font-size:12.5px;color:var(--muted);margin-bottom:18px">부재료 · 학습 카드에는 나오지 않아요</div>
+    ${s.arch ? `<div class="banner ok" style="margin:0 0 18px"><span>${icon("box")}</span><div><b>보관 중인 부재료예요.</b><br>부재료 목록에는 나오지 않습니다.</div></div>` : ""}
     ${body || `<div class="empty" style="margin-bottom:4px">내용이 아직 비어 있어요.</div>`}
     <div class="blk" style="margin-bottom:0"><div class="lb">쓰이는 메뉴</div>
       ${uses.length
@@ -614,6 +622,7 @@ function openSubSheet(id){
     </div>
     <button class="cta ghost" id="subLink" style="margin-top:22px">쓰이는 메뉴 고르기</button>
     <button class="cta" id="subEdit">수정하기</button>
+    ${(s.arch || !live) ? `<button class="cta ghost" id="subArch">${s.arch ? "보관 해제하기" : "보관하기"}</button>` : ""}
     <button class="cta danger" id="subKill">삭제하기</button>`;
   $("#mask").classList.add("on"); $("#sheet").classList.add("on");
   fitSheetTitle();             // 긴 이름은 글자를 줄여 한 줄로(study.js)
@@ -621,12 +630,18 @@ function openSubSheet(id){
     b.addEventListener("click", ()=>{ const gid=b.dataset.goId; closeSheet(); setTimeout(()=>openSheet(gid), 220); }));
   $("#subLink").addEventListener("click", ()=>openSubLinkSheet(s.id));
   $("#subEdit").addEventListener("click", ()=>{ closeSheet(); openSubEditor(s.id, "list"); });
+  if($("#subArch")) $("#subArch").addEventListener("click", ()=>{
+    closeSheet();
+    setSubArch(s.id, !s.arch);                         // study.js
+    toast(s.arch ? "보관함으로 옮겼어요" : "보관을 해제했어요");
+    subRefresh();
+  });
   $("#subKill").addEventListener("click", ()=>{
     closeSheet();
     const n = usesOf(s.id).length;
     confirmBox("부재료 삭제",
       `“${s.name}”를 삭제할까요?` + (n ? ` 연결된 메뉴 ${n}곳에서도 함께 빠집니다.` : "") + " 되돌릴 수 없어요.",
-      "삭제", ()=>{ deleteSub(s.id); toast("삭제했어요"); renderList(); });
+      "삭제", ()=>{ deleteSub(s.id); toast("삭제했어요"); subRefresh(); });
   });
 }
 function deleteSub(id){
@@ -672,7 +687,7 @@ function openSubLinkSheet(id){
     });
     persist();
     toast(picked.size ? `메뉴 ${picked.size}곳에 연결했어요` : "연결을 모두 해제했어요");
-    renderList();
+    subRefresh();
     openSubSheet(s.id);
   });
 }
@@ -844,18 +859,17 @@ function openSheet(id){
   $("#sheetArch").addEventListener("click", ()=>{
     closeSheet();
     if(d.arch){
-      setArch(d.id, false);
-      toast("보관을 해제했어요");
+      const back = setArch(d.id, false);
+      toast("보관을 해제했어요" + (back ? ` · 부재료 ${back}개도 꺼냈어요` : ""));
       renderArch(); renderList(); renderHome();
       return;
     }
     confirmBox("레시피 보관",
       `“${d.name}”를 보관할까요? 내용은 그대로 남고 학습과 목록에서만 빠집니다. 보관함에서 언제든 되돌릴 수 있어요.`,
-      "보관", ()=>{
-        setArch(d.id, true);
-        toast("보관함으로 옮겼어요");
+      "보관", ()=>archWithSubs([d.id], n=>{
+        toast("보관함으로 옮겼어요" + (n ? ` · 부재료 ${n}개도 같이` : ""));
         renderList(); renderHome();
-      });
+      }));
   });
   $("#sheetDel").addEventListener("click", ()=>{
     closeSheet();
