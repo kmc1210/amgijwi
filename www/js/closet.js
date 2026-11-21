@@ -783,7 +783,15 @@ function earnVerCheese(){
 }
 let verT = null;
 function verHome(){
-  if(earnVerCheese()){
+  /* 업데이트 소식(news.js)을 먼저 본다 — 새로 설치했는지 가리는 기록을 치즈가 바꾸기 전에 */
+  const due = typeof newsDue === "function" ? newsDue() : [];
+  const gave = earnVerCheese();
+  if(typeof newsHome === "function" && (due.length ? newsHome(gave, due) : newsHome(false, null))){
+    /* 호외가 고마워 치즈를 같이 말한다. 가려 있으면 다음에 홈이 보일 때 */
+    clearTimeout(verT); verT = setTimeout(()=>{ if(!newsTry()) homeSayFlush(); }, 1800);
+    return;
+  }
+  if(gave){
     const said = "업데이트해 줘서 고맙츄! 치즈 " + VER_CHEESE + "개 선물이츄";
     /* 처음 생긴 치즈면 한 번뿐인 옷장 안내에 붙여 바로 말한다(따로 말하면 안내를 덮는다) */
     if(!hintSeen("closet") && !bdayHidden()) giftSay(said); else homeSay(said);

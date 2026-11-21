@@ -1056,3 +1056,23 @@ html.dot #s-set .icon-b.on{background:var(--d-warn-bg);
   /* 왼쪽 칸(무대 + 사기 줄 + 치즈 모으기 · 광고 버튼)이 스크롤 영역 안에 들게 무대를 화면 높이에 맞춰 줄인다 */
   html.dot #s-closet .cstage{height:min(250px, calc(100vh - 420px));min-height:170px;}
 }
+
+/* ── 쥐돌이 뉴스 호외 (news.js) ─────────────────────────
+   업데이트 소식을 신문 한 장으로. 바탕은 시트보다 한 톤 누런 종이, 제호는 32px 도트 글꼴 + 겹줄.
+   기사 제목은 16px 도트 글꼴, 설명은 작은 시스템 글꼴(도트 글꼴은 16px 이상 규칙) */
+html.dot .hoe{display:flex;flex-direction:column;gap:12px;}
+html.dot .hoe-mast{text-align:center;border-bottom:4px double var(--d-line);padding-bottom:6px;}
+html.dot .hoe-kick{font-size:12px;font-weight:800;letter-spacing:.12em;color:var(--d-acc);}
+html.dot .hoe-title{font-family:"NeoDGM",monospace;font-size:32px;line-height:1.15;color:var(--d-t1);-webkit-font-smoothing:none;}
+html.dot .hoe-body{display:flex;gap:10px;align-items:flex-end;}
+html.dot .hoe-arts{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px;}
+html.dot .hoe-art + .hoe-art{border-top:1px solid var(--d-dot);padding-top:12px;}
+html.dot .hoe-ver{font-size:12px;color:var(--d-t2);}
+html.dot .hoe-art h3{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;line-height:1.4;margin:2px 0 4px;color:var(--d-t1);-webkit-font-smoothing:none;}
+html.dot .hoe-art p{margin:0 0 3px;font-size:14px;line-height:1.5;color:var(--d-t2);}
+html.dot .hoe-pic{width:56px;flex:none;}
+html.dot .hoe-pic svg{width:56px;height:80px;display:block;}
+html.dot .hoe-cheese{border:2px dashed var(--d-line);padding:8px 10px;font-size:14px;color:var(--d-t1);background:var(--d-warn-bg);}
+html.dot .hoe-btns{display:flex;gap:8px;}
+html.dot .hoe-btns .cta{flex:1;margin:0;}
+html.dot .hoe-list{max-height:60vh;overflow:auto;}

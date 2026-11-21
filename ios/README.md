@@ -88,6 +88,7 @@
   Info.plist 에 URL 스킴을 등록하지 않는다(등록하면 다른 앱 · 웹에서도 열 수 있게 된다). 쥐돌이 위젯은 주소가 없다.
 - App Group(`group.com.amgijwi.app`)과 위젯의 번들 ID(`com.amgijwi.app.widget`)는 애플 개발자 계정에 등록돼 있어야 서명된다.
   자동 서명(`-allowProvisioningUpdates`)이 만들어 준다. 버전 번호는 앱과 위젯이 같아야 해서 `project.yml` 맨 위 `settings` 한 곳에 둔다.
+  새 버전을 낼 때는 `www/js/news.js` 의 `NEWS` 맨 위에 그 버전 소식(쥐돌이 뉴스 호외)을 한 줄 더한다. 없으면 그 버전은 호외 없이 지나간다.
 
 ### 웹 페이지처럼 보이는 순간을 막는다
 
