@@ -4172,6 +4172,11 @@ const LEGACY = {
       newsSet("1.5.4"); data.closet.verSeen = "1.5"; const c0 = data.closet.cheese; window.__amgijwiInfo = {app: "1.6 (50)"};
       homeSayList.length = 0; await home();
       r.skip = [open(), arts(), data.closet.cheese - c0, !!$("#sheetBody .hoe-cheese"), homeSayList.length];
+      // 치즈를 받고 호외가 가려진 채 앱을 껐다 켜도(newsWait 를 잃어도) 다음 호외에 치즈 한 줄이 남는다
+      closeSheet(); newsAfter(); newsSet("1.5.4"); data.closet.verSeen = "1.5"; localStorage.removeItem(NEWS_CHEESE_KEY);
+      confirmBox("t", "m", "확인", () => {}); await home(); $("#dlgNo").click(); newsWait = null;
+      await home(); r.keep = [open(), !!$("#sheetBody .hoe-cheese"), localStorage.getItem(NEWS_CHEESE_KEY)];
+      closeSheet(); newsAfter(); newsSet("1.5.4"); await home();
       // 지난 소식으로 넘겨도, 닫으면 기다리던 일을 잇는다
       $("#hoeAll").click(); r.all = [open(), arts().length]; $("#hoeOk").click(); r.allClosed = open();
       NEWS.shift();
@@ -4185,7 +4190,7 @@ const LEGACY = {
       window.__amgijwiNative = true;
       // 설정 › 업데이트 소식은 전부
       $("#openNews").click(); r.settings = [open(), arts().length === NEWS.length]; closeSheet();
-      window.__amgijwiInfo = info0; localStorage.removeItem(NEWS_KEY); newsWait = null;
+      window.__amgijwiInfo = info0; localStorage.removeItem(NEWS_KEY); localStorage.removeItem(NEWS_CHEESE_KEY); newsWait = null;
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
       data = JSON.parse(backup); data.closet = cleanCloset(data.closet); persist(); go("home");
       return r;
@@ -4196,6 +4201,7 @@ const LEGACY = {
     eq("호외에서도 도트 글꼴은 16px 보다 작게 쓰지 않는다", r.small, []);
     eq("알겠츄를 누르면 닫히고, 다시 열어도 안 뜬다", [r.closed, r.again], [false, false]);
     eq("건너뛴 버전은 새것부터 묶고, 고마워 치즈는 호외 안 한 줄로", r.skip, [true, ["시험 소식", "쥐돌이 뉴스 호외가 생겼츄"], 5, true, 0]);
+    eq("가려진 채 앱을 껐다 켜도 치즈 한 줄이 남고, 띄우면 지운다", r.keep, [true, true, null]);
     eq("지난 소식으로 넘겨 보고 닫을 수 있다", [r.all[0], r.all[1] >= 5, r.allClosed], [true, true, false]);
     eq("확인창에 가려 있으면 띄우지 않고 기록도 그대로", r.covered, [false, "1.5.4"]);
     eq("가린 창이 닫히고 홈이 보이면 띄운다", r.later, [true, ["쥐돌이 뉴스 호외가 생겼츄"]]);

@@ -75,14 +75,20 @@ $("#mask").addEventListener("click", ()=>{ if(newsDone) setTimeout(newsAfter, 0)
 /* 홈이 그려질 때 closet.js 의 verHome 이 newsDue() 결과와 고마워 치즈를 받았는지를 넘긴다.
    보여줄(기다리는) 호외가 있으면 true — 그때 고마워 치즈 말풍선은 호외가 대신한다 */
 let newsWait = null;
+/* 고마워 치즈는 받는 순간 저장되지만 호외는 가려 있으면 미뤄진다. 그사이 앱을 꺼도 다음에 뜨는 호외가 그 한 줄을 잃지 않게 적어 둔다 */
+const NEWS_CHEESE_KEY = "amgijwi-news-cheese";
+function newsCheeseHeld(){ try{ return localStorage.getItem(NEWS_CHEESE_KEY) === "1"; }catch(e){ return false; } }
+function newsCheeseHold(on){ try{ if(on) localStorage.setItem(NEWS_CHEESE_KEY, "1"); else localStorage.removeItem(NEWS_CHEESE_KEY); }catch(e){} }
 function newsHome(cheese, list){
-  if(list && list.length) newsWait = {list: list, cheese: !!(cheese || (newsWait && newsWait.cheese))};
+  if(cheese) newsCheeseHold(true);
+  if(list && list.length) newsWait = {list: list};
   return !!newsWait;
 }
 /* 가려 있지 않으면 띄운다. 띄웠으면 true */
 function newsTry(){
   if(!newsWait || bdayHidden() || !canInterrupt(true)) return false;
   const w = newsWait; newsWait = null;
+  w.cheese = newsCheeseHeld(); newsCheeseHold(false);
   newsSet(updateMine());
   openNews(w.list, w.cheese, ()=>{
     /* 처음 생긴 치즈면 한 번뿐인 옷장 안내를 놓치지 않게 짧게 한 번 더 */
