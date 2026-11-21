@@ -4105,6 +4105,7 @@ const LEGACY = {
       r.minor = [verMinor("1.5 (23)"), verMinor("1.5.2"), verMinor("2.0"), verMinor("x")];
       // 그전 버전에서 올라온 쓰던 사람(기록 없음 + 안내를 본 적 있음): 처음 열면 5개
       bubbleSaidAt = 0; homeSayList.length = 0;      // 앞 테스트에서 한 말 · 남은 차례가 끼어들지 않게
+      newsSet("99");                                   // 업데이트 소식(호외)은 바로 다음 블록에서 따로 본다
       markHint("closet"); data.closet.verSeen = ""; data.closet.cheese = 20; window.__amgijwiInfo = {app: "1.5 (23)"};
       go("list"); go("home"); r.first = [data.closet.cheese, data.closet.verSeen]; await wait(1900);
       r.say = $("#mbubble").textContent.replace(/\n/g, " ");
@@ -4124,6 +4125,7 @@ const LEGACY = {
       await wait(3700); r.afterOther = $("#mbubble").textContent.replace(/\n/g, " ");
       // 웹 · 버전을 모르면 아무것도 하지 않는다
       window.__amgijwiInfo = info0; r.unknown = earnVerCheese();
+      localStorage.removeItem(NEWS_KEY);
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
       data = JSON.parse(backup); data.closet = cleanCloset(data.closet); persist(); go("home");
       return r;
@@ -4139,6 +4141,73 @@ const LEGACY = {
     eq("버전을 모르면 아무것도 하지 않는다", r.unknown, false);
     eq("방금 다른 말을 했으면 그 말을 덮지 않는다", r.waitOther, "다른 말이츄");
     eq("3.5초 뒤에 기다린 말을 한다", r.afterOther, "기다린 말이츄");
+  }
+
+  // ── 6-10s. 1.5.5 쥐돌이 뉴스 호외(업데이트 소식) ───────────────
+  {
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const wait = ms => new Promise(res => setTimeout(res, ms));
+      const backup = JSON.stringify(data), info0 = window.__amgijwiInfo;
+      const open = () => $("#sheet").classList.contains("on") && !!$("#sheetBody .hoe");
+      const arts = () => Array.from(document.querySelectorAll("#sheetBody .hoe-art h3")).map(e => e.textContent);
+      const home = async () => { go("list"); go("home"); await wait(1900); };
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      bubbleSaidAt = 0; homeSayList.length = 0; newsWait = null; closeSheet();
+      const cur = NEWS[0].v;
+      r.top = [NEWS[0].v === NEWS_FROM, NEWS.every((n, i) => !i || updateNewer(NEWS[i - 1].v, n.v)), NEWS.every(n => n.t && n.l.length && /^\d{4}-\d\d-\d\d$/.test(n.d))];
+      // 새로 설치한 사람(쓴 흔적 없음)에게는 띄우지 않고 기록만
+      data.hints = []; data.closet.cheese = 0; data.closet.roundCount = 0; data.closet.verSeen = verMinor(cur); data.drinks.forEach(d => { d.sample = true; });
+      localStorage.removeItem(NEWS_KEY); window.__amgijwiInfo = {app: cur + " (40)"};
+      await home(); r.fresh = [open(), newsGet()];
+      // 이 기능 전 버전에서 올라온 쓰던 사람(기록 없음): 지금 버전 소식만 한 번
+      markHint("closet"); data.closet.cheese = 3; localStorage.removeItem(NEWS_KEY);
+      await home(); r.first = [open(), arts(), newsGet(), $("#sheetBody .hoe-title").textContent, !!$("#sheetBody .hoe-cheese")];
+      // 도트 글꼴은 16px 이상
+      r.small = Array.from(document.querySelectorAll("#sheetBody *")).filter(el => { const cs = getComputedStyle(el); return cs.fontFamily.indexOf("NeoDGM") >= 0 && parseFloat(cs.fontSize) < 16 && el.textContent.trim(); }).map(el => el.className);
+      $("#hoeOk").click(); r.closed = open();
+      await home(); r.again = open();
+      // 몇 버전을 건너뛰면 사이 소식을 새것부터 한 장에 · 앞 두 자리가 바뀌면 고마워 치즈를 호외 안 한 줄로(말풍선은 따로 안 한다)
+      NEWS.unshift({v: "1.6", d: "2026-12-01", t: "시험 소식", l: ["시험 줄"]});
+      newsSet("1.5.4"); data.closet.verSeen = "1.5"; const c0 = data.closet.cheese; window.__amgijwiInfo = {app: "1.6 (50)"};
+      homeSayList.length = 0; await home();
+      r.skip = [open(), arts(), data.closet.cheese - c0, !!$("#sheetBody .hoe-cheese"), homeSayList.length];
+      // 치즈를 받고 호외가 가려진 채 앱을 껐다 켜도(newsWait 를 잃어도) 다음 호외에 치즈 한 줄이 남는다
+      closeSheet(); newsAfter(); newsSet("1.5.4"); data.closet.verSeen = "1.5"; localStorage.removeItem(NEWS_CHEESE_KEY);
+      confirmBox("t", "m", "확인", () => {}); await home(); $("#dlgNo").click(); newsWait = null;
+      await home(); r.keep = [open(), !!$("#sheetBody .hoe-cheese"), localStorage.getItem(NEWS_CHEESE_KEY)];
+      closeSheet(); newsAfter(); newsSet("1.5.4"); await home();
+      // 지난 소식으로 넘겨도, 닫으면 기다리던 일을 잇는다
+      $("#hoeAll").click(); r.all = [open(), arts().length]; $("#hoeOk").click(); r.allClosed = open();
+      NEWS.shift();
+      // 확인창에 가려 있으면 미뤘다가 다음에 홈이 보일 때
+      newsSet("1.5.4"); window.__amgijwiInfo = {app: cur + " (40)"};
+      confirmBox("t", "m", "확인", () => {}); await home(); r.covered = [open(), newsGet()];
+      $("#dlgNo").click(); await home(); r.later = [open(), arts()]; closeSheet(); newsAfter();
+      // 옛 앱으로 되돌아가면(기록이 더 새 버전) 띄우지 않는다 · 웹이면 아무것도 하지 않는다
+      newsSet("9.0"); await home(); r.older = open();
+      delete window.__amgijwiNative; r.web = newsDue().length;
+      window.__amgijwiNative = true;
+      // 설정 › 업데이트 소식은 전부
+      $("#openNews").click(); r.settings = [open(), arts().length === NEWS.length]; closeSheet();
+      window.__amgijwiInfo = info0; localStorage.removeItem(NEWS_KEY); localStorage.removeItem(NEWS_CHEESE_KEY); newsWait = null;
+      delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      data = JSON.parse(backup); data.closet = cleanCloset(data.closet); persist(); go("home");
+      return r;
+    });
+    eq("소식은 새 버전부터 · 맨 위가 호외 시작 버전 · 날짜 · 제목 · 설명이 있다", r.top, [true, true, true]);
+    eq("새로 설치한 사람에게는 띄우지 않고 기록만", r.fresh, [false, "1.5.5"]);
+    eq("쓰던 사람이 업데이트하고 처음 홈을 열면 지금 버전 소식 한 장", r.first, [true, ["쥐돌이 뉴스 호외가 생겼츄"], "1.5.5", "쥐돌이 뉴스", false]);
+    eq("호외에서도 도트 글꼴은 16px 보다 작게 쓰지 않는다", r.small, []);
+    eq("알겠츄를 누르면 닫히고, 다시 열어도 안 뜬다", [r.closed, r.again], [false, false]);
+    eq("건너뛴 버전은 새것부터 묶고, 고마워 치즈는 호외 안 한 줄로", r.skip, [true, ["시험 소식", "쥐돌이 뉴스 호외가 생겼츄"], 5, true, 0]);
+    eq("가려진 채 앱을 껐다 켜도 치즈 한 줄이 남고, 띄우면 지운다", r.keep, [true, true, null]);
+    eq("지난 소식으로 넘겨 보고 닫을 수 있다", [r.all[0], r.all[1] >= 5, r.allClosed], [true, true, false]);
+    eq("확인창에 가려 있으면 띄우지 않고 기록도 그대로", r.covered, [false, "1.5.4"]);
+    eq("가린 창이 닫히고 홈이 보이면 띄운다", r.later, [true, ["쥐돌이 뉴스 호외가 생겼츄"]]);
+    eq("옛 앱으로 돌아가면 띄우지 않는다", r.older, false);
+    eq("웹에서는 아무것도 하지 않는다", r.web, 0);
+    eq("설정 › 업데이트 소식은 지난 소식 전부", r.settings, [true, true]);
   }
 
   // ── 6-10s. 1.5 크리스마스 앱 아이콘 ──────────────────────────

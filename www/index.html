@@ -22,9 +22,9 @@
      두 벌이면 교집합이 적용되니 고칠 때는 반드시 둘 다 고친다. 어긋나면 test/headers.js 가 실패한다. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <title>암기쥐 · 카페 음료 레시피 외우기</title>
-<link rel="stylesheet" href="style.css?v=110">
+<link rel="stylesheet" href="style.css?v=111">
 <!-- iOS 앱에서만 쓰는 도트 화면. 모든 규칙이 html.dot 아래에 있어 웹에는 아무 영향이 없다 -->
-<link rel="stylesheet" href="dot.css?v=110">
+<link rel="stylesheet" href="dot.css?v=111">
 </head>
 <body>
 <div class="phone">
@@ -370,6 +370,12 @@
           <button class="cta ghost" id="openGuide">사용법 보기</button>
         </div>
 
+        <div class="setcard" data-group="help">
+          <h4>업데이트 소식</h4>
+          <p>버전마다 바뀐 점을 쥐돌이 뉴스로 모아 봐요.</p>
+          <button class="cta ghost" id="openNews">지난 소식 보기</button>
+        </div>
+
         <!-- 서버가 없어 메일로 받는다. 메일 앱이 받는 사람 · 제목 · 앱 정보를 채운 채로 열리고, 보내기는 사용자가 누른다 -->
         <div class="setcard" data-env="app" data-group="help">
           <h4>쥐돌이에게 건의하기</h4>
@@ -580,30 +586,31 @@
 
 <!-- 한 파일이던 app.js 를 구역별로 나눴다. 전역을 그대로 쓰는 고전 script 라 순서가 중요하다.
      core 가 데이터와 헬퍼를 만들고, boot 가 마지막에 첫 화면을 그린다. -->
-<script src="js/core.js?v=110"></script>
-<script src="js/sound.js?v=110"></script>
-<script src="js/mascot.js?v=110"></script>
-<script src="js/shell.js?v=110"></script>
-<script src="js/home.js?v=110"></script>
-<script src="js/cal.js?v=110"></script>
-<script src="js/todo.js?v=110"></script>
-<script src="js/study.js?v=110"></script>
-<script src="js/list.js?v=110"></script>
-<script src="js/editor.js?v=110"></script>
-<script src="js/settings.js?v=110"></script>
-<script src="js/guide.js?v=110"></script>
-<script src="js/closet.js?v=110"></script>
-<script src="js/birthday.js?v=110"></script>
-<script src="js/ads.js?v=110"></script>
-<script src="js/waiting.js?v=110"></script>
-<script src="js/widget.js?v=110"></script>
-<script src="js/nick.js?v=110"></script>
-<script src="js/recipeshare.js?v=110"></script>
-<script src="js/themefx.js?v=110"></script>
-<script src="js/xmasfx.js?v=110"></script>
-<script src="js/appicon.js?v=110"></script>
-<script src="js/update.js?v=110"></script>
-<script src="js/icloud.js?v=110"></script>
-<script src="js/boot.js?v=110"></script>
+<script src="js/core.js?v=111"></script>
+<script src="js/sound.js?v=111"></script>
+<script src="js/mascot.js?v=111"></script>
+<script src="js/shell.js?v=111"></script>
+<script src="js/home.js?v=111"></script>
+<script src="js/cal.js?v=111"></script>
+<script src="js/todo.js?v=111"></script>
+<script src="js/study.js?v=111"></script>
+<script src="js/list.js?v=111"></script>
+<script src="js/editor.js?v=111"></script>
+<script src="js/settings.js?v=111"></script>
+<script src="js/guide.js?v=111"></script>
+<script src="js/closet.js?v=111"></script>
+<script src="js/birthday.js?v=111"></script>
+<script src="js/ads.js?v=111"></script>
+<script src="js/waiting.js?v=111"></script>
+<script src="js/widget.js?v=111"></script>
+<script src="js/nick.js?v=111"></script>
+<script src="js/recipeshare.js?v=111"></script>
+<script src="js/themefx.js?v=111"></script>
+<script src="js/xmasfx.js?v=111"></script>
+<script src="js/appicon.js?v=111"></script>
+<script src="js/update.js?v=111"></script>
+<script src="js/news.js?v=111"></script>
+<script src="js/icloud.js?v=111"></script>
+<script src="js/boot.js?v=111"></script>
 </body>
 </html>
