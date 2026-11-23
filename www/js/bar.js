@@ -291,6 +291,9 @@ function renderSteps(){
   if(mode === "mem"){ el.innerHTML = '<div class="bx-hidden">외워서 하는 중 · ' + list.length + '단계</div>'; return; }
   const now = PLAN[cur] ? PLAN[cur].si : 99;
   el.innerHTML = "<ol>" + list.map((s, i)=>'<li class="' + (i < now ? "done" : i === now ? "now" : "") + '">' + esc(s) + "</li>").join("") + "</ol>";
+  // 두 칸 화면에선 순서 칸 높이가 묶여 안에서 굴러간다 — 지금 줄이 칸 안에 보이게(화면 스크롤은 건드리지 않는다)
+  const li = el.querySelector("li.now");
+  if(li && el.scrollHeight > el.clientHeight) el.scrollTop += li.getBoundingClientRect().top - el.getBoundingClientRect().top - 8;
 }
 function renderHand(){
   const h = B("hand");

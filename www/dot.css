@@ -1225,3 +1225,17 @@ html.dot #s-bar .bx-addrow{justify-self:start;}
 html.dot #s-bar .bx-preview{background:var(--surface);border:2px solid var(--line);padding:8px 10px;font-size:14px;}
 html.dot #s-bar .bx-preview .bx-lab{font-size:16px;margin-bottom:4px;}
 html.dot #s-bar .bx-preview ol{margin:0;padding-left:22px;}
+
+/* 바 연습 두 칸: 옷장과 같은 조건(iPhone Duo 펼침 · 아이패드 가로)에서 왼쪽에 순서 · 무대, 오른쪽에 붓기 카드 · 도구.
+   한 칸이면 도구를 꾹 누를 때 컵이 화면 위로 밀려나 얼마나 부었는지 안 보인다 */
+@media (min-width: 760px) and (min-height: 600px) and (min-aspect-ratio: 5/4){
+  /* 머리 · 탭도 두 칸 가장자리(가운데 920)에 맞춘다 */
+  html.dot #s-bar .bx-head{box-sizing:border-box;width:100%;max-width:calc(920px + var(--pad-l) + var(--pad-r));margin-left:auto;margin-right:auto;}
+  /* 탭도 머리와 같은 식 — 좌우 안전 영역이 달라도(카메라 쪽만 넓은 가로) 가장자리가 맞게 */
+  html.dot #s-bar .bx-tabs{margin-left:max(var(--pad-l), calc((100% - 920px - var(--pad-l) - var(--pad-r)) / 2 + var(--pad-l)));margin-right:max(var(--pad-r), calc((100% - 920px - var(--pad-l) - var(--pad-r)) / 2 + var(--pad-r)));}
+  html.dot #s-bar .bx-scroll > #bar-play{max-width:920px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:22px;align-items:start;}
+  html.dot #s-bar .bx-left{position:sticky;top:0;}
+  /* 단계가 많은 레시피여도 무대가 화면 안에 들게 순서 칸 높이를 묶고 안에서 굴린다(지금 줄은 bar.js 가 보이게 맞춤).
+     정답 고치기 · 결과는 입력 칸이 너무 길어지지 않게 가운데 560 그대로 */
+  html.dot #s-bar .bx-steps{max-height:max(64px, calc(100vh - 480px));overflow:auto;}
+}
