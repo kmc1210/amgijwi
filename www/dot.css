@@ -1225,3 +1225,13 @@ html.dot #s-bar .bx-addrow{justify-self:start;}
 html.dot #s-bar .bx-preview{background:var(--surface);border:2px solid var(--line);padding:8px 10px;font-size:14px;}
 html.dot #s-bar .bx-preview .bx-lab{font-size:16px;margin-bottom:4px;}
 html.dot #s-bar .bx-preview ol{margin:0;padding-left:22px;}
+
+/* 바 연습 두 칸: 옷장과 같은 조건(iPhone Duo 펼침 · 아이패드 가로)에서 왼쪽에 순서 · 무대, 오른쪽에 붓기 카드 · 도구.
+   한 칸이면 도구를 꾹 누를 때 컵이 화면 위로 밀려나 얼마나 부었는지 안 보인다 */
+@media (min-width: 760px) and (min-height: 600px) and (min-aspect-ratio: 5/4){
+  /* 머리 · 탭도 두 칸 가장자리(가운데 920)에 맞춘다 */
+  html.dot #s-bar .bx-head{box-sizing:border-box;width:100%;max-width:calc(920px + var(--pad-l) + var(--pad-r));margin-left:auto;margin-right:auto;}
+  html.dot #s-bar .bx-tabs{margin-left:max(var(--pad-l), calc((100% - 920px) / 2));margin-right:max(var(--pad-r), calc((100% - 920px) / 2));}
+  html.dot #s-bar .bx-scroll > #bar-play{max-width:920px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:22px;align-items:start;}
+  html.dot #s-bar .bx-left{position:sticky;top:0;}
+}
