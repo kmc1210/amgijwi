@@ -547,6 +547,7 @@ function applyBackup(text, quiet){
         sample:!!x.sample,                   /* 손대지 않은 예시 (core.js 의 sampleSig) */
         at:String(x.at||""),                 /* 등록한 날. 옛 백업에는 없어서 빈 값이 된다 */
         subRefs:Array.isArray(x.subRefs)?x.subRefs.map(String):[],
+        plan:cleanBarPlan(x.plan),           /* 바 연습에서 고친 정답(bar.js). 없거나 깨졌으면 칸이 사라진다 */
         subs:Array.isArray(x.subs)?x.subs.map(cleanSub):[]
       })), mastered:Array.isArray(d.mastered)?d.mastered:[], needReview:Array.isArray(d.needReview)?d.needReview:[],
       sampleMarked:d.sampleMarked ? 1 : 0};

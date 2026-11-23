@@ -153,6 +153,9 @@ function importRecipes(drinks){
   const had = new Set(data.drinks.map(x=>x.id));
   fresh.forEach(r=>{
     const i = data.drinks.findIndex(x=>x.id === r.id);
+    /* 바 연습에서 고친 정답은 보내지 않는다(recipePack). 바꾸는 레시피의 순서 문장이 그대로면 내 고친 정답을 남긴다 (bar.js) */
+    const kept = i >= 0 ? barKeepPlan(data.drinks[i], r.steps) : undefined;
+    if(kept) r.plan = kept;
     if(i >= 0) data.drinks[i] = r; else data.drinks.push(r);
   });
   new Set(fresh.map(r=>r.id)).forEach(id=>{ if(had.has(id)) replaced++; else added++; });

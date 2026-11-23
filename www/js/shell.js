@@ -46,6 +46,7 @@ function go(name){
   if(typeof themeTryGo === "function") themeTryGo(name);      // 옷장에서 미리 보던 테마는 옷장 · 미리 보는 홈 밖으로 가면 끝 (closet.js)
   setTimeout(themeFxSync, 0);   // 홈이면 테마 움직임을 켜고, 아니면 멈춘다 (themefx.js)
   if(name !== "result"){ stopEat(); stopCaw(); }
+  if(name !== "bar") barLeave();          // 바 연습에서 나가면 붓던 것 · 추출 시계를 멈춘다 (bar.js)
   if(name !== "home"){ stopSip(); stopPanic(); }
   if(name !== "list" && state.selMode) exitSel();
   document.querySelectorAll(".screen").forEach(el=>el.classList.remove("active"));
