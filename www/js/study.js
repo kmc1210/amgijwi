@@ -136,12 +136,15 @@ function openModeSheet(customPool, scopeLabel){
       ${pool.length > 1 ? `<button class="linkbtn" id="pickBtn" style="padding:0;min-height:0">고르기</button>` : ""}
     </div>
     ${opt("flip",icon("flip"),"카드 뒤집기","이름 보고 재료를 통째로 떠올리기")}
-    ${opt("blank",icon("pencil"),"빈칸 채우기","용량만 가리고 하나씩 확인하기")}`;
+    ${opt("blank",icon("pencil"),"빈칸 채우기","용량만 가리고 하나씩 확인하기")}
+    ${opt("bar",icon("cup"),"바 연습 <i class=\"betatag\">베타</i>","도구를 꾹 눌러 레시피대로 한 잔 만들어 보기")}`;
   $("#mask").classList.add("on"); $("#sheet").classList.add("on");
   const pick = $("#pickBtn");
   if(pick) pick.addEventListener("click", ()=>openPickSheet(pool, scope));
   $("#sheetBody").querySelectorAll(".row").forEach(b=>{
     b.addEventListener("click", ()=>{
+      /* 바 연습(베타 · bar.js)은 카드 학습이 아니라 "지난번" 방식으로 적지 않는다 */
+      if(b.dataset.mode === "bar"){ closeSheet(); setTimeout(()=>openBar(pool), 180); return; }
       data.mode = b.dataset.mode; persist();
       closeSheet();
       setTimeout(()=>startSession(custom), 180);

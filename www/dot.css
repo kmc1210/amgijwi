@@ -1076,3 +1076,152 @@ html.dot .hoe-cheese{border:2px dashed var(--d-line);padding:8px 10px;font-size:
 html.dot .hoe-btns{display:flex;gap:8px;}
 html.dot .hoe-btns .cta{flex:1;margin:0;}
 html.dot .hoe-list{max-height:60vh;overflow:auto;}
+
+/* ── 바 연습 (베타 · js/bar.js) ─────────────────
+   시안 그대로. 색은 테마 팔레트(--d-*)를 짧은 이름으로 받아 쓴다. 클래스는 bx- 로 시작해 다른 화면과 안 겹친다 */
+html.dot #s-bar{
+  --bg:var(--d-bg); --surface:var(--d-surface); --line:var(--d-line); --drop:var(--d-drop);
+  --t1:var(--d-t1); --t2:var(--d-t2); --t3:var(--d-dot); --acc:var(--d-acc); --acc-hi:var(--d-acc-hi); --on-acc:var(--d-on-acc);
+  --warn:var(--d-warn-bg); --warn-t:var(--d-warn-t); --bad:var(--d-late); --ok:#3E7A4F;
+  --paper:var(--d-bg); --bar:var(--d-drop); --bar2:var(--d-dot);
+  background:var(--d-bg); color:var(--d-t1);}
+html.dot body[data-theme="dark"] #s-bar,
+html.dot body[data-theme="hwnight"] #s-bar,
+html.dot body[data-theme="xmnight"] #s-bar{--ok:#7CC48F; --paper:var(--d-surface); --bar:var(--d-bg); --bar2:var(--d-line);}   /* 어두운 테마: 바 받침이 까만 덩어리가 되지 않게 */
+html.dot #s-bar [hidden]{display:none !important;}   /* .bx-mode 처럼 display 를 준 칸도 hidden 이면 숨긴다 */
+html.dot #s-bar .bx-sp{display:block;}
+html.dot #s-bar .bx-btn{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;background:var(--acc);color:var(--on-acc);border:2px solid var(--line);border-radius:0;box-shadow:2px 2px 0 var(--drop);padding:8px 14px;cursor:pointer;line-height:1.2;}
+html.dot #s-bar .bx-btn.ghost{background:var(--surface);color:var(--t1);}
+html.dot #s-bar .bx-btn:active{transform:translate(2px,2px);box-shadow:none;}
+html.dot #s-bar .bx-btn:disabled{opacity:.45;transform:none;box-shadow:2px 2px 0 var(--drop);}
+html.dot #s-bar .bx-inp{font:inherit;font-size:16px;border:2px solid var(--line);border-radius:0;background:var(--surface);color:var(--t1);padding:4px 8px;min-width:0;-webkit-user-select:text;user-select:text;}
+html.dot #s-bar .bx-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+
+/* 위: 닫기 · 이름 · 처음부터 · 보며/외워서 */
+html.dot #s-bar .bx-head{display:flex;align-items:center;gap:8px;padding:6px var(--pad-r) 10px var(--pad-l);}
+html.dot #s-bar .bx-head .icon-btn{flex:0 0 auto;border:0;border-radius:0;background:var(--surface);color:var(--t1);
+  box-shadow:0 -2px 0 0 var(--line), 0 2px 0 0 var(--line), -2px 0 0 0 var(--line), 2px 0 0 0 var(--line);}
+html.dot #s-bar .bx-ttl{flex:1;min-width:0;}
+html.dot #s-bar .bx-ttl b{display:block;font-family:"NeoDGM",monospace;font-weight:400;font-size:20px;line-height:1.2;-webkit-font-smoothing:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+html.dot #s-bar .bx-ttl > span{display:block;font-size:12px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+html.dot #s-bar .bx-beta,
+html.dot #sheetBody .betatag{font-style:normal;font-size:11px;font-weight:700;letter-spacing:.04em;padding:1px 5px;background:var(--d-warn-bg);color:var(--d-warn-t);border:1px solid var(--d-warn-t);vertical-align:1px;}
+html.dot #s-bar .bx-rebtn{flex:0 0 auto;width:34px;height:34px;padding:0;font-size:18px;line-height:1;background:var(--surface);color:var(--t1);border:2px solid var(--line);border-radius:0;cursor:pointer;}
+html.dot #s-bar .bx-rebtn:active{background:var(--line);color:var(--surface);}
+html.dot #s-bar .bx-mode{flex:0 0 auto;display:flex;height:34px;border:2px solid var(--line);}
+html.dot #s-bar .bx-mode button{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;background:var(--surface);color:var(--t2);border:0;border-radius:0;padding:0 8px;line-height:1;cursor:pointer;}
+html.dot #s-bar .bx-mode button.on{background:var(--acc);color:var(--on-acc);}
+html.dot #s-bar .bx-tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid var(--line);margin:0 var(--pad-r) 0 var(--pad-l);}
+html.dot #s-bar .bx-tabs button{font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;padding:9px 4px;border:0;border-radius:0;background:transparent;color:var(--t2);cursor:pointer;}
+html.dot #s-bar .bx-tabs button.on{color:var(--t1);box-shadow:inset 0 -4px 0 var(--acc);}
+html.dot #s-bar .bx-scroll > div{max-width:560px;margin-left:auto;margin-right:auto;}
+
+/* 연습: 레시피 고르기 · 순서 */
+html.dot #s-bar .bx-pick{display:flex;gap:8px;align-items:center;padding-top:4px;}
+html.dot #s-bar .bx-lb{font-size:12px;color:var(--t2);flex:0 0 auto;}
+html.dot #s-bar .bx-selwrap{flex:1;position:relative;display:flex;min-width:0;}
+html.dot #s-bar .bx-selwrap select{flex:1;min-width:0;-webkit-appearance:none;appearance:none;font-family:"NeoDGM",monospace;-webkit-font-smoothing:none;cursor:pointer;padding:6px 36px 6px 10px;}
+html.dot #s-bar .bx-selwrap::after{content:"";position:absolute;right:12px;top:50%;width:10px;height:6px;margin-top:-3px;background:var(--t1);pointer-events:none;
+  clip-path:polygon(0 0,100% 0,100% 34%,80% 34%,80% 67%,60% 67%,60% 100%,40% 100%,40% 67%,20% 67%,20% 34%,0 34%);}
+html.dot #s-bar .bx-steps{margin-top:10px;padding:8px 10px;background:var(--surface);border:2px dashed var(--line);min-height:44px;font-size:14px;}
+html.dot #s-bar .bx-steps ol{margin:0;padding-left:22px;}
+html.dot #s-bar .bx-steps li{color:var(--t3);padding:1px 0;}
+html.dot #s-bar .bx-steps li.now{color:var(--t1);font-weight:700;}
+html.dot #s-bar .bx-steps li.done{text-decoration:line-through;}
+html.dot #s-bar .bx-hidden{color:var(--t2);font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;}
+
+/* 바: 쥐돌이 · 말풍선 · 계량 · 컵 */
+html.dot #s-bar .bx-stage{position:relative;margin-top:10px;height:250px;background:linear-gradient(var(--paper) 0 78%,var(--bar2) 78% 80%,var(--bar) 80%);border:2px solid var(--line);overflow:hidden;}
+html.dot #s-bar .bx-cupbox{position:absolute;left:54%;bottom:20px;transform:translateX(-50%);}
+html.dot #s-bar .bx-cupbox .bx-sp{width:124px;height:174px;}
+html.dot #s-bar .bx-mouse{position:absolute;left:6px;bottom:18px;}
+html.dot #s-bar .bx-mouse svg{display:block;width:70px;height:auto;}
+html.dot #s-bar .bx-bubble{position:absolute;left:8px;top:8px;max-width:118px;background:var(--surface);border:2px solid var(--line);padding:6px 8px;font-family:"NeoDGM",monospace;font-size:16px;line-height:1.3;-webkit-font-smoothing:none;color:var(--t1);}
+html.dot #s-bar .bx-bubble.bad{border-color:var(--bad);}
+html.dot #s-bar .bx-meter{position:absolute;right:8px;top:8px;width:104px;text-align:right;}
+html.dot #s-bar .bx-big{font-family:"NeoDGM",monospace;font-size:32px;line-height:1;-webkit-font-smoothing:none;color:var(--t1);}
+html.dot #s-bar .bx-tg{font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;color:var(--t3);}
+html.dot #s-bar .bx-lbl{font-size:12px;color:var(--t2);}
+html.dot #s-bar .bx-verdict{font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;margin-top:4px;}
+html.dot #s-bar .ok{color:var(--ok);}
+html.dot #s-bar .bad{color:var(--bad);}
+html.dot #s-bar .bx-sm{font-size:12px;color:var(--t2);}
+
+/* 에스프레소 판 */
+html.dot #s-bar .bx-espo{position:absolute;top:0;right:0;bottom:0;left:0;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;}
+html.dot #s-bar .bx-lab{font-family:"NeoDGM",monospace;font-size:20px;-webkit-font-smoothing:none;}
+html.dot #s-bar .bx-clock{font-family:"NeoDGM",monospace;font-size:32px;-webkit-font-smoothing:none;}
+html.dot #s-bar .bx-ebar{width:220px;max-width:80%;height:16px;border:2px solid var(--line);position:relative;background:var(--surface);}
+html.dot #s-bar .bx-ebar i{position:absolute;top:0;bottom:0;left:0;width:0;background:#5A3420;}
+html.dot #s-bar .bx-ebar b{position:absolute;top:-2px;bottom:-2px;left:62.5%;width:12.5%;border-left:2px dashed var(--ok);border-right:2px dashed var(--ok);}
+html.dot #s-bar .bx-opts{display:flex;gap:8px;}
+
+/* 붓기 카드 — 늘 같은 높이라 도구 칸이 밀리지 않는다 */
+html.dot #s-bar .bx-handcard{margin-top:10px;min-height:96px;box-sizing:border-box;border:2px dashed var(--acc);background:var(--surface);padding:8px 10px;display:flex;gap:10px;align-items:center;font-size:14px;}
+html.dot #s-bar .bx-handcard p{margin:0;flex:1;min-width:0;}
+html.dot #s-bar .bx-handcard.idle{border-color:var(--drop);color:var(--t3);}
+html.dot #s-bar .bx-handcard .bx-inp{flex:1;}
+html.dot #s-bar .bx-hbtns{display:flex;flex-direction:column;gap:6px;}
+html.dot #s-bar .bx-hbtns .bx-btn{padding:5px 10px;}
+
+/* 도구 16개 */
+html.dot #s-bar .bx-tools{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:10px;}
+html.dot #s-bar .bx-tool{border:2px solid var(--line);border-radius:0;background:var(--surface);color:var(--t1);padding:5px 1px 3px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;font:inherit;min-width:0;}
+html.dot #s-bar .bx-tool .bx-sp{width:30px;height:30px;}
+html.dot #s-bar .bx-tool span{font-family:"NeoDGM",monospace;font-size:16px;line-height:1.1;-webkit-font-smoothing:none;white-space:nowrap;letter-spacing:-1px;}
+html.dot #s-bar .bx-tool small{font-size:11px;color:var(--t3);line-height:1;white-space:nowrap;}
+html.dot #s-bar .bx-tool.glow{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc-hi);}
+html.dot #s-bar .bx-tool.wrong{animation:bxShake .25s;}
+html.dot #s-bar .bx-tool.press{background:var(--warn);color:var(--warn-t);}
+@keyframes bxShake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+
+/* 직접 만들기 기록 */
+html.dot #s-bar .bx-freelog{margin-top:10px;border:2px dashed var(--line);background:var(--surface);padding:8px 10px;font-size:14px;}
+html.dot #s-bar .bx-freelog ol{margin:4px 0 8px;padding-left:22px;max-height:132px;overflow:auto;}
+html.dot #s-bar .bx-empty{color:var(--t3);margin:4px 0 8px;}
+html.dot #s-bar .bx-rbtns{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+html.dot #s-bar .bx-freelog .bx-rbtns{justify-content:space-between;}
+html.dot #s-bar .bx-lab2{font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;color:var(--t1);}
+
+/* 결과 */
+html.dot #s-bar .bx-result{padding-top:12px;}
+html.dot #s-bar .bx-result h2{font-family:"NeoDGM",monospace;font-weight:400;font-size:24px;-webkit-font-smoothing:none;margin:0 0 8px;}
+html.dot #s-bar .bx-rtop{display:flex;gap:12px;align-items:flex-end;margin-bottom:8px;}
+html.dot #s-bar .bx-rcup .bx-sp{width:96px;height:134px;}
+html.dot #s-bar .bx-neo{font-family:"NeoDGM",monospace;font-size:16px;line-height:1.35;-webkit-font-smoothing:none;}
+html.dot #s-bar .bx-result table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px;}
+html.dot #s-bar .bx-result td{padding:5px 2px;border-bottom:1px dashed var(--drop);}
+html.dot #s-bar .bx-result td:last-child{text-align:right;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #s-bar .bx-note{margin:10px 0;padding:8px 10px;border:2px dashed var(--line);background:var(--warn);color:var(--warn-t);font-size:13px;}
+
+/* 정답 고치기 */
+html.dot #s-bar .bx-tidy{padding-top:12px;display:grid;gap:10px;}
+html.dot #s-bar .bx-recard{background:var(--surface);border:2px solid var(--line);border-left:6px solid var(--acc);padding:10px 12px;display:grid;gap:6px;}
+html.dot #s-bar .bx-rl{font-size:12px;color:var(--t2);letter-spacing:.04em;}
+html.dot #s-bar .bx-rn{font-family:"NeoDGM",monospace;font-size:24px;line-height:1.15;-webkit-font-smoothing:none;color:var(--t1);overflow-wrap:anywhere;}
+html.dot #s-bar .bx-chip{display:inline-block;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;padding:0 6px;border:2px solid var(--line);margin:0 4px 0 0;background:var(--surface);}
+html.dot #s-bar .bx-chip.fix{border-color:var(--acc);color:var(--acc);}
+html.dot #s-bar .bx-rs{border-top:1px dashed var(--line);padding-top:6px;}
+html.dot #s-bar .bx-rs summary{font-size:13px;color:var(--t2);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;min-height:28px;}
+html.dot #s-bar .bx-rs summary::-webkit-details-marker{display:none;}
+html.dot #s-bar .bx-rs summary::before{content:"";width:8px;height:8px;background:var(--t2);clip-path:polygon(0 0,100% 50%,0 100%);}
+html.dot #s-bar .bx-rs[open] summary::before{transform:rotate(90deg);}
+html.dot #s-bar .bx-rs ol{margin:2px 0 0;padding-left:20px;font-size:13px;color:var(--t2);}
+html.dot #s-bar .bx-tsub{margin:0;color:var(--t2);font-size:13px;}
+html.dot #s-bar .bx-tidy .bx-row .bx-btn{padding:6px 10px;}
+html.dot #s-bar .bx-trow{display:grid;grid-template-columns:22px 1fr;gap:4px 8px;padding:8px 0;border-bottom:1px dashed var(--drop);}
+html.dot #s-bar .bx-no{font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;color:var(--t3);padding-top:6px;}
+html.dot #s-bar .bx-tcol{display:grid;gap:6px;min-width:0;}
+html.dot #s-bar .bx-ttop{display:flex;gap:4px;align-items:center;}
+html.dot #s-bar .bx-ttop select{flex:1;min-width:0;}
+html.dot #s-bar .bx-f{display:grid;grid-template-columns:1fr 70px 100px;gap:6px;}
+html.dot #s-bar .bx-f.one{grid-template-columns:1fr;}
+html.dot #s-bar .bx-f .bx-inp{width:100%;}
+html.dot #s-bar .bx-thint{font-size:12px;color:var(--t3);}
+html.dot #s-bar .bx-mini{font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;width:32px;height:32px;flex:0 0 32px;border:2px solid var(--line);border-radius:0;background:var(--surface);color:var(--t1);cursor:pointer;padding:0;}
+html.dot #s-bar .bx-mini:disabled{opacity:.35;cursor:default;}
+html.dot #s-bar .bx-mini.del{color:var(--bad);}
+html.dot #s-bar .bx-addrow{justify-self:start;}
+html.dot #s-bar .bx-preview{background:var(--surface);border:2px solid var(--line);padding:8px 10px;font-size:14px;}
+html.dot #s-bar .bx-preview .bx-lab{font-size:16px;margin-bottom:4px;}
+html.dot #s-bar .bx-preview ol{margin:0;padding-left:22px;}
