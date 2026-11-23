@@ -627,8 +627,8 @@ $("#saveBtn").addEventListener("click", ()=>{
     at: state.editingId ? ((data.drinks.find(x=>x.id===state.editingId)||{}).at || "") : ymd(new Date()),
     subRefs: state.editSubRefs.filter(subById)
   };
-  /* 바 연습에서 고친 정답(bar.js) — 순서 문장이 그대로일 때만 물려준다. 문장을 고치면 새 문장에서 다시 읽는다 */
-  const keptPlan = state.editingId ? barKeepPlan(data.drinks.find(x=>x.id===state.editingId), steps) : undefined;
+  /* 바 연습에서 고친 정답(bar.js) — 순서 문장 · 컵이 그대로일 때만 물려준다. 바뀌면 새로 읽는다 */
+  const keptPlan = state.editingId ? barKeepPlan(data.drinks.find(x=>x.id===state.editingId), rec) : undefined;
   if(keptPlan) rec.plan = keptPlan;
   if(state.editingId){
     const i = data.drinks.findIndex(x=>x.id===state.editingId);

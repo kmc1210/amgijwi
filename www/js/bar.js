@@ -13,6 +13,7 @@
 (function(){
 "use strict";
 const B = id => document.getElementById("bar-" + id);
+const own = (o, k)=>Object.prototype.hasOwnProperty.call(o, k);   // 백업에서 온 "constructor" 같은 이름이 도구로 통하지 않게
 
 /* ───── 도구 도트 (12x12) ───── */
 const IP = {o:"#4A423A",b:"#CFE6F2",B:"#9CC7DE",w:"#FFFFFF",s:"#A8B3BA",S:"#6E7A82",k:"#3A2418",c:"#7A4A2A",y:"#E2AF42",Y:"#F7CE66",m:"#F4F1EA",M:"#C9D7E6",r:"#D9534A",g:"#7FB86B",G:"#B8E0A8",t:"#C69132",p:"#F5BEAC",P:"#DF9B88",e:"#E9DCC8",E:"#B79E7E",R:"#F08A6A"};
@@ -69,9 +70,9 @@ const FILLS = [["가득",1],["9부",.9],["8부",.8],["7부",.7],["6부",.6],["5�
 
 /* ───── 문장 → 동작 ───── */
 const KEY = [["ice",/얼음/],["hot",/온수|뜨거운\s*물/],["water",/정수|(?:^|\s)물(?=\s|$|을|\d)/],["shot",/에스프레소|샷/],["cold",/콜드브루/],
- ["steam",/스팀\s*(?:우유|밀크)|스팀밀크/],["milk",/우유/],["soda",/탄산수/],["syrup",/시럽/],["sauce",/소스(?!\s*병)|꿀/],["jam",/청(?=\s|\d|$)/],
+ ["steam",/스팀\s*(?:우유|밀크)|스팀밀크/],["milk",/우유/],["soda",/탄산수/],["syrup",/시럽/],["sauce",/소스(?!\s*병)|꿀/],["jam",/청(?=\s|\d|$|을|은|를|이|에|과|와)/],
  ["powder",/파우더|가루/],["whip",/휘핑/],["drizzle",/드리즐/],["stir",/저어|젓|섞|용해|녹인/]];
-const UTOK = [[/ml|mL|㎖/,"ml"],[/oz|온스/,"oz"],[/티스푼|tsp|작은술/,"티스푼"],[/테이블스푼|tbsp|큰술/i,"테이블스푼"],[/스쿱/,"스쿱"],[/펌프/,"펌프"],[/회전|바퀴/,"회전"],[/샷/,"샷"],[/g|그램/,"g"]];
+const UTOK = [[/ml|㎖/i,"ml"],[/oz|온스/i,"oz"],[/테이블스푼|tbsp|큰술/i,"테이블스푼"],[/티스푼|tsp|작은술/i,"티스푼"],[/스쿱/,"스쿱"],[/펌프/,"펌프"],[/회전|바퀴/,"회전"],[/샷/,"샷"],[/g|그램/i,"g"]];   // AMT 처럼 대소문자를 가리지 않는다(200ML · 2 TSP)
 const AMT = /(\d+(?:\.\d+)?)\s*(ml|mL|㎖|oz|온스|티스푼|tsp|작은술|테이블스푼|tbsp|큰술|스쿱|펌프|회전|바퀴|샷|g|그램)/i;
 function unitOf(tok){ for(let i = 0; i < UTOK.length; i++) if(UTOK[i][0].test(tok)) return UTOK[i][1]; return null; }
 function fillOf(seg, cup){
@@ -89,13 +90,21 @@ function parseStep(s, cup){
     KEY.forEach(p=>{ const m = p[1].exec(seg); if(m && !found.some(f=>m.index < f.end && f.at < m.index + m[0].length)) found.push({k:p[0], at:m.index, end:m.index + m[0].length, w:m[0]}); });
     found.sort((a, b)=>a.at - b.at);
     const ok = [];
+    let used = 0;      // 앞 동작이 이미 가져간 글자 끝. 양은 낱말 뒤에서 먼저 찾고, 없으면 낱말 앞(아직 안 쓴 데)에서 찾는다 — "130g 얼음" · "2샷 추출"
     found.forEach((f, i)=>{
       const d = T[f.k], a = {k:f.k};
       if(f.w === "꿀") a.name = "꿀";
-      if(f.k === "stir"){ if(!ok.some(x=>x.k === "stir")) ok.push(a); return; }
-      const rest = seg.slice(f.at, found[i + 1] ? found[i + 1].at : seg.length), m = AMT.exec(rest), fi = d.fill ? fillOf(rest, cup) : null;
-      const u = m ? unitOf(m[2]) : null;
-      if(m && u && d.u[u] != null){ a.t = +m[1]; a.u = u; }
+      if(f.k === "stir"){ used = Math.max(used, f.end); if(!ok.some(x=>x.k === "stir")) ok.push(a); return; }
+      const rest = seg.slice(f.at, found[i + 1] ? found[i + 1].at : seg.length), fi = d.fill ? fillOf(rest, cup) : null;
+      let m = AMT.exec(rest), u = m ? unitOf(m[2]) : null, end = m ? f.at + m.index + m[0].length : f.end;
+      if(!(m && u && own(d.u, u)) && !fi){
+        const back = seg.slice(used, f.at);
+        if(f.w === "샷"){ const n = /(\d+(?:\.\d+)?)\s*$/.exec(back); m = n ? [n[0], n[1], "샷"] : null; }   // "2샷": 샷이 낱말이자 단위
+        else{ const re = new RegExp(AMT.source, "gi"); let x, last = null; while((x = re.exec(back))) last = x; m = last; }
+        u = m ? unitOf(m[2]) : null; end = f.end;
+      }
+      used = Math.max(used, end);
+      if(m && u && own(d.u, u)){ a.t = +m[1]; a.u = u; }
       else if(fi){ a.f = fi.f; a.lab = fi.lab; }
       else if(d.count && f.k !== "syrup" && f.k !== "powder"){ a.t = 1; a.u = d.base; }   // "초코 드리즐"처럼 양이 없으면 1회전
       else return;                                                                        // 양을 못 찾으면 넘긴다(에스프레소만 있고 샷 수가 없을 때 등)
@@ -123,7 +132,7 @@ function cleanPlan(p){
   if(!Array.isArray(p)) return undefined;
   const out = [];
   p.forEach(a=>{
-    if(!a || typeof a !== "object" || !T[a.k]) return;
+    if(!a || typeof a !== "object" || !own(T, a.k)) return;
     const d = T[a.k];
     if(a.k === "hand"){ const t = String(a.text || "").trim().slice(0, 60); if(t) out.push({k:"hand", text:t}); return; }
     if(a.k === "stir"){ out.push({k:"stir"}); return; }
@@ -131,16 +140,17 @@ function cleanPlan(p){
     if(a.name && String(a.name) !== d.n) o.name = String(a.name).slice(0, 30);
     const f = Number(a.f);
     if(a.f != null && isFinite(f) && f > 0 && f <= 1.2){ o.f = f; o.lab = String(a.lab || Math.round(f * 100) + "%").slice(0, 10); }
-    else{ const t = Number(a.t); if(!isFinite(t) || t < 0) return; o.t = t; o.u = d.u[a.u] != null ? String(a.u) : d.base; }
+    else{ const t = Number(a.t); if(!isFinite(t) || t <= 0) return; o.t = t; o.u = own(d.u, a.u) ? String(a.u) : d.base; }
     out.push(o);
   });
   return out.length ? out : undefined;
 }
-/* 레시피를 다시 저장할 때(편집 · 받은 레시피로 바꾸기) 고친 정답을 물려줄지 — 순서 문장이 그대로일 때만.
-   문장이 바뀌면 고친 정답이 옛 문장 기준이라 버리고, 새 문장에서 다시 읽는다 */
-function keepPlan(old, steps){
-  if(!old || !old.plan) return undefined;
-  return JSON.stringify((old.steps || []).map(String)) === JSON.stringify((steps || []).map(String)) ? old.plan : undefined;
+/* 레시피를 다시 저장할 때(편집 · 받은 레시피로 바꾸기) 고친 정답을 물려줄지 — 순서 문장과 컵이 그대로일 때만.
+   문장이 바뀌면 고친 정답이 옛 문장 기준이고, 컵이 바뀌면 "2번 선" 같은 높이가 옛 컵 기준이라 버리고 새로 읽는다 */
+function keepPlan(old, rec){
+  if(!old || !old.plan || !rec) return undefined;
+  const same = JSON.stringify((old.steps || []).map(String)) === JSON.stringify((rec.steps || []).map(String)) && cupOf(old) === cupOf(rec);
+  return same ? old.plan : undefined;
 }
 
 /* ───── 상태 ───── */
@@ -260,7 +270,9 @@ function stopTimers(){
 }
 function start(i){
   stopTimers();
+  const was = R;
   R = RECIPES[i] || RECIPES[0];
+  if(R !== was) rec = [];       // 직접 만들던 기록은 그 레시피 것이라 다른 레시피로 넘기지 않는다
   const p = planOf(R);
   PLAN = [];
   if(p) p.forEach((a, si)=>{ const b = JSON.parse(JSON.stringify(a)); b.si = si; PLAN.push(b); });
@@ -585,11 +597,15 @@ function renderTidy(){
     haptic("selection"); renderTidy(); }; });
   B("tAdd").onclick = ()=>{ tidyRows.push({k:"hand", name:"", text:"", base:null, frac:null}); renderTidy(); const ins = el.querySelectorAll('[data-f="text"]'); if(ins.length) ins[ins.length - 1].focus(); };
   B("tRec").onclick = ()=>setTab("free");
-  if(p) B("tOrig").onclick = ()=>{ delete R.d.plan; persist(); renderPick(); setTab("prac", true); start(RECIPES.indexOf(R)); say("레시피 문장대로 돌아갔츄"); };
-  B("tBack").onclick = ()=>setTab("prac");
+  if(p) B("tOrig").onclick = ()=>{ delete R.d.plan; delete R.d.sample; persist(); renderPick(); setTab("prac", true); start(RECIPES.indexOf(R)); say("레시피 문장대로 돌아갔츄"); };
+  B("tBack").onclick = ()=>{ rec = []; setTab("prac"); };
   B("tSave").onclick = ()=>{
+    /* 양이 비었거나 0 이면 연습 때 그 단계를 맞힐 수 없다. 저장 전에 고르게 한다 */
+    const bad = tidyRows.findIndex(o=>T[o.k].u && !o.fill && !(+o.t > 0));
+    if(bad >= 0){ haptic("error"); toast((bad + 1) + "번 줄의 양을 적어 주세요"); const f = el.querySelectorAll(".bx-trow")[bad].querySelector('[data-f="t"]'); if(f) f.focus(); return; }
     const plan = cleanPlan(tidyRows.map(rowPlan));
     if(plan) R.d.plan = plan; else delete R.d.plan;
+    delete R.d.sample;            // 정답을 고친 예시는 사용자 것 — "예시 지우기"에 안 지워지고 iCloud 에도 올라간다 (list.js · icloud.js)
     persist(); haptic("success");
     renderPick(); rec = [];
     setTab("prac", true); start(RECIPES.indexOf(R));
