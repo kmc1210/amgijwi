@@ -1,6 +1,6 @@
 /* 암기쥐 — 크리스마스 앱 아이콘 (1.5 · 앱 전용)
    홈 화면 아이콘을 "눈 오는 밤 쥐돌이"(산타 모자 · 털실 목도리)로 바꿀 수 있다. 아이콘은 앱 안에 미리 들어 있다(ios/Assets.xcassets/AppIcon-Xmas).
-   · 12월 1~25일에 홈을 처음 볼 때 한 번 묻는다(해마다 한 번). 누르면 iOS 가 "아이콘을 변경했습니다" 알림을 띄운다
+   · 11월 25일 ~ 12월 25일에 홈을 처음 볼 때 한 번 묻는다(해마다 한 번). 1.5.5 가 나가는 무렵부터 쓰게 12월 1일에서 앞당겼다. 누르면 iOS 가 "아이콘을 변경했습니다" 알림을 띄운다
    · 26일이 지나 앱을 열면 원래 아이콘으로 돌아온다. iOS 는 앱이 앞에 있을 때만 아이콘을 바꿀 수 있어서, 날짜가 되는 순간이 아니라 그 뒤 처음 열 때다
    · 기간 안에는 설정 → 화면과 소리 → 앱 아이콘 에서 언제든 고른다
    아이콘은 기기마다라 물어본 해는 이 기기에만 둔다(백업 파일에 싣지 않는다). 지금 아이콘은 앱이 window.__amgijwiIcon 으로 알리고
@@ -14,8 +14,8 @@ function iconBridge(){
 }
 /* 지금 아이콘. 바꿀 수 없으면 "" */
 function iconNow(){ const v = window.__amgijwiIcon; return iconBridge() && (v === "default" || v === "xmas") ? v : ""; }
-/* 크리스마스 아이콘을 쓰는 기간: 12월 1~25일 */
-function iconSeason(d){ d = d || new Date(); return d.getMonth() === 11 && d.getDate() <= 25; }
+/* 크리스마스 아이콘을 쓰는 기간: 11월 25일 ~ 12월 25일 */
+function iconSeason(d){ d = d || new Date(); const m = d.getMonth(), day = d.getDate(); return (m === 10 && day >= 25) || (m === 11 && day <= 25); }
 /* mine: 사용자가 고른 것(못 바꾸면 알린다). 저절로 되돌릴 때는 조용히 */
 function iconSet(kind, mine){
   const b = iconBridge();
