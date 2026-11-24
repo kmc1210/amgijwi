@@ -4227,8 +4227,10 @@ const LEGACY = {
       // 바꿀 수 없는 기기(앱이 지금 아이콘을 알리지 않음)면 묻지도 칸을 보이지도 않는다
       delete window.__amgijwiIcon; at(12, 5); go("list"); go("home"); iconAsk(); iconCardSync();
       r.unsupported = [on(), $("#iconCard").style.display, posts.length];
-      // 11월에는 묻지 않는다
+      // 11월 25일 전에는 묻지 않는다
       window.__amgijwiIcon = "default"; at(11, 20); iconAsk(); iconCardSync(); r.nov = [on(), $("#iconCard").style.display];
+      // 기간 경계: 11/24 밖 · 11/25 안 · 12/25 안 · 12/26 밖 (해 넘김 없음)
+      r.season = [[11, 24], [11, 25], [12, 25], [12, 26], [1, 5]].map(([m, d]) => iconSeason(new Date(2026, m - 1, d, 9)));
       // 12월 홈에서 한 번 묻는다: 아이콘 그림 · 바꾸기 / 괜찮아
       at(12, 5); go("list"); go("home"); r.notYet = on(); await wait(2100);   // 홈의 말풍선이 먼저, 2초 뒤에 묻는다
       r.ask = [on(), $("#dlgT").textContent, !!$("#dlgPic svg.appicon"), $("#dlgPic").hidden, $("#dlgYes").textContent, $("#dlgNo").textContent, /26일/.test($("#dlgM").textContent)];
@@ -4268,7 +4270,8 @@ const LEGACY = {
       return r;
     });
     eq("아이콘을 바꿀 수 없는 기기면 묻지도 칸을 보이지도 않는다", r.unsupported, [false, "none", 0]);
-    eq("12월이 아니면 묻지 않는다", r.nov, [false, "none"]);
+    eq("11월 25일 전에는 묻지 않는다", r.nov, [false, "none"]);
+    eq("크리스마스 아이콘 기간은 11월 25일 ~ 12월 25일", r.season, [false, true, true, false, false]);
     eq("홈을 열자마자는 묻지 않는다(말풍선이 먼저)", r.notYet, false);
     eq("12월 홈에서 한 번 묻는다(아이콘 그림 · 바꾸기 / 괜찮아 · 26일에 돌아온다는 말)", r.ask, [true, "크리스마스 아이콘", true, false, "바꾸기", "괜찮아", true]);
     eq("바꾸기를 누르면 앱에 크리스마스 아이콘을 청한다", r.posted, ["xmas"]);
