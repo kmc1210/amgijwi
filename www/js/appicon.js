@@ -6,10 +6,14 @@
    아이콘은 기기마다라 물어본 해는 이 기기에만 둔다(백업 파일에 싣지 않는다). 지금 아이콘은 앱이 window.__amgijwiIcon 으로 알리고
    ("default" · "xmas", 바꿀 수 없는 기기면 없음), 웹이 다시 불려도 낡지 않게 켤 때마다 "now" 로 한 번 더 묻는다 (ios/Sources/IconBridge.swift) */
 const ICON_ASKED_KEY = "amgijwi-icon-asked";
+/* 앱의 기본 아이콘(AppIcon) 그림. 1.5.5 는 크리스마스 그림을 기본 아이콘으로 낸다(앱스토어 아이콘도 이것).
+   "xmas" 인 동안에는 이미 크리스마스 아이콘이라 묻기 · 설정 칸 · 26일 되돌리기를 모두 쉰다.
+   크리스마스가 지나면 "default" 로 돌리고 node ios/make-icon.js 로 AppIcon 을 다시 뽑아 업데이트를 낸다 */
+let ICON_BASE = "xmas";
 let iconAskT = 0, iconAsked = false;   // iconAsked: 사용자가 고른 바꾸기를 기다리는 중(못 바꿨을 때만 알린다)
 function iconBridge(){
   const w = window.webkit;
-  if(!isDot() || !isNativeApp() || !w || !w.messageHandlers || !w.messageHandlers.amgijwiIcon) return null;
+  if(ICON_BASE === "xmas" || !isDot() || !isNativeApp() || !w || !w.messageHandlers || !w.messageHandlers.amgijwiIcon) return null;
   return w.messageHandlers.amgijwiIcon;
 }
 /* 지금 아이콘. 바꿀 수 없으면 "" */

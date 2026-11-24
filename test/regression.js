@@ -1256,6 +1256,13 @@ const LEGACY = {
   const iconSet = JSON.parse(fs.readFileSync(path.join(iosDir, "Assets.xcassets", "AppIcon.appiconset", "Contents.json"), "utf8"));
   ok("아이콘 목록이 그 파일을 가리킨다", iconSet.images.some(i => i.filename === "icon-1024.png"));
   ok("프로젝트가 AppIcon 을 쓴다", projectYml.indexOf("ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon") >= 0);
+  // 기본 아이콘 그림은 appicon.js 의 ICON_BASE 를 따른다(make-icon.js 가 그렇게 뽑는다). 크리스마스면 두 벌이 같은 그림
+  {
+    const base = (fs.readFileSync(path.resolve(__dirname, "..", "www", "js", "appicon.js"), "utf8").match(/let ICON_BASE = "(\w+)"/) || [])[1];
+    const xmasIcon = fs.readFileSync(path.join(iosDir, "Assets.xcassets", "AppIcon-Xmas.appiconset", "icon-1024.png"));
+    ok("ICON_BASE 를 읽었다", base === "xmas" || base === "default", base);
+    eq("기본 아이콘 그림이 ICON_BASE 와 맞다(크리스마스면 AppIcon-Xmas 와 같은 파일)", icon.equals(xmasIcon), base === "xmas");
+  }
 
   // 웹 파일은 project.yml 이 폴더째 넣어준다. 빠지면 앱이 빈 화면이 된다.
   ok("www 폴더를 통째로 앱에 넣는다",
@@ -4213,7 +4220,7 @@ const LEGACY = {
   // ── 6-10s. 1.5 크리스마스 앱 아이콘 ──────────────────────────
   {
     const r = await page.evaluate(async () => {
-      const r = {};
+      const r = {baseNow: ICON_BASE};
       const wait = ms => new Promise(res => setTimeout(res, ms));
       const on = () => $("#dlg").classList.contains("on");
       const realDate = Date;
@@ -4222,6 +4229,13 @@ const LEGACY = {
         window.Date = class extends realDate { constructor(...a){ if(a.length) super(...a); else super(realDate.now() + off); } static now(){ return realDate.now() + off; } }; };
       window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
       const posts = [], realWk = window.webkit;
+      // 기본 아이콘이 크리스마스인 동안(1.5.5)은 바꿀 것이 없어 묻지도 칸을 보이지도 청하지도 않는다
+      try{ localStorage.removeItem(ICON_ASKED_KEY); }catch(e){}
+      window.webkit = { messageHandlers: Object.assign({}, realWk && realWk.messageHandlers, { amgijwiIcon: { postMessage: m => posts.push(m) } }) };
+      window.__amgijwiIcon = "default"; ICON_BASE = "xmas"; at(12, 5); go("list"); go("home"); await wait(2100); iconCardSync(); iconRevert();
+      r.base = [on(), $("#iconCard").style.display, posts.length, iconNow()];
+      // 아래는 기본 아이콘이 원래 그림일 때(크리스마스가 지나 되돌린 뒤)의 동작
+      ICON_BASE = "default"; window.webkit = realWk; delete window.__amgijwiIcon;
       window.webkit = { messageHandlers: Object.assign({}, realWk && realWk.messageHandlers, { amgijwiIcon: { postMessage: m => posts.push(m) } }) };
       try{ localStorage.removeItem(ICON_ASKED_KEY); }catch(e){}
       // 바꿀 수 없는 기기(앱이 지금 아이콘을 알리지 않음)면 묻지도 칸을 보이지도 않는다
@@ -4264,11 +4278,13 @@ const LEGACY = {
       r.svg = [/#382A21/.test(appIconSVG("default")), /#16223F/.test(appIconSVG("xmas")), /#382A21/.test(appIconSVG("xmas"))];
       const ids = [...document.querySelectorAll("svg.appicon linearGradient")].map(g => g.id);
       r.ids = ids.length > 2 && new Set(ids).size === ids.length;
-      window.Date = realDate; window.webkit = realWk; delete window.__amgijwiIcon; iconCardSync();
+      window.Date = realDate; window.webkit = realWk; delete window.__amgijwiIcon; ICON_BASE = r.baseNow; iconCardSync();
       try{ localStorage.removeItem(ICON_ASKED_KEY); }catch(e){}
       delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText(); go("home");
       return r;
     });
+    eq("1.5.5 는 기본 아이콘이 크리스마스", r.baseNow, "xmas");
+    eq("기본 아이콘이 크리스마스인 동안은 묻지도 칸을 보이지도 청하지도 않는다", r.base, [false, "none", 0, ""]);
     eq("아이콘을 바꿀 수 없는 기기면 묻지도 칸을 보이지도 않는다", r.unsupported, [false, "none", 0]);
     eq("11월 25일 전에는 묻지 않는다", r.nov, [false, "none"]);
     eq("크리스마스 아이콘 기간은 11월 25일 ~ 12월 25일", r.season, [false, true, true, false, false]);
