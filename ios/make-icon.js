@@ -85,7 +85,9 @@ function save(file, rgba){
   await app.addInitScript(() => { window.__amgijwiNative = true; });
   await app.goto("file://" + path.join(ROOT, "www", "index.html"));
   const page = await (await browser.newContext({ viewport: { width: SIZE, height: SIZE } })).newPage();
-  for(const [kind, file] of [["default", OUT], ["xmas", XMAS_OUT]]){
+  /* 기본 아이콘(AppIcon)은 appicon.js 의 ICON_BASE 그림으로(1.5.5 는 크리스마스) */
+  const base = await app.evaluate(() => ICON_BASE);
+  for(const [kind, file] of [[base, OUT], ["xmas", XMAS_OUT]]){
     const svg = await app.evaluate(k => appIconSVG(k), kind);
     await page.setContent(`<body style="margin:0">${svg}</body>`);
     save(file, await raster(page));
