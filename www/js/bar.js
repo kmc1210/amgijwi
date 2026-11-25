@@ -74,6 +74,44 @@ const KEY = [["ice",/얼음/],["hot",/온수|뜨거운\s*물/],["water",/정수|
  ["powder",/파우더|가루/],["whip",/휘핑/],["drizzle",/드리즐/],["stir",/저어|젓|섞|용해|녹인/]];
 const UTOK = [[/ml|㎖/i,"ml"],[/oz|온스/i,"oz"],[/테이블스푼|tbsp|큰술/i,"테이블스푼"],[/티스푼|tsp|작은술/i,"티스푼"],[/스쿱/,"스쿱"],[/펌프/,"펌프"],[/회전|바퀴/,"회전"],[/샷/,"샷"],[/g|그램/i,"g"]];   // AMT 처럼 대소문자를 가리지 않는다(200ML · 2 TSP)
 const AMT = /(\d+(?:\.\d+)?)\s*(ml|mL|㎖|oz|온스|티스푼|tsp|작은술|테이블스푼|tbsp|큰술|스쿱|펌프|회전|바퀴|샷|g|그램)/i;
+/* ───── 내 도구 (data.bar) — 부르는 이름 · 더 알아듣는 말 · 우리 매장 재료. 기기 안에 두고 백업을 따라간다 ─────
+   names: {도구: 이름}  words: {도구: [낱말]}  items: [{name, k}] — 재료는 기본 도구 하나(k)처럼 넣고 이름만 따로다.
+   정답(plan)에는 {k, name} 으로 들어가서, 이름이 우리 매장 재료면 그 재료 버튼으로만 맞는다 */
+const ITEM_BASE = ["water","hot","cold","milk","steam","soda","syrup","sauce","jam","powder","whip","drizzle"];
+const BASE_WORDS = {ice:["얼음"], hot:["온수","뜨거운 물"], water:["정수","물"], shot:["에스프레소","샷"], cold:["콜드브루"], steam:["스팀우유","스팀밀크"], milk:["우유"], soda:["탄산수"],
+  syrup:["시럽"], sauce:["소스","꿀"], jam:["청"], powder:["파우더","가루"], whip:["휘핑"], drizzle:["드리즐"], stir:["저어","젓기","섞기"]};
+const MAX_WORDS = 8, MAX_ITEMS = 12;
+function cfg(){ return (typeof data !== "undefined" && data && data.bar) || {}; }
+function nm(k){ const n = cfg().names; const v = n && own(n, k) ? String(n[k]).trim() : ""; return v || (T[k] ? T[k].n : k); }
+function items(){ const it = cfg().items; return Array.isArray(it) ? it : []; }
+function isItem(name){ return !!name && items().some(x=>x.name === name); }
+function aname(a){ return a.name || nm(a.k); }
+const reEsc = w => String(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/* 백업에서 온 값 거르기 — 모르는 도구 · 빈 이름 · 너무 긴 말은 버린다. 남는 게 없으면 undefined */
+function cleanCfg(c){
+  if(!c || typeof c !== "object") return undefined;
+  const o = {}, nmz = {}, wd = {}, it = [];
+  const txt = (v, n)=>String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, n);
+  if(c.names && typeof c.names === "object") Object.keys(c.names).forEach(k=>{ if(own(T, k) && k !== "hand"){ const v = txt(c.names[k], 12); if(v && v !== T[k].n) nmz[k] = v; } });
+  if(c.words && typeof c.words === "object") Object.keys(c.words).forEach(k=>{ if(own(T, k) && k !== "hand" && Array.isArray(c.words[k])){ const l = [];
+    c.words[k].forEach(w=>{ const v = txt(w, 12); if(v && l.indexOf(v) < 0 && l.length < MAX_WORDS) l.push(v); }); if(l.length) wd[k] = l; } });
+  if(Array.isArray(c.items)) c.items.forEach(x=>{ if(!x || typeof x !== "object") return; const n = txt(x.name, 20); if(n && ITEM_BASE.indexOf(x.k) >= 0 && !it.some(y=>y.name === n) && it.length < MAX_ITEMS) it.push({name:n, k:x.k}); });
+  if(Object.keys(nmz).length) o.names = nmz;
+  if(Object.keys(wd).length) o.words = wd;
+  if(it.length) o.items = it;
+  return Object.keys(o).length ? o : undefined;
+}
+/* 문장 읽기 표: 우리 매장 재료(긴 이름 먼저) → 기본 표(내 이름 · 더한 말을 붙여서) */
+function keys(){
+  const c = cfg(), w = c.words || {}, out = [];
+  items().slice().sort((a, b)=>b.name.length - a.name.length).forEach(x=>{ out.push([x.k, new RegExp(reEsc(x.name)), x.name]); });
+  KEY.forEach(p=>{
+    const extra = (w[p[0]] || []).slice();
+    if(c.names && c.names[p[0]]) extra.push(c.names[p[0]]);
+    out.push(extra.length ? [p[0], new RegExp(p[1].source + "|" + extra.sort((a, b)=>b.length - a.length).map(reEsc).join("|"))] : p);
+  });
+  return out;
+}
 function unitOf(tok){ for(let i = 0; i < UTOK.length; i++) if(UTOK[i][0].test(tok)) return UTOK[i][1]; return null; }
 function fillOf(seg, cup){
   let m;
@@ -84,16 +122,16 @@ function fillOf(seg, cup){
   return null;
 }
 function parseStep(s, cup){
-  const acts = [];
+  const acts = [], KS = keys();
   String(s).split(/,|\+|후(?=\s)/).forEach(seg=>{
     const found = [];
-    KEY.forEach(p=>{ const m = p[1].exec(seg); if(m && !found.some(f=>m.index < f.end && f.at < m.index + m[0].length)) found.push({k:p[0], at:m.index, end:m.index + m[0].length, w:m[0]}); });
+    KS.forEach(p=>{ const m = p[1].exec(seg); if(m && m[0] && !found.some(f=>m.index < f.end && f.at < m.index + m[0].length)) found.push({k:p[0], at:m.index, end:m.index + m[0].length, w:m[0], name:p[2]}); });
     found.sort((a, b)=>a.at - b.at);
     const ok = [];
     let used = 0;      // 앞 동작이 이미 가져간 글자 끝. 양은 낱말 뒤에서 먼저 찾고, 없으면 낱말 앞(아직 안 쓴 데)에서 찾는다 — "130g 얼음" · "2샷 추출"
     found.forEach((f, i)=>{
       const d = T[f.k], a = {k:f.k};
-      if(f.w === "꿀") a.name = "꿀";
+      if(f.name) a.name = f.name; else if(f.w === "꿀") a.name = "꿀";
       if(f.k === "stir"){ used = Math.max(used, f.end); if(!ok.some(x=>x.k === "stir")) ok.push(a); return; }
       const rest = seg.slice(f.at, found[i + 1] ? found[i + 1].at : seg.length), fi = d.fill ? fillOf(rest, cup) : null;
       let m = AMT.exec(rest), u = m ? unitOf(m[2]) : null, end = m ? f.at + m.index + m[0].length : f.end;
@@ -123,7 +161,7 @@ function amtTxt(a){
 function chipTxt(a){
   if(a.k === "hand") return "손으로 · " + a.text;
   if(a.k === "stir") return "젓기";
-  return (a.name || T[a.k].n) + " " + amtTxt(a);
+  return aname(a) + " " + amtTxt(a);
 }
 function baseTarget(a){ return a.t * T[a.k].u[a.u]; }
 
@@ -236,7 +274,8 @@ function curTarget(){ if(tab !== "prac") return null; const a = PLAN[cur]; retur
 function judge(vBase, a){
   const d = T[a.k];
   let g, over;
-  if(a.f != null){ if(a.k !== "ice" && vBase > 1.01) return ["넘쳤츄!", "bad", false, "넘침"]; const df = Math.abs(vBase - a.f); over = vBase > a.f; g = df <= .04 ? 0 : df <= .08 ? 1 : 2; }
+  /* 컵 높이는 ±5% 까지 딱 맞음, ±10% 까지 아쉬움(1.5.6 — ±4% 는 선 맞추기가 너무 빡빡했다) */
+  if(a.f != null){ if(a.k !== "ice" && vBase > 1.01) return ["넘쳤츄!", "bad", false, "넘침"]; const df = Math.abs(vBase - a.f); over = vBase > a.f; g = df <= .05 ? 0 : df <= .1 ? 1 : 2; }
   else if(d.count){ const tb = Math.round(baseTarget(a)), diff = Math.abs(Math.round(vBase) - tb); over = vBase > tb; g = diff === 0 ? 0 : diff === 1 ? 1 : 2; }
   else{ const t = baseTarget(a) || 1, dr = Math.abs(vBase - t) / t; over = vBase > t; g = dr <= .1 ? 0 : dr <= .2 ? 1 : 2; }
   return g === 0 ? ["딱 맞았츄!", "ok", true, "딱 맞음"] : g === 1 ? [(over ? "조금 많츄" : "조금 적츄"), "bad", false, "아쉬움"] : [(over ? "너무 많츄!" : "너무 적츄!"), "bad", false, "다시 연습"];
@@ -246,16 +285,16 @@ function meterPrac(k, vBase, a, done){
   const d = T[k];
   let html;
   if(a.f != null){
-    html = '<div class="bx-lbl">' + esc(a.name || d.n) + ' · 컵 높이</div><div class="bx-big">' + Math.round(vBase * 100) + '<span class="bx-tg">%</span></div><div class="bx-tg">' + (mode === "see" ? "목표 " + esc(a.lab) + " (" + Math.round(a.f * 100) + "%)" : "목표는 기억 속에") + '</div>';
+    html = '<div class="bx-lbl">' + esc(aname(a)) + ' · 컵 높이</div><div class="bx-big">' + Math.round(vBase * 100) + '<span class="bx-tg">%</span></div><div class="bx-tg">' + (mode === "see" ? "목표 " + esc(a.lab) + " (" + Math.round(a.f * 100) + "%)" : "목표는 기억 속에") + '</div>';
   }else{
-    html = '<div class="bx-lbl">' + esc(a.name || d.n) + '</div><div class="bx-big">' + fmt(vBase / d.u[a.u], a.u) + '<span class="bx-tg">' + esc(a.u) + '</span></div><div class="bx-tg">' + (mode === "see" ? "목표 " + esc(amtTxt(a)) : "목표는 기억 속에") + '</div>';
+    html = '<div class="bx-lbl">' + esc(aname(a)) + '</div><div class="bx-big">' + fmt(vBase / d.u[a.u], a.u) + '<span class="bx-tg">' + esc(a.u) + '</span></div><div class="bx-tg">' + (mode === "see" ? "목표 " + esc(amtTxt(a)) : "목표는 기억 속에") + '</div>';
   }
   if(done){ const j = judge(vBase, a); html += '<div class="bx-verdict ' + j[1] + '">' + j[3] + '</div>'; }
   B("meter").innerHTML = html;
 }
 function meterFree(k, vBase){
   const d = T[k];
-  B("meter").innerHTML = '<div class="bx-lbl">' + d.n + '</div><div class="bx-big">' + fmt(vBase, d.base) + '<span class="bx-tg">' + d.base + '</span></div>' + (d.fill ? '<div class="bx-tg">컵 ' + Math.round(cupFrac(k) * 100) + '%</div>' : "");
+  B("meter").innerHTML = '<div class="bx-lbl">' + esc(nm(k)) + '</div><div class="bx-big">' + fmt(vBase, d.base) + '<span class="bx-tg">' + d.base + '</span></div>' + (d.fill ? '<div class="bx-tg">컵 ' + Math.round(cupFrac(k) * 100) + '%</div>' : "");
 }
 
 /* ───── 연습 ───── */
@@ -279,8 +318,9 @@ function start(i){
   else R.steps.forEach((s, si)=>{ parseStep(s, R.cup).forEach(a=>{ a.si = si; PLAN.push(a); }); });
   cur = 0; miss = 0; wrongRun = 0; log = []; resetCup(); stepV = 0; stepOn = false; prevSay = null;
   B("name").textContent = R.name;
-  B("sub").textContent = [R.temp, R.cup, p ? "고친 정답" : ""].filter(Boolean).join(" · ");
+  B("sub").textContent = [R.ex ? "예시" : "", R.temp, R.cup, p ? "정한 정답" : ""].filter(Boolean).join(" · ");
   B("pickSel").value = String(RECIPES.indexOf(R));
+  if(!p){ show("check"); renderCheck(); return; }       // 처음 연습하는 레시피: 읽은 순서를 먼저 보여 주고 정한다(1.5.6)
   show("play");
   say(mode === "see" ? "순서대로 해 보츄!" : "레시피를 떠올려 보츄!");
   B("meter").innerHTML = "";
@@ -301,7 +341,7 @@ function renderHand(){
   const a = PLAN[cur];
   if(a && stepOn){
     const cv = stepVal(a), now = a.f != null ? Math.round(cv * 100) + "%" : fmt(cv / T[a.k].u[a.u], a.u) + a.u;
-    h.innerHTML = '<div class="bx-handcard"><p><b>' + esc(a.name || T[a.k].n) + '</b> 지금 ' + esc(now) + '<br><span class="bx-sm">모자라면 다시 꾹 · 다음 도구로 넘어가요</span></p><div class="bx-hbtns"><button class="bx-btn ghost" id="bar-stepRe">이 단계 다시</button><button class="bx-btn" id="bar-stepOk">다 넣었츄</button></div></div>';
+    h.innerHTML = '<div class="bx-handcard"><p><b>' + esc(aname(a)) + '</b> 지금 ' + esc(now) + '<br><span class="bx-sm">모자라면 다시 꾹 · 다음 도구로 넘어가요</span></p><div class="bx-hbtns"><button class="bx-btn ghost" id="bar-stepRe">이 단계 다시</button><button class="bx-btn" id="bar-stepOk">다 넣었츄</button></div></div>';
     B("stepOk").onclick = commit; B("stepRe").onclick = redoStep; return;
   }
   if(a && a.k === "hand"){
@@ -316,7 +356,7 @@ function redoStep(){
   stepV = 0; stepOn = false; B("meter").innerHTML = ""; renderCup(null, curTarget()); renderHand(); say("다시 부어 보츄");
 }
 function clearHints(){ document.querySelectorAll("#s-bar .bx-tool").forEach(t=>t.classList.remove("glow")); }
-function hint(){ clearHints(); const a = PLAN[cur]; if(a){ const t = document.querySelector('#s-bar .bx-tool[data-k="' + a.k + '"]'); if(t) t.classList.add("glow"); } }
+function hint(){ clearHints(); const a = PLAN[cur]; if(a) document.querySelectorAll("#s-bar .bx-tool").forEach(t=>{ if(hit(a, t)) t.classList.add("glow"); }); }
 function next(){
   cur++; wrongRun = 0; clearHints(); renderSteps(); renderHand(); renderCup(null, curTarget());
   if(cur >= PLAN.length){ busy = true; finT = setTimeout(()=>{ finT = null; busy = false; finish(); }, 700); return; }
@@ -333,11 +373,14 @@ function wrong(btn){
   miss++; wrongRun++; btn.classList.remove("wrong"); void btn.offsetWidth; btn.classList.add("wrong");
   haptic("error");
   const a = PLAN[cur];
-  if(mode === "see") say("지금은 " + (a.k === "hand" ? "손으로 할" : (a.name || T[a.k].n)) + " 차례츄!", true);
+  if(mode === "see") say("지금은 " + (a.k === "hand" ? "손으로 할" : aname(a)) + " 차례츄!", true);
   else{ say("순서가 다르츄", true); if(wrongRun >= 2) hint(); }
 }
 
 /* ───── 도구 누름 (연습 · 직접 만들기 공통) ───── */
+/* 이 버튼이 이 동작의 도구인가. 우리 매장 재료(이름)로 적힌 동작은 그 재료 버튼으로만, 아니면 기본 도구 버튼으로만 맞는다 */
+function hit(a, btn){ return !!a && a.k === btn.dataset.k && (isItem(a.name) ? a.name : "") === (btn.dataset.n || ""); }
+let pourBtn = null;
 function down(btn, e){
   if(busy || pourK) return;
   e.preventDefault();
@@ -347,14 +390,14 @@ function down(btn, e){
     if(cur >= PLAN.length) return;
     a = PLAN[cur];
     /* 붓던 단계가 열려 있는데 다음 차례 도구를 누르면, 붓던 단계를 먼저 채점하고 넘어간다 */
-    if(a.k !== k && stepOn && PLAN[cur + 1] && PLAN[cur + 1].k === k){
+    if(!hit(a, btn) && stepOn && hit(PLAN[cur + 1], btn)){
       const pa = a; commit();
       const last = log[log.length - 1];
-      prevSay = [(pa.name || T[pa.k].n) + " · " + judge(last.v, pa)[0], !last.ok];
+      prevSay = [aname(pa) + " · " + judge(last.v, pa)[0], !last.ok];
       if(cur >= PLAN.length || busy) return;
       a = PLAN[cur];
     }
-    if(a.k !== k){ wrong(btn); return; }
+    if(!hit(a, btn)){ wrong(btn); return; }
     if(k === "hand"){ log.push({a:a, ok:true}); say("했츄!"); next(); return; }
   }else if(k === "hand"){ freeHand(); return; }
   if(tab === "free" && document.getElementById("bar-hTxt")) B("hand").innerHTML = "";   // 손으로 적던 칸은 다른 도구를 누르면 닫는다
@@ -369,11 +412,13 @@ function down(btn, e){
     return;
   }
   if(k === "shot"){ espresso(a); return; }
-  pourK = k; pourV = 0; pourSnap = JSON.stringify([layers, iceG, whipN, drizN]); btn.classList.add("press");
+  pourK = k; pourBtn = btn; pourV = 0; pourSnap = JSON.stringify([layers, iceG, whipN, drizN]); btn.classList.add("press");
   say(k === "syrup" ? "칙, 칙…" : k === "ice" ? "달그락…" : k === "whip" ? "뱅글뱅글…" : k === "powder" ? "톡, 톡…" : k === "drizzle" ? "주르륵…" : "쪼르르…");
   if(btn.setPointerCapture && e.pointerId != null){ try{ btn.setPointerCapture(e.pointerId); }catch(_){} }
   const step = ()=>{
-    const dv = d.count ? 1 : d.rate;
+    /* 얼음이 든 컵은 붓는 물이 얼음 틈부터 채워 눈금이 빨리 오른다. 틈을 채우는 동안은 덜 부어 눈금이 얼음 없을 때와 같은 빠르기로 오르게 한다(1.5.6) */
+    let dv = d.count ? 1 : d.rate;
+    if(d.fill && k !== "ice" && iceG > 0){ const gap = iceTop() - iceG * ICE_SOLID; if(gap > 0 && liquidMl() < gap) dv = dv * gap / iceTop(); }
     pourInto(k, dv); pourV += dv;
     if(tab === "prac") meterPrac(k, a.f != null ? cupFrac(k) : stepV + pourV, a, false); else meterFree(k, pourV);
     renderCup(k, curTarget());
@@ -381,7 +426,7 @@ function down(btn, e){
   step(); pourT = setInterval(step, d.count ? d.tick : 60);
 }
 function up(btn){
-  if(!pourK || btn.dataset.k !== pourK) return;
+  if(!pourK || btn !== pourBtn) return;
   clearInterval(pourT); pourT = null; btn.classList.remove("press");
   const k = pourK, d = T[k];
   pourK = null;
@@ -393,7 +438,7 @@ function up(btn){
     if(prevSay){ say(prevSay[0], prevSay[1]); prevSay = null; } else say(mode === "see" ? "더 넣거나 다음으로 가츄" : "이만큼이면 될까츄?");
     renderHand();
   }else{
-    recAdd({k:k, base:pourV, frac:d.fill ? cupFrac(k) : null}); meterFree(k, pourV); say("기록했츄"); renderCup();
+    recAdd({k:k, n:btn.dataset.n || undefined, base:pourV, frac:d.fill ? cupFrac(k) : null}); pourBtn = null; meterFree(k, pourV); say("기록했츄"); renderCup();
   }
 }
 
@@ -440,9 +485,9 @@ function finish(){
     let txt, res;
     if(a.k === "hand"){ txt = "손으로 · " + a.text; res = "했어요"; }
     else if(a.k === "stir"){ txt = "젓기"; res = "했어요"; }
-    else if(l.sec){ txt = (a.name || "에스프레소") + " " + a.t + "샷 추출"; res = l.v + "초 / 25~30초"; }
-    else if(a.f != null){ txt = (a.name || T[a.k].n) + " 컵 " + a.lab; res = Math.round(l.v * 100) + "% / " + Math.round(a.f * 100) + "%"; }
-    else{ txt = a.name || T[a.k].n; res = fmt(l.v / T[a.k].u[a.u], a.u) + " / " + amtTxt(a); }
+    else if(l.sec){ txt = aname(a) + " " + a.t + "샷 추출"; res = l.v + "초 / 25~30초"; }
+    else if(a.f != null){ txt = aname(a) + " 컵 " + a.lab; res = Math.round(l.v * 100) + "% / " + Math.round(a.f * 100) + "%"; }
+    else{ txt = aname(a); res = fmt(l.v / T[a.k].u[a.u], a.u) + " / " + amtTxt(a); }
     return '<tr><td>' + esc(txt) + '</td><td class="' + (l.ok ? "ok" : "bad") + '">' + esc(res) + (l.ok ? " ✓" : " ✗") + '</td></tr>';
   }).join("");
   show("result");
@@ -460,7 +505,7 @@ function finish(){
 /* ───── 직접 만들어서 정하기 (정답 고치기 안) ───── */
 function recAdd(x){
   const last = rec[rec.length - 1];
-  if(last && last.k === x.k && x.k !== "shot" && x.k !== "stir" && x.k !== "hand"){ last.base += x.base; last.frac = x.frac; }
+  if(last && last.k === x.k && (last.n || "") === (x.n || "") && x.k !== "shot" && x.k !== "stir" && x.k !== "hand"){ last.base += x.base; last.frac = x.frac; }
   else rec.push(x);
   renderLog();
 }
@@ -468,7 +513,7 @@ function recLine(x){
   const d = T[x.k];
   if(x.k === "hand") return "손으로 · " + x.text;
   if(x.k === "stir") return "젓기";
-  return d.n + " " + fmt(x.base, d.base) + d.base + (x.frac != null ? " (컵 " + Math.round(x.frac * 100) + "%)" : "");
+  return (x.n || nm(x.k)) + " " + fmt(x.base, d.base) + d.base + (x.frac != null ? " (컵 " + Math.round(x.frac * 100) + "%)" : "");
 }
 function renderLog(){
   const el = B("freeLog");
@@ -501,7 +546,7 @@ function nice(v, u){
 
 /* ───── 정답 고치기: 지금 정답(문장에서 읽은 것 또는 고친 것)을 줄마다 고친다 ───── */
 function rowFromPlan(a){
-  const d = T[a.k], o = {k:a.k, name:a.k === "hand" || a.k === "stir" ? "" : (a.name || d.n), text:a.text || "", base:null, frac:null};
+  const d = T[a.k], o = {k:a.k, name:a.k === "hand" || a.k === "stir" ? "" : aname(a), text:a.text || "", base:null, frac:null};
   if(d.u){ o.u = a.u || d.base; o.t = a.t != null ? a.t : 1; o.fill = a.f != null ? a.lab : null; o.f = a.f; }
   return o;
 }
@@ -515,14 +560,14 @@ function openEdit(){
 }
 function openTidy(){   // 직접 만든 기록 → 고치기 줄
   tidyRows = rec.map(x=>{
-    const d = T[x.k], o = {k:x.k, name:x.k === "hand" || x.k === "stir" ? "" : d.n, text:x.text || "", base:x.base == null ? null : x.base, frac:x.frac == null ? null : x.frac};
+    const d = T[x.k], o = {k:x.k, name:x.k === "hand" || x.k === "stir" ? "" : (x.n || nm(x.k)), text:x.text || "", base:x.base == null ? null : x.base, frac:x.frac == null ? null : x.frac};
     if(d.u){ o.u = d.base; o.t = nice(x.base, d.base); o.fill = null; }
     return o;
   });
   enterEdit();
 }
 function enterEdit(){
-  tab = "edit"; B("tPrac").classList.remove("on"); B("tEdit").classList.add("on");
+  tab = "edit"; B("tPrac").classList.remove("on"); B("tCfg").classList.remove("on"); B("tEdit").classList.add("on");
   B("modeBox").hidden = B("re").hidden = true;
   B("name").textContent = R.name; B("sub").textContent = "정답 고치기 · " + R.cup;
   show("tidy"); renderTidy();
@@ -533,12 +578,12 @@ function rowPlan(o){
   if(o.k === "hand") return {k:"hand", text:String(o.text || "").trim() || "손으로"};
   if(o.k === "stir") return {k:"stir"};
   const a = {k:o.k};
-  if(o.name && o.name.trim() && o.name.trim() !== T[o.k].n) a.name = o.name.trim();
+  if(o.name && o.name.trim() && o.name.trim() !== T[o.k].n && o.name.trim() !== nm(o.k)) a.name = o.name.trim();
   if(o.fill){ const fv = fillVal(o.fill); a.f = fv != null ? fv : o.f; a.lab = o.fill; } else { a.t = +o.t || 0; a.u = o.u; }
   return a;
 }
 function stepText(a, i){
-  const n = a.name || T[a.k].n, amt = a.f != null ? (a.lab === "가득" ? "가득" : a.lab + "까지") : amtTxt(a);
+  const n = aname(a), amt = a.f != null ? (a.lab === "가득" ? "가득" : a.lab + "까지") : amtTxt(a);
   switch(a.k){
     case "hand": return a.text;
     case "stir": return "잘 저어 섞기";
@@ -557,7 +602,8 @@ function renderTidy(){
   const rows = tidyRows.map((o, i)=>{
     const d = T[o.k];
     let inner;
-    const top = '<div class="bx-ttop"><select class="bx-inp" data-i="' + i + '" data-f="k" aria-label="도구">' + ORDER.map(k=>'<option value="' + k + '"' + (k === o.k ? " selected" : "") + '>' + T[k].n + '</option>').join("") + '</select>' +
+    const top = '<div class="bx-ttop"><select class="bx-inp" data-i="' + i + '" data-f="k" aria-label="도구">' + ORDER.map(k=>'<option value="' + k + '"' + (k === o.k && !isItem(o.name) ? " selected" : "") + '>' + esc(nm(k)) + '</option>').join("") +
+      (items().length ? '<optgroup label="우리 매장 재료">' + items().map((x, j)=>'<option value="i:' + j + '"' + (x.k === o.k && x.name === o.name ? " selected" : "") + '>' + esc(x.name) + '</option>').join("") + '</optgroup>' : '') + '</select>' +
       '<button class="bx-mini" data-i="' + i + '" data-m="-1"' + (i ? "" : " disabled") + ' aria-label="위로">▲</button><button class="bx-mini" data-i="' + i + '" data-m="1"' + (i < tidyRows.length - 1 ? "" : " disabled") + ' aria-label="아래로">▼</button><button class="bx-mini del" data-i="' + i + '" data-m="x" aria-label="지우기">✕</button></div>';
     if(o.k === "hand") inner = '<div class="bx-f one"><input class="bx-inp" data-i="' + i + '" data-f="text" value="' + esc(o.text) + '" placeholder="예: 자몽 슬라이스 올리기" maxlength="60"></div>';
     else if(o.k === "stir") inner = '';
@@ -583,7 +629,8 @@ function renderTidy(){
   el.querySelectorAll("[data-f]").forEach(inp=>{
     inp.addEventListener(inp.tagName === "SELECT" ? "change" : "input", ()=>{
       const o = tidyRows[+inp.dataset.i], f = inp.dataset.f, d = T[o.k];
-      if(f === "k"){ const k = inp.value, nd = T[k]; o.k = k; o.name = k === "hand" || k === "stir" ? "" : nd.n; o.base = null; o.frac = null; o.fill = null; o.f = null; if(nd.u){ o.u = nd.base; o.t = defT(k); } renderTidy(); return; }
+      if(f === "k" && inp.value.indexOf("i:") === 0){ const x = items()[+inp.value.slice(2)]; if(x){ const nd = T[x.k]; o.k = x.k; o.name = x.name; o.base = null; o.frac = null; o.fill = null; o.f = null; o.u = nd.base; o.t = defT(x.k); } renderTidy(); return; }
+      if(f === "k"){ const k = inp.value, nd = T[k]; o.k = k; o.name = k === "hand" || k === "stir" ? "" : nm(k); o.base = null; o.frac = null; o.fill = null; o.f = null; if(nd.u){ o.u = nd.base; o.t = defT(k); } renderTidy(); return; }
       if(f === "u"){
         const v = inp.value;
         if(v.indexOf("f:") === 0) o.fill = v.slice(2);
@@ -616,13 +663,110 @@ function renderTidy(){
   };
 }
 
+/* ───── 1.5.6: 예시 한 잔 · 도구 버튼 · 확인 카드 · 내 도구 · 처음 안내 ───── */
+const EX_D = {name:"바닐라 라떼", temp:"ICE", cups:["16oz"], steps:["컵에 얼음 가득", "바닐라 시럽 3펌프", "우유 1번 선까지", "에스프레소 2샷 올리기", "뚜껑 덮어 내기"]};
+
+/* 도구 버튼: 기본 15개 + 우리 매장 재료 + 손으로. 이름을 바꾸거나 재료를 더하면 다시 그린다 */
+function renderTools(){
+  const list = ORDER.filter(k=>k !== "hand").map(k=>({k:k, label:nm(k), sub:T[k].sub}))
+    .concat(items().map(x=>({k:x.k, n:x.name, label:x.name, sub:"우리 매장"})))
+    .concat([{k:"hand", label:nm("hand"), sub:T.hand.sub}]);
+  B("tools").innerHTML = list.map(t=>'<button class="bx-tool' + (t.n ? " mine" : "") + '" data-k="' + t.k + '"' + (t.n ? ' data-n="' + esc(t.n) + '"' : "") + '>' + draw(ICON[t.k], IP) + '<span>' + esc(t.label) + '</span><small>' + esc(t.sub) + '</small></button>').join("");
+  B("tools").querySelectorAll(".bx-tool").forEach(b=>{
+    b.addEventListener("pointerdown", e=>down(b, e));
+    ["pointerup", "pointercancel", "pointerleave"].forEach(ev=>b.addEventListener(ev, ()=>up(b)));
+    b.addEventListener("contextmenu", e=>e.preventDefault());
+  });
+}
+
+/* 확인 카드: 앱이 문장에서 읽은 순서를 먼저 보여 준다. 이대로 · 고치기 · 직접 만들기 중 하나로 이 레시피의 정답을 정한다 */
+function renderCheck(){
+  const el = B("check"), unread = PLAN.filter(a=>a.k === "hand").length;
+  const rows = PLAN.map((a, i)=>{
+    const q = a.k === "hand", src = R.steps[a.si] || "";
+    return '<li class="' + (q ? "q" : "") + '"><span class="bx-cn">' + (i + 1) + '</span>' + draw(ICON[a.k], IP) +
+      '<span class="bx-cw"><b>' + esc(q ? "손으로" : aname(a)) + '</b><small>"' + esc(src) + '"' + (q ? " · 손으로 할 일로 읽었어요" : "") + '</small></span>' +
+      '<span class="bx-ca">' + esc(q ? "?" : a.k === "stir" ? "" : a.f != null ? a.lab : amtTxt(a)) + '</span></li>';
+  }).join("");
+  /* 연습 화면의 레시피 고르기는 확인 카드 동안 숨어 있어 여기에도 둔다 */
+  el.innerHTML = '<div class="bx-pick"><span class="bx-lb">레시피</span><span class="bx-selwrap"><select id="bar-cPick" class="bx-inp" aria-label="연습할 레시피">' + B("pickSel").innerHTML + '</select></span></div>' +
+    '<div class="bx-ban">이 순서대로 채점해요<small>순서 · 양</small></div>' +
+    '<div class="bx-ccard"><div class="bx-sm">' + (R.ex ? "예시 레시피" : esc(R.name)) + '의 만드는 순서에서 읽었어요</div><ol class="bx-clist">' + rows + '</ol></div>' +
+    '<p class="bx-tsub">' + (unread ? '? 는 도구로 못 읽은 줄이에요. 손으로 하는 일이 맞으면 그대로 두고, 아니면 고쳐 주세요.' : '우리 매장 방식과 다르면 고쳐 주세요. 정한 순서는 레시피 문장과 따로 저장돼요.') + '</p>' +
+    '<div class="bx-cbtns"><button class="bx-btn" id="bar-cOk">이대로 연습</button><button class="bx-btn ghost" id="bar-cFix">고치기</button><button class="bx-btn ghost" id="bar-cRec">처음부터 직접 만들기</button></div>';
+  say(unread ? "? 는 내가 못 읽은 거츄" : "이렇게 읽었츄!", false);
+  B("cOk").onclick = ()=>{
+    const plan = cleanPlan(PLAN.map(a=>{ const b = Object.assign({}, a); delete b.si; return b; }));
+    if(plan){ R.d.plan = plan; if(!R.ex) persist(); }
+    haptic("success"); renderPick(); start(RECIPES.indexOf(R)); if(plan) say("좋츄! 이 순서로 해 보츄");
+  };
+  B("cPick").value = String(RECIPES.indexOf(R));
+  B("cPick").onchange = function(){ start(+this.value); };
+  B("cFix").onclick = ()=>openEdit();
+  B("cRec").onclick = ()=>{ rec = []; setTab("free"); };
+}
+
+/* 내 도구: 부르는 이름 · 더 알아듣는 말 · 우리 매장 재료. 바꾸면 바로 저장하고 도구 버튼을 다시 그린다 */
+let cfgOpen = null;
+function saveCfg(c){ const v = cleanCfg(c); if(v) data.bar = v; else delete data.bar; persist(); renderTools(); }
+function cfgCopy(){ const c = cfg(); return {names:Object.assign({}, c.names), words:JSON.parse(JSON.stringify(c.words || {})), items:items().map(x=>({name:x.name, k:x.k}))}; }
+function renderCfg(){
+  const el = B("cfg"), c = cfg(), w = c.words || {};
+  const rows = ORDER.filter(k=>k !== "hand").map(k=>{
+    const mine = w[k] || [], open = cfgOpen === k;
+    return '<div class="bx-grow"><div class="bx-gtop">' + draw(ICON[k], IP) + '<span class="bx-gdef">기본<br>' + esc(T[k].n) + '</span>' +
+      '<input class="bx-inp" data-nk="' + k + '" value="' + esc(c.names && c.names[k] || "") + '" placeholder="' + esc(T[k].n) + '" maxlength="12" aria-label="' + esc(T[k].n) + ' 이름">' +
+      '<button class="bx-mini" data-wk="' + k + '" aria-label="알아듣는 말">' + (open ? "▴" : "▾") + '</button></div>' +
+      (open ? '<div class="bx-gw"><div class="bx-sm">문장에 이 말이 나오면 ' + esc(nm(k)) + '(으)로 읽어요</div><div class="bx-chips">' +
+        BASE_WORDS[k].map(x=>'<span class="bx-chip">' + esc(x) + '</span>').join("") +
+        (c.names && c.names[k] && BASE_WORDS[k].indexOf(c.names[k]) < 0 ? '<span class="bx-chip">' + esc(c.names[k]) + '</span>' : "") +
+        mine.map((x, i)=>'<button class="bx-chip fix" data-rk="' + k + '" data-ri="' + i + '" aria-label="' + esc(x) + ' 빼기">' + esc(x) + ' ✕</button>').join("") + '</div>' +
+        (mine.length < MAX_WORDS ? '<div class="bx-row"><input class="bx-inp" id="bar-wIn" placeholder="예: 리스트레토" maxlength="12" style="flex:1"><button class="bx-btn ghost" data-ak="' + k + '">더하기</button></div>' : "") + '</div>' : "") + '</div>';
+  }).join("");
+  const its = items().map((x, i)=>'<div class="bx-grow"><div class="bx-gtop">' + draw(ICON[x.k], IP) + '<span class="bx-gname">' + esc(x.name) + '</span><span class="bx-gdef">' + esc(nm(x.k)) + '처럼</span><button class="bx-mini del" data-di="' + i + '" aria-label="' + esc(x.name) + ' 지우기">✕</button></div></div>').join("");
+  el.innerHTML = '<p class="bx-tsub">우리 매장에서 부르는 이름으로 바꾸면 도구 버튼 · 확인 카드 · 결과에 그 이름이 나오고, 레시피 문장에서도 그 말을 알아들어요. ▾ 를 누르면 알아듣는 말을 더할 수 있어요.</p>' +
+    '<div class="bx-lab2">부르는 이름</div><div class="bx-gcard">' + rows + '</div>' +
+    '<div class="bx-lab2">우리 매장 재료</div><div class="bx-gcard">' + (its || '<p class="bx-empty">바닐라빈 파우더처럼 우리 매장에만 있는 재료를 도구로 만들어요.</p>') +
+      (items().length < MAX_ITEMS ? '<div class="bx-gnew"><input class="bx-inp" id="bar-iName" placeholder="재료 이름 (예: 바닐라빈 파우더)" maxlength="20"><div class="bx-row"><span class="bx-sm">어떻게 넣나요</span><span class="bx-selwrap"><select class="bx-inp" id="bar-iK" aria-label="넣는 도구">' +
+        ITEM_BASE.map(k=>'<option value="' + k + '"' + (k === "powder" ? " selected" : "") + '>' + esc(nm(k)) + ' (' + esc(T[k].sub) + ')</option>').join("") + '</select></span><button class="bx-btn" id="bar-iAdd">만들기</button></div></div>' : "") + '</div>' +
+    '<div class="bx-rbtns"><button class="bx-btn ghost" id="bar-gGuide">안내 다시 보기</button><button class="bx-btn ghost" id="bar-gReset"' + (c.names || c.words ? "" : " disabled") + '>기본 이름으로 되돌리기</button></div>';
+  el.querySelectorAll("[data-nk]").forEach(inp=>{ inp.addEventListener("change", ()=>{ const v = cfgCopy(); v.names[inp.dataset.nk] = inp.value; saveCfg(v); renderCfg(); }); });
+  el.querySelectorAll("[data-wk]").forEach(b=>{ b.onclick = ()=>{ cfgOpen = cfgOpen === b.dataset.wk ? null : b.dataset.wk; renderCfg(); }; });
+  el.querySelectorAll("[data-rk]").forEach(b=>{ b.onclick = ()=>{ const v = cfgCopy(); v.words[b.dataset.rk].splice(+b.dataset.ri, 1); saveCfg(v); renderCfg(); }; });
+  el.querySelectorAll("[data-ak]").forEach(b=>{ b.onclick = ()=>{ const k = b.dataset.ak, x = B("wIn").value.trim(); if(!x){ B("wIn").focus(); return; }
+    const v = cfgCopy(); (v.words[k] = v.words[k] || []).push(x); saveCfg(v); haptic("selection"); toast('"' + x + '"도 ' + nm(k) + '(으)로 읽어요'); renderCfg(); }; });
+  el.querySelectorAll("[data-di]").forEach(b=>{ b.onclick = ()=>{ const v = cfgCopy(); v.items.splice(+b.dataset.di, 1); saveCfg(v); renderCfg(); }; });
+  if(B("iAdd")) B("iAdd").onclick = ()=>{ const n = B("iName").value.replace(/\s+/g, " ").trim(); if(!n){ B("iName").focus(); return; }
+    if(items().some(x=>x.name === n)){ toast("이미 있는 재료예요"); return; }
+    const v = cfgCopy(); v.items.push({name:n, k:B("iK").value}); saveCfg(v); haptic("success"); toast('"' + n + '" 도구가 생겼어요'); renderCfg(); };
+  B("gGuide").onclick = openGuide;
+  B("gReset").onclick = ()=>{ const v = cfgCopy(); v.names = {}; v.words = {}; saveCfg(v); renderCfg(); };
+}
+
+/* 처음 들어오면 한 번 보는 안내 세 장. 내 도구 탭의 "안내 다시 보기"로 또 본다 */
+let guideI = 0;
+const GUIDE = [
+  ()=>'<h3>도구를 꾹 눌러요</h3><div class="bx-gpic">' + draw(ICON.milk, IP) + draw(ICON.syrup, IP) + '</div><p>누르고 있는 동안 컵에 부어지고, 손을 떼면 멈춰요. 모자라면 다시 꾹 눌러 더 부어요.</p>',
+  ()=>'<h3>순서대로 채점해요</h3><ol class="bx-clist"><li><span class="bx-cn">1</span>' + draw(ICON.ice, IP) + '<span class="bx-cw"><b>' + esc(nm("ice")) + '</b></span><span class="bx-ca">✓</span></li><li><span class="bx-cn">2</span>' + draw(ICON.shot, IP) + '<span class="bx-cw"><b>' + esc(nm("shot")) + '</b></span><span class="bx-ca">✓</span></li><li class="now"><span class="bx-cn">3</span>' + draw(ICON.milk, IP) + '<span class="bx-cw"><b>' + esc(nm("milk")) + '</b></span><span class="bx-ca">지금</span></li></ol><p>재료가 맞아도 차례가 다르면 순서 실수로 세요. 양은 단계마다 따로 봐요.</p>',
+  ()=>'<h3>매장마다 다르면 고쳐요</h3><p>처음 연습하는 레시피는 앱이 읽은 순서를 먼저 보여 줘요. 다르면 거기서 고치고, 부르는 이름은 "내 도구"에서 바꿔요.</p><p class="bx-sm">맨 끝의 예시 바닐라 라떼로 먼저 해 볼 수 있어요.</p>'];
+function openGuide(){ guideI = 0; paintGuide(); B("guide").hidden = false; }
+/* 끝까지 넘기거나 건너뛰면 본 것으로 기억한다. 안내가 떠 있지 않았으면(화면을 그냥 떠날 때) 아무것도 남기지 않는다 */
+function closeGuide(){ const g = B("guide"); if(!g || g.hidden) return; g.hidden = true; if(data.hints.indexOf("barGuide") < 0){ data.hints.push("barGuide"); persist(); } }
+function paintGuide(){
+  const g = B("guide");
+  g.innerHTML = '<div class="bx-gbox"><div class="bx-dots">' + GUIDE.map((_, i)=>'<i class="' + (i === guideI ? "on" : "") + '"></i>').join("") + '</div>' + GUIDE[guideI]() +
+    '<button class="bx-btn" id="bar-gNext">' + (guideI < GUIDE.length - 1 ? "다음" : "해 볼게츄") + '</button>' + (guideI < GUIDE.length - 1 ? '<button class="bx-skip" id="bar-gSkip">건너뛰기</button>' : '') + '</div>';
+  B("gNext").onclick = ()=>{ if(guideI < GUIDE.length - 1){ guideI++; paintGuide(); } else closeGuide(); };
+  if(B("gSkip")) B("gSkip").onclick = closeGuide;
+}
+
 /* ───── 화면 전환 ───── */
-function show(w){ B("play").hidden = w !== "play"; B("tidy").hidden = w !== "tidy"; B("result").hidden = w !== "result"; }
+function show(w){ ["play","tidy","result","check","cfg"].forEach(x=>{ B(x).hidden = w !== x; }); }
 function setMode(m){ mode = m; B("see").classList.toggle("on", m === "see"); B("mem").classList.toggle("on", m === "mem"); }
 function setTab(t, noStart){
   if(busy) return;
   tab = t;
-  B("tPrac").classList.toggle("on", t === "prac"); B("tEdit").classList.toggle("on", t !== "prac");
+  B("tPrac").classList.toggle("on", t === "prac"); B("tEdit").classList.toggle("on", t === "edit" || t === "free"); B("tCfg").classList.toggle("on", t === "cfg");
   B("pracTop").hidden = t !== "prac"; B("freeLog").hidden = t !== "free";
   B("modeBox").hidden = B("re").hidden = t !== "prac";
   clearHints(); B("hand").innerHTML = ""; B("meter").innerHTML = "";
@@ -631,10 +775,11 @@ function setTab(t, noStart){
     B("name").textContent = R.name; B("sub").textContent = "직접 만들어 정하기 · " + freeCup;
     replayFree(); renderLog(); say(rec.length ? "이어서 만들어 보츄" : "우리 매장 방식대로 만들어 보츄!");
   }
+  else if(t === "cfg"){ show("cfg"); B("name").textContent = "내 도구"; B("sub").textContent = "부르는 이름 · 우리 매장 재료"; renderCfg(); }
   else if(!noStart) start(Math.max(0, RECIPES.indexOf(R)));
 }
 function renderPick(){
-  B("pickSel").innerHTML = RECIPES.map((r, i)=>'<option value="' + i + '">' + esc(r.name) + (r.temp ? " · " + esc(r.temp) : "") + " " + r.cup + (planOf(r) ? " · 고친 정답" : "") + "</option>").join("");
+  B("pickSel").innerHTML = RECIPES.map((r, i)=>'<option value="' + i + '">' + (r.ex ? "예시 · " : "") + esc(r.name) + (r.temp ? " · " + esc(r.temp) : "") + " " + r.cup + (planOf(r) ? " · 정한 정답" : "") + "</option>").join("");
   if(R) B("pickSel").value = String(RECIPES.indexOf(R));
 }
 
@@ -643,27 +788,24 @@ let built = false;
 function build(){
   if(built) return;
   built = true;
-  B("tools").innerHTML = ORDER.map(k=>{ const d = T[k]; return '<button class="bx-tool" data-k="' + k + '">' + draw(ICON[k], IP) + '<span>' + d.n + '</span><small>' + d.sub + '</small></button>'; }).join("");
-  document.querySelectorAll("#s-bar .bx-tool").forEach(b=>{
-    b.addEventListener("pointerdown", e=>down(b, e));
-    ["pointerup", "pointercancel", "pointerleave"].forEach(ev=>b.addEventListener(ev, ()=>up(b)));
-    b.addEventListener("contextmenu", e=>e.preventDefault());
-  });
+  renderTools();
   B("pickSel").addEventListener("change", function(){ start(+this.value); });
   B("re").onclick = ()=>{ if(busy) return; start(RECIPES.indexOf(R)); say("새 컵으로 다시츄!"); };
   B("see").onclick = ()=>{ if(busy || mode === "see") return; setMode("see"); start(RECIPES.indexOf(R)); };
   B("mem").onclick = ()=>{ if(busy || mode === "mem") return; setMode("mem"); start(RECIPES.indexOf(R)); };
+  B("tEdit").onclick = ()=>{ if(tab === "prac" || tab === "cfg"){ stopTimers(); if(R) openEdit(); } };
+  B("tCfg").onclick = ()=>{ if(tab !== "cfg" && !busy){ stopTimers(); rec = []; setTab("cfg"); } };
   B("tPrac").onclick = ()=>{ if(tab !== "prac"){ stopTimers(); rec = []; setTab("prac"); } };
-  B("tEdit").onclick = ()=>{ if(tab === "prac"){ stopTimers(); openEdit(); } };
   B("quit").onclick = ()=>{ barLeave(); go("home"); };
 }
 
 /* 학습 방식 시트에서 부른다. pool = 학습 범위의 레시피(고르기로 좁힌 것 포함). 만드는 순서가 없는 레시피는 뺀다 */
 function openBar(pool){
   const list = (pool || []).filter(d=>d && (d.steps || []).some(s=>String(s).trim()));
-  if(!list.length){ toast("만드는 순서가 적힌 레시피가 없어요"); return false; }
-  build();
+  build(); renderTools();          // 다른 화면에서 백업을 되살렸으면 내 도구가 바뀌었을 수 있다
   RECIPES = list.map(d=>({d:d, name:d.name, temp:d.temp || "", cup:cupOf(d), steps:(d.steps || []).map(String).filter(s=>s.trim())}));
+  /* 예시 한 잔은 늘 맨 끝에. 레시피가 아니라 저장도 안 되고(정한 정답은 이 화면을 닫으면 사라진다) 순서가 적힌 레시피가 없어도 해 볼 수 있다 */
+  RECIPES.push({d:EX_D, ex:true, name:EX_D.name, temp:EX_D.temp, cup:cupOf(EX_D), steps:EX_D.steps.slice()});
   R = null; tab = "prac"; rec = [];
   B("mouse").innerHTML = mouseSVGWorn("day");
   setMode(mode);
@@ -672,16 +814,18 @@ function openBar(pool){
   setTab("prac", true);
   start(0);
   B("scroll").scrollTop = 0;
+  if((data.hints || []).indexOf("barGuide") < 0) openGuide();
   return true;
 }
 /* 다른 화면으로 갈 때 붓던 것 · 추출 시계를 멈춘다 */
-function barLeave(){ stopTimers(); }
+function barLeave(){ stopTimers(); EX_D.plan = undefined; const g = B("guide"); if(g) g.hidden = true; }
 
 window.openBar = openBar;
 window.barLeave = barLeave;
 window.cleanBarPlan = cleanPlan;
 window.barKeepPlan = keepPlan;
+window.cleanBarCfg = cleanCfg;
 window.barTest = {parseStep:parseStep, judge:judge, cupOf:cupOf, stepText:stepText, cleanPlan:cleanPlan, keepPlan:keepPlan,
   state:()=>({tab:tab, mode:mode, cur:cur, plan:PLAN, recipe:R ? R.name : null, busy:busy}),
-  commit:commit, setTab:setTab, openEdit:openEdit, tidyRows:()=>tidyRows};
+  commit:commit, setTab:setTab, openEdit:openEdit, tidyRows:()=>tidyRows, cleanCfg:cleanCfg, keys:keys};
 })();

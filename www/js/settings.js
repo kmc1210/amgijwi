@@ -524,6 +524,7 @@ function applyBackup(text, quiet){
       haptic:typeof d.haptic === "boolean" ? d.haptic : data.haptic,
       /* 치즈 · 옷은 백업을 따라간다. 예전 백업(옷장 없음)이면 지금 것을 둔다 */
       closet:d.closet ? restoreCloset(d.closet) : data.closet,
+      bar:cleanBarCfg(d.bar),             /* 바 연습 내 도구(부르는 이름 · 우리 매장 재료)도 백업을 따라간다 (bar.js) */
       bday:restoreBday(d.bday),           /* 생일도 백업을 따라간다 */
       nick:restoreNick(d.nick),           /* 이름도 백업을 따라간다 */
       review:data.review,                 /* 별점을 청한 기록은 이 기기 것을 둔다 */
@@ -602,6 +603,7 @@ $("#wipeAll").addEventListener("click", ()=>{
     data = {v:1, mode:data.mode, theme:data.theme, sound:data.sound, wx:data.wx, listSort:data.listSort, enCase:data.enCase, pin:data.pin,
       haptic:data.haptic, tagRule:data.tagRule,      /* 빠지면 개봉관리가 규칙 없이 그려지다 멈춘다 */
       closet:data.closet, bday:data.bday,            /* 치즈 · 옷 · 생일은 레시피가 아니라 남긴다 */
+      bar:data.bar,                                  /* 바 연습에서 부르는 이름은 매장 규칙이라 남긴다 */
       review:data.review,                            /* 별점을 청한 날을 잊으면 넉 달 간격이 깨진다 */
       nudge:data.nudge,                              /* 알림을 켜고 끈 것은 취향이라 남긴다 */
       nick:data.nick,                                /* 이름도 남긴다 */

@@ -4162,7 +4162,8 @@ const LEGACY = {
       window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
       bubbleSaidAt = 0; homeSayList.length = 0; newsWait = null; closeSheet();
       const cur = NEWS[0].v;
-      r.top = [NEWS[0].v === NEWS_FROM, NEWS.every((n, i) => !i || updateNewer(NEWS[i - 1].v, n.v)), NEWS.every(n => n.t && n.l.length && /^\d{4}-\d\d-\d\d$/.test(n.d))];
+      r.cur = cur; r.t0 = NEWS[0].t; r.since154 = NEWS.filter(n => updateNewer(n.v, "1.5.4") && !updateNewer(NEWS_FROM, n.v)).map(n => n.t);
+      r.top = [NEWS.some(n => n.v === NEWS_FROM) && !updateNewer(NEWS_FROM, cur), NEWS.every((n, i) => !i || updateNewer(NEWS[i - 1].v, n.v)), NEWS.every(n => n.t && n.l.length && /^\d{4}-\d\d-\d\d$/.test(n.d))];
       // 새로 설치한 사람(쓴 흔적 없음)에게는 띄우지 않고 기록만
       data.hints = []; data.closet.cheese = 0; data.closet.roundCount = 0; data.closet.verSeen = verMinor(cur); data.drinks.forEach(d => { d.sample = true; });
       localStorage.removeItem(NEWS_KEY); window.__amgijwiInfo = {app: cur + " (40)"};
@@ -4202,16 +4203,16 @@ const LEGACY = {
       data = JSON.parse(backup); data.closet = cleanCloset(data.closet); persist(); go("home");
       return r;
     });
-    eq("소식은 새 버전부터 · 맨 위가 호외 시작 버전 · 날짜 · 제목 · 설명이 있다", r.top, [true, true, true]);
-    eq("새로 설치한 사람에게는 띄우지 않고 기록만", r.fresh, [false, "1.5.5"]);
-    eq("쓰던 사람이 업데이트하고 처음 홈을 열면 지금 버전 소식 한 장", r.first, [true, ["바에서 한 잔 만들어 보자츄 (베타)"], "1.5.5", "쥐돌이 뉴스", false]);
+    eq("소식은 새 버전부터 · 호외 시작 버전이 들어 있다 · 날짜 · 제목 · 설명이 있다", r.top, [true, true, true]);
+    eq("새로 설치한 사람에게는 띄우지 않고 기록만", r.fresh, [false, r.cur]);
+    eq("쓰던 사람이 업데이트하고 처음 홈을 열면 지금 버전 소식 한 장", r.first, [true, [r.t0], r.cur, "쥐돌이 뉴스", false]);
     eq("호외에서도 도트 글꼴은 16px 보다 작게 쓰지 않는다", r.small, []);
     eq("알겠츄를 누르면 닫히고, 다시 열어도 안 뜬다", [r.closed, r.again], [false, false]);
-    eq("건너뛴 버전은 새것부터 묶고, 고마워 치즈는 호외 안 한 줄로", r.skip, [true, ["시험 소식", "바에서 한 잔 만들어 보자츄 (베타)"], 5, true, 0]);
+    eq("건너뛴 버전은 새것부터 묶고, 고마워 치즈는 호외 안 한 줄로", r.skip, [true, ["시험 소식"].concat(r.since154), 5, true, 0]);
     eq("가려진 채 앱을 껐다 켜도 치즈 한 줄이 남고, 띄우면 지운다", r.keep, [true, true, null]);
     eq("지난 소식으로 넘겨 보고 닫을 수 있다", [r.all[0], r.all[1] >= 5, r.allClosed], [true, true, false]);
     eq("확인창에 가려 있으면 띄우지 않고 기록도 그대로", r.covered, [false, "1.5.4"]);
-    eq("가린 창이 닫히고 홈이 보이면 띄운다", r.later, [true, ["바에서 한 잔 만들어 보자츄 (베타)"]]);
+    eq("가린 창이 닫히고 홈이 보이면 띄운다", r.later, [true, r.since154]);
     eq("옛 앱으로 돌아가면 띄우지 않는다", r.older, false);
     eq("웹에서는 아무것도 하지 않는다", r.web, 0);
     eq("설정 › 업데이트 소식은 지난 소식 전부", r.settings, [true, true]);
@@ -4973,13 +4974,24 @@ const LEGACY = {
       const rows = Array.from(document.querySelectorAll("#sheetBody .row[data-mode]"));
       r.sheet = [rows.map(b => b.dataset.mode).join(","), !!document.querySelector('#sheetBody .row[data-mode="bar"] .betatag')];
       const mode0 = data.mode;
+      data.hints = (data.hints || []).filter(h => h !== "barGuide");
       document.querySelector('#sheetBody .row[data-mode="bar"]').click(); await wait(400);
       r.open = [$("#s-bar").classList.contains("active"), $("#tabs").classList.contains("hide"), data.mode === mode0, !!$("#bar-mouse svg"), document.querySelectorAll("#s-bar .bx-tool").length];
-      // 순서가 없는 레시피는 빠진다(에스프레소에는 순서가 있으니 전부)
-      r.pick = $("#bar-pickSel").options.length === data.drinks.filter(d => d.steps.length).length;
+      // 처음 들어오면 안내 세 장(1.5.6). 끝까지 넘기면 다시 안 뜬다
+      r.guide = [!$("#bar-guide").hidden, document.querySelectorAll("#bar-guide .bx-dots i").length];
+      $("#bar-gNext").click(); $("#bar-gNext").click(); $("#bar-gNext").click();
+      r.guide.push($("#bar-guide").hidden, data.hints.indexOf("barGuide") >= 0);
+      // 순서가 없는 레시피는 빠지고(에스프레소에는 순서가 있으니 전부) 맨 끝에 예시 한 잔
+      const opts = $("#bar-pickSel").options;
+      r.pick = [opts.length === data.drinks.filter(d => d.steps.length).length + 1, opts[opts.length - 1].textContent.indexOf("예시 · 바닐라 라떼") === 0];
       // 아메리카노 고르기
       const ai = Array.from($("#bar-pickSel").options).findIndex(o => o.textContent.indexOf("아메리카노") === 0);
       $("#bar-pickSel").value = String(ai); $("#bar-pickSel").dispatchEvent(new Event("change"));
+      // 정답을 아직 안 정한 레시피는 확인 카드부터(1.5.6): 읽은 순서 · 원래 문장 · 이대로 연습하면 정답으로 저장
+      r.check = [$("#bar-play").hidden, !$("#bar-check").hidden, $("#bar-check .bx-ban").textContent.indexOf("이 순서대로 채점해요") === 0, document.querySelectorAll("#bar-check .bx-clist li").length,
+        $("#bar-check .bx-clist li small").textContent.indexOf("얼음") >= 0, !!$("#bar-cFix") && !!$("#bar-cRec")];
+      $("#bar-cOk").click();
+      r.checked = [!$("#bar-play").hidden, Array.isArray(data.drinks.find(d => d.name === "아메리카노").plan)];
       r.start = [$("#bar-name").textContent, $("#bar-sub").textContent, barTest.state().plan.map(a => a.k).join(","), document.querySelectorAll("#bar-steps li").length];
       const tool = k => document.querySelector('#s-bar .bx-tool[data-k="' + k + '"]');
       const press = (k, ms) => { const b = tool(k); b.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true, cancelable: true})); return wait(ms).then(() => b.dispatchEvent(new PointerEvent("pointerup", {bubbles: true}))); };
@@ -5000,7 +5012,7 @@ const LEGACY = {
       openBar(data.drinks); await wait(300);
       $("#bar-pickSel").value = String(ai); $("#bar-pickSel").dispatchEvent(new Event("change"));
       $("#bar-tEdit").click();
-      r.edit = [$("#bar-tidy").hidden, document.querySelectorAll("#bar-tidy .bx-trow").length, $("#bar-tidy .bx-rn").textContent, !!$("#bar-tidy details.bx-rs:not([open])"), $("#bar-modeBox").offsetParent === null && $("#bar-re").offsetParent === null, !$("#bar-tOrig")];
+      r.edit = [$("#bar-tidy").hidden, document.querySelectorAll("#bar-tidy .bx-trow").length, $("#bar-tidy .bx-rn").textContent, !!$("#bar-tidy details.bx-rs:not([open])"), $("#bar-modeBox").offsetParent === null && $("#bar-re").offsetParent === null, !!$("#bar-tOrig")];
       const amt = document.querySelector('#bar-tidy .bx-trow [data-f="t"]'); amt.value = "150"; amt.dispatchEvent(new Event("input"));
       r.preview = $("#bar-tidy .bx-preview li").textContent;
       $("#bar-tAdd").click();
@@ -5010,13 +5022,14 @@ const LEGACY = {
       r.small = small("#s-bar");
       // 양을 비우면 저장하지 않는다
       const amt2 = document.querySelectorAll('#bar-tidy .bx-trow [data-f="t"]')[1]; const keepV = amt2.value; amt2.value = ""; amt2.dispatchEvent(new Event("input"));
-      $("#bar-tSave").click(); r.empty = [barTest.state().tab, data.drinks.find(d => d.name === "아메리카노").plan === undefined];
+      const plan0 = JSON.stringify(data.drinks.find(d => d.name === "아메리카노").plan);
+      $("#bar-tSave").click(); r.empty = [barTest.state().tab, JSON.stringify(data.drinks.find(d => d.name === "아메리카노").plan) === plan0];
       const amt3 = document.querySelectorAll('#bar-tidy .bx-trow [data-f="t"]')[1]; amt3.value = keepV; amt3.dispatchEvent(new Event("input"));
       r.sample0 = !!data.drinks.find(d => d.name === "아메리카노").sample;
       $("#bar-tSave").click();
       const am = data.drinks.find(d => d.name === "아메리카노");
       r.sample = [r.sample0, !!am.sample];
-      r.saved = [JSON.stringify(am.plan), am.steps.length, $("#bar-sub").textContent.indexOf("고친 정답") >= 0, $("#bar-pickSel").options[ai].textContent.indexOf("고친 정답") >= 0, document.querySelectorAll("#bar-steps li").length, barTest.state().tab];
+      r.saved = [JSON.stringify(am.plan), am.steps.length, $("#bar-sub").textContent.indexOf("정한 정답") >= 0, $("#bar-pickSel").options[ai].textContent.indexOf("정한 정답") >= 0, document.querySelectorAll("#bar-steps li").length, barTest.state().tab];
       r.small = r.small.concat(small("#s-bar"));
       // 레시피 문장대로 되돌리기
       $("#bar-tEdit").click(); r.orig = !!$("#bar-tOrig");
@@ -5057,19 +5070,22 @@ const LEGACY = {
     eq("바 연습: 컵 칸에서 가장 가까운 컵, 모르면 16oz", r.cup, ["16oz", "12oz", "16oz", "16oz"]);
     eq("학습 방식 시트 세 번째 줄에 바 연습(베타)", r.sheet, ["flip,blank,bar", true]);
     eq("바 연습을 고르면 바 화면이 열리고, 지난번 방식은 그대로", r.open, [true, true, true, true, 16]);
-    ok("바 연습 레시피 목록은 순서가 있는 레시피 전부", r.pick);
-    eq("아메리카노: 이름 · 온도 · 컵 · 동작 · 순서", r.start, ["아메리카노", "ICE · 16oz", "ice,water,shot", 3]);
+    eq("처음 들어오면 안내 세 장, 다 넘기면 닫히고 기억한다", r.guide, [true, 3, true, true]);
+    eq("바 연습 레시피 목록은 순서가 있는 레시피 전부 + 맨 끝 예시", r.pick, [true, true]);
+    eq("정답을 안 정한 레시피는 확인 카드: 채점 기준 · 줄마다 원래 문장 · 고치기 · 직접 만들기", r.check, [true, true, true, 3, true, true]);
+    eq("이대로 연습: 연습 화면으로 가고 읽은 순서가 이 레시피의 정답이 된다", r.checked, [true, true]);
+    eq("아메리카노: 이름 · 온도 · 컵 · 동작 · 순서", r.start, ["아메리카노", "ICE · 16oz · 정한 정답", "ice,water,shot", 3]);
     eq("차례가 아닌 도구는 실수", r.wrong, [0, true]);
     eq("손을 떼도 다음 단계로 안 넘어가고, 이 단계 다시 · 다 넣었츄가 나온다", r.held, [0, true, true]);
     eq("이 단계 다시는 그 단계만 비운다", r.redo, [0, false]);
     eq("붓던 중 다음 차례 도구를 누르면 앞 단계를 채점하고 넘어간다", r.auto, 1);
     eq("다 넣었츄로 다음 단계", r.next, 2);
     eq("다른 화면으로 가면 추출 판을 걷고 멈춘다", [r.espo, r.leave], [true, [false, false]]);
-    eq("정답 고치기: 줄 · 레시피 이름 카드 · 문장은 접힘 · 위 버튼 숨김 · 되돌리기 없음", r.edit, [false, 3, "아메리카노", true, true, true]);
+    eq("정답 고치기: 줄 · 레시피 이름 카드 · 문장은 접힘 · 위 버튼 숨김 · 정한 정답이라 되돌리기 있음", r.edit, [false, 3, "아메리카노", true, true, true]);
     eq("고치면 미리 보기가 바로 바뀐다", r.preview, "컵에 얼음 150g 담기");
     eq("저장: 고친 정답만 plan 에 · 문장 그대로 · 고친 정답 표시 · 연습으로", r.saved, ['[{"k":"ice","t":150,"u":"g"},{"k":"water","t":200,"u":"ml"},{"k":"shot","t":2,"u":"샷"},{"k":"hand","text":"뚜껑 덮기"}]', 3, true, true, 4, "prac"]);
     eq("바 연습 화면의 도트 글꼴도 16px 이상", r.small, []);
-    eq("양이 빈 줄이 있으면 저장하지 않고 고치기 화면에 남는다", r.empty, ["edit", true]);
+    eq("양이 빈 줄이 있으면 저장하지 않고(정답 그대로) 고치기 화면에 남는다", r.empty, ["edit", true]);
     eq("예시 레시피의 정답을 고치면 예시 표시가 사라진다(예시 지우기 · iCloud)", r.sample, [true, false]);
     eq("직접 만들던 기록: 그만두기 · 다른 레시피로 가면 버린다", [r.recA, r.recB, r.recC], [1, 0, 0]);
     eq("레시피 문장대로 되돌리기", [r.orig, r.reverted], [true, [true, 3]]);
@@ -5081,6 +5097,77 @@ const LEGACY = {
     eq("편집: 문장 · 컵이 그대로일 때만 고친 정답을 물려준다", r.keep, [true, null, null, null, true]);
     ok("받은 레시피로 바꿔도 문장이 같으면 고친 정답이 남는다", r.imp);
     eq("바 연습 검사 중 스크립트 오류 없음", errs, []);
+  }
+
+  // ── 6-10u. 1.5.6 바 연습 내 도구 · 우리 매장 재료 · 선 맞추기 ─────────────
+  {
+    const errs = [];
+    const onErr = e => errs.push(String(e));
+    page.on("pageerror", onErr);
+    const r = await page.evaluate(async () => {
+      const r = {};
+      const wait = ms => new Promise(res => setTimeout(res, ms));
+      const backup = JSON.stringify(data);
+      window.__amgijwiNative = true; document.documentElement.classList.add("dot"); applyEnvText();
+      const P = barTest.parseStep;
+      // 걸러 내기: 모르는 도구 · 빈 이름 · 기본과 같은 이름 · 겹친 재료 · 모르는 넣는 도구
+      r.clean = [barTest.cleanCfg(null), barTest.cleanCfg({names: {shot: " 샷 ", milk: "우유", nope: "x", constructor: "y"}, words: {shot: ["리스트레토", "", "리스트레토"], hand: ["a"]},
+        items: [{name: "바닐라빈 파우더", k: "powder"}, {name: "바닐라빈 파우더", k: "syrup"}, {name: "얼음2", k: "ice"}, {name: " ", k: "milk"}]})];
+      data.bar = {names: {shot: "샷"}, words: {shot: ["리스트레토"]}, items: [{name: "바닐라빈 파우더", k: "powder"}]};
+      r.parse = [P("리스트레토 2샷 붓기", "16oz"), P("바닐라빈 파우더 2티스푼 넣기", "16oz"), P("파우더 1티스푼", "16oz"), P("에스프레소 1샷", "16oz")];
+      // 바 화면: 도구 이름 · 재료 버튼 · 재료로 적힌 동작은 그 버튼으로만 맞는다
+      data.hints = (data.hints || []).filter(h => h !== "barGuide").concat(["barGuide"]);
+      const d = {id: "barmine", name: "바닐라빈 라떼", temp: "ICE", cups: ["16oz"], ing: [], steps: ["바닐라빈 파우더 2티스푼 넣기", "우유 1번 선까지"], cat: "coffee"};
+      data.drinks = [d]; persist();
+      openBar(data.drinks); await wait(200);
+      const tools = Array.from(document.querySelectorAll("#s-bar .bx-tool"));
+      r.tools = [tools.length, tools.find(b => b.dataset.k === "shot" && !b.dataset.n).querySelector("span").textContent, !!tools.find(b => b.dataset.n === "바닐라빈 파우더"), $("#bar-guide").hidden];
+      r.card = Array.from(document.querySelectorAll("#bar-check .bx-clist b")).map(b => b.textContent);
+      $("#bar-cOk").click();
+      r.plan = JSON.stringify(d.plan);
+      const press = (sel, ms) => { const b = document.querySelector(sel); b.dispatchEvent(new PointerEvent("pointerdown", {bubbles: true, cancelable: true})); return wait(ms).then(() => b.dispatchEvent(new PointerEvent("pointerup", {bubbles: true}))); };
+      await press('#s-bar .bx-tool[data-k="powder"]:not([data-n])', 10);
+      r.wrong = [barTest.state().cur, $("#bar-bubble").classList.contains("bad")];
+      await press('#s-bar .bx-tool[data-n="바닐라빈 파우더"]', 950);
+      r.right = [barTest.state().cur, !!$("#bar-stepOk")];
+      // 내 도구 탭: 이름 바꾸기 · 알아듣는 말 더하기 · 재료 만들기 · 되돌리기
+      $("#bar-tCfg").click();
+      r.cfg = [!$("#bar-cfg").hidden, $("#bar-play").hidden, document.querySelectorAll("#bar-cfg [data-nk]").length];
+      const mi = $('#bar-cfg [data-nk="milk"]'); mi.value = "밀크"; mi.dispatchEvent(new Event("change"));
+      $('#bar-cfg [data-wk="steam"]').click(); $("#bar-wIn").value = "스팀"; $('#bar-cfg [data-ak="steam"]').click();
+      $("#bar-iName").value = "자몽청"; $("#bar-iK").value = "jam"; $("#bar-iAdd").click();
+      r.saved = [data.bar.names.milk, data.bar.words.steam.join(","), data.bar.items.map(x => x.name + ":" + x.k).join(","), document.querySelectorAll("#s-bar .bx-tool").length,
+        Array.from(document.querySelectorAll("#s-bar .bx-tool")).some(b => b.querySelector("span").textContent === "밀크")];
+      r.parse2 = [P("밀크 200ml", "16oz").map(a => a.k).join(), P("스팀 150ml", "16oz").map(a => a.k).join()];
+      $("#bar-gReset").click();
+      r.reset = [data.bar.names, data.bar.words, data.bar.items.length];
+      // 백업: 따라가고 걸러진다. 보내기에는 안 실린다
+      const bk = JSON.parse(backupJSON()); bk.data.bar = {names: {shot: "샷", x: "y"}, items: [{name: "바닐라빈 파우더", k: "powder"}, {name: "x", k: "toString"}]};
+      applyBackup(JSON.stringify(bk), true);
+      r.restore = JSON.stringify(data.bar);
+      // 선 맞추기: ±5% 까지 딱 맞음, ±10% 까지 아쉬움
+      const m = {k: "milk", f: 0.45, lab: "1번 선"};
+      r.judge = [barTest.judge(0.5, m)[2], barTest.judge(0.4, m)[2], barTest.judge(0.54, m)[3], barTest.judge(0.57, m)[3]];
+      barLeave();
+      window.__amgijwiNative = undefined; delete window.__amgijwiNative; document.documentElement.classList.remove("dot"); applyEnvText();
+      data = JSON.parse(backup); data.closet = cleanCloset(data.closet); persist(); go("home");
+      return r;
+    });
+    page.off("pageerror", onErr);
+    eq("내 도구 거르기: 모르는 도구 · 빈 이름 · 기본 이름 · 겹친 재료 · 얼음 재료는 버린다", r.clean, [undefined, {names: {shot: "샷"}, words: {shot: ["리스트레토"]}, items: [{name: "바닐라빈 파우더", k: "powder"}]}]);
+    eq("더한 말 · 우리 매장 재료 이름으로 읽고, 재료는 이름이 붙는다", r.parse, [[{k: "shot", t: 2, u: "샷"}], [{k: "powder", name: "바닐라빈 파우더", t: 2, u: "티스푼"}], [{k: "powder", t: 1, u: "티스푼"}], [{k: "shot", t: 1, u: "샷"}]]);
+    eq("도구 버튼: 재료 하나가 더해지고 바꾼 이름으로 보인다", r.tools, [17, "샷", true, true]);
+    eq("확인 카드에 재료 이름 그대로", r.card, ["바닐라빈 파우더", "우유"]);
+    eq("정한 정답에 재료 이름이 남는다", r.plan, '[{"k":"powder","name":"바닐라빈 파우더","t":2,"u":"티스푼"},{"k":"milk","f":0.45,"lab":"1번 선"}]');
+    eq("재료로 적힌 동작은 기본 파우더 버튼으로는 실수", r.wrong, [0, true]);
+    eq("재료 버튼으로 누르면 맞는다", r.right, [0, true]);
+    eq("내 도구 탭: 이름 칸 15개", r.cfg, [true, true, 15]);
+    eq("이름 · 알아듣는 말 · 재료가 저장되고 도구 버튼이 다시 그려진다", r.saved, ["밀크", "스팀", "바닐라빈 파우더:powder,자몽청:jam", 18, true]);
+    eq("바꾼 이름 · 더한 말로 문장을 읽는다", r.parse2, ["milk", "steam"]);
+    eq("기본 이름으로 되돌리기는 이름 · 말만 지우고 재료는 둔다", r.reset, [undefined, undefined, 2]);
+    eq("백업 복원: 내 도구가 따라오고 깨진 값은 걸러진다", r.restore, '{"names":{"shot":"샷"},"items":[{"name":"바닐라빈 파우더","k":"powder"}]}');
+    eq("선 맞추기 여유: ±5% 딱 맞음 · ±10% 아쉬움", r.judge, [true, true, "아쉬움", "다시 연습"]);
+    eq("내 도구 검사 중 스크립트 오류 없음", errs, []);
   }
 
   await browser.close();
