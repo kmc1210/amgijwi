@@ -85,6 +85,12 @@ function cfg(){ return (typeof data !== "undefined" && data && data.bar) || {}; 
 function nm(k){ const n = cfg().names; const v = n && own(n, k) ? String(n[k]).trim() : ""; return v || (T[k] ? T[k].n : k); }
 function items(){ const it = cfg().items; return Array.isArray(it) ? it : []; }
 function isItem(name){ return !!name && items().some(x=>x.name === name); }
+/* 이 동작이 우리 매장 재료인가 — 이름과 넣는 도구가 둘 다 맞아야 한다(고치기에서 다른 도구 줄에 재료 이름을 적었으면 그냥 이름) */
+function itemOf(a){ return a && a.name ? items().filter(x=>x.name === a.name && x.k === a.k)[0] || null : null; }
+/* 기본 도구의 낱말 · 이름과 똑같은 재료 이름은 받지 않는다(그 말이 든 모든 문장이 재료로 읽혀 기본 버튼이 늘 틀린다) */
+function baseWord(n){ return Object.keys(BASE_WORDS).some(k=>BASE_WORDS[k].indexOf(n) >= 0) || ORDER.some(k=>T[k].n === n); }
+/* 샷: 이름이 "샷"으로 끝나면 "샷 2샷"이 되지 않게 이름을 뺀다 */
+function shotTxt(a){ const n = aname(a); return /샷$/.test(n) ? a.t + "샷" : n + " " + a.t + "샷"; }
 function aname(a){ return a.name || nm(a.k); }
 const reEsc = w => String(w).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 /* 백업에서 온 값 거르기 — 모르는 도구 · 빈 이름 · 너무 긴 말은 버린다. 남는 게 없으면 undefined */
@@ -95,7 +101,7 @@ function cleanCfg(c){
   if(c.names && typeof c.names === "object") Object.keys(c.names).forEach(k=>{ if(own(T, k) && k !== "hand"){ const v = txt(c.names[k], 12); if(v && v !== T[k].n) nmz[k] = v; } });
   if(c.words && typeof c.words === "object") Object.keys(c.words).forEach(k=>{ if(own(T, k) && k !== "hand" && Array.isArray(c.words[k])){ const l = [];
     c.words[k].forEach(w=>{ const v = txt(w, 12); if(v && l.indexOf(v) < 0 && l.length < MAX_WORDS) l.push(v); }); if(l.length) wd[k] = l; } });
-  if(Array.isArray(c.items)) c.items.forEach(x=>{ if(!x || typeof x !== "object") return; const n = txt(x.name, 20); if(n && ITEM_BASE.indexOf(x.k) >= 0 && !it.some(y=>y.name === n) && it.length < MAX_ITEMS) it.push({name:n, k:x.k}); });
+  if(Array.isArray(c.items)) c.items.forEach(x=>{ if(!x || typeof x !== "object") return; const n = txt(x.name, 20); if(n && !baseWord(n) && ITEM_BASE.indexOf(x.k) >= 0 && !it.some(y=>y.name === n) && it.length < MAX_ITEMS) it.push({name:n, k:x.k}); });
   if(Object.keys(nmz).length) o.names = nmz;
   if(Object.keys(wd).length) o.words = wd;
   if(it.length) o.items = it;
@@ -161,6 +167,7 @@ function amtTxt(a){
 function chipTxt(a){
   if(a.k === "hand") return "손으로 · " + a.text;
   if(a.k === "stir") return "젓기";
+  if(a.k === "shot" && a.u === "샷") return shotTxt(a);
   return aname(a) + " " + amtTxt(a);
 }
 function baseTarget(a){ return a.t * T[a.k].u[a.u]; }
@@ -379,7 +386,7 @@ function wrong(btn){
 
 /* ───── 도구 누름 (연습 · 직접 만들기 공통) ───── */
 /* 이 버튼이 이 동작의 도구인가. 우리 매장 재료(이름)로 적힌 동작은 그 재료 버튼으로만, 아니면 기본 도구 버튼으로만 맞는다 */
-function hit(a, btn){ return !!a && a.k === btn.dataset.k && (isItem(a.name) ? a.name : "") === (btn.dataset.n || ""); }
+function hit(a, btn){ return !!a && a.k === btn.dataset.k && (itemOf(a) ? a.name : "") === (btn.dataset.n || ""); }
 let pourBtn = null;
 function down(btn, e){
   if(busy || pourK) return;
@@ -418,7 +425,7 @@ function down(btn, e){
   const step = ()=>{
     /* 얼음이 든 컵은 붓는 물이 얼음 틈부터 채워 눈금이 빨리 오른다. 틈을 채우는 동안은 덜 부어 눈금이 얼음 없을 때와 같은 빠르기로 오르게 한다(1.5.6) */
     let dv = d.count ? 1 : d.rate;
-    if(d.fill && k !== "ice" && iceG > 0){ const gap = iceTop() - iceG * ICE_SOLID; if(gap > 0 && liquidMl() < gap) dv = dv * gap / iceTop(); }
+    if(d.fill && k !== "ice" && iceG > 0 && tab === "prac" && a && a.f != null){ const gap = iceTop() - iceG * ICE_SOLID; if(gap > 0 && liquidMl() < gap) dv = dv * gap / iceTop(); }
     pourInto(k, dv); pourV += dv;
     if(tab === "prac") meterPrac(k, a.f != null ? cupFrac(k) : stepV + pourV, a, false); else meterFree(k, pourV);
     renderCup(k, curTarget());
@@ -485,7 +492,7 @@ function finish(){
     let txt, res;
     if(a.k === "hand"){ txt = "손으로 · " + a.text; res = "했어요"; }
     else if(a.k === "stir"){ txt = "젓기"; res = "했어요"; }
-    else if(l.sec){ txt = aname(a) + " " + a.t + "샷 추출"; res = l.v + "초 / 25~30초"; }
+    else if(l.sec){ txt = shotTxt(a) + " 추출"; res = l.v + "초 / 25~30초"; }
     else if(a.f != null){ txt = aname(a) + " 컵 " + a.lab; res = Math.round(l.v * 100) + "% / " + Math.round(a.f * 100) + "%"; }
     else{ txt = aname(a); res = fmt(l.v / T[a.k].u[a.u], a.u) + " / " + amtTxt(a); }
     return '<tr><td>' + esc(txt) + '</td><td class="' + (l.ok ? "ok" : "bad") + '">' + esc(res) + (l.ok ? " ✓" : " ✗") + '</td></tr>';
@@ -588,7 +595,7 @@ function stepText(a, i){
     case "hand": return a.text;
     case "stir": return "잘 저어 섞기";
     case "ice": return (i === 0 ? "컵에 " : "") + n + " " + amt + " 담기";
-    case "shot": return n + " " + a.t + "샷 추출해 붓기";
+    case "shot": return shotTxt(a) + " 추출해 붓기";
     case "syrup": case "powder": return n + " " + amt + " 넣기";
     case "whip": return n + " " + amt + " 올리기";
     case "drizzle": return n + " " + amt + " 뿌리기";
@@ -602,7 +609,7 @@ function renderTidy(){
   const rows = tidyRows.map((o, i)=>{
     const d = T[o.k];
     let inner;
-    const top = '<div class="bx-ttop"><select class="bx-inp" data-i="' + i + '" data-f="k" aria-label="도구">' + ORDER.map(k=>'<option value="' + k + '"' + (k === o.k && !isItem(o.name) ? " selected" : "") + '>' + esc(nm(k)) + '</option>').join("") +
+    const top = '<div class="bx-ttop"><select class="bx-inp" data-i="' + i + '" data-f="k" aria-label="도구">' + ORDER.map(k=>'<option value="' + k + '"' + (k === o.k && !itemOf(o) ? " selected" : "") + '>' + esc(nm(k)) + '</option>').join("") +
       (items().length ? '<optgroup label="우리 매장 재료">' + items().map((x, j)=>'<option value="i:' + j + '"' + (x.k === o.k && x.name === o.name ? " selected" : "") + '>' + esc(x.name) + '</option>').join("") + '</optgroup>' : '') + '</select>' +
       '<button class="bx-mini" data-i="' + i + '" data-m="-1"' + (i ? "" : " disabled") + ' aria-label="위로">▲</button><button class="bx-mini" data-i="' + i + '" data-m="1"' + (i < tidyRows.length - 1 ? "" : " disabled") + ' aria-label="아래로">▼</button><button class="bx-mini del" data-i="' + i + '" data-m="x" aria-label="지우기">✕</button></div>';
     if(o.k === "hand") inner = '<div class="bx-f one"><input class="bx-inp" data-i="' + i + '" data-f="text" value="' + esc(o.text) + '" placeholder="예: 자몽 슬라이스 올리기" maxlength="60"></div>';
@@ -697,7 +704,7 @@ function renderCheck(){
   say(unread ? "? 는 내가 못 읽은 거츄" : "이렇게 읽었츄!", false);
   B("cOk").onclick = ()=>{
     const plan = cleanPlan(PLAN.map(a=>{ const b = Object.assign({}, a); delete b.si; return b; }));
-    if(plan){ R.d.plan = plan; if(!R.ex) persist(); }
+    if(plan){ R.d.plan = plan; if(!R.ex){ delete R.d.sample; persist(); } }     // 정답을 정한 예시는 사용자 것(고치기 저장과 같다)
     haptic("success"); renderPick(); start(RECIPES.indexOf(R)); if(plan) say("좋츄! 이 순서로 해 보츄");
   };
   B("cPick").value = String(RECIPES.indexOf(R));
@@ -733,11 +740,13 @@ function renderCfg(){
   el.querySelectorAll("[data-nk]").forEach(inp=>{ inp.addEventListener("change", ()=>{ const v = cfgCopy(); v.names[inp.dataset.nk] = inp.value; saveCfg(v); renderCfg(); }); });
   el.querySelectorAll("[data-wk]").forEach(b=>{ b.onclick = ()=>{ cfgOpen = cfgOpen === b.dataset.wk ? null : b.dataset.wk; renderCfg(); }; });
   el.querySelectorAll("[data-rk]").forEach(b=>{ b.onclick = ()=>{ const v = cfgCopy(); v.words[b.dataset.rk].splice(+b.dataset.ri, 1); saveCfg(v); renderCfg(); }; });
-  el.querySelectorAll("[data-ak]").forEach(b=>{ b.onclick = ()=>{ const k = b.dataset.ak, x = B("wIn").value.trim(); if(!x){ B("wIn").focus(); return; }
+  el.querySelectorAll("[data-ak]").forEach(b=>{ b.onclick = ()=>{ const k = b.dataset.ak, x = B("wIn").value.replace(/\s+/g, " ").trim().slice(0, 12); if(!x){ B("wIn").focus(); return; }
+    if(BASE_WORDS[k].indexOf(x) >= 0 || (cfg().words && (cfg().words[k] || []).indexOf(x) >= 0)){ toast("이미 알아듣는 말이에요"); return; }
     const v = cfgCopy(); (v.words[k] = v.words[k] || []).push(x); saveCfg(v); haptic("selection"); toast('"' + x + '"도 ' + nm(k) + '(으)로 읽어요'); renderCfg(); }; });
   el.querySelectorAll("[data-di]").forEach(b=>{ b.onclick = ()=>{ const v = cfgCopy(); v.items.splice(+b.dataset.di, 1); saveCfg(v); renderCfg(); }; });
   if(B("iAdd")) B("iAdd").onclick = ()=>{ const n = B("iName").value.replace(/\s+/g, " ").trim(); if(!n){ B("iName").focus(); return; }
     if(items().some(x=>x.name === n)){ toast("이미 있는 재료예요"); return; }
+    if(baseWord(n)){ toast("기본 도구 이름이에요. 바닐라빈 파우더처럼 구분되는 이름을 써 주세요"); return; }
     const v = cfgCopy(); v.items.push({name:n, k:B("iK").value}); saveCfg(v); haptic("success"); toast('"' + n + '" 도구가 생겼어요'); renderCfg(); };
   B("gGuide").onclick = openGuide;
   B("gReset").onclick = ()=>{ const v = cfgCopy(); v.names = {}; v.words = {}; saveCfg(v); renderCfg(); };

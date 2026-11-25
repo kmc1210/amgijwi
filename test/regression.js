@@ -5086,7 +5086,7 @@ const LEGACY = {
     eq("저장: 고친 정답만 plan 에 · 문장 그대로 · 고친 정답 표시 · 연습으로", r.saved, ['[{"k":"ice","t":150,"u":"g"},{"k":"water","t":200,"u":"ml"},{"k":"shot","t":2,"u":"샷"},{"k":"hand","text":"뚜껑 덮기"}]', 3, true, true, 4, "prac"]);
     eq("바 연습 화면의 도트 글꼴도 16px 이상", r.small, []);
     eq("양이 빈 줄이 있으면 저장하지 않고(정답 그대로) 고치기 화면에 남는다", r.empty, ["edit", true]);
-    eq("예시 레시피의 정답을 고치면 예시 표시가 사라진다(예시 지우기 · iCloud)", r.sample, [true, false]);
+    eq("예시 레시피의 정답을 정하면(이대로 연습부터) 예시 표시가 사라진다(예시 지우기 · iCloud)", r.sample, [false, false]);
     eq("직접 만들던 기록: 그만두기 · 다른 레시피로 가면 버린다", [r.recA, r.recB, r.recC], [1, 0, 0]);
     eq("레시피 문장대로 되돌리기", [r.orig, r.reverted], [true, [true, 3]]);
     ok("다시 고쳐 저장된다", r.has);
@@ -5114,6 +5114,7 @@ const LEGACY = {
       r.clean = [barTest.cleanCfg(null), barTest.cleanCfg({names: {shot: " 샷 ", milk: "우유", nope: "x", constructor: "y"}, words: {shot: ["리스트레토", "", "리스트레토"], hand: ["a"]},
         items: [{name: "바닐라빈 파우더", k: "powder"}, {name: "바닐라빈 파우더", k: "syrup"}, {name: "얼음2", k: "ice"}, {name: " ", k: "milk"}]})];
       data.bar = {names: {shot: "샷"}, words: {shot: ["리스트레토"]}, items: [{name: "바닐라빈 파우더", k: "powder"}]};
+      r.clean2 = [barTest.cleanCfg({items: [{name: "우유", k: "milk"}, {name: "꿀", k: "sauce"}]}), barTest.stepText({k: "shot", t: 2, u: "샷"}, 1)];
       r.parse = [P("리스트레토 2샷 붓기", "16oz"), P("바닐라빈 파우더 2티스푼 넣기", "16oz"), P("파우더 1티스푼", "16oz"), P("에스프레소 1샷", "16oz")];
       // 바 화면: 도구 이름 · 재료 버튼 · 재료로 적힌 동작은 그 버튼으로만 맞는다
       data.hints = (data.hints || []).filter(h => h !== "barGuide").concat(["barGuide"]);
@@ -5145,6 +5146,8 @@ const LEGACY = {
       const bk = JSON.parse(backupJSON()); bk.data.bar = {names: {shot: "샷", x: "y"}, items: [{name: "바닐라빈 파우더", k: "powder"}, {name: "x", k: "toString"}]};
       applyBackup(JSON.stringify(bk), true);
       r.restore = JSON.stringify(data.bar);
+      const bk2 = JSON.parse(backupJSON()); delete bk2.data.bar; applyBackup(JSON.stringify(bk2), true);
+      r.restoreOld = JSON.stringify(data.bar);
       // 선 맞추기: ±5% 까지 딱 맞음, ±10% 까지 아쉬움
       const m = {k: "milk", f: 0.45, lab: "1번 선"};
       r.judge = [barTest.judge(0.5, m)[2], barTest.judge(0.4, m)[2], barTest.judge(0.54, m)[3], barTest.judge(0.57, m)[3]];
@@ -5165,6 +5168,8 @@ const LEGACY = {
     eq("이름 · 알아듣는 말 · 재료가 저장되고 도구 버튼이 다시 그려진다", r.saved, ["밀크", "스팀", "바닐라빈 파우더:powder,자몽청:jam", 18, true]);
     eq("바꾼 이름 · 더한 말로 문장을 읽는다", r.parse2, ["milk", "steam"]);
     eq("기본 이름으로 되돌리기는 이름 · 말만 지우고 재료는 둔다", r.reset, [undefined, undefined, 2]);
+    eq("기본 도구 낱말과 똑같은 재료 이름은 버리고, 샷으로 끝나는 이름은 \"2샷\"으로", r.clean2, [undefined, "2샷 추출해 붓기"]);
+    eq("1.5.6 전 백업(내 도구 없음)을 되살려도 지금 내 도구는 둔다", r.restoreOld, r.restore);
     eq("백업 복원: 내 도구가 따라오고 깨진 값은 걸러진다", r.restore, '{"names":{"shot":"샷"},"items":[{"name":"바닐라빈 파우더","k":"powder"}]}');
     eq("선 맞추기 여유: ±5% 딱 맞음 · ±10% 아쉬움", r.judge, [true, true, "아쉬움", "다시 연습"]);
     eq("내 도구 검사 중 스크립트 오류 없음", errs, []);

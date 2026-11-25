@@ -524,7 +524,7 @@ function applyBackup(text, quiet){
       haptic:typeof d.haptic === "boolean" ? d.haptic : data.haptic,
       /* 치즈 · 옷은 백업을 따라간다. 예전 백업(옷장 없음)이면 지금 것을 둔다 */
       closet:d.closet ? restoreCloset(d.closet) : data.closet,
-      bar:cleanBarCfg(d.bar),             /* 바 연습 내 도구(부르는 이름 · 우리 매장 재료)도 백업을 따라간다 (bar.js) */
+      bar:d.bar !== undefined ? cleanBarCfg(d.bar) : data.bar,   /* 바 연습 내 도구도 백업을 따라간다(bar.js). 1.5.6 전 백업이면 지금 것을 둔다 */
       bday:restoreBday(d.bday),           /* 생일도 백업을 따라간다 */
       nick:restoreNick(d.nick),           /* 이름도 백업을 따라간다 */
       review:data.review,                 /* 별점을 청한 기록은 이 기기 것을 둔다 */
