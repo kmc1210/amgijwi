@@ -13,7 +13,9 @@ const CLOSET_PAL = {"1": "#6B2F2A", "2": "#A8423A", "3": "#C9605A", "P": "#F08AA
   /* 크리스마스(1.5): 산타 빨강 · 짙은 빨강 · 밝은 빨강 · 빛나는 코 · 빛나는 전구 · 눈 털 · 트리 초록 · 짙은 초록 */
   "8": "#D23C3C", "9": "#8E2128", "0": "#F06A5A", "f": "#FFB3A0", "e": "#FFF0B0", "s": "#E9EEF3", "x": "#3E8E52", "z": "#24603A",
   /* 번쩍임의 은은한 칸(glowMid): 호박 눈 · 입의 불씨 · 코 · 코 안쪽 · 전구 · 별. 글자가 다 차서 기호를 쓴다. 호박은 정확한 중간이 칙칙한 회색이라 주황으로 골랐다 */
-  "i": "#A8501C", "!": "#E1534B", "^": "#F88F7D", "=": "#E9786E", "~": "#FADA78"};
+  "i": "#A8501C", "!": "#E1534B", "^": "#F88F7D", "=": "#E9786E", "~": "#FADA78",
+  /* 프라푸치노 컵 테두리. 다른 아이템 테두리(O)보다 연해서 하얀 쥐돌이 얼굴보다 컵이 먼저 눈에 띄지 않는다 */
+  "%": "#8C7462"};
 Object.keys(CLOSET_PAL).forEach(k=>{ MOUSE_PAL[k] = CLOSET_PAL[k]; });
 
 const CLOSET_SLOTS = [["head","머리"],["face","얼굴"],["body","몸"],["hand","손"]];
@@ -142,17 +144,17 @@ const CLOSET_ITEMS = [
       ".ocwww.ddc........cdd.wwwco."]},
   {id:"frappe", slot:"hand", name:"프라푸치노", price:30, y:20, rows:[
       "...............22...........",
-      "...........OOOO2OO..........",
-      "..........OUUUU2UO..........",
-      ".........OUUUUUUUUO.........",
-      ".........OOOOOOOOOO.........",
-      "owcwww....O666666O....wwwcwo",
-      ".ocwww....O656656O....wwwco.",
-      ".owcww.ppcO666666Ocpp.wwcwo.",
-      "ocwwww.ppcOUUUUUUOcpp.wwwwco",
-      ".owcww.ppcO666666Ocpp.wwcwo.",
-      ".ocwww.ddcO666666Ocdd.wwwco.",
-      "..........OOOOOOOO.........."]},
+      "...........%%%%2%%..........",
+      "..........%UUUU2U%..........",
+      ".........%UUUUUUUU%.........",
+      ".........%%%%%%%%%%.........",
+      "owcwww....%666666%....wwwcwo",
+      ".ocwww....%656656%....wwwco.",
+      ".owcww.ppc%666666%cpp.wwcwo.",
+      "ocwwww.ppc%UUUUUU%cpp.wwwwco",
+      ".owcww.ppc%666666%cpp.wwcwo.",
+      ".ocwww.ddc%666666%cdd.wwwco.",
+      "..........%%%%%%%%.........."]},
   /* 귀까지 머리 위를 덮고 끝이 오른쪽으로 꺾인다. 꼭대기를 넓혀 두 귀를 다 덮고, 그래도 남는 왼쪽 귀 끝은 지운다(_) — 귀가 모자 안에 들어간 모양.
      오른쪽 옆(3~6행)은 예전 폭 그대로 — 아침 쥐돌이 머리 옆 반짝이(22~26열)를 덮지 않게 */
   {id:"witchhat", slot:"head", name:"마녀 모자", price:60, y:0, season:HALLOWEEN, rows:[
