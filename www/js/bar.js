@@ -329,7 +329,7 @@ function start(i){
   B("pickSel").value = String(RECIPES.indexOf(R));
   if(!p){ show("check"); renderCheck(); return; }       // 처음 연습하는 레시피: 읽은 순서를 먼저 보여 주고 정한다(1.5.6)
   show("play");
-  say(mode === "see" ? "순서대로 해 보츄!" : "레시피를 떠올려 보츄!");
+  say(mode === "see" ? "순서대로 해 보자츄!" : "레시피를 떠올려 보자츄!");
   B("meter").innerHTML = "";
   renderSteps(); renderHand(); clearHints(); renderCup(null, curTarget());
 }
@@ -360,7 +360,7 @@ function renderHand(){
 function redoStep(){
   if(busy || !stepSnap) return;
   const s = JSON.parse(stepSnap); layers = s[0]; iceG = s[1]; whipN = s[2]; drizN = s[3];
-  stepV = 0; stepOn = false; B("meter").innerHTML = ""; renderCup(null, curTarget()); renderHand(); say("다시 부어 보츄");
+  stepV = 0; stepOn = false; B("meter").innerHTML = ""; renderCup(null, curTarget()); renderHand(); say("다시 부어 보자츄");
 }
 function clearHints(){ document.querySelectorAll("#s-bar .bx-tool").forEach(t=>t.classList.remove("glow")); }
 function hint(){ clearHints(); const a = PLAN[cur]; if(a) document.querySelectorAll("#s-bar .bx-tool").forEach(t=>{ if(hit(a, t)) t.classList.add("glow"); }); }
@@ -525,7 +525,7 @@ function recLine(x){
 function renderLog(){
   const el = B("freeLog");
   el.innerHTML = '<div class="bx-lab2">' + esc(R.name) + ' 정답 만드는 중</div>' +
-    (rec.length ? "<ol>" + rec.map(x=>"<li>" + esc(recLine(x)) + "</li>").join("") + "</ol>" : '<p class="bx-empty">평소 만드는 대로 도구를 눌러 보츄. 누른 순서대로 적히고, 다 만들면 이 레시피의 새 정답이 돼요.</p>') +
+    (rec.length ? "<ol>" + rec.map(x=>"<li>" + esc(recLine(x)) + "</li>").join("") + "</ol>" : '<p class="bx-empty">평소 만드는 대로 도구를 눌러 보자츄. 누른 순서대로 적히고, 다 만들면 이 레시피의 새 정답이 돼요.</p>') +
     '<div class="bx-rbtns"><span class="bx-row"><button class="bx-btn ghost" id="bar-fUndo"' + (rec.length ? "" : " disabled") + '>되돌리기</button><button class="bx-btn ghost" id="bar-fReset">처음부터</button><button class="bx-btn ghost" id="bar-fQuit">그만두기</button></span><button class="bx-btn" id="bar-fDone"' + (rec.length ? "" : " disabled") + '>다 만들었츄</button></div>';
   B("fUndo").onclick = ()=>{ if(busy) return; rec.pop(); replayFree(); renderLog(); say("하나 되돌렸츄"); };
   B("fReset").onclick = ()=>{ if(busy) return; rec = []; replayFree(); renderLog(); B("meter").innerHTML = ""; say("새 컵이츄"); };
@@ -666,7 +666,7 @@ function renderTidy(){
     persist(); haptic("success");
     renderPick(); rec = [];
     setTab("prac", true); start(RECIPES.indexOf(R));
-    say("정답을 고쳤츄! 연습해 보츄");
+    say("정답을 고쳤츄! 연습해 보자츄");
   };
 }
 
@@ -705,7 +705,7 @@ function renderCheck(){
   B("cOk").onclick = ()=>{
     const plan = cleanPlan(PLAN.map(a=>{ const b = Object.assign({}, a); delete b.si; return b; }));
     if(plan){ R.d.plan = plan; if(!R.ex){ delete R.d.sample; persist(); } }     // 정답을 정한 예시는 사용자 것(고치기 저장과 같다)
-    haptic("success"); renderPick(); start(RECIPES.indexOf(R)); if(plan) say("좋츄! 이 순서로 해 보츄");
+    haptic("success"); renderPick(); start(RECIPES.indexOf(R)); if(plan) say("좋츄! 이 순서로 해 보자츄");
   };
   B("cPick").value = String(RECIPES.indexOf(R));
   B("cPick").onchange = function(){ start(+this.value); };
@@ -782,7 +782,7 @@ function setTab(t, noStart){
   if(t === "free"){
     freeCup = R.cup; show("play");
     B("name").textContent = R.name; B("sub").textContent = "직접 만들어 정하기 · " + freeCup;
-    replayFree(); renderLog(); say(rec.length ? "이어서 만들어 보츄" : "우리 매장 방식대로 만들어 보츄!");
+    replayFree(); renderLog(); say(rec.length ? "이어서 만들어 보자츄" : "우리 매장 방식대로 만들어 보자츄!");
   }
   else if(t === "cfg"){ show("cfg"); B("name").textContent = "내 도구"; B("sub").textContent = "부르는 이름 · 우리 매장 재료"; renderCfg(); }
   else if(!noStart) start(Math.max(0, RECIPES.indexOf(R)));
