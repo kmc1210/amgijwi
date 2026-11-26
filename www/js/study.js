@@ -137,7 +137,7 @@ function openModeSheet(customPool, scopeLabel){
     </div>
     ${opt("flip",icon("flip"),"카드 뒤집기","이름 보고 재료를 통째로 떠올리기")}
     ${opt("blank",icon("pencil"),"빈칸 채우기","용량만 가리고 하나씩 확인하기")}
-    ${opt("bar",icon("cup"),"바 연습 <i class=\"betatag\">베타</i>","도구를 꾹 눌러 레시피대로 한 잔 만들어 보기")}`;
+    ${opt("bar",icon("cup"),"바 연습 <i class=\"betatag\">베타</i>","바에서 직접 만들어 정답을 적고 연습하기")}`;
   $("#mask").classList.add("on"); $("#sheet").classList.add("on");
   const pick = $("#pickBtn");
   if(pick) pick.addEventListener("click", ()=>openPickSheet(pool, scope));
