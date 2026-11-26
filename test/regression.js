@@ -4966,13 +4966,16 @@ const LEGACY = {
       r.clean = [T.cleanBar({names: {shot: "샷"}}), T.cleanBar(null),
         T.cleanBar({v: 2, cards: [{id: "c1", name: " 라떼 ", temp: "ICE", cup: "99oz", steps: [{k: "milk", w: 1, i: "milk.oat", f: 0.45, lab: "1번 선"}, {k: "nope"}, {k: "syrup", t: 0}, {k: "lid", w: 1}]}, {id: "c2", steps: []}],
           ings: [{id: "u1", n: "말차 시럽", k: "syrup", c: "#7DA06A"}, {id: "u2", n: "말차 시럽", k: "syrup", c: "#000000"}, {id: "x", n: "a", k: "syrup"}, {id: "u3", n: "얼음2", k: "ice"}, {id: "u4", n: "b", k: "toString"}]})];
-      r.steps = T.cleanSteps([{k: "hand", text: " "}, {k: "constructor", t: 1}, {k: "water", t: 100, u: "toString"}, {k: "stir", w: 1}]);
+      r.steps = T.cleanSteps([{k: "hand", text: " "}, {k: "constructor", t: 1}, {k: "water", t: 100, u: "toString"}, {k: "stir", w: 1}, {k: "syrup", t: 0}, {k: "lid", w: 1}]);
+      // 지운 매장 재료를 가리키던 단계는 첫 재료로
+      r.goneIng = T.cleanBar({v: 2, cards: [{id: "g", name: "g", steps: [{k: "syrup", i: "u9", t: 1, u: "펌프"}]}]}).cards[0].steps[0];
       // 채점: 재료 · 양 · 순서를 따로 본다
       const S = [{k: "ice", f: 1, lab: "가득"}, {k: "syrup", i: "syrup.vanilla", t: 3, u: "펌프"}, {k: "syrup", i: "syrup.hazel", t: 1, u: "펌프", w: 1}, {k: "shot", i: "shot.esp", t: 2, u: "샷"}];
       const ice = {k: "ice", i: "ice", base: 260, frac: 1}, van = {k: "syrup", i: "syrup.vanilla", base: 3}, haz = {k: "syrup", i: "syrup.hazel", base: 1}, sh = {k: "shot", i: "shot.esp", t: 2, sec: 27};
       const G = recs => { const g = T.grade(S, recs); return [g.score, g.rows.map(x => "" + x.ing + x.amt + x.ord).join(","), g.extra.length]; };
       r.grade = [G([ice, van, haz, sh]), G([ice, haz, van, sh]), G([ice, Object.assign({}, van, {i: "syrup.caramel"}), haz, sh]), G([sh, ice, van, haz]), G([ice, van, haz]),
-        G([ice, van, haz, sh, {k: "lid"}]), G([ice, {k: "syrup", i: "syrup.vanilla", base: 4}, haz, Object.assign({}, sh, {sec: 35})])];
+        G([ice, van, haz, sh, {k: "lid"}]), G([ice, {k: "syrup", i: "syrup.vanilla", base: 4}, haz, Object.assign({}, sh, {sec: 35})]),
+        G([ice, haz, Object.assign({}, van, {i: "syrup.caramel"}), sh])];
       r.snap = [T.snapFill(0.46, "16oz"), T.snapFill(0.99, "16oz"), T.snapFill(0.3, "16oz"), T.snapFill(0.79, "12oz")];
       const m = {k: "milk", f: 0.45, lab: "1번 선"};
       r.judge = [T.judge(0.5, m)[2], T.judge(0.4, m)[2], T.judge(0.54, m)[3], T.judge(0.57, m)[3]];
@@ -5075,11 +5078,12 @@ const LEGACY = {
       return r;
     });
     page.off("pageerror", onErr);
-    eq("옛 내 도구 · 빈 값은 버리고, 깨진 카드 · 겹친 재료 · 첫 단계 묶음은 걸러진다", r.clean, [undefined, undefined,
-      {v: 2, cards: [{id: "c1", name: "라떼", temp: "ICE", cup: "16oz", steps: [{k: "milk", i: "milk.oat", f: 0.45, lab: "1번 선"}, {k: "lid", w: 1}]}], ings: [{id: "u1", n: "말차 시럽", k: "syrup", c: "#7DA06A"}]}]);
-    eq("단계 거르기: 빈 손으로 · 모르는 도구 · 모르는 단위", r.steps, [{k: "hand", text: "손으로"}, {k: "water", t: 100, u: "ml"}, {k: "stir", w: 1}]);
+    eq("옛 내 도구 · 빈 값은 버리고, 깨진 카드 · 겹친 재료 · 첫 단계와 빠진 단계 뒤 묶음은 걸러진다", r.clean, [undefined, undefined,
+      {v: 2, cards: [{id: "c1", name: "라떼", temp: "ICE", cup: "16oz", steps: [{k: "milk", i: "milk.oat", f: 0.45, lab: "1번 선"}, {k: "lid"}]}], ings: [{id: "u1", n: "말차 시럽", k: "syrup", c: "#7DA06A"}]}]);
+    eq("단계 거르기: 빈 손으로 · 모르는 도구 · 모르는 단위 · 빠진 단계 뒤 묶음 표시는 떼기", r.steps, [{k: "hand", text: "손으로"}, {k: "water", t: 100, u: "ml"}, {k: "stir", w: 1}, {k: "lid"}]);
+    eq("지운 매장 재료를 가리키던 단계는 첫 재료로", r.goneIng, {k: "syrup", t: 1, u: "펌프"});
     eq("채점: 완벽 · 묶음 안 순서는 상관없음 · 틀린 재료 · 순서 · 빠짐 · 더 넣음 · 양과 추출", r.grade, [
-      [100, "000,000,000,000", 0], [100, "000,000,000,000", 0], [92, "000,200,000,000", 0], [92, "000,000,000,002", 0], [75, "000,000,000,222", 0], [95, "000,000,000,000", 1], [92, "000,010,000,010", 0]]);
+      [100, "000,000,000,000", 0], [100, "000,000,000,000", 0], [92, "000,200,000,000", 0], [92, "000,000,000,002", 0], [75, "000,000,000,222", 0], [95, "000,000,000,000", 1], [92, "000,010,000,010", 0], [92, "000,200,000,000", 0]]);
     eq("만든 높이는 가까운 이름으로(±4%)", r.snap, ["1번 선", "가득", null, "8부"]);
     eq("선 맞추기 여유: ±5% 딱 맞음 · ±10% 아쉬움", r.judge, [true, true, "아쉬움", "다시 연습"]);
     eq("학습 방식 시트에 바 연습(베타)", r.sheet, ["flip,blank,bar", true]);

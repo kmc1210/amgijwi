@@ -89,7 +89,7 @@ const ING_BASE = {
 };
 const ING_OK = ["shot","water","hot","cold","milk","steam","soda","syrup","sauce","jam","powder","whip","drizzle"];   // 매장 재료를 더할 수 있는 도구
 const PAL = ["#F7F3EA","#E9C98A","#C9873A","#B07A45","#7A4A2A","#5A3420","#E07A8A","#F08A6A","#F2D35E","#7DA06A","#9CC7DE","#B9A3D6"];
-const MAX_INGS = 40, MAX_CARDS = 200;
+const MAX_INGS = 40, MAX_CARDS = 200, MAX_STEPS = 40;
 function store(){ return (typeof data !== "undefined" && data && data.bar && data.bar.v === 2) ? data.bar : {v:2, cards:[], ings:[]}; }
 function cards(){ return store().cards; }
 function userIngs(){ return store().ings; }
@@ -105,7 +105,8 @@ function ingOf(id, k){ if(!id) return ingList(k)[0]; const l = ingList(k); retur
 function ingName(a){ const x = ingOf(a.i, a.k); return x ? x.n : nm(a.k); }
 function ingCol(a){ const x = ingOf(a.i, a.k); return x ? x.c : (T[a.k].col || "#FFFFFF"); }
 /* 재료가 같은가 — 비어 있으면 그 도구의 첫 재료로 본다 */
-function sameIng(a, b){ return a.k === b.k && (a.i || ingList(a.k)[0].id) === (b.i || ingList(b.k)[0].id); }
+function ingKey(a){ return a.i && ingOf(a.i, a.k) ? a.i : ingList(a.k)[0].id; }
+function sameIng(a, b){ return a.k === b.k && ingKey(a) === ingKey(b); }
 function shotTxt(a){ const n = ingName(a); return (/샷$/.test(n) ? "" : n + " ") + a.t + "샷"; }
 const txt = (v, n)=>String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, n);
 
@@ -113,7 +114,9 @@ const txt = (v, n)=>String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice
 function cleanSteps(p){
   if(!Array.isArray(p)) return [];
   const out = [];
+  let kept = false;                         // 바로 앞(원래 순서) 단계가 남았나 — 빠진 단계 뒤의 묶음 표시가 엉뚱한 단계에 붙지 않게
   p.forEach(a=>{
+    const was = kept; kept = false;
     if(!a || typeof a !== "object" || !own(T, a.k)) return;
     const d = T[a.k], o = {k:a.k};
     if(a.k === "hand"){ const t = txt(a.text, 60); o.text = t || "손으로"; }
@@ -123,10 +126,10 @@ function cleanSteps(p){
       if(a.f != null && isFinite(f) && f > 0 && f <= 1.2 && d.fill){ o.f = f; o.lab = txt(a.lab, 10) || Math.round(f * 100) + "%"; }
       else{ const t = Number(a.t); if(!isFinite(t) || t <= 0 || t > 5000) return; o.t = t; o.u = own(d.u, a.u) ? String(a.u) : d.base; }
     }
-    if(a.w && out.length) o.w = 1;          // 바로 위 단계와 순서 상관없음
-    out.push(o);
+    if(a.w && was && out.length) o.w = 1;   // 바로 위 단계와 순서 상관없음
+    out.push(o); kept = true;
   });
-  return out.slice(0, 40);
+  return out.slice(0, MAX_STEPS);
 }
 function cleanCard(c){
   if(!c || typeof c !== "object") return null;
@@ -138,7 +141,7 @@ function cleanCard(c){
   const n = Number(c.n); if(isFinite(n) && n > 0) o.n = Math.min(99999, Math.floor(n));
   return o;
 }
-/* 백업에서 온 값 — v:2 가 아니면(옛 내 도구) 버린다. 남는 게 없으면 undefined */
+/* 백업에서 온 값 — v:2 가 아니면(옛 내 도구) undefined */
 function cleanBar(b){
   if(!b || typeof b !== "object" || b.v !== 2) return undefined;
   const ings = [], cs = [];
@@ -150,9 +153,12 @@ function cleanBar(b){
   });
   const ids = {};
   (Array.isArray(b.cards) ? b.cards : []).forEach(c=>{ const v = cleanCard(c); if(v && !ids[v.id] && cs.length < MAX_CARDS){ ids[v.id] = 1; cs.push(v); } });
-  return ings.length || cs.length ? {v:2, cards:cs, ings:ings} : undefined;
+  /* 지운 매장 재료를 가리키던 단계는 그 도구의 첫 재료로(고를 수 없는 재료가 정답으로 남지 않게) */
+  cs.forEach(c=>c.steps.forEach(a=>{ if(a.i && /^u/.test(a.i) && !ings.some(x=>x.id === a.i && x.k === a.k)) delete a.i; }));
+  /* 비어도 {v:2} 로 둔다 — 다 지운 기기의 백업을 되살리면 다른 기기의 카드도 비워져야 해서(옛 백업과 구별) */
+  return {v:2, cards:cs, ings:ings};
 }
-function saveStore(s){ const v = cleanBar(s); if(v) data.bar = v; else delete data.bar; persist(); }
+function saveStore(s){ data.bar = cleanBar(s); persist(); }
 function storeCopy(){ const s = store(); return {v:2, cards:JSON.parse(JSON.stringify(s.cards)), ings:JSON.parse(JSON.stringify(s.ings))}; }
 
 /* ───── 상태 ───── */
@@ -278,12 +284,11 @@ function recVal(a, x){ return a.f != null ? (x.frac != null ? x.frac : 0) : x.ba
    돌려주는 것: rows[{a, x, ing, amt, ord}] (0 ○ · 1 △ · 2 ×), extra[기록], score */
 function grade(steps, recs){
   const used = recs.map(()=>false), m = steps.map(()=>-1);
-  steps.forEach((a, si)=>{
-    let pick = -1;
-    for(let j = 0; j < recs.length && pick < 0; j++) if(!used[j] && recs[j].k === a.k && (NOAMT[a.k] || sameIng(a, recs[j]))) pick = j;
-    for(let j = 0; j < recs.length && pick < 0; j++) if(!used[j] && recs[j].k === a.k) pick = j;
-    if(pick >= 0){ used[pick] = true; m[si] = pick; }
-  });
+  /* 재료까지 같은 짝을 모든 단계에 먼저 맺고, 남은 단계만 같은 도구 아무거나로(뒤 단계 몫을 앞 단계가 가져가지 않게) */
+  [true, false].forEach(strict=>steps.forEach((a, si)=>{
+    if(m[si] >= 0) return;
+    for(let j = 0; j < recs.length; j++) if(!used[j] && recs[j].k === a.k && (!strict || NOAMT[a.k] || sameIng(a, recs[j]))){ used[j] = true; m[si] = j; return; }
+  }));
   /* 묶음 번호 → 묶음 안을 기록 순으로 */
   const blocks = []; steps.forEach((a, si)=>{ if(a.w && blocks.length) blocks[blocks.length - 1].push(si); else blocks.push([si]); });
   const seq = [];
@@ -350,6 +355,7 @@ function stopTimers(){
 }
 function recAdd(x){
   const last = rec[rec.length - 1];
+  if(rec.length >= MAX_STEPS && !(last && last.k === x.k && (last.i || "") === (x.i || "") && !NOAMT[x.k] && x.k !== "shot")){ say("단계는 " + MAX_STEPS + "개까지츄", true); return; }
   if(last && last.k === x.k && (last.i || "") === (x.i || "") && !NOAMT[x.k] && x.k !== "shot"){ last.base += x.base; last.frac = x.frac; }
   else rec.push(x);
   renderLog(); renderSteps(); hint();
@@ -543,7 +549,7 @@ function renderTop(){
   const r = view === "make" ? recipeOf(makeRid) : recipeOf(CARD && CARD.rid);
   const opts = '<option value="">레시피 없이</option>' + RECIPES.map(x=>'<option value="' + esc(x.id) + '"' + (x.id === makeRid ? " selected" : "") + '>' + esc(x.name) + (x.temp ? " · " + esc(x.temp) : "") + '</option>').join("");
   B("top").innerHTML = (view === "make" ? '<div class="bx-pick"><span class="bx-lb">참고</span><span class="bx-selwrap"><select id="bar-refSel" class="bx-inp" aria-label="참고할 레시피">' + opts + '</select></span>' +
-      '<span class="bx-selwrap bx-cupsel"><select id="bar-cupSel" class="bx-inp" aria-label="컵">' + Object.keys(CUPS).map(c=>'<option' + (c === CUP ? " selected" : "") + '>' + c + '</option>').join("") + '</select></span></div>' : "") +
+      '<span class="bx-selwrap bx-cupsel"><select id="bar-cupSel" class="bx-inp" aria-label="컵"' + (rec.length ? " disabled" : "") + '>' + Object.keys(CUPS).map(c=>'<option' + (c === CUP ? " selected" : "") + '>' + c + '</option>').join("") + '</select></span></div>' : "") +
     (r ? '<details class="bx-rs bx-ref"' + (view === "make" ? " open" : "") + ' id="bar-ref"><summary>' + (view === "make" ? "레시피 참고 · " + esc(r.name) : "레시피 보기" + (mode === "mem" ? " (열면 보며로 바뀌어요)" : "")) + '</summary><ol>' + r.steps.map(s=>"<li>" + esc(s) + "</li>").join("") + '</ol></details>' : "");
   if(B("refSel")) B("refSel").onchange = function(){ makeRid = this.value; const rr = recipeOf(makeRid); if(rr && !rec.length){ CUP = rr.cup; replay(); } renderTop(); };
   if(B("cupSel")) B("cupSel").onchange = function(){ CUP = this.value; replay(); };
@@ -562,6 +568,7 @@ function renderSteps(){
 }
 function renderLog(){
   const el = B("freeLog"), mk = view === "make";
+  if(B("cupSel")) B("cupSel").disabled = !!rec.length;     // 붓기 시작하면 컵을 못 바꾼다(적힌 높이가 그 컵 기준)
   el.innerHTML = '<div class="bx-lab2">' + (mk ? "만든 순서" : "넣은 것") + '</div>' +
     (rec.length ? '<ol>' + rec.map(x=>"<li>" + esc(recLine(x)) + "</li>").join("") + '</ol>' : '<p class="bx-empty">' + (mk ? "레시피를 보면서 도구를 눌러 만들어 보자츄. 누른 순서대로 적혀요." : "도구를 눌러 만들어 보자츄.") + '</p>') +
     '<div class="bx-rbtns"><span class="bx-row"><button class="bx-btn ghost" id="bar-fUndo"' + (rec.length ? "" : " disabled") + '>되돌리기</button><button class="bx-btn ghost" id="bar-fReset">처음부터</button></span><button class="bx-btn" id="bar-fDone"' + (rec.length ? "" : " disabled") + '>다 만들었츄</button></div>';
@@ -611,7 +618,7 @@ function finish(){
     const s = storeCopy(), c = s.cards.filter(x=>x.id === CARD.id)[0];
     if(c){ c.n = (c.n || 0) + 1; if(c.best == null || g.score > c.best) c.best = g.score; saveStore(s); CARD = cardById(CARD.id) || CARD; }
   }
-  view = "result"; show("result");
+  view = "result"; show("result"); B("modeBox").hidden = B("re").hidden = true;
   if(perfect) haptic("success");
   B("result").innerHTML = '<h2>' + (perfect ? "완벽한 한 잔이츄!" : "한 잔 완성!") + '</h2>' +
     '<div class="bx-rtop"><div class="bx-rcup">' + cupSVG(null, null) + '</div><div class="bx-score"><div><b>' + g.score + '</b><small>점</small></div><div><b>' + sum("ing") + '/' + g.rows.length + '</b><small>재료</small></div><div><b>' + sum("amt") + '/' + g.rows.length + '</b><small>양</small></div><div><b>' + sum("ord") + '/' + g.rows.length + '</b><small>순서</small></div></div></div>' +
@@ -709,7 +716,7 @@ function renderTidy(){
       if(f === "u"){
         const v = inp.value;
         if(v.indexOf("f:") === 0) o.fill = v.slice(2);
-        else{ const u = v.slice(2), b = o.base != null ? o.base : (!o.fill && o.u ? (+o.t || 0) * d.u[o.u] : defT(o.k) * d.u[d.base]); o.fill = null; o.u = u; o.t = nice(b / d.u[u], u); }
+        else{ const u = v.slice(2), b = !o.fill && o.u && +o.t > 0 ? +o.t * d.u[o.u] : o.base != null ? o.base : defT(o.k) * d.u[d.base]; o.fill = null; o.u = u; o.t = nice(b / d.u[u], u); }
         renderTidy(); return;
       }
       o[f] = inp.value; refreshPreview();
@@ -734,8 +741,9 @@ function previewHTML(){ return tidyRows.map(rowStep).map(a=>'<li' + (a.w ? ' cla
 function refreshPreview(){ const ol = B("tidy").querySelector(".bx-preview ol"); if(ol) ol.innerHTML = previewHTML(); }
 function saveTidy(){
   const M = tidyMeta, el = B("tidy");
-  const bad = tidyRows.findIndex(o=>!NOAMT[o.k] && !o.fill && !(+o.t > 0));
-  if(bad >= 0){ haptic("error"); toast((bad + 1) + "번 단계의 양을 적어 주세요"); const f = el.querySelectorAll(".bx-trow")[bad].querySelector('[data-f="t"]'); if(f) f.focus(); return; }
+  if(tidyRows.length > MAX_STEPS){ haptic("error"); toast("단계는 " + MAX_STEPS + "개까지예요"); return; }
+  const bad = tidyRows.findIndex(o=>!NOAMT[o.k] && !o.fill && !(+o.t > 0 && +o.t <= 5000));
+  if(bad >= 0){ haptic("error"); toast((bad + 1) + "번 단계의 양을 0보다 크고 5000 이하로 적어 주세요"); const f = el.querySelectorAll(".bx-trow")[bad].querySelector('[data-f="t"]'); if(f) f.focus(); return; }
   const name = String(M.name || "").trim();
   if(!name){ haptic("error"); toast("음료 이름을 적어 주세요"); B("mName").focus(); return; }
   const s = storeCopy(), steps = tidyRows.map(rowStep);
@@ -798,7 +806,7 @@ function renderIng(){
       '<div class="bx-chips bx-pal">' + PAL.map(c=>'<button class="bx-swb' + (c === ingNew.c ? " on" : "") + '" data-c="' + c + '" style="background:' + c + '" aria-label="색 ' + c + '"></button>').join("") + '</div>' +
       '<button class="bx-btn" id="bar-iAdd">만들기</button></div>' : "") +
     '<div class="bx-rbtns"><button class="bx-btn ghost" id="bar-gGuide">안내 다시 보기</button></div>';
-  el.querySelectorAll("[data-del]").forEach(b=>{ b.onclick = ()=>{ const s = storeCopy(), x = s.ings.filter(y=>y.id === b.dataset.del)[0]; s.ings = s.ings.filter(y=>y.id !== b.dataset.del); saveStore(s); if(x){ delete armed[x.k]; toast('"' + x.n + '"을 지웠어요. 쓰던 음료에서는 도구 이름으로 보여요'); } renderTools(); renderIng(); }; });
+  el.querySelectorAll("[data-del]").forEach(b=>{ b.onclick = ()=>{ const s = storeCopy(), x = s.ings.filter(y=>y.id === b.dataset.del)[0]; s.ings = s.ings.filter(y=>y.id !== b.dataset.del); saveStore(s); if(x){ delete armed[x.k]; toast('"' + x.n + '"을 지웠어요. 쓰던 음료에서는 ' + ingList(x.k)[0].n + '(으)로 바뀌어요'); } renderTools(); renderIng(); }; });
   el.querySelectorAll("[data-c]").forEach(b=>{ b.onclick = ()=>{ ingNew.c = b.dataset.c; ingNew.k = B("iK").value; const v = B("iName").value; renderIng(); B("iName").value = v; }; });
   if(B("iK")) B("iK").onchange = function(){ ingNew.k = this.value; };
   if(B("iAdd")) B("iAdd").onclick = ()=>{
@@ -847,7 +855,7 @@ function build(){
   B("quit").onclick = ()=>{ barLeave(); go("home"); };
 }
 
-/* 학습 방식 시트에서 부른다. pool = 학습 범위의 레시피(참고용). 만드는 순서가 없는 레시피는 뺀다 */
+/* 학습 방식 시트에서 부른다. pool(학습 범위)은 1.5.7 부터 쓰지 않는다 — 참고 레시피는 전체에서 고른다 */
 function openBar(pool){
   build();
   /* 1.5.5~1.5.6 의 레시피별 정답 · 옛 내 도구는 새로 시작한다(베타) */
@@ -855,7 +863,8 @@ function openBar(pool){
   (data.drinks || []).forEach(d=>{ if(d && d.plan !== undefined){ delete d.plan; old = true; } });
   if(data.bar && data.bar.v !== 2){ delete data.bar; old = true; }
   if(old) persist();
-  RECIPES = (pool || []).filter(d=>d && (d.steps || []).some(s=>String(s).trim()))
+  /* 참고 레시피는 학습 범위와 상관없이 전체 레시피에서(범위를 좁혀 들어와도 카드의 참고 레시피가 사라지지 않게) */
+  RECIPES = (data.drinks || []).filter(d=>d && !d.arch && (d.steps || []).some(s=>String(s).trim()))
     .map(d=>({id:d.id, name:d.name, temp:d.temp || "", cup:cupOf(d), steps:(d.steps || []).map(String).filter(s=>s.trim())}));
   B("mouse").innerHTML = mouseSVGWorn("day");
   setMode(mode); armed = {}; makeFor = null; selId = null; delArm = null;

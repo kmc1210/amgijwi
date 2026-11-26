@@ -1303,6 +1303,8 @@ html.dot #s-bar .bx-wbtn.on{border-color:var(--acc);color:var(--acc);border-styl
 /* 내 음료 */
 html.dot #s-bar .bx-sel{display:flex;gap:12px;align-items:flex-end;background:var(--surface);border:2px solid var(--line);padding:10px;}
 html.dot #s-bar .bx-scup .bx-sp{width:72px;height:100px;}
+html.dot #s-bar .bx-rt{display:flex;flex-wrap:wrap;gap:4px;}
+html.dot #s-bar .bx-rt .bx-chip{margin:0;}
 html.dot #s-bar .bx-sinfo{flex:1;min-width:0;display:grid;gap:6px;}
 html.dot #s-bar .bx-psteps{margin:0;padding:6px 10px 6px 30px;background:var(--surface);border:2px dashed var(--line);font-size:14px;}
 html.dot #s-bar .bx-two{display:grid;grid-template-columns:1fr 1fr;}
