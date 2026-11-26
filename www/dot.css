@@ -1226,12 +1226,9 @@ html.dot #s-bar .bx-preview{background:var(--surface);border:2px solid var(--lin
 html.dot #s-bar .bx-preview .bx-lab{font-size:16px;margin-bottom:4px;}
 html.dot #s-bar .bx-preview ol{margin:0;padding-left:22px;}
 
-/* 1.5.6 확인 카드 — 처음 연습하는 레시피는 앱이 읽은 순서를 먼저 보여 준다 */
-html.dot #s-bar .bx-check,
-html.dot #s-bar .bx-cfg{padding-top:12px;display:grid;gap:10px;}
-html.dot #s-bar .bx-ban{display:flex;justify-content:space-between;align-items:center;background:var(--acc);color:var(--on-acc);border:2px solid var(--line);padding:6px 10px;font-family:"NeoDGM",monospace;font-size:20px;-webkit-font-smoothing:none;}
-html.dot #s-bar .bx-ban small{font-family:inherit;font-size:16px;opacity:.85;}
-html.dot #s-bar .bx-ccard{background:var(--surface);border:2px solid var(--line);padding:8px 10px;}
+/* 내 음료 · 재료 (1.5.7) */
+html.dot #s-bar .bx-list,
+html.dot #s-bar .bx-ing{padding-top:12px;display:grid;gap:10px;}
 html.dot #s-bar .bx-clist{list-style:none;margin:4px 0 0;padding:0;}
 html.dot #s-bar .bx-clist li{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed var(--drop);}
 html.dot #s-bar .bx-clist li:last-child{border-bottom:0;}
@@ -1264,7 +1261,74 @@ html.dot #s-bar .bx-chips button.bx-chip{cursor:pointer;font:inherit;font-family
 html.dot #s-bar .bx-gnew{display:grid;gap:6px;padding:8px 0;border-top:1px dashed var(--drop);}
 html.dot #s-bar .bx-gnew .bx-selwrap select{padding:4px 30px 4px 8px;}
 html.dot #s-bar .bx-gnew .bx-btn{padding:5px 12px;}
-html.dot #s-bar .bx-tool.mine{border-style:dashed;}
+
+/* 1.5.7 음료 카드 · 재료 고르기 · 묶음 · 채점 */
+html.dot #s-bar .bx-top .bx-pick{padding-top:4px;}
+html.dot #s-bar .bx-cupsel{flex:0 0 96px;}
+html.dot #s-bar .bx-ref{margin-top:8px;background:var(--surface);border:2px solid var(--line);padding:4px 10px 6px;}
+html.dot #s-bar .bx-ref summary{font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;color:var(--t1);}
+html.dot #s-bar .bx-steps li.w,
+html.dot #s-bar .bx-psteps li.w,
+html.dot #s-bar .bx-preview li.w{box-shadow:inset 3px 0 0 var(--acc);padding-left:4px;}
+html.dot #s-bar .bx-tool{position:relative;}
+html.dot #s-bar .bx-ich{position:absolute;top:0;right:0;width:22px;height:22px;display:grid;place-items:center;font-style:normal;font-size:12px;color:var(--t2);border-left:2px solid var(--line);border-bottom:2px solid var(--line);background:var(--paper);}
+html.dot #s-bar .bx-pickr{margin-top:10px;min-height:96px;box-sizing:border-box;border:2px solid var(--acc);background:var(--surface);padding:8px 10px;display:grid;gap:8px;}
+html.dot #s-bar .bx-pkh{display:flex;align-items:center;gap:8px;}
+html.dot #s-bar .bx-pkh .bx-sp{width:24px;height:24px;flex:0 0 24px;}
+html.dot #s-bar .bx-pkh b{flex:1;font-family:"NeoDGM",monospace;font-weight:400;font-size:16px;-webkit-font-smoothing:none;}
+html.dot #s-bar .bx-ings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;}
+html.dot #s-bar .bx-ingb{display:flex;align-items:center;gap:6px;border:2px solid var(--line);border-radius:0;background:var(--paper);color:var(--t1);padding:6px;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;text-align:left;cursor:pointer;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+html.dot #s-bar .bx-ingb.on{border-color:var(--acc);}
+html.dot #s-bar .bx-ingb.glow{box-shadow:0 0 0 2px var(--acc-hi);}
+html.dot #s-bar .bx-ingb.mine,
+html.dot #s-bar .bx-chip.mine{border-style:dashed;}
+html.dot #s-bar .bx-sw{display:inline-block;width:14px;height:14px;flex:0 0 14px;border:2px solid var(--line);box-sizing:border-box;vertical-align:-2px;margin-right:4px;}
+html.dot #s-bar .bx-ingb .bx-sw{margin-right:0;}
+html.dot #s-bar .bx-pal{gap:6px;}
+html.dot #s-bar .bx-swb{width:30px;height:30px;border:2px solid var(--line);border-radius:0;padding:0;cursor:pointer;}
+html.dot #s-bar .bx-swb.on{box-shadow:0 0 0 3px var(--acc);}
+html.dot #s-bar .bx-gnew{padding:8px 10px;}
+html.dot #s-bar .bx-gnew .bx-btn{justify-self:start;}
+/* 다듬기: 음료 카드 머리 · 재료 칸 · 묶기 */
+html.dot #s-bar .bx-nm{font-family:"NeoDGM",monospace;font-size:20px;-webkit-font-smoothing:none;}
+html.dot #s-bar .bx-recard .bx-selwrap select{padding:4px 30px 4px 8px;}
+html.dot #s-bar .bx-ttop .bx-sp{width:24px;height:24px;flex:0 0 24px;}
+html.dot #s-bar .bx-ttop .bx-selwrap{flex:1;}
+html.dot #s-bar .bx-f{grid-template-columns:minmax(0,1fr) 64px 92px;}
+html.dot #s-bar .bx-f .bx-selwrap select{padding:4px 26px 4px 8px;width:100%;}
+html.dot #s-bar .bx-fixed{align-self:center;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;color:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+html.dot #s-bar .bx-trow.w{box-shadow:inset 4px 0 0 var(--acc);padding-left:4px;}
+html.dot #s-bar .bx-wbtn{justify-self:start;font-size:13px;border:2px dashed var(--drop);border-radius:0;background:transparent;color:var(--t2);padding:3px 8px;cursor:pointer;}
+html.dot #s-bar .bx-wbtn.on{border-color:var(--acc);color:var(--acc);border-style:solid;}
+/* 내 음료 */
+html.dot #s-bar .bx-sel{display:flex;gap:12px;align-items:flex-end;background:var(--surface);border:2px solid var(--line);padding:10px;}
+html.dot #s-bar .bx-scup .bx-sp{width:72px;height:100px;}
+html.dot #s-bar .bx-rt{display:flex;flex-wrap:wrap;gap:4px;}
+html.dot #s-bar .bx-rt .bx-chip{margin:0;}
+html.dot #s-bar .bx-sinfo{flex:1;min-width:0;display:grid;gap:6px;}
+html.dot #s-bar .bx-psteps{margin:0;padding:6px 10px 6px 30px;background:var(--surface);border:2px dashed var(--line);font-size:14px;}
+html.dot #s-bar .bx-two{display:grid;grid-template-columns:1fr 1fr;}
+html.dot #s-bar .bx-del{color:var(--bad);}
+html.dot #s-bar .bx-cards{list-style:none;margin:0;padding:0;display:grid;gap:6px;}
+html.dot #s-bar .bx-card{width:100%;display:flex;align-items:center;gap:10px;border:2px solid var(--line);border-radius:0;background:var(--surface);color:var(--t1);padding:6px 10px;cursor:pointer;text-align:left;font:inherit;}
+html.dot #s-bar .bx-card.on{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc-hi);}
+html.dot #s-bar .bx-mcup .bx-sp{width:30px;height:42px;}
+html.dot #s-bar .bx-tag{white-space:nowrap;font-family:"NeoDGM",monospace;font-size:16px;-webkit-font-smoothing:none;border:2px solid var(--acc);color:var(--acc);padding:0 4px;}
+html.dot #s-bar .bx-tag.ok{border-color:var(--line);color:var(--t2);}
+html.dot #s-bar .bx-new{justify-self:stretch;}
+/* 결과: 점수 · 재료 · 양 · 순서 */
+html.dot #s-bar .bx-score{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+html.dot #s-bar .bx-score div{border:2px solid var(--line);background:var(--surface);text-align:center;padding:4px 2px;}
+html.dot #s-bar .bx-score b{display:block;font-family:"NeoDGM",monospace;font-weight:400;font-size:22px;-webkit-font-smoothing:none;}
+html.dot #s-bar .bx-score small{font-size:11px;color:var(--t3);}
+html.dot #s-bar .bx-result td.k{width:34px;text-align:center;font-family:"NeoDGM",monospace;font-size:18px;-webkit-font-smoothing:none;}
+html.dot #s-bar .bx-result td.k.mid{color:var(--acc);}
+html.dot #s-bar .bx-result td.bx-n{width:20px;color:var(--t3);}
+html.dot #s-bar .bx-result td small{display:block;font-size:11px;color:var(--t3);}
+html.dot #s-bar .bx-result tr.bx-hd td{font-size:11px;color:var(--t3);font-family:inherit;text-align:center;}
+html.dot #s-bar .bx-result tr.bx-hd td:nth-child(2){text-align:left;}
+html.dot #s-bar .bx-wtag{font-style:normal;font-size:11px;color:var(--acc);}
+html.dot #s-bar .bx-extra{margin:8px 0 0;font-size:13px;color:var(--bad);}
 
 /* 처음 안내 세 장 */
 html.dot #s-bar .bx-guide{position:fixed;inset:0;z-index:40;background:rgba(20,18,16,.55);display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top, 0px) + 20px) 20px calc(env(safe-area-inset-bottom, 0px) + 20px);}
